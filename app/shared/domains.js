@@ -1,0 +1,20 @@
+export const DOMAINS = [
+  "Foundation / Company / Localization",
+  "Users / Roles / Security",
+  "Master Data",
+  "CRM",
+  "Sales",
+  "Purchase",
+  "Inventory",
+  "Manufacturing (MRP)",
+  "PLM",
+  "Accounting",
+  "POS",
+  "Website / eCommerce",
+  "Projects",
+  "HR",
+  "Quality",
+  "Documents",
+  "Sign",
+  "Approvals"
+].map((label) => ({ id: label.toLowerCase().replace(/[^a-z0-9]+/g, "-"), label }));

@@ -4,6 +4,7 @@ import {
   getProductOptions, getCustomerOptions, getAccountOptions,
   getDepartmentOptions, getJobPositionOptions, getPaymentTermOptions, getPricelistOptions
 } from "../state/implementationStore.js";
+import { GRID_PUSH_MAP } from "./grid-push.js";
 
 // ── Grid definition registry ──────────────────────────────────
 
@@ -277,13 +278,19 @@ function buildGrid(gridDef, onBack) {
         renderRows();
         return;
       }
-      // Simulate import
+      // Push rows via API (falls back to local save if no connection)
       importBtn.disabled = true;
+      const pushFn = GRID_PUSH_MAP[gridDef.id];
       for (let i = 0; i < rows.length; i++) {
         rows[i]._status = "importing";
         renderRows();
-        await new Promise(r => setTimeout(r, 120));
-        rows[i]._status = "success";
+        if (pushFn) {
+          const result = await pushFn(rows[i]);
+          rows[i]._status = result.success ? "success" : "error";
+          rows[i]._statusMessage = result.detail;
+        } else {
+          rows[i]._status = "success";
+        }
       }
       renderRows();
       const cleanRows = rows.map(r => {

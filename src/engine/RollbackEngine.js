@@ -178,9 +178,18 @@ export function createRollbackEngine(options = {}) {
   }
 
   async function rollbackTransaction(transactionId = null) {
-    const targetTransaction = transactionId
-      ? operationLog.find(op => op.transactionId === transactionId)?.transactionId
-      : currentTransaction?.id;
+    let targetTransaction = null;
+    if (transactionId) {
+      // Check operationLog first, then currentTransaction
+      const fromLog = operationLog.find(op => op.transactionId === transactionId)?.transactionId;
+      if (fromLog) {
+        targetTransaction = fromLog;
+      } else if (currentTransaction?.id === transactionId) {
+        targetTransaction = currentTransaction.id;
+      }
+    } else {
+      targetTransaction = currentTransaction?.id;
+    }
 
     if (!targetTransaction) {
       throw new Error("No transaction found to rollback.");

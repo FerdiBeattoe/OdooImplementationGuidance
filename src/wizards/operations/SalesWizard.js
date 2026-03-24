@@ -1,9 +1,11 @@
 /**
  * Sales Wizard - Quotation Flow, Pricelists, and Sales Configuration
  * Phase 5: Core Operations Wizards
+ * 
+ * Validates inputs before next step, checks cross-domain dependencies
  */
 
-import { OdooClient } from '../../api/OdooClient.js';
+import { OdooClient } from '../../../tools/src/api/OdooClient.js';
 
 export const SALES_STEPS = {
   QUOTATION_SETTINGS: 1,
@@ -100,6 +102,7 @@ export class SalesWizard {
   }
 
   async _fetchPricelists() {
+    if (!this.client) return [];
     return this.client.searchRead(
       'product.pricelist',
       [],
@@ -109,6 +112,7 @@ export class SalesWizard {
   }
 
   async _fetchWarehouses() {
+    if (!this.client) return [];
     return this.client.searchRead(
       'stock.warehouse',
       [],
@@ -118,6 +122,7 @@ export class SalesWizard {
   }
 
   async _fetchCrmTeams() {
+    if (!this.client) return [];
     return this.client.searchRead(
       'crm.team',
       [],
@@ -221,7 +226,7 @@ export class SalesWizard {
 
   setCrossDomainLink(field, value) {
     this._crossDomainDependencies[field] = value;
-    
+
     if (field === 'requiresWarehouse' && value) {
       this._addWarning('Sales orders will use selected warehouse for delivery');
     }
@@ -341,6 +346,7 @@ export class SalesWizard {
   }
 
   async _createPricelists(pricelists) {
+    if (!this.client) return [];
     const pricelistIds = [];
 
     for (const pricelist of pricelists) {
@@ -357,6 +363,7 @@ export class SalesWizard {
   }
 
   async _createApprovalWorkflow(workflow) {
+    if (!this.client) return;
     const groupData = {
       name: 'Sales Approval Group',
       implied_ids: [[4, await this._getGroupId('sales_team.group_sale_manager')]],
@@ -376,6 +383,7 @@ export class SalesWizard {
   }
 
   async _getGroupId(groupXmlId) {
+    if (!this.client) return 1;
     const groups = await this.client.searchRead(
       'res.groups',
       [['xml_id', '=', groupXmlId]],

@@ -18,7 +18,7 @@ export const MX = {
     { code: '1130', name: 'Inversiones Temporales', type: 'bank', reconcile: true },
     { code: '1200', name: 'Clientes', type: 'receivable', reconcile: true },
     { code: '1210', name: 'Documentos por Cobrar', type: 'receivable', reconcile: true },
-    { code: '1220', name: 'Deudores Diversos', type: 'receivable', true },
+    { code: '1220', name: 'Deudores Diversos', type: 'receivable', reconcile: true },
     { code: '1300', name: 'IVA Acreditable', type: 'receivable', reconcile: false },
     { code: '1400', name: 'Inventarios', type: 'asset', reconcile: false },
     { code: '1500', name: 'Pagos Anticipados', type: 'asset', reconcile: false },

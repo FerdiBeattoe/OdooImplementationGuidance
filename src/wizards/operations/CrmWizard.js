@@ -1,9 +1,11 @@
 /**
  * CRM Wizard - Pipeline Stages, Teams, and Lead Sources Setup
  * Phase 5: Core Operations Wizards
+ * 
+ * Validates inputs before next step, checks cross-domain dependencies
  */
 
-import { OdooClient } from '../../api/OdooClient.js';
+import { OdooClient } from '../../../tools/src/api/OdooClient.js';
 
 export const CRM_STEPS = {
   PIPELINE_CONFIG: 1,
@@ -96,6 +98,7 @@ export class CrmWizard {
   }
 
   async _fetchExistingTeams() {
+    if (!this.client) return [];
     return this.client.searchRead(
       'crm.team',
       [],
@@ -105,6 +108,7 @@ export class CrmWizard {
   }
 
   async _fetchExistingStages() {
+    if (!this.client) return [];
     return this.client.searchRead(
       'crm.stage',
       [],
@@ -316,9 +320,7 @@ export class CrmWizard {
       const { pipeline, stages, teams, leadSources, assignmentRules } = this.state;
 
       const createdStageIds = await this._createStages(stages);
-
       const createdTeamIds = await this._createTeams(teams);
-
       await this._createLeadSources(leadSources);
 
       if (assignmentRules.autoAssign) {
@@ -345,6 +347,7 @@ export class CrmWizard {
   }
 
   async _createStages(stages) {
+    if (!this.client) return [];
     const stageIds = [];
 
     for (const stage of stages) {
@@ -362,6 +365,7 @@ export class CrmWizard {
   }
 
   async _createTeams(teams) {
+    if (!this.client) return [];
     const teamIds = [];
 
     for (const team of teams) {
@@ -380,6 +384,7 @@ export class CrmWizard {
   }
 
   async _createLeadSources(leadSources) {
+    if (!this.client) return [];
     const sourceIds = [];
 
     for (const source of leadSources) {
@@ -396,6 +401,7 @@ export class CrmWizard {
   }
 
   async _createAssignmentRules(teams) {
+    if (!this.client) return;
     for (const team of teams) {
       if (team.members && team.members.length > 0) {
         await this.client.create('crm.assignment.rule', [{

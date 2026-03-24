@@ -1,9 +1,11 @@
 /**
  * Purchase Wizard - Vendors, Approval Limits, and Purchase Workflow
  * Phase 5: Core Operations Wizards
+ * 
+ * Validates inputs before next step, checks cross-domain dependencies
  */
 
-import { OdooClient } from '../../api/OdooClient.js';
+import { OdooClient } from '../../../tools/src/api/OdooClient.js';
 
 export const PURCHASE_STEPS = {
   VENDOR_SETUP: 1,
@@ -86,6 +88,7 @@ export class PurchaseWizard {
   }
 
   async _fetchVendors() {
+    if (!this.client) return [];
     return this.client.searchRead(
       'res.partner',
       [['supplier_rank', '>', 0]],
@@ -95,6 +98,7 @@ export class PurchaseWizard {
   }
 
   async _fetchPaymentTerms() {
+    if (!this.client) return [];
     return this.client.searchRead(
       'account.payment.term',
       [],
@@ -104,6 +108,7 @@ export class PurchaseWizard {
   }
 
   async _fetchAccounts() {
+    if (!this.client) return [];
     return this.client.searchRead(
       'account.account',
       [['account_type', '=', 'payable']],
@@ -235,7 +240,7 @@ export class PurchaseWizard {
 
   setCrossDomainLink(field, value) {
     this._crossDomainDependencies[field] = value;
-    
+
     if (field === 'requiresInventory' && value) {
       this._addWarning('Purchase orders will use selected warehouse for receipts');
     }
@@ -287,7 +292,7 @@ export class PurchaseWizard {
         break;
 
       case PURCHASE_STEPS.PURCHASE_TERMS:
-        if (purchaseTerms.double_validation === 'always' && 
+        if (purchaseTerms.double_validation === 'always' &&
             parseFloat(purchaseTerms.double_validation_amount) <= 0) {
           errors.double_validation_amount = 'Double validation amount must be positive';
         }
@@ -348,7 +353,6 @@ export class PurchaseWizard {
       const { vendors, vendorCategories, approvalLimits, purchaseTerms } = this.state;
 
       const createdCategoryIds = await this._createVendorCategories(vendorCategories);
-
       const createdVendorIds = await this._createVendors(vendors);
 
       if (approvalLimits.requireApproval) {
@@ -375,6 +379,7 @@ export class PurchaseWizard {
   }
 
   async _createVendorCategories(categories) {
+    if (!this.client) return [];
     const categoryIds = [];
 
     for (const category of categories) {
@@ -391,6 +396,7 @@ export class PurchaseWizard {
   }
 
   async _createVendors(vendors) {
+    if (!this.client) return [];
     const vendorIds = [];
 
     for (const vendor of vendors) {
@@ -416,6 +422,7 @@ export class PurchaseWizard {
   }
 
   async _createApprovalWorkflow(limits) {
+    if (!this.client) return;
     await this.client.create('purchase.approval.rule', [{
       name: `Purchase Approval (>${limits.defaultLimit})`,
       approval_amount: limits.defaultLimit,

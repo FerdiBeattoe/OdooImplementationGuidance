@@ -21,7 +21,7 @@ import {
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 10; // 10 requests per minute
+const RATE_LIMIT_MAX_REQUESTS = 100; // 100 requests per minute
 const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB limit
 const requestLog = new Map();
 const REQUEST_LOG_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
@@ -133,6 +133,10 @@ export function createAppServer() {
 
       if (pathname.startsWith("/shared/") && req.method === "GET") {
         return serveStatic(res, path.resolve(sharedRoot, `.${pathname.replace("/shared", "")}`), sharedRoot);
+      }
+
+      if (pathname.startsWith("/src/styles/") && req.method === "GET") {
+        return serveStatic(res, path.resolve(frontendRoot, `.${pathname}`), frontendRoot);
       }
 
       if (pathname.startsWith("/src/") && req.method === "GET") {

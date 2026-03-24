@@ -280,6 +280,50 @@ function buildGrid(gridDef, onBack) {
     el("span", { text: "Add Row" })
   ]);
 
+  // CSV template download
+  const downloadTemplateBtn = el("button", {
+    className: "flex items-center gap-2 text-xs font-semibold text-primary hover:underline px-2 py-1",
+    onclick: () => {
+      const headers = gridDef.columns.map(c => c.label).join(",");
+      const blob = new Blob([headers + "\n"], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${gridDef.id}-template.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  }, [
+    el("span", { className: "material-symbols-outlined text-[16px]", text: "download" }),
+    el("span", { text: "Download CSV Template" })
+  ]);
+
+  // CSV file upload
+  const fileInput = el("input", { type: "file", accept: ".csv,.txt", className: "hidden" });
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const parsed = parseCSV(reader.result, gridDef.columns);
+      if (parsed.length) {
+        rows = [...rows.filter(r => Object.values(r).some(v => v && v !== "pending")), ...parsed];
+        if (rows.length === 0) rows = [emptyRow()];
+        renderRows();
+      }
+      fileInput.value = "";
+    };
+    reader.readAsText(file);
+  });
+
+  const uploadBtn = el("button", {
+    className: "flex items-center gap-2 text-xs font-semibold text-secondary border border-secondary/30 px-4 py-2 rounded-xl hover:bg-secondary-container/20 transition-all",
+    onclick: () => fileInput.click()
+  }, [
+    el("span", { className: "material-symbols-outlined text-[16px]", text: "upload_file" }),
+    el("span", { text: "Upload CSV File" })
+  ]);
+
   // CSV paste area
   const csvTextarea = el("textarea", {
     className: "w-full h-24 px-4 py-3 text-xs font-mono bg-surface-container-high border border-outline-variant/30 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none",
@@ -363,7 +407,11 @@ function buildGrid(gridDef, onBack) {
     ]),
     // CSV import
     el("div", { className: "bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-4 space-y-3" }, [
-      el("p", { className: "text-xs font-semibold text-on-surface-variant uppercase tracking-wide", text: "CSV Import" }),
+      el("div", { className: "flex items-center justify-between" }, [
+        el("p", { className: "text-xs font-semibold text-on-surface-variant uppercase tracking-wide", text: "CSV Import" }),
+        el("div", { className: "flex items-center gap-3" }, [downloadTemplateBtn, uploadBtn])
+      ]),
+      fileInput,
       csvTextarea,
       parseCSVBtn
     ]),

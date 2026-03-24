@@ -382,4 +382,5 @@ function cleanupStaleRequestLogEntries() {
   }
 }
 
-setInterval(cleanupStaleRequestLogEntries, REQUEST_LOG_CLEANUP_INTERVAL_MS);
+const _requestLogTimer = setInterval(cleanupStaleRequestLogEntries, REQUEST_LOG_CLEANUP_INTERVAL_MS);
+_requestLogTimer.unref();

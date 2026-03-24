@@ -444,4 +444,6 @@ function cleanupStaleConnections() {
   }
 }
 
-setInterval(cleanupStaleConnections, CLEANUP_INTERVAL_MS);
+const _cleanupTimer = setInterval(cleanupStaleConnections, CLEANUP_INTERVAL_MS);
+_cleanupTimer.unref();
+export { _cleanupTimer };

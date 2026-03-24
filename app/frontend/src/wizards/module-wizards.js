@@ -782,13 +782,83 @@ export function renderAccountingConfigWizard({ onComplete, onCancel }) {
       {
         label: "Fiscal Positions",
         render: ({ data, setData }) => {
+          let fiscalPositions = data.fiscalPositions || existing.fiscalPositions || [];
+          const listEl = el("div", { className: "space-y-3" });
           const fpName = formInput({ placeholder: "e.g. Intra-EU B2B" });
-          const fpCountry = formSelect(["All countries", "Germany", "France", "United Kingdom", "United States"], "");
-          fpName.addEventListener("input", e => setData({ fiscalPositionName: e.target.value }));
-          fpCountry.addEventListener("change", e => setData({ fiscalPositionCountry: e.target.value }));
-          return formSection("Fiscal Positions", [
-            formField("Fiscal Position Name", fpName),
-            formField("Country / Region", fpCountry)
+          const fpCountry = formSelect(["All countries", "Germany", "France", "United Kingdom", "United States", "Canada", "Australia"], "");
+          const autoApply = formCheckbox("Auto-detect from partner country", true);
+          const taxFromIn = formInput({ placeholder: "Source tax, e.g. VAT 20%" });
+          const taxToIn   = formInput({ placeholder: "Destination tax, e.g. VAT 0% EU" });
+          let tempMappings = [];
+          const mappingList = el("div", { className: "space-y-1" });
+
+          const renderMappings = () => {
+            while (mappingList.firstChild) mappingList.removeChild(mappingList.firstChild);
+            tempMappings.forEach((m, i) => mappingList.append(
+              el("div", { className: "flex items-center gap-2 text-xs py-1" }, [
+                el("span", { className: "font-mono", text: m.from }),
+                el("span", { className: "text-on-surface-variant", text: "→" }),
+                el("span", { className: "font-mono font-semibold", text: m.to }),
+                el("button", { className: "text-error text-[10px]", onclick: () => { tempMappings.splice(i,1); renderMappings(); } }, [el("span", { text: "×" })])
+              ])
+            ));
+          };
+
+          const addMappingBtn = el("button", {
+            className: "text-xs text-primary font-semibold hover:underline",
+            onclick: () => { if (taxFromIn.value && taxToIn.value) { tempMappings.push({ from: taxFromIn.value, to: taxToIn.value }); taxFromIn.value = ""; taxToIn.value = ""; renderMappings(); } }
+          }, [el("span", { text: "+ Add Tax Mapping" })]);
+
+          const renderList = () => {
+            while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
+            fiscalPositions.forEach((fp, i) => listEl.append(
+              el("div", { className: "bg-surface-container-low rounded-xl px-4 py-3 space-y-2" }, [
+                el("div", { className: "flex items-center gap-3" }, [
+                  el("span", { className: "flex-1 text-sm font-semibold", text: fp.name }),
+                  el("span", { className: "badge badge--neutral text-[10px]", text: fp.country }),
+                  fp.autoApply ? el("span", { className: "badge badge--secondary text-[10px]", text: "Auto" }) : null,
+                  el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { fiscalPositions.splice(i,1); setData({ fiscalPositions }); renderList(); } }, [
+                    el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })
+                  ])
+                ]),
+                fp.taxMappings?.length ? el("div", { className: "pl-4 space-y-0.5" },
+                  fp.taxMappings.map(m => el("div", { className: "flex items-center gap-2 text-xs text-on-surface-variant" }, [
+                    el("span", { className: "font-mono", text: m.from }),
+                    el("span", { text: "→" }),
+                    el("span", { className: "font-mono font-semibold text-on-surface", text: m.to })
+                  ]))
+                ) : null
+              ])
+            ));
+          };
+          renderList();
+
+          const addBtn = el("button", {
+            className: "bg-primary text-on-primary text-sm font-semibold px-4 py-2.5 rounded-xl hover:opacity-90 transition-all",
+            onclick: () => {
+              if (fpName.value) {
+                const cb = autoApply.querySelector("input[type=checkbox]");
+                fiscalPositions.push({ name: fpName.value, country: fpCountry.value, autoApply: cb?.checked || false, taxMappings: [...tempMappings] });
+                fpName.value = ""; tempMappings = [];
+                setData({ fiscalPositions });
+                renderList();
+                renderMappings();
+              }
+            }
+          }, [el("span", { text: "Add Fiscal Position" })]);
+
+          return el("div", { className: "space-y-4" }, [
+            listEl,
+            formSection("New Fiscal Position", [
+              formGrid([formField("Name", fpName), formField("Country / Region", fpCountry)]),
+              autoApply,
+              formSection("Tax Mappings", [
+                formGrid([formField("Tax on Product", taxFromIn), formField("Tax to Apply", taxToIn)]),
+                mappingList,
+                addMappingBtn
+              ]),
+              addBtn
+            ])
           ]);
         }
       },

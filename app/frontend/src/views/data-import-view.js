@@ -258,10 +258,13 @@ function buildGrid(gridDef, onBack) {
         }`, title: row._statusMessage || row._status })
       ]);
       const cells = gridDef.columns.map(col => {
-        const cellEl = el("td", { className: "px-1 py-1" });
+        const isInvalid = row._invalidCols?.has(col.key);
+        const cellEl = el("td", { className: `px-1 py-1 ${isInvalid ? "bg-error-container/30" : ""}` });
         const inputEl = buildCellInput(col, row[col.key], (val) => {
           rows[ri][col.key] = val;
+          if (val && row._invalidCols) { row._invalidCols.delete(col.key); cellEl.classList.remove("bg-error-container/30"); }
         });
+        if (isInvalid) inputEl.classList?.add("border-error");
         cellEl.append(inputEl);
         return cellEl;
       });
@@ -382,13 +385,16 @@ function buildGrid(gridDef, onBack) {
   const importBtn = el("button", {
     className: "flex items-center gap-2 bg-primary text-on-primary text-sm font-bold px-5 py-2.5 rounded-xl hover:opacity-90 active:scale-95 transition-all shadow-sm",
     onclick: async () => {
-      // Validate
-      const invalid = rows.filter(r => gridDef.columns.some(c => c.required && !r[c.key]));
-      if (invalid.length) {
-        invalid.forEach(r => { r._status = "error"; r._statusMessage = "Missing required fields"; });
-        renderRows();
-        return;
-      }
+      // Validate with per-cell highlighting
+      let hasInvalid = false;
+      rows.forEach(r => {
+        r._invalidCols = new Set();
+        gridDef.columns.forEach(c => {
+          if (c.required && !r[c.key]) { r._invalidCols.add(c.key); hasInvalid = true; }
+        });
+        if (r._invalidCols.size > 0) { r._status = "error"; r._statusMessage = "Missing required fields"; }
+      });
+      if (hasInvalid) { renderRows(); return; }
       // Push rows via API (falls back to local save if no connection)
       importBtn.disabled = true;
       const pushFn = GRID_PUSH_MAP[gridDef.id];
@@ -408,6 +414,7 @@ function buildGrid(gridDef, onBack) {
         const clean = { ...r };
         delete clean._status;
         delete clean._statusMessage;
+        delete clean._invalidCols;
         return clean;
       });
       setImportedData(gridDef.id, cleanRows);

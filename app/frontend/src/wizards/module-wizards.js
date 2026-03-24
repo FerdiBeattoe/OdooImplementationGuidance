@@ -817,15 +817,57 @@ export function renderAccountingConfigWizard({ onComplete, onCancel }) {
       {
         label: "Sequences",
         render: ({ data, setData }) => {
-          const invPrefix  = formInput({ placeholder: "INV-", value: data.invoicePrefix || "INV-" });
-          const invStart   = formInput({ type: "number", placeholder: "1", value: data.invoiceStart || "1" });
-          const billPrefix = formInput({ placeholder: "BILL-", value: data.billPrefix || "BILL-" });
-          invPrefix.addEventListener("input", e => setData({ invoicePrefix: e.target.value }));
-          invStart.addEventListener("input", e => setData({ invoiceStart: e.target.value }));
-          billPrefix.addEventListener("input", e => setData({ billPrefix: e.target.value }));
-          return formSection("Invoice Sequence Numbering", [
-            formGrid([formField("Invoice Prefix", invPrefix), formField("Start Number", invStart)]),
-            formField("Vendor Bill Prefix", billPrefix)
+          let sequences = data.sequences || existing.sequences || [
+            { docType: "Customer Invoice", prefix: "INV/%(year)s/", padding: 4, startNumber: 1 },
+            { docType: "Vendor Bill", prefix: "BILL/%(year)s/", padding: 4, startNumber: 1 },
+            { docType: "Credit Note", prefix: "RINV/%(year)s/", padding: 4, startNumber: 1 },
+            { docType: "Sales Order", prefix: "SO", padding: 5, startNumber: 1 },
+            { docType: "Purchase Order", prefix: "PO", padding: 5, startNumber: 1 },
+            { docType: "Delivery Order", prefix: "WH/OUT/", padding: 5, startNumber: 1 },
+            { docType: "Receipt", prefix: "WH/IN/", padding: 5, startNumber: 1 }
+          ];
+          const listEl = el("div", { className: "space-y-2" });
+          const docIn = formSelect([
+            "Customer Invoice", "Vendor Bill", "Credit Note", "Refund",
+            "Sales Order", "Purchase Order", "Delivery Order", "Receipt",
+            "Manufacturing Order", "Payment", "Bank Statement"
+          ]);
+          const prefixIn = formInput({ placeholder: "INV/%(year)s/" });
+          const padIn = formInput({ type: "number", placeholder: "4" });
+          const startIn = formInput({ type: "number", placeholder: "1" });
+
+          const renderList = () => {
+            while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
+            sequences.forEach((s, i) => listEl.append(
+              el("div", { className: "flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3" }, [
+                el("span", { className: "flex-1 text-sm font-semibold", text: s.docType }),
+                el("span", { className: "text-xs font-mono text-on-surface-variant", text: s.prefix }),
+                el("span", { className: "badge badge--neutral text-[10px]", text: `${s.padding} digits` }),
+                el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { sequences.splice(i,1); setData({ sequences }); renderList(); } }, [
+                  el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })
+                ])
+              ])
+            ));
+          };
+          renderList();
+          const addBtn = el("button", {
+            className: "bg-primary text-on-primary text-sm font-semibold px-4 py-2.5 rounded-xl hover:opacity-90 transition-all",
+            onclick: () => {
+              if (docIn.value) {
+                sequences.push({ docType: docIn.value, prefix: prefixIn.value || "", padding: parseInt(padIn.value) || 4, startNumber: parseInt(startIn.value) || 1 });
+                prefixIn.value = ""; padIn.value = ""; startIn.value = "";
+                setData({ sequences });
+                renderList();
+              }
+            }
+          }, [el("span", { text: "Add Sequence" })]);
+          return el("div", { className: "space-y-4" }, [
+            listEl,
+            formSection("New Document Sequence", [
+              formGrid([formField("Document Type", docIn), formField("Prefix", prefixIn, "Use %(year)s for year, %(month)s for month")]),
+              formGrid([formField("Zero Padding", padIn), formField("Start Number", startIn)]),
+              addBtn
+            ])
           ]);
         }
       },

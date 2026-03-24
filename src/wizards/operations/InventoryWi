@@ -1,0 +1,328 @@
+import { el } from '../../../frontend/lib/dom.js';
+
+/**
+ * Inventory Setup Wizard
+ * Phase 6 of Odoo Implementation
+ * Configures warehouses, locations, routes, and operation types
+ */
+
+export class InventoryWizard {
+  constructor(options = {}) {
+    this.options = {
+      client: options.client || null,
+      onComplete: options.onComplete || (() => {}),
+      ...options
+    };
+    
+    this.currentStep = 0;
+    this.data = {
+      warehouses: [
+        { name: 'Main Warehouse', code: 'WH', address: '' }
+      ],
+      locations: [
+        { name: 'Stock', type: 'internal' },
+        { name: 'Customers', type: 'customer' },
+        { name: 'Vendors', type: 'supplier' }
+      ],
+      operationTypes: [
+        { name: 'Receipts', code: 'IN', type: 'incoming' },
+        { name: 'Delivery Orders', code: 'OUT', type: 'outgoing' },
+        { name: 'Internal Transfers', code: 'INT', type: 'internal' }
+      ],
+      settings: {
+        multiLocations: false,
+        multiWarehouses: false,
+        lotTracking: false,
+        serialTracking: false,
+        consignment: false
+      }
+    };
+    
+    this.steps = [
+      { id: 'warehouses', title: 'Warehouses', description: 'Your storage facilities' },
+      { id: 'locations', title: 'Locations', description: 'Zones within warehouses' },
+      { id: 'operations', title: 'Operations', description: 'How stock moves' },
+      { id: 'tracking', title: 'Tracking', description: 'Lots, serials, consignment' },
+      { id: 'confirm', title: 'Review', description: 'Apply inventory setup' }
+    ];
+  }
+  
+  render() {
+    return el('div', { className: 'wizard-container inventory-wizard' }, [
+      this.renderProgress(),
+      this.renderStep(),
+      this.renderNavigation()
+    ]);
+  }
+  
+  renderProgress() {
+    const pct = ((this.currentStep + 1) / this.steps.length) * 100;
+    return el('div', { className: 'wizard-progress' }, [
+      el('div', { className: 'progress-bar' }, [
+        el('div', { className: 'progress-fill', style: `width: ${pct}%` })
+      ])
+    ]);
+  }
+  
+  renderStep() {
+    const step = this.steps[this.currentStep];
+    return el('div', { className: 'wizard-step' }, [
+      el('h2', { text: step.title }),
+      el('p', { className: 'step-desc', text: step.description }),
+      this[`render${step.id.charAt(0).toUpperCase() + step.id.slice(1)}Step`]()
+    ]);
+  }
+  
+  renderWarehousesStep() {
+    return el('div', { className: 'step-content' }, [
+      el('h3', { text: 'Warehouse Setup' }),
+      
+      el('div', { className: 'warehouse-list' },
+        this.data.warehouses.map((wh, idx) => 
+          el('div', { className: 'warehouse-card' }, [
+            el('input', {
+              placeholder: 'Warehouse Name',
+              value: wh.name,
+              onchange: (e) => this.updateWarehouse(idx, 'name', e.target.value)
+            }),
+            el('input', {
+              placeholder: 'Short Code (3-5 chars)',
+              value: wh.code,
+              maxlength: 5,
+              onchange: (e) => this.updateWarehouse(idx, 'code', e.target.value.toUpperCase())
+            }),
+            el('textarea', {
+              placeholder: 'Address (optional)',
+              value: wh.address,
+              onchange: (e) => this.updateWarehouse(idx, 'address', e.target.value)
+            }),
+            idx > 0 ? el('button', { onclick: () => this.removeWarehouse(idx), text: 'Remove' }) : null
+          ])
+        )
+      ),
+      
+      el('button', { 
+        className: 'btn-add',
+        onclick: () => this.addWarehouse({ name: '', code: '', address: '' })
+      }, '+ Add Warehouse'),
+      
+      el('div', { className: 'tip-box' }, [
+        el('strong', { text: 'Tip: ' }),
+        el('span', { text: 'Start with one warehouse. Add more only when you have actual separate locations.' })
+      ])
+    ]);
+  }
+  
+  renderLocationsStep() {
+    return el('div', { className: 'step-content' }, [
+      el('h3', { text: 'Storage Locations' }),
+      el('p', { text: 'Zones within your warehouse. Standard setup includes: Receiving, Stock, Packing, Shipping.' }),
+      
+      el('div', { className: 'location-list' },
+        this.data.locations.map((loc, idx) => 
+          el('div', { className: 'location-row' }, [
+            el('input', {
+              value: loc.name,
+              onchange: (e) => this.updateLocation(idx, 'name', e.target.value)
+            }),
+            el('select', {
+              value: loc.type,
+              onchange: (e) => this.updateLocation(idx, 'type', e.target.value)
+            }, [
+              el('option', { value: 'internal', text: 'Internal (stockable)' }),
+              el('option', { value: 'customer', text: 'Customer (virtual)' }),
+              el('option', { value: 'supplier', text: 'Vendor (virtual)' }),
+              el('option', { value: 'inventory_loss', text: 'Inventory Loss' }),
+              el('option', { value: 'production', text: 'Production' }),
+              el('option', { value: 'transit', text: 'Transit' })
+            ]),
+            idx > 2 ? el('button', { onclick: () => this.removeLocation(idx), text: '×' }) : null
+          ])
+        )
+      ),
+      
+      el('button', { 
+        onclick: () => this.addLocation({ name: '', type: 'internal' })
+      }, '+ Add Location')
+    ]);
+  }
+  
+  renderOperationsStep() {
+    const icons = { incoming: '📥', outgoing: '📤', internal: '🔄', manufacturing: '⚙️' };
+    
+    return el('div', { className: 'step-content' }, [
+      el('h3', { text: 'Operation Types' }),
+      el('p', { text: 'Different ways stock moves. Each creates documents (receipts, delivery orders).' }),
+      
+      el('div', { className: 'operation-list' },
+        this.data.operationTypes.map((op, idx) => 
+          el('div', { className: 'operation-row' }, [
+            el('span', { className: 'op-icon', text: icons[op.type] || '📦' }),
+            el('input', {
+              value: op.name,
+              onchange: (e) => this.updateOperation(idx, 'name', e.target.value)
+            }),
+            el('input', {
+              value: op.code,
+              maxlength: 5,
+              onchange: (e) => this.updateOperation(idx, 'code', e.target.value.toUpperCase())
+            }),
+            el('select', {
+              value: op.type,
+              onchange: (e) => this.updateOperation(idx, 'type', e.target.value)
+            }, [
+              el('option', { value: 'incoming', text: 'Incoming (Receipts)' }),
+              el('option', { value: 'outgoing', text: 'Outgoing (Deliveries)' }),
+              el('option', { value: 'internal', text: 'Internal Transfer' }),
+              el('option', { value: 'manufacturing', text: 'Manufacturing' })
+            ]),
+            idx > 2 ? el('button', { onclick: () => this.removeOperation(idx), text: '×' }) : null
+          ])
+        )
+      ),
+      
+      el('button', { 
+        onclick: () => this.addOperation({ name: '', code: '', type: 'internal' })
+      }, '+ Add Operation Type')
+    ]);
+  }
+  
+  renderTrackingStep() {
+    return el('div', { className: 'step-content' }, [
+      el('h3', { text: 'Stock Tracking' }),
+      el('p', { text: 'Advanced tracking for quality control and compliance.' }),
+      
+      el('div', { className: 'tracking-options' }, [
+        el('label', { className: 'toggle-row' }, [
+          el('input', {
+            type: 'checkbox',
+            checked: this.data.settings.lotTracking,
+            onchange: (e) => this.data.settings.lotTracking = e.target.checked
+          }),
+          el('div', {}, [
+            el('strong', { text: 'Lot Numbers (Batches)' }),
+            el('small', { text: 'Group products by batch for recalls and expiry dates' })
+          ])
+        ]),
+        
+        el('label', { className: 'toggle-row' }, [
+          el('input', {
+            type: 'checkbox',
+            checked: this.data.settings.serialTracking,
+            onchange: (e) => this.data.settings.serialTracking = e.target.checked
+          }),
+          el('div', {}, [
+            el('strong', { text: 'Serial Numbers' }),
+            el('small', { text: 'Track individual units (electronics, equipment)' })
+          ])
+        ]),
+        
+        el('label', { className: 'toggle-row' }, [
+          el('input', {
+            type: 'checkbox',
+            checked: this.data.settings.consignment,
+            onchange: (e) => this.data.settings.consignment = e.target.checked
+          }),
+          el('div', {}, [
+            el('strong', { text: 'Consignment Stock' }),
+            el('small', { text: 'Manage stock you own at customer locations' })
+          ])
+        ])
+      ]),
+      
+      el('div', { className: 'warning-box' }, [
+        el('strong', { text: 'Important: ' }),
+        el('span', { text: 'Enabling tracking after go-live requires careful migration. Decide now if you need it.' })
+      ])
+    ]);
+  }
+  
+  renderConfirmStep() {
+    return el('div', { className: 'step-content' }, [
+      el('h3', { text: 'Review Inventory Setup' }),
+      
+      el('div', { className: 'review-section' }, [
+        el('h4', { text: `Warehouses: ${this.data.warehouses.length}` }),
+        el('ul', {}, this.data.warehouses.map(w => el('li', { text: `${w.name} (${w.code})` })))
+      ]),
+      
+      el('div', { className: 'review-section' }, [
+        el('h4', { text: `Operations: ${this.data.operationTypes.length}` }),
+        el('ul', {}, this.data.operationTypes.map(o => el('li', { text: o.name })))
+      ]),
+      
+      el('div', { className: 'review-section' }, [
+        el('h4', { text: 'Tracking Enabled' }),
+        el('ul', {}, [
+          this.data.settings.lotTracking && el('li', { text: 'Lot numbers' }),
+          this.data.settings.serialTracking && el('li', { text: 'Serial numbers' }),
+          this.data.settings.consignment && el('li', { text: 'Consignment' }),
+          !this.data.settings.lotTracking && !this.data.settings.serialTracking && 
+            !this.data.settings.consignment && el('li', { text: 'No advanced tracking' })
+        ])
+      ]),
+      
+      el('button', { className: 'btn-primary', onclick: () => this.apply() }, 'Apply to Odoo')
+    ]);
+  }
+  
+  renderNavigation() {
+    return el('div', { className: 'wizard-nav' }, [
+      this.currentStep > 0
+        ? el('button', { onclick: () => this.currentStep-- }, 'Back')
+        : null,
+      this.currentStep < this.steps.length - 1
+        ? el('button', { className: 'btn-primary', onclick: () => this.currentStep++ }, 'Next')
+        : null
+    ]);
+  }
+  
+  // Helpers
+  updateWarehouse(idx, field, value) { this.data.warehouses[idx][field] = value; }
+  addWarehouse(wh) { this.data.warehouses.push(wh); this.render(); }
+  removeWarehouse(idx) { this.data.warehouses.splice(idx, 1); this.render(); }
+  
+  updateLocation(idx, field, value) { this.data.locations[idx][field] = value; }
+  addLocation(loc) { this.data.locations.push(loc); this.render(); }
+  removeLocation(idx) { this.data.locations.splice(idx, 1); this.render(); }
+  
+  updateOperation(idx, field, value) { this.data.operationTypes[idx][field] = value; }
+  addOperation(op) { this.data.operationTypes.push(op); this.render(); }
+  removeOperation(idx) { this.data.operationTypes.splice(idx, 1); this.render(); }
+  
+  async apply() {
+    if (!this.options.client) {
+      alert('No Odoo connection');
+      return;
+    }
+    
+    try {
+      // Create warehouses
+      for (const wh of this.data.warehouses) {
+        if (wh.name && wh.code) {
+          await this.options.client.create('stock.warehouse', {
+            name: wh.name,
+            code: wh.code
+          });
+        }
+      }
+      
+      // Create operation types
+      for (const op of this.data.operationTypes) {
+        if (op.name && op.code) {
+          await this.options.client.create('stock.picking.type', {
+            name: op.name,
+            code: op.code,
+            sequence_code: op.code
+          });
+        }
+      }
+      
+      this.options.onComplete(this.data);
+    } catch (error) {
+      console.error('Inventory setup failed:', error);
+    }
+  }
+}
+
+export default InventoryWizard;

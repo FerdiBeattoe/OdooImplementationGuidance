@@ -1,0 +1,330 @@
+import { el } from '../../../frontend/lib/dom.js';
+
+/**
+ * Sales Setup Wizard
+ * Phase 5 of Odoo Implementation
+ * Configures quotation flow, pricing, and order policies
+ */
+
+export class SalesWizard {
+  constructor(options = {}) {
+    this.options = {
+      client: options.client || null,
+      onComplete: options.onComplete || (() => {}),
+      ...options
+    };
+    
+    this.currentStep = 0;
+    this.data = {
+      quotationTemplate: {
+        name: 'Standard Quotation',
+        terms: 'Payment within 30 days. Delivery as per agreed schedule.',
+        validityDays: 30
+      },
+      pricelists: [
+        { name: 'Standard Price', currency: 'ZAR', type: 'sale' },
+        { name: 'Trade Price', currency: 'ZAR', type: 'sale', discount: 10 }
+      ],
+      paymentTerms: [
+        { name: 'Immediate Payment', days: 0 },
+        { name: '15 Days', days: 15 },
+        { name: '30 Days', days: 30 },
+        { name: '60 Days', days: 60 }
+      ],
+      orderPolicy: {
+        confirmOnline: false,
+        lockPrice: true,
+        automaticInvoice: 'on_delivery', // 'on_order', 'on_delivery', 'manual'
+        shippingPolicy: 'delivered' // 'ordered', 'delivered'
+      }
+    };
+    
+    this.steps = [
+      { id: 'quotation', title: 'Quotation Settings', description: 'Templates and validity' },
+      { id: 'pricing', title: 'Pricing & Discounts', description: 'Pricelists and strategies' },
+      { id: 'terms', title: 'Payment Terms', description: 'When and how you get paid' },
+      { id: 'policy', title: 'Order Policies', description: 'How orders are processed' },
+      { id: 'confirm', title: 'Review', description: 'Apply sales configuration' }
+    ];
+  }
+  
+  render() {
+    return el('div', { className: 'wizard-container sales-wizard' }, [
+      this.renderProgress(),
+      this.renderStep(),
+      this.renderNavigation()
+    ]);
+  }
+  
+  renderProgress() {
+    const pct = ((this.currentStep + 1) / this.steps.length) * 100;
+    return el('div', { className: 'wizard-progress' }, [
+      el('div', { className: 'progress-bar' }, [
+        el('div', { className: 'progress-fill', style: `width: ${pct}%` })
+      ])
+    ]);
+  }
+  
+  renderStep() {
+    const step = this.steps[this.currentStep];
+    return el('div', { className: 'wizard-step' }, [
+      el('h2', { text: step.title }),
+      el('p', { className: 'step-desc', text: step.description }),
+      this[`render${step.id.charAt(0).toUpperCase() + step.id.slice(1)}Step`]()
+    ]);
+  }
+  
+  renderQuotationStep() {
+    return el('div', { className: 'step-content' }, [
+      el('h3', { text: 'Quotation Template' }),
+      
+      el('div', { className: 'form-section' }, [
+        el('label', { text: 'Template Name' }),
+        el('input', {
+          value: this.data.quotationTemplate.name,
+          onchange: (e) => this.data.quotationTemplate.name = e.target.value
+        }),
+        
+        el('label', { text: 'Validity (days)' }),
+        el('input', {
+          type: 'number',
+          value: this.data.quotationTemplate.validityDays,
+          onchange: (e) => this.data.quotationTemplate.validityDays = parseInt(e.target.value)
+        }),
+        
+        el('label', { text: 'Terms & Conditions' }),
+        el('textarea', {
+          rows: 4,
+          value: this.data.quotationTemplate.terms,
+          onchange: (e) => this.data.quotationTemplate.terms = e.target.value
+        })
+      ]),
+      
+      el('div', { className: 'template-examples' }, [
+        el('h4', { text: 'Quick Templates' }),
+        el('button', { onclick: () => this.loadQuotationTemplate('standard') }, 'Standard'),
+        el('button', { onclick: () => this.loadQuotationTemplate('strict') }, 'Strict Payment'),
+        el('button', { onclick: () => this.loadQuotationTemplate('flexible') }, 'Flexible Terms')
+      ])
+    ]);
+  }
+  
+  renderPricingStep() {
+    return el('div', { className: 'step-content' }, [
+      el('h3', { text: 'Pricelists' }),
+      el('p', { text: 'Different prices for different customers. You can have multiple pricelists.' }),
+      
+      el('div', { className: 'pricelist-builder' }, [
+        ...this.data.pricelists.map((pl, idx) => 
+          el('div', { className: 'pricelist-card' }, [
+            el('input', {
+              placeholder: 'Pricelist Name',
+              value: pl.name,
+              onchange: (e) => this.updatePricelist(idx, 'name', e.target.value)
+            }),
+            el('select', {
+              value: pl.currency,
+              onchange: (e) => this.updatePricelist(idx, 'currency', e.target.value)
+            }, [
+              el('option', { value: 'ZAR', text: 'ZAR' }),
+              el('option', { value: 'USD', text: 'USD' }),
+              el('option', { value: 'EUR', text: 'EUR' }),
+              el('option', { value: 'GBP', text: 'GBP' })
+            ]),
+            el('label', {}, [
+              el('input', {
+                type: 'checkbox',
+                checked: pl.discount > 0,
+                onchange: (e) => this.updatePricelist(idx, 'discount', e.target.checked ? 10 : 0)
+              }),
+              el('span', { text: ' Global discount applied' })
+            ]),
+            el('button', { onclick: () => this.removePricelist(idx), text: '×' })
+          ])
+        ),
+        
+        el('button', { 
+          className: 'btn-add',
+          onclick: () => this.addPricelist({ name: '', currency: 'ZAR', type: 'sale' })
+        }, '+ Add Pricelist')
+      ])
+    ]);
+  }
+  
+  renderTermsStep() {
+    return el('div', { className: 'step-content' }, [
+      el('h3', { text: 'Payment Terms' }),
+      el('p', { text: 'When do your customers need to pay? These appear on invoices.' }),
+      
+      el('div', { className: 'terms-list' },
+        this.data.paymentTerms.map((term, idx) => 
+          el('div', { className: 'term-row' }, [
+            el('input', {
+              placeholder: 'Term name (e.g., Net 30)',
+              value: term.name,
+              onchange: (e) => this.updateTerm(idx, 'name', e.target.value)
+            }),
+            el('label', { text: 'Due in:' }),
+            el('input', {
+              type: 'number',
+              value: term.days,
+              onchange: (e) => this.updateTerm(idx, 'days', parseInt(e.target.value))
+            }),
+            el('span', { text: 'days' }),
+            idx > 0 ? el('button', { onclick: () => this.removeTerm(idx), text: '×' }) : null
+          ])
+        )
+      ),
+      
+      el('button', { onclick: () => this.addTerm({ name: '', days: 30 }) }, '+ Add Payment Term'),
+      
+      el('div', { className: 'tip-box' }, [
+        el('strong', { text: 'Tip: ' }),
+        el('span', { text: 'Most businesses use 30 days. Consider early payment discounts to improve cash flow.' })
+      ])
+    ]);
+  }
+  
+  renderPolicyStep() {
+    return el('div', { className: 'step-content' }, [
+      el('h3', { text: 'Order Processing' }),
+      
+      el('div', { className: 'policy-options' }, [
+        el('div', { className: 'policy-row' }, [
+          el('label', { text: 'When to invoice?' }),
+          el('select', {
+            value: this.data.orderPolicy.automaticInvoice,
+            onchange: (e) => this.data.orderPolicy.automaticInvoice = e.target.value
+          }, [
+            el('option', { value: 'on_order', text: 'On order confirmation (prepaid)' }),
+            el('option', { value: 'on_delivery', text: 'On delivery (standard)' }),
+            el('option', { value: 'manual', text: 'Manual (I create invoices)' })
+          ])
+        ]),
+        
+        el('div', { className: 'policy-row' }, [
+          el('label', { text: 'When is an order complete?' }),
+          el('select', {
+            value: this.data.orderPolicy.shippingPolicy,
+            onchange: (e) => this.data.orderPolicy.shippingPolicy = e.target.value
+          }, [
+            el('option', { value: 'ordered', text: 'When products are ordered' }),
+            el('option', { value: 'delivered', text: 'When products are delivered (standard)' })
+          ])
+        ]),
+        
+        el('div', { className: 'policy-toggle' }, [
+          el('label', {}, [
+            el('input', {
+              type: 'checkbox',
+              checked: this.data.orderPolicy.lockPrice,
+              onchange: (e) => this.data.orderPolicy.lockPrice = e.target.checked
+            }),
+            el('span', { text: ' Lock prices on confirmation' })
+          ]),
+          el('small', { text: 'Prevents price changes after order is confirmed' })
+        ])
+      ])
+    ]);
+  }
+  
+  renderConfirmStep() {
+    return el('div', { className: 'step-content' }, [
+      el('h3', { text: 'Review Sales Setup' }),
+      
+      el('div', { className: 'review-section' }, [
+        el('h4', { text: 'Quotation' }),
+        el('p', { text: `${this.data.quotationTemplate.name} (${this.data.quotationTemplate.validityDays} days validity)` })
+      ]),
+      
+      el('div', { className: 'review-section' }, [
+        el('h4', { text: `Pricelists: ${this.data.pricelists.length}` }),
+        el('ul', {}, this.data.pricelists.map(pl => el('li', { text: pl.name })))
+      ]),
+      
+      el('div', { className: 'review-section' }, [
+        el('h4', { text: `Payment Terms: ${this.data.paymentTerms.length}` }),
+        el('ul', {}, this.data.paymentTerms.map(t => el('li', { text: `${t.name} (${t.days} days)` })))
+      ]),
+      
+      el('button', { className: 'btn-primary', onclick: () => this.apply() }, 'Apply to Odoo')
+    ]);
+  }
+  
+  renderNavigation() {
+    return el('div', { className: 'wizard-nav' }, [
+      this.currentStep > 0
+        ? el('button', { onclick: () => this.currentStep-- }, 'Back')
+        : null,
+      this.currentStep < this.steps.length - 1
+        ? el('button', { className: 'btn-primary', onclick: () => this.currentStep++ }, 'Next')
+        : null
+    ]);
+  }
+  
+  // Helpers
+  updatePricelist(idx, field, value) { this.data.pricelists[idx][field] = value; }
+  addPricelist(pl) { this.data.pricelists.push(pl); this.render(); }
+  removePricelist(idx) { this.data.pricelists.splice(idx, 1); this.render(); }
+  
+  updateTerm(idx, field, value) { this.data.paymentTerms[idx][field] = value; }
+  addTerm(term) { this.data.paymentTerms.push(term); this.render(); }
+  removeTerm(idx) { this.data.paymentTerms.splice(idx, 1); this.render(); }
+  
+  loadQuotationTemplate(type) {
+    const templates = {
+      standard: {
+        name: 'Standard Quotation',
+        terms: 'Payment within 30 days. Delivery as per agreed schedule.',
+        validityDays: 30
+      },
+      strict: {
+        name: 'Strict Payment Terms',
+        terms: 'Payment required before delivery. No returns accepted without prior approval.',
+        validityDays: 14
+      },
+      flexible: {
+        name: 'Flexible Terms',
+        terms: 'Payment within 60 days. Free returns within 30 days.',
+        validityDays: 60
+      }
+    };
+    this.data.quotationTemplate = templates[type];
+    this.render();
+  }
+  
+  async apply() {
+    if (!this.options.client) {
+      alert('No Odoo connection');
+      return;
+    }
+    
+    try {
+      // Create payment terms
+      for (const term of this.data.paymentTerms) {
+        if (term.name) {
+          await this.options.client.create('account.payment.term', {
+            name: term.name,
+            line_ids: [[0, 0, { value: 'balance', value_amount: 0, days: term.days }]]
+          });
+        }
+      }
+      
+      // Create pricelists
+      for (const pl of this.data.pricelists) {
+        if (pl.name) {
+          await this.options.client.create('product.pricelist', {
+            name: pl.name,
+            currency_id: 1 // Would map from currency code
+          });
+        }
+      }
+      
+      this.options.onComplete(this.data);
+    } catch (error) {
+      console.error('Sales setup failed:', error);
+    }
+  }
+}
+
+export default SalesWizard;

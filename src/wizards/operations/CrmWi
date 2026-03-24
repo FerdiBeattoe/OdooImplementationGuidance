@@ -1,0 +1,310 @@
+import { el } from '../../../frontend/lib/dom.js';
+
+/**
+ * CRM Setup Wizard
+ * Phase 5 of Odoo Implementation
+ * Configures sales pipeline, stages, teams, and lead handling
+ */
+
+export class CrmWizard {
+  constructor(options = {}) {
+    this.options = {
+      client: options.client || null,
+      onComplete: options.onComplete || (() => {}),
+      ...options
+    };
+    
+    this.currentStep = 0;
+    this.data = {
+      stages: [
+        { name: 'New', sequence: 10, probability: 0 },
+        { name: 'Qualified', sequence: 20, probability: 20 },
+        { name: 'Proposition', sequence: 30, probability: 50 },
+        { name: 'Negotiation', sequence: 40, probability: 80 },
+        { name: 'Won', sequence: 50, probability: 100 },
+        { name: 'Lost', sequence: 60, probability: 0, lost: true }
+      ],
+      teams: [],
+      leadSources: ['Website', 'Email', 'Phone', 'Referral', 'Social Media', 'Trade Show'],
+      activities: [
+        { name: 'Call', days: 2 },
+        { name: 'Email', days: 1 },
+        { name: 'Meeting', days: 5 },
+        { name: 'Quote', days: 3 }
+      ]
+    };
+    
+    this.steps = [
+      { id: 'pipeline', title: 'Sales Pipeline', description: 'Define your opportunity stages' },
+      { id: 'teams', title: 'Sales Teams', description: 'Organize your salespeople' },
+      { id: 'activities', title: 'Activity Types', description: 'Standard follow-up actions' },
+      { id: 'confirm', title: 'Review & Apply', description: 'Confirm your CRM setup' }
+    ];
+  }
+  
+  render() {
+    return el('div', { className: 'wizard-container crm-wizard' }, [
+      this.renderProgress(),
+      this.renderStep(),
+      this.renderNavigation()
+    ]);
+  }
+  
+  renderProgress() {
+    const pct = ((this.currentStep + 1) / this.steps.length) * 100;
+    return el('div', { className: 'wizard-progress' }, [
+      el('div', { className: 'progress-bar' }, [
+        el('div', { className: 'progress-fill', style: `width: ${pct}%` })
+      ]),
+      this.steps.map((s, i) => el('span', { 
+        className: `step-dot ${i <= this.currentStep ? 'done' : ''}`
+      }))
+    ]);
+  }
+  
+  renderStep() {
+    const step = this.steps[this.currentStep];
+    return el('div', { className: 'wizard-step' }, [
+      el('h2', { text: step.title }),
+      el('p', { className: 'step-desc', text: step.description }),
+      this[`render${step.id.charAt(0).toUpperCase() + step.id.slice(1)}Step`]()
+    ]);
+  }
+  
+  renderPipelineStep() {
+    return el('div', { className: 'step-content' }, [
+      el('h3', { text: 'Opportunity Stages' }),
+      el('p', { text: 'Your sales pipeline stages. Drag to reorder. The probability estimates help with forecasting.' }),
+      
+      el('div', { className: 'pipeline-builder' }, [
+        el('div', { className: 'stages-list' }, 
+          this.data.stages.map((stage, idx) => 
+            el('div', { className: 'stage-row' }, [
+              el('span', { className: 'drag-handle', text: '⋮⋮' }),
+              el('input', {
+                value: stage.name,
+                placeholder: 'Stage name',
+                onchange: (e) => this.updateStage(idx, 'name', e.target.value)
+              }),
+              el('input', {
+                type: 'number',
+                value: stage.probability,
+                min: 0,
+                max: 100,
+                onchange: (e) => this.updateStage(idx, 'probability', parseInt(e.target.value))
+              }),
+              el('span', { text: '% win probability' }),
+              stage.lost 
+                ? el('span', { className: 'lost-badge', text: 'Lost Stage' })
+                : el('button', { 
+                    onclick: () => this.removeStage(idx),
+                    text: '×',
+                    className: 'btn-remove'
+                  })
+            ])
+          )
+        ),
+        
+        el('button', { 
+          className: 'btn-add',
+          onclick: () => this.addStage({ name: '', sequence: this.data.stages.length * 10, probability: 50 })
+        }, '+ Add Stage'),
+        
+        el('div', { className: 'template-box' }, [
+          el('h4', { text: 'Quick Templates' }),
+          el('button', { onclick: () => this.loadStages('simple') }, 'Simple (3 stages)'),
+          el('button', { onclick: () => this.loadStages('standard') }, 'Standard (5 stages)'),
+          el('button', { onclick: () => this.loadStages('complex') }, 'Complex (7 stages)')
+        ])
+      ]),
+      
+      el('div', { className: 'tip-box' }, [
+        el('strong', { text: 'Best Practice: ' }),
+        el('span', { text: 'Keep it simple. 4-6 stages works best for most businesses. Make sure every stage has a clear exit criteria.' })
+      ])
+    ]);
+  }
+  
+  renderTeamsStep() {
+    return el('div', { className: 'step-content' }, [
+      el('h3', { text: 'Sales Teams' }),
+      el('p', { text: 'Organize your salespeople into teams. Each team can have its own targets and workflows.' }),
+      
+      el('div', { className: 'teams-builder' }, [
+        ...this.data.teams.map((team, idx) => 
+          el('div', { className: 'team-card' }, [
+            el('input', {
+              placeholder: 'Team Name (e.g., Direct Sales)',
+              value: team.name,
+              onchange: (e) => this.updateTeam(idx, 'name', e.target.value)
+            }),
+            el('input', {
+              placeholder: 'Team Leader Email',
+              value: team.leader || '',
+              onchange: (e) => this.updateTeam(idx, 'leader', e.target.value)
+            }),
+            el('textarea', {
+              placeholder: 'Territory or focus area',
+              value: team.territory || '',
+              onchange: (e) => this.updateTeam(idx, 'territory', e.target.value)
+            }),
+            el('button', { onclick: () => this.removeTeam(idx), text: 'Remove' })
+          ])
+        ),
+        
+        el('button', { 
+          className: 'btn-add-team',
+          onclick: () => this.addTeam({ name: '', leader: '', territory: '' })
+        }, '+ Add Sales Team')
+      ])
+    ]);
+  }
+  
+  renderActivitiesStep() {
+    const icons = { Call: '📞', Email: '✉️', Meeting: '🤝', Quote: '📄' };
+    
+    return el('div', { className: 'step-content' }, [
+      el('h3', { text: 'Activity Types' }),
+      el('p', { text: 'Standard follow-up actions for your sales team. These appear when scheduling next steps.' }),
+      
+      el('div', { className: 'activities-list' },
+        this.data.activities.map((act, idx) => 
+          el('div', { className: 'activity-row' }, [
+            el('span', { className: 'activity-icon', text: icons[act.name] || '📋' }),
+            el('input', {
+              value: act.name,
+              onchange: (e) => this.updateActivity(idx, 'name', e.target.value)
+            }),
+            el('label', { text: 'Default due in:' }),
+            el('input', {
+              type: 'number',
+              value: act.days,
+              min: 0,
+              onchange: (e) => this.updateActivity(idx, 'days', parseInt(e.target.value))
+            }),
+            el('span', { text: 'days' })
+          ])
+        )
+      ),
+      
+      el('button', { 
+        onclick: () => this.addActivity({ name: '', days: 1 })
+      }, '+ Add Activity Type')
+    ]);
+  }
+  
+  renderConfirmStep() {
+    return el('div', { className: 'step-content' }, [
+      el('h3', { text: 'Review CRM Setup' }),
+      
+      el('div', { className: 'review-section' }, [
+        el('h4', { text: `Pipeline: ${this.data.stages.length} stages` }),
+        el('div', { className: 'pipeline-preview' },
+          this.data.stages.map(s => 
+            el('div', { className: 'preview-stage' }, [
+              el('span', { text: s.name }),
+              el('small', { text: `${s.probability}%` })
+            ])
+          )
+        )
+      ]),
+      
+      el('div', { className: 'review-section' }, [
+        el('h4', { text: `Teams: ${this.data.teams.length} sales teams` }),
+        this.data.teams.length === 0 
+          ? el('p', { text: 'No teams defined - all salespeople will use default team' })
+          : el('ul', {}, this.data.teams.map(t => el('li', { text: t.name })))
+      ]),
+      
+      el('div', { className: 'confirm-actions' }, [
+        el('p', { text: 'This will create your CRM pipeline in Odoo. You can modify it later in the CRM app.' }),
+        el('button', { className: 'btn-primary', onclick: () => this.apply() }, 'Apply to Odoo')
+      ])
+    ]);
+  }
+  
+  renderNavigation() {
+    return el('div', { className: 'wizard-nav' }, [
+      this.currentStep > 0
+        ? el('button', { onclick: () => this.currentStep-- }, 'Back')
+        : null,
+      this.currentStep < this.steps.length - 1
+        ? el('button', { className: 'btn-primary', onclick: () => this.currentStep++ }, 'Next')
+        : null
+    ]);
+  }
+  
+  // Helpers
+  updateStage(idx, field, value) { this.data.stages[idx][field] = value; }
+  addStage(stage) { this.data.stages.push(stage); this.render(); }
+  removeStage(idx) { this.data.stages.splice(idx, 1); this.render(); }
+  
+  updateTeam(idx, field, value) { this.data.teams[idx][field] = value; }
+  addTeam(team) { this.data.teams.push(team); this.render(); }
+  removeTeam(idx) { this.data.teams.splice(idx, 1); this.render(); }
+  
+  updateActivity(idx, field, value) { this.data.activities[idx][field] = value; }
+  addActivity(act) { this.data.activities.push(act); this.render(); }
+  
+  loadStages(type) {
+    const templates = {
+      simple: [
+        { name: 'Lead', sequence: 10, probability: 10 },
+        { name: 'Opportunity', sequence: 20, probability: 50 },
+        { name: 'Customer', sequence: 30, probability: 100 }
+      ],
+      standard: [
+        { name: 'New', sequence: 10, probability: 0 },
+        { name: 'Qualified', sequence: 20, probability: 25 },
+        { name: 'Proposal', sequence: 30, probability: 50 },
+        { name: 'Negotiation', sequence: 40, probability: 75 },
+        { name: 'Won', sequence: 50, probability: 100 }
+      ],
+      complex: [
+        { name: 'Raw Lead', sequence: 10, probability: 5 },
+        { name: 'Contacted', sequence: 20, probability: 15 },
+        { name: 'Qualified', sequence: 30, probability: 35 },
+        { name: 'Demo', sequence: 40, probability: 50 },
+        { name: 'Proposal', sequence: 50, probability: 65 },
+        { name: 'Negotiation', sequence: 60, probability: 80 },
+        { name: 'Won', sequence: 70, probability: 100 }
+      ]
+    };
+    this.data.stages = templates[type] || templates.standard;
+    this.render();
+  }
+  
+  async apply() {
+    if (!this.options.client) {
+      alert('No Odoo connection');
+      return;
+    }
+    
+    try {
+      // Create stages
+      for (const stage of this.data.stages) {
+        await this.options.client.create('crm.stage', {
+          name: stage.name,
+          probability: stage.probability,
+          sequence: stage.sequence
+        });
+      }
+      
+      // Create teams
+      for (const team of this.data.teams) {
+        if (team.name) {
+          await this.options.client.create('crm.team', {
+            name: team.name
+          });
+        }
+      }
+      
+      this.options.onComplete(this.data);
+    } catch (error) {
+      console.error('CRM setup failed:', error);
+      alert('Failed to apply: ' + error.message);
+    }
+  }
+}
+
+export default CrmWizard;

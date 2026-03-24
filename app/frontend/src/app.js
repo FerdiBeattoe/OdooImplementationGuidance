@@ -72,24 +72,22 @@ import {
   addCompletedWizard
 } from "./state/app-store.js";
 import { renderLayoutShell } from "./components/layout-shell.js";
-import { renderConnectionPage } from "./views/connection-page.js";
+
+// ── New views ────────────────────────────────────────────────
+import { renderImplementationDashboardView } from "./views/implementation-dashboard-view.js";
+import { renderRoadmapView } from "./views/roadmap-view.js";
+import { renderModuleSetupView } from "./wizards/module-wizards.js";
+import { renderDataImportView } from "./views/data-import-view.js";
+import { renderKnowledgeBaseView } from "./views/knowledge-base-view.js";
+import { renderAnalyticsView } from "./views/analytics-view.js";
+import { renderConnectionWizardView } from "./views/connection-wizard-view.js";
+
+// ── Legacy views (keep for backward compatibility) ────────────
 import { renderDashboardView } from "./views/dashboard-view.js";
 import { renderDecisionsReadinessView } from "./views/decisions-readiness-view.js";
 import { renderDomainsView } from "./views/domains-view.js";
 import { renderStagesView } from "./views/stages-view.js";
 import { renderWizardLauncherView } from "./views/wizard-launcher-view.js";
-
-// Import wizards
-// import { renderDatabaseCreationWizard } from "./wizards/DatabaseCreationWizard.js";
-// import { renderCompanySetupWizard } from "./wizards/CompanySetupWizard.js";
-// import { renderMasterDataWizard } from "./wizards/MasterDataWizard.js";
-// import { renderCrmSetupWizard } from "./wizards/operations/CrmSetupWizard.js";
-// import { renderSalesSetupWizard } from "./wizards/operations/SalesSetupWizard.js";
-// import { renderInventorySetupWizard } from "./wizards/operations/InventorySetupWizard.js";
-// import { renderPurchaseSetupWizard } from "./wizards/operations/PurchaseSetupWizard.js";
-// import { renderManufacturingSetupWizard } from "./wizards/manufacturing/ManufacturingSetupWizard.js";
-// import { renderAccountingSetupWizard } from "./wizards/finance/AccountingSetupWizard.js";
-// import { renderGoLiveReadinessWizard } from "./wizards/finance/GoLiveReadinessWizard.js";
 
 export function renderApp(root) {
   const render = () => {
@@ -97,24 +95,24 @@ export function renderApp(root) {
     const { activeProject, notifications, projectStore } = getState();
     clearNode(root);
 
-    // First-time user: show the non-technical connection page
-    const isFirstVisit = !activeProject.projectIdentity.projectName &&
-      activeProject.workflowState.currentView === "dashboard";
+    const currentView = activeProject.workflowState?.currentView || "dashboard";
 
-    if (isFirstVisit) {
+    // ── Connection wizard: show if not connected and on first view ──
+    if (currentView === "connection-wizard") {
       root.append(
-        renderConnectionPage(
-          activeProject,
-          (identityPatch) => updateProjectIdentity(identityPatch),
-          (envPatch) => updateEnvironmentContext(envPatch),
-          () => setCurrentView("dashboard")
-        )
+        renderConnectionWizardView({
+          onConnect: (credentials) => {
+            void connectProject(credentials);
+            setCurrentView("dashboard");
+          },
+          onSkip: () => setCurrentView("dashboard")
+        })
       );
       restoreRenderFocus(root, focusSnapshot);
       return;
     }
 
-    const currentViewContent = renderCurrentView(activeProject);
+    const currentViewContent = renderCurrentView(activeProject, projectStore);
     const content = el("div", {}, [currentViewContent]);
 
     root.append(
@@ -123,16 +121,10 @@ export function renderApp(root) {
         content,
         notifications,
         onNavigate: (view) => setCurrentView(view),
-        onSave: () => {
-          void persistActiveProject();
-        },
+        onSave: () => { void persistActiveProject(); },
         onResume: (projectId) => resumeProject(projectId),
-        onConnect: (credentials) => {
-          void connectProject(credentials);
-        },
-        onDisconnect: () => {
-          void disconnectProject();
-        }
+        onConnect: (credentials) => { void connectProject(credentials); },
+        onDisconnect: () => { void disconnectProject(); }
       })
     );
 
@@ -144,16 +136,55 @@ export function renderApp(root) {
   render();
 }
 
-function renderCurrentView(project) {
-  // Wizard routes
-  if (project.workflowState.currentView.startsWith("wizard-")) {
-    const wizardId = project.workflowState.currentView.replace("wizard-", "");
-    return renderWizardView(project, wizardId);
+function renderCurrentView(project, projectStore) {
+  const currentView = project.workflowState?.currentView || "dashboard";
+
+  // ── Implementation Platform Views ─────────────────────────
+  switch (currentView) {
+    case "implementation-roadmap":
+      return renderRoadmapView({
+        onNavigate: (view) => setCurrentView(view)
+      });
+
+    case "module-setup":
+      return renderModuleSetupView({
+        wizardId: null,
+        onComplete: () => setCurrentView("module-setup"),
+        onCancel: () => setCurrentView("module-setup"),
+        onNavigate: (view) => setCurrentView(view)
+      });
+
+    case "data-import":
+      return renderDataImportView({
+        onNavigate: (view) => setCurrentView(view)
+      });
+
+    case "knowledge-base":
+      return renderKnowledgeBaseView();
+
+    case "analytics":
+      return renderAnalyticsView({ project });
   }
 
-  switch (project.workflowState.currentView) {
+  // ── Wizard routes ─────────────────────────────────────────
+  if (currentView.startsWith("wizard-")) {
+    const wizardId = currentView.replace("wizard-", "");
+    return renderModuleSetupView({
+      wizardId,
+      onComplete: (data) => {
+        addCompletedWizard(wizardId);
+        setCurrentView("module-setup");
+      },
+      onCancel: () => setCurrentView("module-setup"),
+      onNavigate: (view) => setCurrentView(view)
+    });
+  }
+
+  // ── Legacy views ──────────────────────────────────────────
+  switch (currentView) {
     case "stages":
       return renderStagesView(project, (stageId) => setCurrentView("stages", stageId));
+
     case "domains":
       return renderDomainsView({
         project,
@@ -211,91 +242,26 @@ function renderCurrentView(project) {
         onUpdateInventoryConfiguration: updateInventoryConfiguration,
         onUpdateInventoryEvidence: updateInventoryEvidence,
         onSelectDomain: (domainId) => setCurrentView("domains", domainId),
-        onInspectDomain: (domainId) => {
-          void inspectDomain(domainId);
-        },
-        onPreviewDomain: (domainId) => {
-          void previewDomain(domainId);
-        },
-        onExecutePreview: (preview) => {
-          void executePreview(preview);
-        }
+        onInspectDomain: (domainId) => { void inspectDomain(domainId); },
+        onPreviewDomain: (domainId) => { void previewDomain(domainId); },
+        onExecutePreview: (preview) => { void executePreview(preview); }
       });
+
     case "decisions":
       return renderDecisionsReadinessView(project);
+
     case "wizard-launcher":
       return renderWizardLauncherView(
         project,
         (wizardId) => setCurrentView(`wizard-${wizardId}`),
         () => setCurrentView("dashboard")
       );
+
     case "dashboard":
     default:
-      return renderDashboardView({
-        project,
-        summary: getProjectSummary(),
-        onNavigate: (view, id) => setCurrentView(view, id),
-        onSelectDashboardSection: openDashboardSection,
-        onProjectIdentityChange: updateProjectIdentity,
-        onEnvironmentChange: updateEnvironmentContext,
-        onSave: () => {
-          void persistActiveProject();
-        },
-        onResume: (projectId) => resumeProject(projectId),
-        onConnect: (credentials) => {
-          void connectProject(credentials);
-        },
-        onDisconnect: () => {
-          void disconnectProject();
-        }
+      // Use the new implementation dashboard
+      return renderImplementationDashboardView({
+        onNavigate: (view, id) => setCurrentView(view, id)
       });
-  }
-}
-
-function renderWizardView(project, wizardId) {
-  const wizardProps = {
-    project,
-    onComplete: () => {
-      addCompletedWizard(wizardId);
-      setCurrentView("wizard-launcher");
-    },
-    onCancel: () => setCurrentView("wizard-launcher"),
-    onNavigate: (view) => setCurrentView(view)
-  };
-
-  // Wizard implementations - commented out until fully wired
-  const wizardComingSoon = (name) => el("div", { className: "panel" }, [
-    el("h2", { text: `${name} - Coming Soon` }),
-    el("p", { text: "This wizard is under development. Use the manual setup guide in the meantime." }),
-    el("button", { text: "Return to Wizard Launcher", onclick: () => setCurrentView("wizard-launcher") })
-  ]);
-
-  switch (wizardId) {
-    case "database-creation":
-      return wizardComingSoon("Database Creation");
-    case "company-setup":
-      return wizardComingSoon("Company Setup");
-    case "master-data":
-      return wizardComingSoon("Master Data");
-    case "crm-setup":
-      return wizardComingSoon("CRM Setup");
-    case "sales-setup":
-      return wizardComingSoon("Sales Setup");
-    case "inventory-setup":
-      return wizardComingSoon("Inventory Setup");
-    case "purchase-setup":
-      return wizardComingSoon("Purchase Setup");
-    case "manufacturing-setup":
-      return wizardComingSoon("Manufacturing Setup");
-    case "accounting-setup":
-      return wizardComingSoon("Accounting Setup");
-    case "go-live-readiness":
-      return wizardComingSoon("Go-Live Readiness");
-    default:
-      return el("div", { className: "error" }, [
-        el("h2", { text: "Wizard Not Found" }),
-        el("p", { text: `The wizard "${wizardId}" is not available.` }),
-        el("button", { text: "Return to Dashboard", onclick: () => setCurrentView("dashboard") })
-      ]);
   }
 }

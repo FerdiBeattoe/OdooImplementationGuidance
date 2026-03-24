@@ -637,12 +637,61 @@ export function renderInventoryConfigWizard({ onComplete, onCancel }) {
       {
         label: "Operation Types",
         render: ({ data, setData }) => {
-          return formSection("Operation Types", [
-            formCheckbox("Receipts (incoming shipments)", data.receipts ?? true, v => setData({ receipts: v })),
-            formCheckbox("Delivery Orders (outgoing)", data.deliveries ?? true, v => setData({ deliveries: v })),
-            formCheckbox("Internal Transfers", data.internalTransfers ?? true, v => setData({ internalTransfers: v })),
-            formCheckbox("Returns", data.returns ?? true, v => setData({ returns: v })),
-            formCheckbox("Receipts — 3-step (Input → Quality → Stock)", data.threeStep ?? false, v => setData({ threeStep: v }))
+          let opTypes = data.operationTypes || existing.operationTypes || [
+            { name: "Receipts", code: "incoming", returnType: false, reservation: "at_confirm" },
+            { name: "Delivery Orders", code: "outgoing", returnType: false, reservation: "at_confirm" },
+            { name: "Internal Transfers", code: "internal", returnType: false, reservation: "at_confirm" },
+            { name: "Returns", code: "incoming", returnType: true, reservation: "at_confirm" }
+          ];
+          const listEl = el("div", { className: "space-y-2" });
+          const nameIn = formInput({ placeholder: "e.g. Quality Check" });
+          const codeIn = formSelect([
+            { value: "incoming", label: "Receipt (incoming)" },
+            { value: "outgoing", label: "Delivery (outgoing)" },
+            { value: "internal", label: "Internal Transfer" }
+          ]);
+          const reserveIn = formSelect([
+            { value: "at_confirm", label: "At Confirmation" },
+            { value: "manual", label: "Manual" },
+            { value: "by_date", label: "Before Scheduled Date" }
+          ]);
+          const returnCb = formCheckbox("Is a return operation", false);
+
+          const renderOps = () => {
+            while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
+            opTypes.forEach((ot, i) => listEl.append(
+              el("div", { className: "flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3" }, [
+                el("span", { className: "badge badge--secondary text-[10px]", text: ot.code }),
+                el("span", { className: "flex-1 text-sm font-semibold", text: ot.name }),
+                ot.returnType ? el("span", { className: "text-xs text-on-surface-variant italic", text: "Return" }) : null,
+                el("span", { className: "text-xs text-on-surface-variant", text: ot.reservation }),
+                el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { opTypes.splice(i,1); setData({ operationTypes: opTypes }); renderOps(); } }, [
+                  el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })
+                ])
+              ])
+            ));
+          };
+          renderOps();
+          const addBtn = el("button", {
+            className: "bg-primary text-on-primary text-sm font-semibold px-4 py-2.5 rounded-xl hover:opacity-90 transition-all",
+            onclick: () => {
+              if (nameIn.value) {
+                const cb = returnCb.querySelector("input[type=checkbox]");
+                opTypes.push({ name: nameIn.value, code: codeIn.value, returnType: cb?.checked || false, reservation: reserveIn.value });
+                nameIn.value = "";
+                setData({ operationTypes: opTypes });
+                renderOps();
+              }
+            }
+          }, [el("span", { text: "Add Operation Type" })]);
+          return el("div", { className: "space-y-4" }, [
+            listEl,
+            formSection("New Operation Type", [
+              formGrid([formField("Name", nameIn), formField("Type Code", codeIn)]),
+              formGrid([formField("Reservation Method", reserveIn)]),
+              returnCb,
+              addBtn
+            ])
           ]);
         }
       },

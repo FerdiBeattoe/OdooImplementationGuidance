@@ -4,20 +4,26 @@ import {
   addAccountingConfiguration,
   addCrmConfiguration,
   addManufacturingConfiguration,
+  addMasterDataConfiguration,
   addPosConfiguration,
   addPurchaseConfiguration,
   addSalesConfiguration,
   addInventoryConfiguration,
   addWebsiteEcommerceConfiguration,
   bootstrapStore,
+  connectProject,
   deferCheckpoint,
+  disconnectProject,
+  executePreview,
   getAccountingConfigurationModel,
   getAccountingCheckpointGroups,
+  inspectDomain,
   getCrmCheckpointGroups,
   getCrmConfigurationModel,
   getDocumentsCheckpointGroups,
   getHrCheckpointGroups,
   getInventoryCheckpointGroups,
+  getMasterDataConfigurationModel,
   getManufacturingCheckpointGroups,
   getManufacturingConfigurationModel,
   getInventoryConfigurationModel,
@@ -33,6 +39,7 @@ import {
   getSalesCheckpointGroups,
   getSignCheckpointGroups,
   getState,
+  previewDomain,
   getApprovalsCheckpointGroups,
   getPlmCheckpointGroups,
   getWebsiteEcommerceCheckpointGroups,
@@ -40,6 +47,7 @@ import {
   persistActiveProject,
   resumeProject,
   setCurrentView,
+  openDashboardSection,
   subscribe,
   updateAccountingConfiguration,
   updateAccountingEvidence,
@@ -50,6 +58,7 @@ import {
   updateInventoryConfiguration,
   updateInventoryEvidence,
   updateManufacturingConfiguration,
+  updateMasterDataConfiguration,
   updateManufacturingEvidence,
   updatePosConfiguration,
   updatePosEvidence,
@@ -62,10 +71,10 @@ import {
   updateProjectIdentity
 } from "./state/app-store.js";
 import { renderLayoutShell } from "./components/layout-shell.js";
+import { renderConnectionPage } from "./views/connection-page.js";
 import { renderDashboardView } from "./views/dashboard-view.js";
 import { renderDecisionsReadinessView } from "./views/decisions-readiness-view.js";
 import { renderDomainsView } from "./views/domains-view.js";
-import { renderProjectEntryView } from "./views/project-entry-view.js";
 import { renderStagesView } from "./views/stages-view.js";
 
 export function renderApp(root) {
@@ -74,11 +83,26 @@ export function renderApp(root) {
     const { activeProject, notifications, projectStore } = getState();
     clearNode(root);
 
+    // ── First-time user: show the non-technical connection page
+    //    bypassing the full layout shell until they press Begin.
+    const isFirstVisit = !activeProject.projectIdentity.projectName &&
+      activeProject.workflowState.currentView === "dashboard";
+
+    if (isFirstVisit) {
+      root.append(
+        renderConnectionPage(
+          activeProject,
+          (identityPatch) => updateProjectIdentity(identityPatch),
+          (envPatch) => updateEnvironmentContext(envPatch),
+          () => setCurrentView("dashboard")
+        )
+      );
+      restoreRenderFocus(root, focusSnapshot);
+      return;
+    }
+
     const currentViewContent = renderCurrentView(activeProject);
-    const content = el("div", {}, [
-      renderProjectEntryView(activeProject, updateProjectIdentity, updateEnvironmentContext),
-      currentViewContent
-    ]);
+    const content = el("div", {}, [currentViewContent]);
 
     root.append(
       renderLayoutShell({
@@ -89,7 +113,13 @@ export function renderApp(root) {
         onSave: () => {
           void persistActiveProject();
         },
-        onResume: (projectId) => resumeProject(projectId)
+        onResume: (projectId) => resumeProject(projectId),
+        onConnect: (credentials) => {
+          void connectProject(credentials);
+        },
+        onDisconnect: () => {
+          void disconnectProject();
+        }
       })
     );
 
@@ -111,6 +141,7 @@ function renderCurrentView(project) {
         scaffoldGroups: getScaffoldCheckpointGroups(project.workflowState.currentDomainId),
         manufacturingGroups: getManufacturingCheckpointGroups(),
         manufacturingConfigurationSections: getManufacturingConfigurationModel(),
+        masterDataConfigurationSections: getMasterDataConfigurationModel(),
         crmGroups: getCrmCheckpointGroups(),
         crmConfigurationSections: getCrmConfigurationModel(),
         websiteGroups: getWebsiteEcommerceCheckpointGroups(),
@@ -135,6 +166,7 @@ function renderCurrentView(project) {
         onUpdateCheckpoint: updateCheckpoint,
         onDeferCheckpoint: deferCheckpoint,
         onAddManufacturingConfiguration: addManufacturingConfiguration,
+        onAddMasterDataConfiguration: addMasterDataConfiguration,
         onAddCrmConfiguration: addCrmConfiguration,
         onAddWebsiteEcommerceConfiguration: addWebsiteEcommerceConfiguration,
         onAddPosConfiguration: addPosConfiguration,
@@ -143,6 +175,7 @@ function renderCurrentView(project) {
         onAddAccountingConfiguration: addAccountingConfiguration,
         onAddInventoryConfiguration: addInventoryConfiguration,
         onUpdateManufacturingConfiguration: updateManufacturingConfiguration,
+        onUpdateMasterDataConfiguration: updateMasterDataConfiguration,
         onUpdateCrmConfiguration: updateCrmConfiguration,
         onUpdateWebsiteEcommerceConfiguration: updateWebsiteEcommerceConfiguration,
         onUpdatePosConfiguration: updatePosConfiguration,
@@ -159,11 +192,38 @@ function renderCurrentView(project) {
         onUpdateInventoryConfiguration: updateInventoryConfiguration,
         onUpdateInventoryEvidence: updateInventoryEvidence,
         onSelectDomain: (domainId) => setCurrentView("domains", domainId)
+        ,
+        onInspectDomain: (domainId) => {
+          void inspectDomain(domainId);
+        },
+        onPreviewDomain: (domainId) => {
+          void previewDomain(domainId);
+        },
+        onExecutePreview: (preview) => {
+          void executePreview(preview);
+        }
       });
     case "decisions":
       return renderDecisionsReadinessView(project);
     case "dashboard":
     default:
-      return renderDashboardView(project, getProjectSummary());
+      return renderDashboardView({
+        project,
+        summary: getProjectSummary(),
+        onNavigate: (view, id) => setCurrentView(view, id),
+        onSelectDashboardSection: openDashboardSection,
+        onProjectIdentityChange: updateProjectIdentity,
+        onEnvironmentChange: updateEnvironmentContext,
+        onSave: () => {
+          void persistActiveProject();
+        },
+        onResume: (projectId) => resumeProject(projectId),
+        onConnect: (credentials) => {
+          void connectProject(credentials);
+        },
+        onDisconnect: () => {
+          void disconnectProject();
+        }
+      });
   }
 }

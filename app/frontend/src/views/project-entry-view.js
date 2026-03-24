@@ -10,6 +10,7 @@ import { renderBranchTargetPanel } from "../components/branch-target-panel.js";
 
 export function renderProjectEntryView(project, onIdentityChange, onEnvironmentChange) {
   const combinationError = getCombinationError(project.projectIdentity);
+  const deploymentExplanation = getDeploymentExplanation(project.projectIdentity.deployment, project.projectIdentity.edition);
 
   const versionInput = el("input", {
     value: ODOO_VERSION,
@@ -48,11 +49,15 @@ export function renderProjectEntryView(project, onIdentityChange, onEnvironmentC
 
   return el("section", { className: "workspace" }, [
     el("header", { className: "workspace__header" }, [
-      el("h2", { text: "Project Entry" }),
+      el("h2", { text: "Project Setup" }),
       el("p", {
         text:
-          "Set the supported implementation target first. Undefined combinations are blocked and no best-guess fallback is allowed."
+          "Set the supported Odoo 19 target first. This screen defines project identity, deployment context, and project mode before governed workspaces open."
       })
+    ]),
+    el("section", { className: "panel panel--subtle" }, [
+      el("h3", { text: "Deployment meaning" }),
+      el("p", { text: deploymentExplanation })
     ]),
     el("div", { className: "entry-grid" }, [
       field("Version", versionInput),
@@ -95,6 +100,20 @@ function textField(label, value, onChange) {
       oninput: (event) => onChange(event.target.value)
     })
   );
+}
+
+function getDeploymentExplanation(deployment, edition) {
+  if (deployment === "Odoo.sh") {
+    return edition === "Enterprise"
+      ? "Odoo.sh means Enterprise branch-aware hosting. It changes governance and targeting requirements, not connection capability in this build."
+      : "Odoo.sh is supported for Enterprise only.";
+  }
+
+  if (deployment === "On-Premise") {
+    return "On-Premise means the target system is self-hosted. In this build, that affects implementation context only and does not enable live database or API connection.";
+  }
+
+  return "Odoo Online means the target system is SaaS-hosted by Odoo. In this build, it defines implementation context only and does not enable live API or database connection.";
 }
 
 function selectField(label, options, selectedValue, onChange) {

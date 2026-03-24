@@ -3,6 +3,19 @@ import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { normalizeProjectStorePayload } from "../shared/project-store.js";
+import { normalizeProjectState } from "../shared/project-state.js";
+import { normalizeAuditLog } from "../shared/audit-log.js";
+import { normalizePreviewState } from "../shared/preview-engine.js";
+import { normalizeExecutionState } from "../shared/execution-engine.js";
+import { normalizeInspectionState } from "../shared/inspection-model.js";
+import {
+  buildConnectionAuditEntry,
+  connectProject,
+  disconnectProject,
+  executePreview,
+  inspectDomain,
+  previewDomain
+} from "./engine.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,49 +37,205 @@ const contentTypes = {
 
 await ensureDataStore();
 
-const server = createServer(async (req, res) => {
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  const server = createAppServer();
+  server.listen(port, () => {
+    console.log(`Implementation Control Platform running at http://127.0.0.1:${port}`);
+  });
+}
+
+export function createAppServer() {
+  return createServer(async (req, res) => {
+    try {
+      const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
+      const pathname = requestUrl.pathname;
+
+      if (pathname === "/api/health" && req.method === "GET") {
+        return sendJson(res, 200, { ok: true, service: "implementation-control-platform" });
+      }
+
+      if (pathname === "/api/projects" && req.method === "GET") {
+        return sendJson(res, 200, await readProjectStore());
+      }
+
+      if (pathname === "/api/projects" && req.method === "PUT") {
+        const payload = await readJsonBody(req);
+        const normalized = await writeProjectStore(payload);
+        return sendJson(res, 200, normalized);
+      }
+
+      if (pathname === "/api/connection/connect" && req.method === "POST") {
+        return handleConnectionConnect(req, res);
+      }
+
+      if (pathname === "/api/connection/disconnect" && req.method === "POST") {
+        return handleConnectionDisconnect(req, res);
+      }
+
+      if (pathname === "/api/domain/inspect" && req.method === "POST") {
+        return handleDomainInspect(req, res);
+      }
+
+      if (pathname === "/api/domain/preview" && req.method === "POST") {
+        return handleDomainPreview(req, res);
+      }
+
+      if (pathname === "/api/domain/execute" && req.method === "POST") {
+        return handleDomainExecute(req, res);
+      }
+
+      if (pathname.startsWith("/shared/") && req.method === "GET") {
+        return serveStatic(res, path.resolve(sharedRoot, `.${pathname.replace("/shared", "")}`), sharedRoot);
+      }
+
+      if (pathname.startsWith("/src/") && req.method === "GET") {
+        return serveStatic(res, path.resolve(frontendRoot, `.${pathname}`), frontendRoot);
+      }
+
+      if ((pathname === "/" || pathname === "/index.html") && req.method === "GET") {
+        return serveStatic(res, path.resolve(frontendRoot, "index.html"), frontendRoot);
+      }
+
+      return sendJson(res, 404, { error: "Not found" });
+    } catch (error) {
+      return sendJson(res, 500, {
+        error: "Server error",
+        detail: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+}
+
+async function handleConnectionConnect(req, res) {
+  const payload = await readJsonBody(req);
+  const project = normalizeProjectState(payload.project);
+
   try {
-    const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
-    const pathname = requestUrl.pathname;
+    const connectionState = await connectProject(project, payload.credentials);
+    const nextProject = normalizeProjectState({
+      ...project,
+      connectionState,
+      auditLog: normalizeAuditLog([
+        ...(project.auditLog || []),
+        buildConnectionAuditEntry(project, "connect", "Live Odoo connection established.")
+      ])
+    });
 
-    if (pathname === "/api/health" && req.method === "GET") {
-      return sendJson(res, 200, { ok: true, service: "implementation-control-platform" });
-    }
-
-    if (pathname === "/api/projects" && req.method === "GET") {
-      return sendJson(res, 200, await readProjectStore());
-    }
-
-    if (pathname === "/api/projects" && req.method === "PUT") {
-      const payload = await readJsonBody(req);
-      const normalized = await writeProjectStore(payload);
-      return sendJson(res, 200, normalized);
-    }
-
-    if (pathname.startsWith("/shared/") && req.method === "GET") {
-      return serveStatic(res, path.resolve(sharedRoot, `.${pathname.replace("/shared", "")}`), sharedRoot);
-    }
-
-    if (pathname.startsWith("/src/") && req.method === "GET") {
-      return serveStatic(res, path.resolve(frontendRoot, `.${pathname}`), frontendRoot);
-    }
-
-    if ((pathname === "/" || pathname === "/index.html") && req.method === "GET") {
-      return serveStatic(res, path.resolve(frontendRoot, "index.html"), frontendRoot);
-    }
-
-    return sendJson(res, 404, { error: "Not found" });
+    return sendJson(res, 200, { project: nextProject });
   } catch (error) {
-    return sendJson(res, 500, {
-      error: "Server error",
-      detail: error instanceof Error ? error.message : "Unknown error"
+    const nextProject = normalizeProjectState({
+      ...project,
+      auditLog: normalizeAuditLog([
+        ...(project.auditLog || []),
+        buildConnectionAuditEntry(
+          project,
+          "connect",
+          "Live Odoo connection failed.",
+          error instanceof Error ? error.message : "Connection failed."
+        )
+      ])
+    });
+
+    return sendJson(res, 400, {
+      error: error instanceof Error ? error.message : "Connection failed.",
+      project: nextProject
     });
   }
-});
+}
 
-server.listen(port, () => {
-  console.log(`Implementation Control Platform running at http://127.0.0.1:${port}`);
-});
+async function handleConnectionDisconnect(req, res) {
+  const payload = await readJsonBody(req);
+  const project = normalizeProjectState(payload.project);
+  const connectionState = disconnectProject(project);
+  const nextProject = normalizeProjectState({
+    ...project,
+    connectionState,
+    auditLog: normalizeAuditLog([
+      ...(project.auditLog || []),
+      buildConnectionAuditEntry(project, "disconnect", "Live Odoo connection removed.")
+    ])
+  });
+  return sendJson(res, 200, { project: nextProject });
+}
+
+async function handleDomainInspect(req, res) {
+  const payload = await readJsonBody(req);
+  const project = normalizeProjectState(payload.project);
+
+  try {
+    const inspection = await inspectDomain(project, payload.domainId);
+    const nextProject = normalizeProjectState({
+      ...project,
+      inspectionState: normalizeInspectionState({
+        domains: {
+          ...(project.inspectionState?.domains || {}),
+          [payload.domainId]: inspection
+        }
+      }),
+      auditLog: normalizeAuditLog([
+        ...(project.auditLog || []),
+        buildConnectionAuditEntry(project, "inspect", `Inspection completed for ${payload.domainId}.`)
+      ])
+    });
+
+    return sendJson(res, 200, { project: nextProject, inspection });
+  } catch (error) {
+    return sendJson(res, 400, { error: error instanceof Error ? error.message : "Inspection failed." });
+  }
+}
+
+async function handleDomainPreview(req, res) {
+  const payload = await readJsonBody(req);
+  const project = normalizeProjectState(payload.project);
+
+  try {
+    const result = await previewDomain(project, payload.domainId);
+    const nextProject = normalizeProjectState({
+      ...project,
+      inspectionState: normalizeInspectionState({
+        domains: {
+          ...(project.inspectionState?.domains || {}),
+          [payload.domainId]: result.inspection
+        }
+      }),
+      previewState: normalizePreviewState({
+        previews: [...(project.previewState?.previews || []), ...result.previews]
+      }),
+      auditLog: normalizeAuditLog([...(project.auditLog || []), ...result.auditEntries])
+    });
+
+    return sendJson(res, 200, {
+      project: nextProject,
+      previews: result.previews,
+      inspection: result.inspection
+    });
+  } catch (error) {
+    return sendJson(res, 400, { error: error instanceof Error ? error.message : "Preview failed." });
+  }
+}
+
+async function handleDomainExecute(req, res) {
+  const payload = await readJsonBody(req);
+  const project = normalizeProjectState(payload.project);
+
+  try {
+    const outcome = await executePreview(project, payload.preview, payload.options || {});
+    const nextProject = normalizeProjectState({
+      ...project,
+      executionState: normalizeExecutionState({
+        executions: [...(project.executionState?.executions || []), outcome.execution]
+      }),
+      auditLog: normalizeAuditLog([...(project.auditLog || []), outcome.auditEntry])
+    });
+
+    return sendJson(res, outcome.execution.status === "succeeded" ? 200 : 400, {
+      project: nextProject,
+      execution: outcome.execution
+    });
+  } catch (error) {
+    return sendJson(res, 400, { error: error instanceof Error ? error.message : "Execution failed." });
+  }
+}
 
 async function ensureDataStore() {
   await mkdir(dataRoot, { recursive: true });

@@ -1,6 +1,9 @@
 import {
   classifyActionSafety,
   DOMAINS,
+  getAllDomainCapabilities,
+  getDomainCapability,
+  renderDomainCapabilityLevel,
   getAccountingEvidenceLabel,
   getCompactDownstreamImpactSummary,
   getAccountingReadinessSummary,
@@ -31,6 +34,7 @@ import { renderCheckpointPanel } from "../components/checkpoint-panel.js";
 import { renderGuidanceBlock } from "../components/guidance-block.js";
 import { renderGridBuilderShell } from "../components/grid-builder-shell.js";
 import { renderStatusBadge } from "../components/status-badge.js";
+import { renderDomainProgress } from "../components/progress-wizard.js";
 
 const DOMAIN_GUIDANCE = {
   accounting: SAMPLE_GUIDANCE_BLOCKS.accountingPolicyCapture,
@@ -53,11 +57,15 @@ const DOMAIN_GUIDANCE = {
   "users-roles-security": SAMPLE_GUIDANCE_BLOCKS.roles
 };
 
+const SUPPORT_ONLY_CAPABILITY_NOTE =
+  "Structured capture is not expanded for this slice yet. Use the capability panel above for the live capabilities available in this build (inspection, preview, and where approved, bounded execution).";
+
 export function renderDomainsView({
   project,
   scaffoldGroups,
   manufacturingGroups,
   manufacturingConfigurationSections,
+  masterDataConfigurationSections,
   crmGroups,
   crmConfigurationSections,
   websiteGroups,
@@ -82,6 +90,7 @@ export function renderDomainsView({
   onUpdateCheckpoint,
   onDeferCheckpoint,
   onAddManufacturingConfiguration,
+  onAddMasterDataConfiguration,
   onAddCrmConfiguration,
   onAddWebsiteEcommerceConfiguration,
   onAddPosConfiguration,
@@ -90,6 +99,7 @@ export function renderDomainsView({
   onAddAccountingConfiguration,
   onAddInventoryConfiguration,
   onUpdateManufacturingConfiguration,
+  onUpdateMasterDataConfiguration,
   onUpdateCrmConfiguration,
   onUpdateWebsiteEcommerceConfiguration,
   onUpdatePosConfiguration,
@@ -105,60 +115,75 @@ export function renderDomainsView({
   onUpdateAccountingEvidence,
   onUpdateInventoryConfiguration,
   onUpdateInventoryEvidence,
-  onSelectDomain
+  onSelectDomain,
+  onInspectDomain,
+  onPreviewDomain,
+  onExecutePreview
 }) {
   const selectedDomain = DOMAINS.find((domain) => domain.id === project.workflowState.currentDomainId) || DOMAINS[0];
+  const capabilityMap = new Map(getAllDomainCapabilities(project).map((item) => [item.domainId, item]));
+  const selectedCapability = getDomainCapability(project, selectedDomain.id);
   const guidance = DOMAIN_GUIDANCE[selectedDomain.id] || SAMPLE_GUIDANCE_BLOCKS.roles;
-  const scaffoldPanel = ["foundation-company-localization", "users-roles-security", "master-data"].includes(selectedDomain.id)
+  const scaffoldPanel = ["foundation-company-localization", "users-roles-security"].includes(selectedDomain.id)
     ? renderScaffoldDomainControls(project, selectedDomain, scaffoldGroups, onUpdateCheckpoint)
+    : null;
+  const masterDataPanel = selectedDomain.id === "master-data"
+    ? renderMasterDataDomainControls(
+        project,
+        scaffoldGroups,
+        masterDataConfigurationSections,
+        onUpdateCheckpoint,
+        onAddMasterDataConfiguration,
+        onUpdateMasterDataConfiguration
+      )
     : null;
   const foundationOnlyPanel = ({
     projects: renderSupportOnlyDomainControls(
       project,
       "Projects checkpoint foundations",
-      "This bounded Projects slice remains checkpoint-truth only. It does not expose structured capture, evidence classification, readiness summary, deferment expansion, or cross-domain dependency expansion.",
+      SUPPORT_ONLY_CAPABILITY_NOTE,
       projectsGroups,
       onUpdateCheckpoint
     ),
     hr: renderSupportOnlyDomainControls(
       project,
       "HR checkpoint foundations",
-      "This bounded HR slice remains checkpoint-truth only. It does not expose structured capture, evidence classification, readiness summary, deferment expansion, or cross-domain dependency expansion.",
+      SUPPORT_ONLY_CAPABILITY_NOTE,
       hrGroups,
       onUpdateCheckpoint
     ),
     plm: renderSupportOnlyDomainControls(
       project,
       "PLM checkpoint foundations",
-      "This bounded PLM slice remains checkpoint-truth only. It does not expose structured capture, evidence classification, readiness summary, deferment expansion, or broader engineering workflow expansion.",
+      SUPPORT_ONLY_CAPABILITY_NOTE,
       plmGroups,
       onUpdateCheckpoint
     ),
     quality: renderSupportOnlyDomainControls(
       project,
       "Quality checkpoint foundations",
-      "This bounded Quality slice remains checkpoint-truth only. It does not expose structured capture, evidence classification, readiness summary, deferment expansion, or broader quality execution expansion.",
+      SUPPORT_ONLY_CAPABILITY_NOTE,
       qualityGroups,
       onUpdateCheckpoint
     ),
     documents: renderSupportOnlyDomainControls(
       project,
       "Documents checkpoint foundations",
-      "This bounded Documents slice remains checkpoint-truth only. It does not expose structured capture, evidence classification, readiness summary, deferment expansion, or broader document-automation behavior.",
+      SUPPORT_ONLY_CAPABILITY_NOTE,
       documentsGroups,
       onUpdateCheckpoint
     ),
     sign: renderSupportOnlyDomainControls(
       project,
       "Sign checkpoint foundations",
-      "This bounded Sign slice remains checkpoint-truth only. It does not expose structured capture, evidence classification, readiness summary, deferment expansion, or broader signature execution behavior.",
+      SUPPORT_ONLY_CAPABILITY_NOTE,
       signGroups,
       onUpdateCheckpoint
     ),
     approvals: renderSupportOnlyDomainControls(
       project,
       "Approvals checkpoint foundations",
-      "This bounded Approvals slice remains checkpoint-truth only. It does not expose structured capture, evidence classification, readiness summary, deferment expansion, or broader approval-app behavior.",
+      SUPPORT_ONLY_CAPABILITY_NOTE,
       approvalsGroups,
       onUpdateCheckpoint
     )
@@ -254,23 +279,38 @@ export function renderDomainsView({
     : null;
 
   return el("section", { className: "workspace" }, [
-    header("Domains", "Domain navigation gives working depth while preserving the same checkpoint state and dependency model."),
+    header("Explore Setup Areas", "Jump directly into specific areas of your business setup. Everything here works together to build your final Odoo 19 system."),
+    renderDomainProgress({
+      domains: DOMAINS,
+      currentDomainId: project.workflowState.currentDomainId,
+      checkpoints: project.checkpoints,
+      onSelectDomain
+    }),
     el(
       "div",
       { className: "list-grid" },
       DOMAINS.map((domain) =>
-        el(
+        {
+          const capability = capabilityMap.get(domain.id);
+          return el(
           "button",
           {
             className: `list-card ${domain.id === selectedDomain.id ? "list-card--active" : ""}`,
             onclick: () => onSelectDomain(domain.id)
           },
-          [el("h3", { text: domain.label }), renderStatusBadge(findStatus(project.domains, domain.id))]
-        )
+          [
+            el("h3", { text: domain.label }),
+            renderStatusBadge(findStatus(project.domains, domain.id)),
+            el("p", { className: "subtle", text: formatDomainCapabilityCardLine(capability) })
+          ]
+        );
+        }
       )
     ),
+    renderCapabilityPanel(project, selectedDomain.id, selectedCapability, onInspectDomain, onPreviewDomain, onExecutePreview),
     renderGuidanceBlock(guidance),
     scaffoldPanel,
+    masterDataPanel,
     foundationOnlyPanel,
     crmPanel,
     websitePanel,
@@ -279,13 +319,70 @@ export function renderDomainsView({
     purchasePanel,
     salesPanel,
     accountingPanel,
-    inventoryPanel,
-    renderGridBuilderShell("Section-specific grid builder", [
-      { label: "Domain", value: selectedDomain.label },
-      { label: "Restriction", value: "No unrestricted bulk edit" },
-      { label: "Restriction", value: "No bulk checkpoint completion" },
-      { label: "Restriction", value: "No production-target writes from grid surfaces" }
-    ])
+    inventoryPanel
+  ]);
+}
+
+function renderCapabilityPanel(project, domainId, capability, onInspectDomain, onPreviewDomain, onExecutePreview) {
+  const inspection = project.inspectionState?.domains?.[domainId];
+  const previews = (project.previewState?.previews || []).filter((preview) => preview.domainId === domainId).slice(-5).reverse();
+  const lastExecution = (project.executionState?.executions || []).filter((execution) => execution.domainId === domainId).slice(-1)[0];
+
+  return el("section", { className: "panel panel--strong" }, [
+    el("h3", { text: "Capability truth" }),
+    el("p", { className: "status-line", text: `Current: L${capability.currentLevel} ${capability.label}` }),
+    el("p", { text: `Target in this build: L${capability.targetLevel} ${capability.targetLabel}. ${capability.summary}` }),
+    el("div", { className: "summary-grid" }, [
+      summaryCard("Inspection", capability.supportsInspection ? "Supported" : "Not in this build"),
+      summaryCard("Preview", capability.supportsPreview ? "Supported" : "Not in this build"),
+      summaryCard("Execution", capability.supportsExecution ? "Bounded and conditional" : "Not in this build")
+    ]),
+    renderCapabilityBoundaryNote(capability),
+    el("div", { className: "hero-panel__actions" }, [
+      heroButton("Inspect domain", () => onInspectDomain(domainId), { disabled: !capability.supportsInspection }),
+      heroButton("Generate preview", () => onPreviewDomain(domainId), { disabled: !capability.supportsPreview })
+    ]),
+    !capability.supportsInspection
+      ? el("p", { className: "checkpoint-panel__dependency", text: "Inspection is not supported for this domain in the current build." })
+      : null,
+    !capability.supportsPreview
+      ? el("p", { className: "checkpoint-panel__dependency", text: "Preview generation is not supported for this domain in the current build." })
+      : null,
+    inspection
+      ? el("div", { className: "info-box" }, [
+          el("strong", { text: "Latest inspection" }),
+          el("p", { text: inspection.summary || "Inspection completed." })
+        ])
+      : el("p", { className: "checkpoint-panel__dependency", text: "No live inspection has been recorded for this domain yet." }),
+    previews.length
+      ? el(
+          "div",
+          { className: "stack" },
+          previews.map((preview) =>
+            el("section", { className: "checkpoint-panel" }, [
+              el("h4", { text: preview.title }),
+              el("p", { text: `${preview.targetModel} :: ${preview.operation}` }),
+              el("p", { className: "checkpoint-panel__dependency", text: `Intended changes: ${preview.intendedChanges.length}` }),
+              el("p", { className: "checkpoint-panel__dependency", text: `Safety: ${preview.safetyClass}` }),
+              preview.prerequisites.length
+                ? el("p", { className: "checkpoint-panel__dependency", text: `Prerequisites: ${preview.prerequisites.join("; ")}` })
+                : null,
+              preview.confirmationRequired
+                ? el("p", { className: "checkpoint-panel__dependency", text: "Execution requires explicit confirmation." })
+                : null,
+              preview.downstreamImpact
+                ? el("p", { className: "checkpoint-panel__dependency", text: `Downstream impact: ${preview.downstreamImpact}` })
+                : null,
+              canExecutePreview(preview, capability)
+                ? heroButton("Execute safe action", () => onExecutePreview(preview))
+                : el("p", { className: "checkpoint-panel__dependency", text: getPreviewExecutionConstraint(preview, capability) })
+            ])
+          )
+        )
+      : el("p", { className: "checkpoint-panel__dependency", text: "No previews recorded for this domain yet." }),
+    lastExecution
+      ? el("p", { className: "checkpoint-panel__dependency", text: `Last execution: ${lastExecution.status}. ${lastExecution.resultSummary || "No summary recorded."}${lastExecution.failureReason ? ` Failure reason: ${lastExecution.failureReason}` : ""}` })
+      : null
   ]);
 }
 
@@ -305,7 +402,7 @@ function renderSalesDomainControls(
     el("h3", { text: "Sales implementation-control checkpoints" }),
     el("p", {
       text:
-        "This bounded Sales slice covers checkpoint truth, structured capture, evidence classification, and readiness summary for the minimum quotation-to-order foundation only. It does not imply live-system execution, trusted system-detected proof, deferment expansion, or cross-domain dependency wiring."
+        "This bounded Sales slice governs checkpoint truth, structured capture, evidence classification, and readiness summary for the minimum quotation-to-order foundation. Live inspection, preview, and execution remain constrained by the Capability truth panel for this domain."
     }),
     renderSalesReadinessPanel(salesReadiness),
     ...salesGroups.map((group) => {
@@ -340,7 +437,7 @@ function renderSalesDomainControls(
         el("p", {
           className: "checkpoint-panel__dependency",
           text:
-            "This Sales slice is checkpoint-truth only. Support fields do not auto-pass checkpoints and do not imply live-system completion."
+            "Support fields remain planning evidence only. They do not auto-pass checkpoints or upgrade domain capability."
         }),
         el("p", { className: "checkpoint-panel__dependency", text: `Action safety: ${safety.safety}. ${safety.reason}` })
       ]);
@@ -374,7 +471,7 @@ function renderPurchaseDomainControls(
     el("h3", { text: "Purchase implementation-control checkpoints" }),
     el("p", {
       text:
-        "This bounded Purchase slice covers checkpoint truth, structured capture, evidence classification, and readiness summary for the minimum RFQ-to-purchase-order foundation only. It does not imply live-system execution, trusted system-detected proof, deferment expansion, or cross-domain dependency wiring."
+        "This bounded Purchase slice governs checkpoint truth, structured capture, evidence classification, and readiness summary for the minimum RFQ-to-purchase-order foundation. Live inspection, preview, and execution remain constrained by the Capability truth panel for this domain."
     }),
     renderPurchaseReadinessPanel(purchaseReadiness),
     ...purchaseGroups.map((group) => {
@@ -409,7 +506,7 @@ function renderPurchaseDomainControls(
         el("p", {
           className: "checkpoint-panel__dependency",
           text:
-            "This Purchase slice is checkpoint-truth only. Support fields do not auto-pass checkpoints and do not imply live-system completion."
+            "Support fields remain planning evidence only. They do not auto-pass checkpoints or upgrade domain capability."
         }),
         el("p", { className: "checkpoint-panel__dependency", text: `Action safety: ${safety.safety}. ${safety.reason}` })
       ]);
@@ -443,7 +540,7 @@ function renderManufacturingDomainControls(
     el("h3", { text: "Manufacturing implementation-control checkpoints" }),
     el("p", {
       text:
-        "This bounded Manufacturing slice covers checkpoint truth, structured capture, evidence classification, and readiness summary for the minimum production-foundation baseline only. It does not imply live-system execution, trusted system-detected proof, deferment expansion, or cross-domain dependency wiring."
+        "This bounded Manufacturing slice governs checkpoint truth, structured capture, evidence classification, and readiness summary for the minimum production-foundation baseline. Live inspection, preview, and execution remain constrained by the Capability truth panel for this domain."
     }),
     renderOperationalReadinessPanel("Manufacturing readiness summary", summary, (item) => item.sufficiency),
     ...manufacturingGroups.map((group) => {
@@ -487,7 +584,7 @@ function renderManufacturingDomainControls(
         el("p", {
           className: "checkpoint-panel__dependency",
           text:
-            "This Manufacturing slice is checkpoint-truth only. Support fields do not auto-pass checkpoints and do not imply live-system completion."
+            "Support fields remain planning evidence only. They do not auto-pass checkpoints or upgrade domain capability."
         }),
         el("p", { className: "checkpoint-panel__dependency", text: `Action safety: ${safety.safety}. ${safety.reason}` })
       ]);
@@ -545,7 +642,7 @@ function renderSupportOnlyDomainControls(project, title, description, groups, on
         ]),
         el("p", {
           className: "checkpoint-panel__dependency",
-          text: "This slice remains checkpoint-truth only. Accountable support fields do not auto-pass checkpoints and do not imply live-system completion."
+          text: "Accountable support fields remain planning evidence only. They do not auto-pass checkpoints or upgrade domain capability."
         }),
         el("p", { className: "checkpoint-panel__dependency", text: `Action safety: ${safety.safety}. ${safety.reason}` })
       ]);
@@ -733,7 +830,7 @@ function renderCrmDomainControls(
     el("h3", { text: "CRM implementation-control checkpoints" }),
     el("p", {
       text:
-        "This bounded CRM slice covers checkpoint truth, structured capture for pipeline, ownership, and quotation-handoff planning, plus evidence classification and readiness summary for the lead/opportunity baseline and related bounded controls only. It does not imply live-system execution, trusted system-detected proof, deferment expansion, or broader CRM automation."
+        "This bounded CRM slice governs checkpoint truth, structured capture for pipeline, ownership, and quotation-handoff planning, plus evidence classification and readiness summary for the lead/opportunity baseline. Live inspection, preview, and execution remain constrained by the Capability truth panel for this domain."
     }),
     renderOperationalReadinessPanel("CRM readiness summary", summary, (item) => item.sufficiency),
     ...crmGroups.map((group) =>
@@ -785,7 +882,7 @@ function renderWebsiteEcommerceDomainControls(
     el("h3", { text: "Website / eCommerce implementation-control checkpoints" }),
     el("p", {
       text:
-        "This bounded Website / eCommerce slice covers checkpoint truth, structured capture for catalog, checkout, and delivery planning, plus evidence classification and readiness summary for the bounded website baseline only. It does not imply live-system execution, trusted system-detected proof, deferment expansion, or broader website engineering."
+        "This bounded Website / eCommerce slice governs checkpoint truth, structured capture for catalog, checkout, and delivery planning, plus evidence classification and readiness summary for the bounded website baseline. Live inspection, preview, and execution remain constrained by the Capability truth panel for this domain."
     }),
     renderOperationalReadinessPanel("Website / eCommerce readiness summary", summary, (item) => item.sufficiency),
     ...websiteGroups.map((group) =>
@@ -837,7 +934,7 @@ function renderPosDomainControls(
     el("h3", { text: "POS implementation-control checkpoints" }),
     el("p", {
       text:
-        "This bounded POS slice covers checkpoint truth, structured capture for session and invoicing-policy planning, plus evidence classification and readiness summary for the bounded POS baseline only. It does not imply live-system execution, trusted system-detected proof, deferment expansion, or broader retail automation."
+        "This bounded POS slice governs checkpoint truth, structured capture for session and invoicing-policy planning, plus evidence classification and readiness summary for the bounded POS baseline. Live inspection, preview, and execution remain constrained by the Capability truth panel for this domain."
     }),
     renderOperationalReadinessPanel("POS readiness summary", summary, (item) => item.sufficiency),
     ...posGroups.map((group) =>
@@ -1262,8 +1359,48 @@ function posRecordLabel(sectionId, record) {
   }
 }
 
+function getMasterDataConfigurationFields(sectionId, record) {
+  switch (sectionId) {
+    case "partnerCategoryCapture":
+      return [
+        { key: "categoryName", label: "Partner classification name", value: record.categoryName },
+        { key: "stewardshipNote", label: "Stewardship note", value: record.stewardshipNote },
+        { key: "inScope", label: "Active / in-scope", value: String(record.inScope), type: "select", options: ["true", "false"], boolean: true }
+      ];
+    case "productCategoryCapture":
+      return [
+        { key: "categoryName", label: "Product category name", value: record.categoryName },
+        { key: "parentCategoryName", label: "Parent category name (optional)", value: record.parentCategoryName },
+        { key: "stewardshipNote", label: "Stewardship note", value: record.stewardshipNote },
+        { key: "inScope", label: "Active / in-scope", value: String(record.inScope), type: "select", options: ["true", "false"], boolean: true }
+      ];
+    case "uomCategoryCapture":
+      return [
+        { key: "categoryName", label: "Unit category name", value: record.categoryName },
+        { key: "stewardshipNote", label: "Stewardship note", value: record.stewardshipNote },
+        { key: "inScope", label: "Active / in-scope", value: String(record.inScope), type: "select", options: ["true", "false"], boolean: true }
+      ];
+    default:
+      return [];
+  }
+}
+
+function masterDataRecordLabel(sectionId, record) {
+  switch (sectionId) {
+    case "partnerCategoryCapture":
+      return record.categoryName || "Partner classification capture record";
+    case "productCategoryCapture":
+      return record.categoryName || "Product category capture record";
+    case "uomCategoryCapture":
+      return record.categoryName || "Unit category capture record";
+    default:
+      return "Structured record";
+  }
+}
+
 function renderScaffoldDomainControls(project, selectedDomain, scaffoldGroups, onUpdateCheckpoint) {
   const requiresBranchTarget = project.environmentContext.target.enabled;
+  const selectedCapability = getDomainCapability(project, selectedDomain.id);
 
   return el("section", { className: "panel" }, [
     el("h3", { text: `${selectedDomain.label} checkpoint foundations` }),
@@ -1271,6 +1408,12 @@ function renderScaffoldDomainControls(project, selectedDomain, scaffoldGroups, o
       text:
         "This scaffold wave establishes bounded checkpoint truth only. It does not add capture models, evidence engines, readiness scoring, or cross-domain dependency expansion."
     }),
+    selectedDomain.id === "master-data"
+      ? el("p", {
+          className: "checkpoint-panel__dependency",
+          text: `Master Data here is implementation-control only, not a generic record-administration surface. Capability truth remains explicit: current L${selectedCapability.currentLevel} ${selectedCapability.label}; target L${selectedCapability.targetLevel} ${selectedCapability.targetLabel}. Use inspections and previews where shown; only actions marked executable in the capability panel can run.`
+        })
+      : null,
     ...scaffoldGroups.map((group) => {
       const checkpoint = group.checkpoint;
       const safety = classifyActionSafety("advance-checkpoint", {
@@ -1302,11 +1445,87 @@ function renderScaffoldDomainControls(project, selectedDomain, scaffoldGroups, o
         el("p", {
           className: "checkpoint-panel__dependency",
           text:
-            "This scaffold is checkpoint-truth only. Linked support fields do not auto-pass checkpoints and do not imply live-system completion."
+            "Linked support fields remain planning evidence only. They do not auto-pass checkpoints or upgrade domain capability."
         }),
         el("p", { className: "checkpoint-panel__dependency", text: `Action safety: ${safety.safety}. ${safety.reason}` })
       ]);
     })
+  ]);
+}
+
+function renderMasterDataDomainControls(
+  project,
+  masterDataGroups,
+  masterDataConfigurationSections,
+  onUpdateCheckpoint,
+  onAddMasterDataConfiguration,
+  onUpdateMasterDataConfiguration
+) {
+  const requiresBranchTarget = project.environmentContext.target.enabled;
+  const capability = getDomainCapability(project, "master-data");
+
+  return el("section", { className: "panel" }, [
+    el("h3", { text: "Master Data implementation-control checkpoints" }),
+    el("p", {
+      text:
+        "Master Data here is bounded implementation support for shared reference structures. It is not a generic record-administration workspace."
+    }),
+    el("p", {
+      className: "checkpoint-panel__dependency",
+      text: `Capability truth: current L${capability.currentLevel} ${capability.label}; target L${capability.targetLevel} ${capability.targetLabel}. Only actions marked executable in preview can run.`
+    }),
+    ...masterDataGroups.map((group) => {
+      const checkpoint = group.checkpoint;
+      const safety = classifyActionSafety("advance-checkpoint", {
+        requiresBranchTarget,
+        checkpointBlocked: checkpoint.status === "Fail"
+      });
+
+      return el("section", { className: "inventory-group" }, [
+        el("h4", { text: group.area }),
+        renderCheckpointPanel(checkpoint, {
+          downstreamImpactSummary: getCompactDownstreamImpactSummary(SAMPLE_GUIDANCE_BLOCKS[group.guidanceKey])
+        }),
+        renderGuidanceBlock(SAMPLE_GUIDANCE_BLOCKS[group.guidanceKey]),
+        el("div", { className: "entry-grid" }, [
+          field("Accountable support reference", checkpoint.evidenceReference, (value) =>
+            onUpdateCheckpoint(checkpoint.id, {
+              evidenceReference: value,
+              evidenceStatus: value ? "Accountable support linked" : checkpoint.evidenceStatus
+            })
+          ),
+          field("Checkpoint owner", checkpoint.checkpointOwner, (value) =>
+            onUpdateCheckpoint(checkpoint.id, { checkpointOwner: value })
+          ),
+          field("Reviewer", checkpoint.reviewer, (value) =>
+            onUpdateCheckpoint(checkpoint.id, { reviewer: value })
+          ),
+          renderCheckpointStatusField(checkpoint, onUpdateCheckpoint)
+        ]),
+        el("p", {
+          className: "checkpoint-panel__dependency",
+          text:
+            "Master Data checkpoints remain implementation-control truth. Support fields do not auto-pass checkpoints and do not grant unrestricted write authority."
+        }),
+        el("p", { className: "checkpoint-panel__dependency", text: `Action safety: ${safety.safety}. ${safety.reason}` })
+      ]);
+    }),
+    el("section", { className: "panel inventory-config-capture" }, [
+      el("h3", { text: "Master Data design capture" }),
+      el("p", {
+        text:
+          "These rows define bounded shared-data scaffolding intent. They are used for truthful preview classification and do not expose arbitrary model writes."
+      }),
+      ...masterDataConfigurationSections.map((section) =>
+        renderGenericConfigurationSection(
+          section,
+          onAddMasterDataConfiguration,
+          onUpdateMasterDataConfiguration,
+          getMasterDataConfigurationFields,
+          masterDataRecordLabel
+        )
+      )
+    ])
   ]);
 }
 
@@ -2174,8 +2393,70 @@ function summaryCard(label, value) {
   ]);
 }
 
+function formatDomainCapabilityCardLine(capability) {
+  if (!capability) {
+    return `Current: L0 ${renderDomainCapabilityLevel(0)} | Target: L0 ${renderDomainCapabilityLevel(0)}`;
+  }
+
+  return `Current: L${capability.currentLevel} ${capability.label} | Target: L${capability.targetLevel} ${capability.targetLabel}`;
+}
+
+function renderCapabilityBoundaryNote(capability) {
+  if (!capability.supportsPreview) {
+    return el("p", {
+      className: "checkpoint-panel__dependency",
+      text: "This domain remains manual/checkpoint-led in this build. No preview or execution actions are available."
+    });
+  }
+
+  if (!capability.supportsExecution) {
+    return el("p", {
+      className: "checkpoint-panel__dependency",
+      text: "This domain supports inspection and preview only. Execution remains blocked in this build."
+    });
+  }
+
+  return el("p", {
+    className: "checkpoint-panel__dependency",
+    text: "Execution is bounded. Only previews classified safe and executable can run, and every attempt is logged."
+  });
+}
+
+function canExecutePreview(preview, capability) {
+  return capability.supportsExecution && preview.executable && preview.safetyClass === "safe";
+}
+
+function getPreviewExecutionConstraint(preview, capability) {
+  if (preview.blockedReason) {
+    return preview.blockedReason;
+  }
+
+  if (!capability.supportsExecution) {
+    return "Execution for this domain is not enabled in this build.";
+  }
+
+  if (preview.safetyClass !== "safe") {
+    return `Execution blocked by safety class: ${preview.safetyClass}.`;
+  }
+
+  if (!preview.executable) {
+    return "Execution prerequisites are not satisfied for this preview.";
+  }
+
+  return "Execution is available only for previews classified safe and executable.";
+}
+
 function header(title, description) {
   return el("header", { className: "workspace__header" }, [el("h2", { text: title }), el("p", { text: description })]);
+}
+
+function heroButton(label, onClick, options = {}) {
+  return el("button", {
+    className: "button",
+    onclick: options.disabled ? null : onClick,
+    disabled: options.disabled ? "disabled" : undefined,
+    text: label
+  });
 }
 
 function findStatus(items, id) {

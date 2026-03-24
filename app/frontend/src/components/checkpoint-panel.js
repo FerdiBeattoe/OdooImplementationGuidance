@@ -32,59 +32,59 @@ export function renderCheckpointPanel(checkpoint, options = {}) {
   const hasWebsiteEcommerceEvidence = Boolean(checkpoint.websiteEcommerceEvidence?.mode);
   const hasPosEvidence = Boolean(checkpoint.posEvidence?.mode);
   const details = [
-    ["Current status", checkpoint.status],
-    ["Checkpoint group", checkpoint.checkpointGroup || "General"],
-    ["Checkpoint class", checkpoint.checkpointClass],
-    ["Validation source", checkpoint.validationSource],
-    ["Evidence state", checkpoint.evidenceStatus],
-    ["Write safety", checkpoint.writeSafetyClass],
-    ["Checkpoint owner", checkpoint.checkpointOwner || "Unassigned"],
-    ["Reviewer", checkpoint.reviewer || "Unassigned"],
-    ["Review / approval state", reviewState]
+    ["Status", checkpoint.status === "Fail" ? "Not yet started" : checkpoint.status === "Warning" ? "In progress" : "Done"],
+    ["Setup area", checkpoint.checkpointGroup || "General"],
+    ["Type of step", checkpoint.checkpointClass],
+    ["Where to check this", checkpoint.validationSource],
+    ["How you work", checkpoint.evidenceStatus === "Pending" ? "We need your context" : "Context provided"],
+    ["Risk if guessed", checkpoint.writeSafetyClass],
+    ["Leading this step", checkpoint.checkpointOwner || "You"],
+    ["Reviewer", checkpoint.reviewer || "Not assigned"],
+    ["Review status", reviewState]
   ];
 
   if (hasInventoryEvidence) {
     details.splice(5, 0,
-      ["Evidence classification", checkpoint.inventoryEvidence.mode.replaceAll("_", " ")],
-      ["Evidence sufficiency", getInventoryEvidenceSufficiency(checkpoint)]
+      ["Your business reality", checkpoint.inventoryEvidence.mode.replaceAll("_", " ")],
+      ["Detail level", getInventoryEvidenceSufficiency(checkpoint)]
     );
   } else if (hasAccountingEvidence) {
     details.splice(5, 0,
-      ["Evidence classification", getAccountingEvidenceLabel(checkpoint.accountingEvidence)],
-      ["Evidence sufficiency", getAccountingEvidenceSufficiency(checkpoint)]
+      ["Your business reality", getAccountingEvidenceLabel(checkpoint.accountingEvidence)],
+      ["Detail level", getAccountingEvidenceSufficiency(checkpoint)]
     );
   } else if (hasPurchaseEvidence) {
     details.splice(5, 0,
-      ["Evidence classification", getPurchaseEvidenceLabel(checkpoint.purchaseEvidence)],
-      ["Evidence sufficiency", getPurchaseEvidenceSufficiency(checkpoint)]
+      ["Your business reality", getPurchaseEvidenceLabel(checkpoint.purchaseEvidence)],
+      ["Detail level", getPurchaseEvidenceSufficiency(checkpoint)]
     );
   } else if (hasSalesEvidence) {
     details.splice(5, 0,
-      ["Evidence classification", getSalesEvidenceLabel(checkpoint.salesEvidence)],
-      ["Evidence sufficiency", getSalesEvidenceSufficiency(checkpoint)]
+      ["Your business reality", getSalesEvidenceLabel(checkpoint.salesEvidence)],
+      ["Detail level", getSalesEvidenceSufficiency(checkpoint)]
     );
   } else if (hasManufacturingEvidence) {
     details.splice(5, 0,
-      ["Evidence classification", getManufacturingEvidenceLabel(checkpoint.manufacturingEvidence)],
-      ["Evidence sufficiency", getManufacturingEvidenceSufficiency(checkpoint)]
+      ["Your business reality", getManufacturingEvidenceLabel(checkpoint.manufacturingEvidence)],
+      ["Detail level", getManufacturingEvidenceSufficiency(checkpoint)]
     );
   } else if (hasCrmEvidence) {
     details.splice(5, 0,
-      ["Evidence classification", getCrmEvidenceLabel(checkpoint.crmEvidence)],
-      ["Evidence sufficiency", getCrmEvidenceSufficiency(checkpoint)]
+      ["Your business reality", getCrmEvidenceLabel(checkpoint.crmEvidence)],
+      ["Detail level", getCrmEvidenceSufficiency(checkpoint)]
     );
   } else if (hasWebsiteEcommerceEvidence) {
     details.splice(5, 0,
-      ["Evidence classification", getWebsiteEcommerceEvidenceLabel(checkpoint.websiteEcommerceEvidence)],
-      ["Evidence sufficiency", getWebsiteEcommerceEvidenceSufficiency(checkpoint)]
+      ["Your business reality", getWebsiteEcommerceEvidenceLabel(checkpoint.websiteEcommerceEvidence)],
+      ["Detail level", getWebsiteEcommerceEvidenceSufficiency(checkpoint)]
     );
   } else if (hasPosEvidence) {
     details.splice(5, 0,
-      ["Evidence classification", getPosEvidenceLabel(checkpoint.posEvidence)],
-      ["Evidence sufficiency", getPosEvidenceSufficiency(checkpoint)]
+      ["Your business reality", getPosEvidenceLabel(checkpoint.posEvidence)],
+      ["Detail level", getPosEvidenceSufficiency(checkpoint)]
     );
   } else {
-    details.splice(5, 0, ["Accountable support reference", checkpoint.evidenceReference || "No accountable support recorded"]);
+    details.splice(5, 0, ["Notes or links", checkpoint.evidenceReference || "None yet"]);
   }
 
   const detailGrid = el(
@@ -101,7 +101,7 @@ export function renderCheckpointPanel(checkpoint, options = {}) {
   const warnings = [];
 
   if (checkpoint.blockerFlag && checkpoint.blockedReason) {
-    warnings.push(el("p", { className: "checkpoint-panel__warning", text: `Blocked: ${checkpoint.blockedReason}` }));
+    warnings.push(el("p", { className: "checkpoint-panel__warning", text: `Attention needed: ${checkpoint.blockedReason}` }));
   }
 
   if (checkpoint.inventoryEvidence?.summary || checkpoint.inventoryEvidence?.sourceLabel) {
@@ -331,14 +331,14 @@ export function renderCheckpointPanel(checkpoint, options = {}) {
     warnings.push(
       el("p", {
         className: "checkpoint-panel__dependency",
-        text: `Dependencies: ${checkpoint.dependencyIds.join(", ")}`
+        text: `You need to finish these steps first: ${checkpoint.dependencyIds.map(id => id.replace("checkpoint-", "").replace("-", " ")).join(", ")}`
       })
     );
   }
 
   return el("article", { className: `checkpoint-panel checkpoint-panel--${tone}` }, [
     el("header", { className: "checkpoint-panel__header" }, [
-      el("div", {}, [el("h3", { text: checkpoint.title }), el("p", { text: checkpoint.id })]),
+      el("div", {}, [el("h3", { text: checkpoint.title }), el("p", { className: "subtle", text: `Step ID: ${checkpoint.id}` })]),
       renderStatusBadge(
         checkpoint.defermentFlag
           ? "Deferred"

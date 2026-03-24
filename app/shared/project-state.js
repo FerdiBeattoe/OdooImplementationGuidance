@@ -14,6 +14,7 @@ import {
 } from "./accounting-evidence.js";
 import { ACCOUNTING_CHECKPOINT_GROUPS, isAccountingCheckpoint } from "./accounting-domain.js";
 import { APPROVALS_CHECKPOINT_GROUPS, isApprovalsCheckpoint } from "./approvals-domain.js";
+import { createInitialConnectionState, normalizeConnectionState } from "./connection-state.js";
 import { createCrmConfigurationState, normalizeCrmConfigurationState } from "./crm-configuration.js";
 import { normalizeCrmEvidenceForCheckpoints, normalizeCrmEvidenceState } from "./crm-evidence.js";
 import { CRM_CHECKPOINT_GROUPS, isCrmCheckpoint } from "./crm-domain.js";
@@ -25,6 +26,7 @@ import { createInventoryConfigurationState, normalizeInventoryConfigurationState
 import { normalizeInventoryEvidenceForCheckpoints } from "./inventory-evidence.js";
 import { INVENTORY_CHECKPOINT_GROUPS, isInventoryCheckpoint } from "./inventory-domain.js";
 import { isMasterDataCheckpoint, MASTER_DATA_CHECKPOINT_GROUPS } from "./master-data-domain.js";
+import { createMasterDataConfigurationState, normalizeMasterDataConfigurationState } from "./master-data-configuration.js";
 import { createManufacturingConfigurationState, normalizeManufacturingConfigurationState } from "./manufacturing-configuration.js";
 import { normalizeManufacturingEvidenceForCheckpoints, normalizeManufacturingEvidenceState } from "./manufacturing-evidence.js";
 import { isManufacturingCheckpoint, MANUFACTURING_CHECKPOINT_GROUPS } from "./manufacturing-domain.js";
@@ -40,6 +42,7 @@ import { isSalesCheckpoint, SALES_CHECKPOINT_GROUPS } from "./sales-domain.js";
 import { normalizeSalesEvidenceForCheckpoints, normalizeSalesEvidenceState } from "./sales-evidence.js";
 import { isPurchaseCheckpoint, PURCHASE_CHECKPOINT_GROUPS } from "./purchase-domain.js";
 import { QUALITY_CHECKPOINT_GROUPS, isQualityCheckpoint } from "./quality-domain.js";
+import { normalizeInspectionState, createInitialInspectionState } from "./inspection-model.js";
 import { SIGN_CHECKPOINT_GROUPS, isSignCheckpoint } from "./sign-domain.js";
 import { STAGES } from "./stages.js";
 import { getCombinationError, requiresBranchTarget } from "./target-matrix.js";
@@ -50,12 +53,16 @@ import {
   normalizeWebsiteEcommerceEvidenceState
 } from "./website-ecommerce-evidence.js";
 import { WEBSITE_ECOMMERCE_CHECKPOINT_GROUPS, isWebsiteEcommerceCheckpoint } from "./website-ecommerce-domain.js";
+import { createInitialPreviewState, normalizePreviewState } from "./preview-engine.js";
+import { createInitialExecutionState, normalizeExecutionState } from "./execution-engine.js";
+import { normalizeAuditLog } from "./audit-log.js";
 
 export function createInitialProjectState() {
   const createdAt = new Date().toISOString();
   const checkpoints = createSeedCheckpoints(createdAt);
   const accountingConfiguration = createAccountingConfigurationState();
   const inventoryConfiguration = createInventoryConfigurationState();
+  const masterDataConfiguration = createMasterDataConfigurationState();
   const manufacturingConfiguration = createManufacturingConfigurationState();
   const salesConfiguration = createSalesConfigurationState();
   const purchaseConfiguration = createPurchaseConfigurationState();
@@ -110,7 +117,7 @@ export function createInitialProjectState() {
       currentView: "dashboard",
       currentStageId: STAGES[0].id,
       currentDomainId: DOMAINS[0].id,
-      lastActiveSection: "project-entry",
+      lastActiveSection: "overview",
       configurationCompletionStatus: "Not Started",
       operationalReadinessStatus: "Not Started"
     },
@@ -120,6 +127,7 @@ export function createInitialProjectState() {
     checkpointState: normalizedCheckpoints,
     accountingConfiguration,
     inventoryConfiguration,
+    masterDataConfiguration,
     manufacturingConfiguration,
     salesConfiguration,
     purchaseConfiguration,
@@ -127,6 +135,11 @@ export function createInitialProjectState() {
     websiteEcommerceConfiguration,
     posConfiguration,
     decisions: [],
+    connectionState: createInitialConnectionState(),
+    inspectionState: createInitialInspectionState(),
+    previewState: createInitialPreviewState(),
+    executionState: createInitialExecutionState(),
+    auditLog: [],
     trainingState: {
       trainingAvailable: true,
       trainingAssigned: false,
@@ -577,8 +590,14 @@ export function normalizeProjectState(state = createInitialProjectState()) {
   const normalized = structuredClone(state || createInitialProjectState());
   normalized.projectIdentity.version = ODOO_VERSION;
   normalized.environmentContext.target.enabled = requiresBranchTarget(normalized.projectIdentity);
+  normalized.connectionState = normalizeConnectionState(normalized.connectionState, normalized.projectIdentity);
+  normalized.inspectionState = normalizeInspectionState(normalized.inspectionState);
+  normalized.previewState = normalizePreviewState(normalized.previewState);
+  normalized.executionState = normalizeExecutionState(normalized.executionState);
+  normalized.auditLog = normalizeAuditLog(normalized.auditLog);
   normalized.accountingConfiguration = normalizeAccountingConfigurationState(normalized.accountingConfiguration);
   normalized.inventoryConfiguration = normalizeInventoryConfigurationState(normalized.inventoryConfiguration);
+  normalized.masterDataConfiguration = normalizeMasterDataConfigurationState(normalized.masterDataConfiguration);
   normalized.manufacturingConfiguration = normalizeManufacturingConfigurationState(normalized.manufacturingConfiguration);
   normalized.salesConfiguration = normalizeSalesConfigurationState(normalized.salesConfiguration);
   normalized.purchaseConfiguration = normalizePurchaseConfigurationState(normalized.purchaseConfiguration);
@@ -754,8 +773,28 @@ export function validateStateShape(state) {
     return "Operational readiness status is invalid.";
   }
 
+  const connectionState = normalizeConnectionState(state.connectionState, state.projectIdentity);
+
+  if (!connectionState.supported && connectionState.status !== "unsupported") {
+    return "Connection state support flags are invalid.";
+  }
+
+  const inspectionState = normalizeInspectionState(state.inspectionState);
+  const previewState = normalizePreviewState(state.previewState);
+  const executionState = normalizeExecutionState(state.executionState);
+  const auditLog = normalizeAuditLog(state.auditLog);
+
+  if (typeof inspectionState.domains !== "object") {
+    return "Inspection state is invalid.";
+  }
+
+  if (!Array.isArray(previewState.previews) || !Array.isArray(executionState.executions) || !Array.isArray(auditLog)) {
+    return "Preview, execution, or audit state is invalid.";
+  }
+
   const accountingConfiguration = normalizeAccountingConfigurationState(state.accountingConfiguration);
   const configuration = normalizeInventoryConfigurationState(state.inventoryConfiguration);
+  const masterDataConfiguration = normalizeMasterDataConfigurationState(state.masterDataConfiguration);
   const salesConfiguration = normalizeSalesConfigurationState(state.salesConfiguration);
   const purchaseConfiguration = normalizePurchaseConfigurationState(state.purchaseConfiguration);
   const manufacturingConfiguration = normalizeManufacturingConfigurationState(state.manufacturingConfiguration);
@@ -777,6 +816,14 @@ export function validateStateShape(state) {
     !Array.isArray(configuration.routes)
   ) {
     return "Inventory configuration structure is invalid.";
+  }
+
+  if (
+    !Array.isArray(masterDataConfiguration.partnerCategoryCapture) ||
+    !Array.isArray(masterDataConfiguration.productCategoryCapture) ||
+    !Array.isArray(masterDataConfiguration.uomCategoryCapture)
+  ) {
+    return "Master Data configuration structure is invalid.";
   }
 
   if (

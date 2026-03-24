@@ -1,4 +1,26 @@
 {
-  "projects": [],
-  "savedAt": "2026-03-23T07:36:10.351Z"
+  "projects": [
+    {
+      "projectIdentity": {
+        "projectId": "composite-company-setup",
+        "projectName": "Composite Company Full Setup",
+        "organizationName": "Test236 Composite Trading",
+        "projectOwner": "ferdinand.beattie@gmail.com",
+        "edition": "Enterprise",
+        "deployment": "Odoo Online",
+        "targetOdooVersion": "19"
+      },
+      "environmentContext": {
+        "target": {
+          "targetBranch": "master",
+          "targetEnvironment": "production"
+        }
+      },
+      "workflowState": {
+        "currentStageId": "foundation",
+        "currentDomainId": "foundation-company-localization"
+      }
+    }
+  ],
+  "savedAt": "2026-03-24T07:39:41.397Z"
 }

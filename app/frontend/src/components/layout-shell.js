@@ -1,11 +1,11 @@
-import { getProjectStoreRecordId, getProjectStoreRecordLabel, PRODUCT_NAME } from "/shared/index.js";
+import { getProjectStoreRecordId, getProjectStoreRecordLabel, renderConnectionCapabilityLabel } from "/shared/index.js";
 import { el } from "../lib/dom.js";
 
 const NAV_ITEMS = [
-  ["dashboard", "Dashboard"],
-  ["stages", "Stages"],
-  ["domains", "Domains"],
-  ["decisions", "Decisions & Readiness"]
+  ["dashboard", "Project Overview", "See everything you've completed and what's next."],
+  ["stages", "Setup Journey", "A step-by-step path to get your business ready."],
+  ["domains", "Explore Areas", "Jump directly to specific areas like Sales or Finance."],
+  ["decisions", "Ready to Go Live?", "Review everything before you start using Odoo for real."]
 ];
 
 export function renderLayoutShell({ project, content, notifications, onNavigate, onSave, onResume }) {
@@ -13,10 +13,12 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
   const canOpenGovernedViews = savedProjects.some(
     (item) => getProjectStoreRecordId(item) === project.projectIdentity.projectId
   );
+  const connectionLabel = renderConnectionCapabilityLabel(project.connectionState?.capabilityLevel || "manual-only");
+  const connectionDetail = project.connectionState?.reason || "Application-layer connection only";
   const navigation = el(
     "nav",
     { className: "sidebar-nav" },
-    NAV_ITEMS.map(([id, label]) =>
+    NAV_ITEMS.map(([id, label, description]) =>
       el(
         "button",
         {
@@ -24,7 +26,10 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
           onclick: () => onNavigate(id),
           disabled: id !== "dashboard" && !canOpenGovernedViews ? "disabled" : null
         },
-        [label]
+        [
+          el("strong", { text: label }),
+          el("span", { className: "sidebar-nav__meta", text: description })
+        ]
       )
     )
   );
@@ -48,21 +53,33 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
   );
 
   return el("div", { className: "app-shell" }, [
-    el("aside", { className: "sidebar" }, [
-      el("h1", { text: PRODUCT_NAME }),
-      el("p", {
-        text:
-          "Implementation control only. This shell does not perform remediation, migration repair, diagnostics, or unrestricted writes."
-      }),
-      navigation,
-      el("div", { className: "sidebar__actions" }, [
-        el("button", { className: "button button--primary", onclick: onSave, text: "Save Project" }),
-        resumeSelect
+    el("aside", { className: "sidebar", "aria-label": "Main navigation" }, [
+      el("section", { className: "sidebar__brand" }, [
+        el("p", { className: "sidebar__eyebrow", text: "Odoo 19" }),
+        el("h1", { text: "Your Setup Guide" }),
+        el("p", {
+          className: "sidebar__intro",
+          text: "We'll walk you through exactly what you need to configure in Odoo 19. No technical knowledge required."
+        })
       ]),
-      el("section", { className: "sidebar__meta" }, [
-        el("h3", { text: "Current target" }),
-        el("p", { text: `${project.projectIdentity.version} / ${project.projectIdentity.edition} / ${project.projectIdentity.deployment}` }),
-        el("p", { text: `${project.projectIdentity.projectMode}` })
+      el("section", { className: "sidebar-card", "aria-label": "Menu" }, [
+        navigation
+      ]),
+      el("section", { className: "sidebar-card" }, [
+        el("h3", { text: "Connection truth" }),
+        el("p", { className: "sidebar-card__note", text: connectionLabel }),
+        el("p", { className: "sidebar-card__note", text: connectionDetail })
+      ]),
+      el("section", { className: "sidebar-card" }, [
+        el("h3", { text: "Save your progress" }),
+        el("p", {
+          className: "sidebar-card__note",
+          text: "Your choices are saved locally. You can securely leave and pick up exactly where you left off later."
+        }),
+        el("div", { className: "sidebar__actions" }, [
+          el("button", { className: "button button--primary", onclick: onSave, text: "Save my progress" }),
+          resumeSelect
+        ])
       ])
     ]),
     el("main", { className: "content" }, [
@@ -78,4 +95,8 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
       content
     ])
   ]);
+}
+
+function sidebarPill(label, value) {
+  return el("span", { className: "sidebar-pill" }, [`${label}: ${value}`]);
 }

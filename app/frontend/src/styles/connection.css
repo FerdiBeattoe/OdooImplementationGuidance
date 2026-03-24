@@ -1,0 +1,374 @@
+/* =============================================================
+   Connection Page — Full-page non-technical entry screen
+   Odoo 19 Setup Guide — plain English, SEO-correct, accessible
+   ============================================================= */
+
+/* Page shell: two-column split */
+.conn-page {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+/* ── Left panel ─────────────────────────────────────── */
+.conn-left {
+  background: #122023;
+  color: #e8f0ef;
+  display: flex;
+  align-items: flex-start;
+  padding: 0;
+}
+
+.conn-left__inner {
+  padding: 3rem 2.5rem;
+  display: grid;
+  gap: 2rem;
+  max-width: 480px;
+  width: 100%;
+}
+
+.conn-brand__badge {
+  display: inline-block;
+  background: rgba(13, 107, 99, 0.35);
+  color: #7dd3ca;
+  border: 1px solid rgba(13, 107, 99, 0.5);
+  border-radius: 999px;
+  padding: 0.25rem 0.9rem;
+  font-size: 0.82rem;
+  font-family: Georgia, serif;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.75rem;
+}
+
+.conn-brand__title {
+  margin: 0 0 0.6rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+  line-height: 1.15;
+  color: #ffffff;
+}
+
+.conn-brand__sub {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: #a8c3c0;
+}
+
+/* Feature bullet list */
+.conn-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.conn-features__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  color: #c8dedd;
+}
+
+.conn-features__icon {
+  color: #4db5ad;
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+/* Edition chips */
+.conn-editions__label {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: #6a9994;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.conn-editions__chips {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.conn-chip {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+  font-size: 0.86rem;
+  color: #b0ccca;
+}
+
+/* Testimonial */
+.conn-testimonial {
+  margin: 0;
+  padding: 1.1rem 1.25rem;
+  border-left: 3px solid rgba(13, 107, 99, 0.5);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 0 12px 12px 0;
+}
+
+.conn-testimonial p {
+  margin: 0 0 0.4rem;
+  font-style: italic;
+  color: #b8d0ce;
+  line-height: 1.55;
+  font-size: 0.95rem;
+}
+
+.conn-testimonial footer {
+  font-size: 0.82rem;
+  color: #6a9994;
+}
+
+/* ── Right panel ────────────────────────────────────── */
+.conn-right {
+  background: #fffdf7;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.conn-right__inner {
+  padding: 3rem 2.5rem;
+  display: grid;
+  gap: 1.1rem;
+  max-width: 480px;
+  width: 100%;
+}
+
+.conn-step-label {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #0d6b63;
+  font-family: Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.conn-heading {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.75rem;
+  line-height: 1.15;
+  color: #122023;
+}
+
+.conn-subheading {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #5d6a6d;
+}
+
+/* Form */
+.conn-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.conn-divider {
+  border: none;
+  border-top: 1px solid #dbd4c5;
+  margin: 0.25rem 0;
+}
+
+.conn-section-label {
+  margin: 0;
+  font-size: 0.83rem;
+  color: #7a8a8d;
+  font-style: italic;
+}
+
+/* Field */
+.conn-field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.conn-field__label {
+  font-size: 0.97rem;
+  font-weight: 600;
+  color: #122023;
+  cursor: pointer;
+}
+
+.conn-field input,
+.conn-field select {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #d8d1c2;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #122023;
+  font-size: 1rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.conn-field input:focus,
+.conn-field select:focus {
+  outline: none;
+  border-color: #0d6b63;
+  box-shadow: 0 0 0 3px rgba(13, 107, 99, 0.14);
+}
+
+.conn-field__hint {
+  margin: 0;
+  font-size: 0.83rem;
+  color: #7a8a8d;
+  line-height: 1.45;
+}
+
+/* Select wrapper (for custom arrow) */
+.conn-select-wrap {
+  position: relative;
+}
+
+.conn-select-wrap select {
+  width: 100%;
+  appearance: none;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.conn-select-wrap::after {
+  content: "▾";
+  position: absolute;
+  right: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #0d6b63;
+  pointer-events: none;
+  font-size: 1rem;
+}
+
+/* Begin button */
+.conn-begin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.95rem 1.5rem;
+  background: #0d6b63;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, transform 120ms ease, box-shadow 150ms ease;
+  box-shadow: 0 4px 18px rgba(13, 107, 99, 0.22);
+  margin-top: 0.25rem;
+}
+
+.conn-begin-btn:hover:not(.conn-begin-btn--disabled) {
+  background: #0a5952;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(13, 107, 99, 0.3);
+}
+
+.conn-begin-btn--disabled,
+.conn-begin-btn:disabled {
+  background: #b0c4c2;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Error / version notes */
+.conn-error-note {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  background: #f7d8d4;
+  color: #9f2d22;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.conn-version-note {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  color: #7a8a8d;
+  justify-content: center;
+}
+
+.conn-version-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0d6b63;
+  flex-shrink: 0;
+}
+
+.conn-help-link {
+  margin: 0;
+  text-align: center;
+  font-size: 0.88rem;
+}
+
+.conn-help-link a {
+  color: #0d6b63;
+  text-decoration: none;
+}
+
+.conn-help-link a:hover {
+  text-decoration: underline;
+}
+
+/* Progress bar */
+.conn-progress {
+  height: 4px;
+  background: #e8e0d2;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.conn-progress__fill {
+  height: 100%;
+  width: 50%;
+  background: #0d6b63;
+  border-radius: 999px;
+}
+
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 860px) {
+  .conn-page {
+    grid-template-columns: 1fr;
+  }
+
+  .conn-left {
+    padding: 0;
+  }
+
+  .conn-left__inner {
+    padding: 2rem 1.5rem;
+    gap: 1.25rem;
+    max-width: 100%;
+  }
+
+  .conn-testimonial {
+    display: none; /* collapses on small screens to keep form fast */
+  }
+
+  .conn-right__inner {
+    padding: 2rem 1.5rem;
+    max-width: 100%;
+  }
+
+  .conn-brand__title {
+    font-size: 1.55rem;
+  }
+
+  .conn-heading {
+    font-size: 1.4rem;
+  }
+}

@@ -3,6 +3,7 @@ import {
   addAccountingConfigurationRecord,
   addCrmConfigurationRecord,
   addManufacturingConfigurationRecord,
+  addMasterDataConfigurationRecord,
   addPosConfigurationRecord,
   addPurchaseConfigurationRecord,
   addSalesConfigurationRecord,
@@ -24,6 +25,7 @@ import {
   getCrmConfigurationSections,
   getCheckpointDefermentEligibility,
   getInventoryConfigurationSections,
+  getMasterDataConfigurationSections,
   getManufacturingConfigurationSections,
   MANUFACTURING_CHECKPOINT_GROUPS,
   getPosConfigurationSections,
@@ -45,6 +47,7 @@ import {
   updateCrmConfigurationRecord,
   updateInventoryConfigurationRecord,
   updateManufacturingConfigurationRecord,
+  updateMasterDataConfigurationRecord,
   updatePosConfigurationRecord,
   updatePurchaseConfigurationRecord,
   updateSalesConfigurationRecord,
@@ -60,7 +63,15 @@ import {
   validateProjectSetup,
   validateStateShape
 } from "/shared/index.js";
-import { loadProjectStore, saveProjectStore } from "./persistence.js";
+import {
+  connectProject as connectProjectRequest,
+  disconnectProject as disconnectProjectRequest,
+  executePreview as executePreviewRequest,
+  inspectDomain as inspectDomainRequest,
+  loadProjectStore,
+  previewDomain as previewDomainRequest,
+  saveProjectStore
+} from "./persistence.js";
 
 const listeners = new Set();
 
@@ -77,6 +88,58 @@ export function subscribe(listener) {
 
 export function getState() {
   return state;
+}
+
+export async function connectProject(credentials) {
+  try {
+    state.activeProject = normalizeProjectState(await connectProjectRequest(state.activeProject, credentials));
+    pushNotification("Live Odoo connection established.", "success");
+  } catch (error) {
+    pushNotification(error.message, "error");
+  }
+  notify();
+}
+
+export async function disconnectProject() {
+  try {
+    state.activeProject = normalizeProjectState(await disconnectProjectRequest(state.activeProject));
+    pushNotification("Live Odoo connection removed.", "success");
+  } catch (error) {
+    pushNotification(error.message, "error");
+  }
+  notify();
+}
+
+export async function inspectDomain(domainId) {
+  try {
+    state.activeProject = normalizeProjectState(await inspectDomainRequest(state.activeProject, domainId));
+    pushNotification(`Inspection completed for ${domainId}.`, "success");
+  } catch (error) {
+    pushNotification(error.message, "error");
+  }
+  notify();
+}
+
+export async function previewDomain(domainId) {
+  try {
+    state.activeProject = normalizeProjectState(await previewDomainRequest(state.activeProject, domainId));
+    pushNotification(`Preview generated for ${domainId}.`, "success");
+  } catch (error) {
+    pushNotification(error.message, "error");
+  }
+  notify();
+}
+
+export async function executePreview(preview) {
+  try {
+    state.activeProject = normalizeProjectState(
+      await executePreviewRequest(state.activeProject, preview, { confirmed: true })
+    );
+    pushNotification("Bounded execution completed.", "success");
+  } catch (error) {
+    pushNotification(error.message, "error");
+  }
+  notify();
 }
 
 export async function bootstrapStore() {
@@ -190,6 +253,12 @@ export function addManufacturingConfiguration(sectionId) {
   notify();
 }
 
+export function addMasterDataConfiguration(sectionId) {
+  state.activeProject = normalizeProjectState(addMasterDataConfigurationRecord(state.activeProject, sectionId));
+  pushNotification("Master Data capture row added.", "success");
+  notify();
+}
+
 export function updateInventoryConfiguration(sectionId, recordKey, patch) {
   state.activeProject = normalizeProjectState(updateInventoryConfigurationRecord(state.activeProject, sectionId, recordKey, patch));
   notify();
@@ -218,6 +287,13 @@ export function updatePurchaseConfiguration(sectionId, recordKey, patch) {
 export function updateManufacturingConfiguration(sectionId, recordKey, patch) {
   state.activeProject = normalizeProjectState(
     updateManufacturingConfigurationRecord(state.activeProject, sectionId, recordKey, patch)
+  );
+  notify();
+}
+
+export function updateMasterDataConfiguration(sectionId, recordKey, patch) {
+  state.activeProject = normalizeProjectState(
+    updateMasterDataConfigurationRecord(state.activeProject, sectionId, recordKey, patch)
   );
   notify();
 }
@@ -307,6 +383,12 @@ export function setCurrentView(view, id) {
     state.activeProject.workflowState.currentDomainId = id;
   }
 
+  notify();
+}
+
+export function openDashboardSection(sectionId) {
+  state.activeProject.workflowState.lastActiveSection = sectionId;
+  state.activeProject.workflowState.currentView = "dashboard";
   notify();
 }
 
@@ -489,6 +571,10 @@ export function getCrmConfigurationModel() {
 
 export function getManufacturingConfigurationModel() {
   return getManufacturingConfigurationSections(state.activeProject);
+}
+
+export function getMasterDataConfigurationModel() {
+  return getMasterDataConfigurationSections(state.activeProject);
 }
 
 export function getScaffoldCheckpointGroups(domainId) {

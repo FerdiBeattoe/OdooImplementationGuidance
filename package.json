@@ -6,5 +6,8 @@
     "start": "node app/backend/server.js",
     "dev": "node app/backend/server.js",
     "test": "node --test"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
   }
 }

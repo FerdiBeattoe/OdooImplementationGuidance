@@ -3,13 +3,20 @@ import { el } from "../lib/dom.js";
 import { renderCheckpointPanel } from "../components/checkpoint-panel.js";
 import { renderGridBuilderShell } from "../components/grid-builder-shell.js";
 import { renderStatusBadge } from "../components/status-badge.js";
+import { renderProgressWizard } from "../components/progress-wizard.js";
 
 export function renderStagesView(project, onSelectStage) {
   const selectedStage = STAGES.find((stage) => stage.id === project.workflowState.currentStageId) || STAGES[0];
   const stageCheckpoints = project.checkpoints.filter((checkpoint) => checkpoint.stageId === selectedStage.id);
 
   return el("section", { className: "workspace" }, [
-    header("Stages", "Stage navigation controls sequencing. Progression is still gated by checkpoint outcomes and dependencies."),
+    header("Your Setup Journey", "Follow these areas in order. We'll guide you through exactly what to do in each one."),
+    renderProgressWizard({
+      stages: STAGES,
+      currentStageId: project.workflowState.currentStageId,
+      checkpoints: project.checkpoints,
+      onSelectStage
+    }),
     el(
       "div",
       { className: "list-grid" },
@@ -24,11 +31,6 @@ export function renderStagesView(project, onSelectStage) {
         )
       )
     ),
-    renderGridBuilderShell("Stage workspace structure", [
-      { label: "Context header", value: selectedStage.label },
-      { label: "Current status", value: findStatus(project.stages, selectedStage.id) },
-      { label: "Checkpoint count", value: String(stageCheckpoints.length) }
-    ]),
     ...stageCheckpoints.map(renderCheckpointPanel)
   ]);
 }

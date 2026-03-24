@@ -1,0 +1,223 @@
+import { el } from '../../frontend/lib/dom.js';
+import { OdooClient } from '../api/OdooClient.js';
+
+/**
+ * Company Setup Wizard
+ * Phase 1 of Odoo Implementation
+ * Configures company identity, address, fiscal settings
+ */
+
+export class CompanySetupWizard {
+  constructor(options = {}) {
+    this.options = {
+      client: options.client || null,
+      onComplete: options.onComplete || (() => {}),
+      ...options
+    };
+    
+    this.currentStep = 0;
+    this.data = {
+      name: '',
+      street: '',
+      city: '',
+      zip: '',
+      country_id: null,
+      state_id: null,
+      phone: '',
+      email: '',
+      website: '',
+      vat: '',
+      currency_id: null,
+      fiscal_year_start: '',
+      tax_id: null
+    };
+    
+    this.steps = [
+      { id: 'identity', title: 'Company Identity', description: 'Your business name and contact details' },
+      { id: 'address', title: 'Address', description: 'Physical location for invoices and tax' },
+      { id: 'fiscal', title: 'Fiscal Settings', description: 'Currency, tax, and accounting preferences' },
+      { id: 'confirm', title: 'Confirm', description: 'Review and apply settings' }
+    ];
+  }
+  
+  render() {
+    return el('div', { className: 'wizard-container company-wizard' }, [
+      this.renderProgress(),
+      this.renderStep(),
+      this.renderNavigation()
+    ]);
+  }
+  
+  renderProgress() {
+    const pct = ((this.currentStep + 1) / this.steps.length) * 100;
+    return el('div', { className: 'wizard-progress' }, [
+      el('div', { className: 'progress-bar' }, [
+        el('div', { className: 'progress-fill', style: `width: ${pct}%` })
+      ]),
+      el('div', { className: 'step-indicator', text: `Step ${this.currentStep + 1} of ${this.steps.length}: ${this.steps[this.currentStep].title}` })
+    ]);
+  }
+  
+  renderStep() {
+    const step = this.steps[this.currentStep];
+    return el('div', { className: 'wizard-content' }, [
+      el('h2', { text: step.title }),
+      el('p', { className: 'step-desc', text: step.description }),
+      this['render' + step.id.charAt(0).toUpperCase() + step.id.slice(1) + 'Step']()
+    ]);
+  }
+  
+  renderIdentityStep() {
+    return el('div', { className: 'form-section' }, [
+      this.field('name', 'Company Name', 'Your Company Ltd', 'text', true),
+      this.field('vat', 'Tax ID / VAT Number', 'e.g., ZA1234567890', 'text', false),
+      this.field('email', 'Company Email', 'info@yourcompany.com', 'email', true),
+      this.field('phone', 'Phone', '+27 12 345 6789', 'tel', true),
+      this.field('website', 'Website', 'www.yourcompany.com', 'url', false)
+    ]);
+  }
+  
+  renderAddressStep() {
+    return el('div', { className: 'form-section' }, [
+      this.field('street', 'Street Address', '123 Main Street', 'text', true),
+      this.field('city', 'City', 'Johannesburg', 'text', true),
+      this.field('zip', 'Postal Code', '2000', 'text', true),
+      this.select('country_id', 'Country', [
+        { id: 1, name: 'South Africa' },
+        { id: 233, name: 'United States' },
+        { id: 76, name: 'United Kingdom' },
+        { id: 14, name: 'Australia' },
+        { id: 4, name: 'Germany' }
+      ]),
+      this.field('state_id', 'State/Province', 'Gauteng', 'text', false)
+    ]);
+  }
+  
+  renderFiscalStep() {
+    return el('div', { className: 'form-section' }, [
+      this.select('currency_id', 'Main Currency', [
+        { id: 1, name: 'South African Rand (ZAR)' },
+        { id: 2, name: 'US Dollar (USD)' },
+        { id: 3, name: 'Euro (EUR)' },
+        { id: 4, name: 'British Pound (GBP)' }
+      ]),
+      el('div', { className: 'field-group' }, [
+        el('label', { text: 'Fiscal Year Start' }),
+        el('input', {
+          type: 'date',
+          value: this.data.fiscal_year_start,
+          onchange: (e) => this.data.fiscal_year_start = e.target.value
+        })
+      ]),
+      el('div', { className: 'info-box' }, [
+        el('strong', { text: 'Important' }),
+        el('p', { text: 'These settings affect all accounting and tax calculations. Changes after go-live are difficult.' })
+      ])
+    ]);
+  }
+  
+  renderConfirmStep() {
+    return el('div', { className: 'confirm-section' }, [
+      el('h3', { text: 'Review Your Company Settings' }),
+      this.summaryRow('Company Name', this.data.name),
+      this.summaryRow('Address', `${this.data.street}, ${this.data.city}`),
+      this.summaryRow('Contact', `${this.data.email} / ${this.data.phone}`),
+      this.summaryRow('Fiscal', `Currency: ${this.data.currency_id || 'Not set'}`),
+      el('p', { className: 'warning', text: 'Once applied, these settings will be written to your Odoo database.' })
+    ]);
+  }
+  
+  renderNavigation() {
+    return el('div', { className: 'wizard-nav' }, [
+      this.currentStep > 0 
+        ? el('button', { className: 'btn-back', onclick: () => this.prev() }, 'Back')
+        : null,
+      this.currentStep < this.steps.length - 1
+        ? el('button', { className: 'btn-next', disabled: !this.canNext(), onclick: () => this.next() }, 'Next')
+        : el('button', { className: 'btn-primary', onclick: () => this.save() }, 'Save to Odoo')
+    ]);
+  }
+  
+  field(name, label, placeholder, type, required) {
+    return el('div', { className: 'field' }, [
+      el('label', { text: `${label}${required ? ' *' : ''}` }),
+      el('input', {
+        type,
+        placeholder,
+        value: this.data[name] || '',
+        required,
+        onchange: (e) => this.data[name] = e.target.value
+      })
+    ]);
+  }
+  
+  select(name, label, options) {
+    return el('div', { className: 'field' }, [
+      el('label', { text: label }),
+      el('select', {
+        value: this.data[name] || '',
+        onchange: (e) => this.data[name] = parseInt(e.target.value)
+      }, [
+        el('option', { value: '', text: `Select ${label}` }),
+        ...options.map(o => el('option', { value: o.id, text: o.name }))
+      ])
+    ]);
+  }
+  
+  summaryRow(label, value) {
+    return el('div', { className: 'summary-row' }, [
+      el('span', { className: 'label', text: label }),
+      el('span', { className: 'value', text: value || 'Not provided' })
+    ]);
+  }
+  
+  canNext() {
+    const required = {
+      0: ['name', 'email'],
+      1: ['street', 'city', 'country_id'],
+      2: ['currency_id']
+    };
+    const fields = required[this.currentStep] || [];
+    return fields.every(f => this.data[f]);
+  }
+  
+  next() { this.currentStep++; this.render(); }
+  prev() { this.currentStep--; this.render(); }
+  
+  async save() {
+    if (!this.options.client) {
+      alert('No Odoo connection available');
+      return;
+    }
+    
+    try {
+      // Update res.company record (usually ID 1)
+      await this.options.client.write('res.company', [1], {
+        name: this.data.name,
+        street: this.data.street,
+        city: this.data.city,
+        zip: this.data.zip,
+        country_id: this.data.country_id,
+        state_id: this.data.state_id || false,
+        phone: this.data.phone,
+        email: this.data.email,
+        website: this.data.website,
+        vat: this.data.vat
+      });
+      
+      // Update currency if provided
+      if (this.data.currency_id) {
+        await this.options.client.write('res.company', [1], {
+          currency_id: this.data.currency_id
+        });
+      }
+      
+      this.options.onComplete(this.data);
+    } catch (error) {
+      console.error('Failed to save company:', error);
+      alert('Failed to save: ' + error.message);
+    }
+  }
+}
+
+export default CompanySetupWizard;

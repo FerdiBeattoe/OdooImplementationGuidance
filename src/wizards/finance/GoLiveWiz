@@ -1,0 +1,432 @@
+import { el } from '../../../frontend/lib/dom.js';
+import { WizardShell } from '../../components/WizardShell.js';
+
+/**
+ * GoLiveWizard - Final Phase
+ * 
+ * Validates all setup before declaring operational readiness.
+ * Checks: Foundation → Users → Master Data → Operations → Finance → Extended Modules
+ * 
+ * Odoo Sequence: FINAL WIZARD - Run after all others complete
+ * Purpose: Confirm configuration completion vs operational readiness distinction
+ */
+
+export class GoLiveWizard extends WizardShell {
+  constructor(options = {}) {
+    super({
+      title: 'Go-Live Readiness Check',
+      subtitle: 'Validate your Odoo setup before starting operations',
+      icon: 'rocket',
+      phase: 'golive',
+      warning: '⚠️ This is the final checkpoint before operational use',
+      ...options
+    });
+
+    this.phases = [
+      { id: 'overview', label: 'Status Overview', icon: 'dashboard' },
+      { id: 'blockers', label: 'Critical Blockers', icon: 'alert' },
+      { id: 'validation', label: 'System Validation', icon: 'check-circle' },
+      { id: 'readiness', label: 'Readiness Decision', icon: 'flag' }
+    ];
+  }
+
+  async renderOverviewPhase() {
+    const status = await this.gatherImplementationStatus();
+
+    return el('div', { className: 'wizard-phase' }, [
+      el('h3', { text: 'Your Implementation Status' }),
+      el('p', { className: 'help-text', text: 'Review what\'s complete, what\'s pending, and what\'s optional.' }),
+
+      // Overall Progress
+      el('div', { className: 'progress-summary' }, [
+        el('div', { className: 'big-number' }, [
+          el('span', { className: 'percent', text: `${status.percentComplete}%` }),
+          el('span', { className: 'label', text: 'Complete' })
+        ]),
+        el('div', { className: 'status-badges' }, [
+          el('span', { className: 'badge success', text: `${status.complete} Complete` }),
+          el('span', { className: 'badge warning', text: `${status.pending} Pending` }),
+          el('span', { className: 'badge danger', text: `${status.blockers} Blockers` })
+        ])
+      ]),
+
+      // Phase-by-phase breakdown
+      el('div', { className: 'phase-status-list' }, [
+        this.renderPhaseStatus('entry', 'Entry / Database', status.phases.entry),
+        this.renderPhaseStatus('foundation', 'Foundation', status.phases.foundation),
+        this.renderPhaseStatus('users', 'Users & Security', status.phases.users),
+        this.renderPhaseStatus('masterdata', 'Master Data', status.phases.masterdata),
+        this.renderPhaseStatus('crm', 'CRM', status.phases.crm, { optional: true }),
+        this.renderPhaseStatus('sales', 'Sales', status.phases.sales),
+        this.renderPhaseStatus('purchase', 'Purchase', status.phases.purchase),
+        this.renderPhaseStatus('inventory', 'Inventory', status.phases.inventory),
+        this.renderPhaseStatus('manufacturing', 'Manufacturing', status.phases.manufacturing, { optional: true }),
+        this.renderPhaseStatus('accounting', 'Accounting', status.phases.accounting),
+        this.renderPhaseStatus('extended', 'Extended Modules', status.phases.extended, { optional: true })
+      ]),
+
+      el('div', { className: 'info-box' }, [
+        el('strong', { text: 'Configuration vs Operational Readiness:' }),
+        el('p', { text: 'Setup may be "complete" while not being "operationally ready." Readiness means: blockers resolved, evidence gathered, decisions owned, and acceptance of any deferments.' })
+      ]),
+
+      this.renderWizardActions(['Back', 'Next'])
+    ]);
+  }
+
+  async renderBlockersPhase() {
+    const blockers = await this.getBlockers();
+
+    return el('div', { className: 'wizard-phase' }, [
+      el('h3', { text: 'Critical Blockers & Warnings' }),
+      el('p', { className: 'help-text', text: 'These items must be resolved or formally accepted before go-live.' }),
+
+      blockers.critical.length > 0
+        ? el('div', { className: 'blocker-section critical' }, [
+            el('h4', { text: `🔴 Critical Blockers (${blockers.critical.length})` }),
+            el('p', { className: 'section-desc', text: 'Must be resolved before go-live' }),
+            ...blockers.critical.map(b => this.renderBlockerCard(b, 'critical'))
+          ])
+        : el('div', { className: 'success-message' }, [
+            el('span', { className: 'icon', text: '✅' }),
+            el('p', { text: 'No critical blockers found!' })
+          ]),
+
+      blockers.warnings.length > 0
+        ? el('div', { className: 'blocker-section warning' }, [
+            el('h4', { text: `🟡 Warnings (${blockers.warnings.length})` }),
+            el('p', { className: 'section-desc', text: 'Should be resolved but can be deferred with documented risk' }),
+            ...blockers.warnings.map(b => this.renderBlockerCard(b, 'warning'))
+          ])
+        : null,
+
+      blockers.deferred.length > 0
+        ? el('div', { className: 'blocker-section deferred' }, [
+            el('h4', { text: `⏸️ Deferred Items (${blockers.deferred.length})` }),
+            el('p', { className: 'section-desc', text: 'Explicitly postponed with documented conditions' }),
+            ...blockers.deferred.map(b => this.renderBlockerCard(b, 'deferred'))
+          ])
+        : null,
+
+      this.renderWizardActions(['Back', 'Next'])
+    ]);
+  }
+
+  renderValidationPhase() {
+    return el('div', { className: 'wizard-phase' }, [
+      el('h3', { text: 'System Validation Tests' }),
+      el('p', { className: 'help-text', text: 'Run integrated tests to verify your setup works end-to-end.' }),
+
+      el('div', { className: 'test-suite' }, [
+        this.renderTestCard('product_flow', 'Product Flow Test', [
+          'Create a product in Master Data',
+          'Add it to a Purchase Order',
+          'Receive into Inventory',
+          'Sell on a Sales Order',
+          'Check accounting entries are correct'
+        ], 'validates end-to-end product lifecycle'),
+
+        this.renderTestCard('customer_order', 'Customer Order Test', [
+          'Create a customer',
+          'Generate a quotation',
+          'Convert to Sales Order',
+          'Create and deliver shipment',
+          'Generate and post invoice'
+        ], 'validates sales-to-cash process'),
+
+        this.renderTestCard('manufacturing_cost', 'Manufacturing Cost Test', {
+          showIf: 'hasManufacturing',
+          steps: [
+            'Create BOM with components',
+            'Run production order',
+            'Verify component consumption',
+            'Check finished goods valuation',
+            'Review cost roll-up'
+          ],
+          purpose: 'validates production costing'
+        }),
+
+        this.renderTestCard('tax_reporting', 'Tax Reporting Test', [
+          'Create sales transaction with tax',
+          'Create purchase with recoverable tax',
+          'Generate tax report',
+          'Verify amounts match expectations'
+        ], 'validates tax configuration')
+      ]),
+
+      el('div', { className: 'run-tests-action' }, [
+        el('button', { className: 'btn-primary', text: '▶️ Run All Tests' }),
+        el('p', { className: 'help-text', text: 'Tests run in a safe sandbox and don\'t affect your data' })
+      ]),
+
+      el('div', { className: 'test-results', style: 'display:none' }, [
+        el('h4', { text: 'Test Results' }),
+        el('div', { className: 'result-placeholder', text: 'Tests not yet run' })
+      ]),
+
+      this.renderWizardActions(['Back', 'Next'])
+    ]);
+  }
+
+  renderReadinessPhase() {
+    return el('div', { className: 'wizard-phase' }, [
+      el('h3', { text: 'Go-Live Readiness Decision' }),
+      
+      el('div', { className: 'decision-box' }, [
+        el('h4', { text: 'Readiness Statement' }),
+        el('p', { text: 'Based on the validation checks above, select your readiness status:' }),
+
+        this.renderReadinessOption('ready', {
+          icon: '🟢',
+          title: 'Operationally Ready',
+          description: 'All critical blockers resolved. Evidence complete. Can start transactions with confidence.',
+          conditions: [
+            'All required phases complete',
+            'No critical blockers remaining',
+            'Evidence provided for all checkpoints',
+            'Validation tests passed',
+            'Acceptance criteria met'
+          ]
+        }),
+
+        this.renderReadinessOption('ready_with_deferments', {
+          icon: '🟡',
+          title: 'Ready with Accepted Deferments',
+          description: 'Core setup complete. Some items deferred with documented conditions and explicit acceptance.',
+          conditions: [
+            'Critical blockers resolved',
+            'Deferred items have documented conditions',
+            'Phase-2 plan in place for deferred work',
+            'Business owner accepts deferment risks'
+          ]
+        }),
+
+        this.renderReadinessOption('not_ready', {
+          icon: '🔴',
+          title: 'Not Yet Ready',
+          description: 'Critical items remain unresolved. More work needed before operational use.',
+          conditions: [
+            'Critical blockers remain',
+            'Required phases incomplete',
+            'Insufficient evidence for key decisions',
+            'Validation tests failed'
+          ],
+          recommendedAction: 'Continue working through pending wizards and resolve blockers'
+        }),
+
+        this.renderReadinessOption('pilot_ready', {
+          icon: '🔵',
+          title: 'Pilot/Limited Ready',
+          description: 'Ready for controlled pilot with limited scope and manual oversight.',
+          conditions: [
+            'Core flow functional',
+            'Limited transaction volume',
+            'Manual reconciliation required',
+            'Close monitoring in place'
+          ]
+        })
+      ]),
+
+      el('div', { className: 'final-checklist' }, [
+        el('h4', { text: 'Final Acceptance Checklist' }),
+        
+        this.formCheckbox('check_backup', 'I have backed up or am in a test environment'),
+        this.formCheckbox('check_accountant', 'My accountant has reviewed the accounting setup'),
+        this.formCheckbox('check_training', 'Key users have received training on their modules'),
+        this.formCheckbox('check_support', 'I have access to support for the first 30 days'),
+        this.formCheckbox('check_rollback', 'I understand rollback procedures if critical issues arise'),
+        this.formCheckbox('check_readiness', 'I accept responsibility for this go-live decision')
+      ]),
+
+      el('div', { className: 'readiness-summary' }, [
+        el('h4', { text: 'Summary' }),
+        el('div', { className: 'summary-grid' }, [
+          el('div', { className: 'summary-item' }, [
+            el('span', { text: 'Setup Progress' }),
+            el('strong', { text: '85%' })
+          ]),
+          el('div', { className: 'summary-item' }, [
+            el('span', { text: 'Critical Blockers' }),
+            el('strong', { className: 'danger', text: '2' })
+          ]),
+          el('div', { className: 'summary-item' }, [
+            el('span', { text: 'Warnings' }),
+            el('strong', { className: 'warning', text: '3' })
+          ]),
+          el('div', { className: 'summary-item' }, [
+            el('span', { text: 'Validation Tests' }),
+            el('strong', { className: 'warning', text: 'Not Run' })
+          ])
+        ])
+      ]),
+
+      el('div', { className: 'actions-final' }, [
+        el('button', { className: 'btn-secondary', text: '⬇️ Export Readiness Report' }),
+        el('button', { className: 'btn-secondary', text: '📧 Email Stakeholders' }),
+        el('button', { className: 'btn-primary', text: '✅ Confirm Go-Live Status' })
+      ]),
+
+      this.renderWizardActions(['Back', 'Finish'])
+    ]);
+  }
+
+  renderPhaseStatus(id, name, status, options = {}) {
+    const statusClass = status.complete ? 'complete' : status.blocked ? 'blocked' : 'pending';
+    const icon = status.complete ? '✅' : status.blocked ? '🔴' : status.inProgress ? '🔄' : '⏳';
+
+    return el('div', { className: `phase-status ${statusClass} ${options.optional ? 'optional' : ''}` }, [
+      el('div', { className: 'phase-icon' }, el('span', { text: icon })),
+      el('div', { className: 'phase-info' }, [
+        el('strong', { text: name }),
+        options.optional ? el('span', { className: 'optional-badge', text: 'Optional' }) : null,
+        el('span', { className: 'status-detail', text: status.message || status.status })
+      ]),
+      el('div', { className: 'phase-progress' }, [
+        el('div', { className: 'progress-bar' }, [
+          el('div', { className: 'progress-fill', style: `width: ${status.percent}%` })
+        ]),
+        el('span', { className: 'percent', text: `${status.percent}%` })
+      ])
+    ]);
+  }
+
+  renderBlockerCard(blocker, level) {
+    return el('div', { className: `blocker-card ${level}` }, [
+      el('div', { className: 'blocker-header' }, [
+        el('span', { className: 'blocker-phase', text: blocker.phase }),
+        el('span', { className: `severity ${level}`, text: level.toUpperCase() })
+      ]),
+      el('h5', { text: blocker.title }),
+      el('p', { text: blocker.description }),
+      blocker.action
+        ? el('div', { className: 'blocker-action' }, [
+            el('span', { text: 'Required Action: ' }),
+            el('strong', { text: blocker.action })
+          ])
+        : null,
+      el('div', { className: 'blocker-resolution' }, [
+        el('button', { className: 'btn-link', text: 'Resolve Now →' }),
+        level !== 'critical' ? el('button', { className: 'btn-link', text: 'Defer with Conditions' }) : null
+      ])
+    ]);
+  }
+
+  renderTestCard(id, title, steps, purpose) {
+    return el('div', { className: 'test-card', 'data-test': id }, [
+      el('div', { className: 'test-header' }, [
+        el('input', { type: 'checkbox', id: `test-${id}` }),
+        el('label', { htmlFor: `test-${id}` }, [
+          el('strong', { text: title }),
+          el('span', { className: 'test-purpose', text: purpose })
+        ])
+      ]),
+      el('div', { className: 'test-steps' }, [
+        el('ol', {}, steps.map(s => el('li', { text: s })))
+      ]),
+      el('div', { className: 'test-status', style: 'display:none' }, [
+        el('span', { className: 'status-icon', text: '⏳' }),
+        el('span', { text: 'Not Run' })
+      ])
+    ]);
+  }
+
+  renderReadinessOption(id, config) {
+    return el('div', { className: 'readiness-option' }, [
+      el('input', { type: 'radio', name: 'readiness_status', value: id, id: `ready-${id}` }),
+      el('label', { htmlFor: `ready-${id}`, className: 'readiness-label' }, [
+        el('div', { className: 'option-header' }, [
+          el('span', { className: 'option-icon', text: config.icon }),
+          el('strong', { className: 'option-title', text: config.title })
+        ]),
+        el('p', { className: 'option-desc', text: config.description }),
+        el('div', { className: 'conditions' }, [
+          el('strong', { text: 'Conditions:' }),
+          el('ul', {}, config.conditions.map(c => el('li', { text: c })))
+        ]),
+        config.recommendedAction
+          ? el('div', { className: 'recommended-action' }, [
+              el('strong', { text: 'Action: ' }),
+              el('span', { text: config.recommendedAction })
+            ])
+          : null
+      ])
+    ]);
+  }
+
+  async gatherImplementationStatus() {
+    // This would query the actual project state
+    return {
+      percentComplete: 85,
+      complete: 8,
+      pending: 3,
+      blockers: 2,
+      phases: {
+        entry: { complete: true, percent: 100, status: 'complete', message: 'Database created' },
+        foundation: { complete: true, percent: 100, status: 'complete', message: 'Company configured' },
+        users: { complete: true, percent: 100, status: 'complete', message: '5 users, 3 roles' },
+        masterdata: { complete: true, percent: 95, status: 'complete', message: '314 products, 4 categories' },
+        crm: { complete: false, percent: 60, status: 'pending', message: 'Stages defined, teams pending' },
+        sales: { complete: true, percent: 100, status: 'complete', message: 'Pricelists configured' },
+        purchase: { complete: true, percent: 100, status: 'complete', message: 'Vendor categories set' },
+        inventory: { complete: true, percent: 100, status: 'complete', message: '2 warehouses, 8 operations' },
+        manufacturing: { complete: false, percent: 40, status: 'blocked', message: 'Workcenters created, BOMs pending' },
+        accounting: { complete: true, percent: 100, status: 'complete', message: 'Chart of accounts, taxes configured' },
+        extended: { complete: false, percent: 0, status: 'pending', message: 'Not started' }
+      }
+    };
+  }
+
+  async getBlockers() {
+    return {
+      critical: [
+        { phase: 'Manufacturing', title: 'BOM Missing for Finished Products', description: 'Products in inventory have no BOM defined for production planning.', action: 'Create BOMs in Manufacturing wizard' }
+      ],
+      warnings: [
+        { phase: 'CRM', title: 'Sales Teams Not Assigned', description: 'Leads will route to default team only.', action: 'Assign salespeople to teams' },
+        { phase: 'Master Data', title: 'Product Categories Missing Cost Methods', description: 'Some products will use default costing method.' }
+      ],
+      deferred: [
+        { phase: 'Extended', title: 'Quality Module Deferred', description: 'Planned for Phase 2 implementation.', conditions: 'Must implement before ISO audit in Q3' }
+      ]
+    };
+  }
+
+  async onApply() {
+    // Record the go-live decision
+    const decision = {
+      status: this.getField('readiness_status'),
+      timestamp: new Date().toISOString(),
+      percentComplete: 85,
+      blockers: 2,
+      warnings: 3,
+      validatedBy: this.getCurrentUser(),
+      acceptanceChecks: {
+        backup: this.getField('check_backup'),
+        accountant: this.getField('check_accountant'),
+        training: this.getField('check_training'),
+        support: this.getField('check_support'),
+        rollback: this.getField('check_rollback'),
+        responsibility: this.getField('check_readiness')
+      }
+    };
+
+    // Save to project state
+    await this.saveGoLiveDecision(decision);
+
+    // Show final summary
+    this.showFinalSummary(decision);
+
+    // Navigate to completion
+    this.navigateToCompletion();
+  }
+
+  showFinalSummary(decision) {
+    // Modal or full-page summary
+    console.log('Go-Live Decision:', decision);
+  }
+
+  // Helper methods
+  getCurrentUser() { return 'current-user'; }
+  async saveGoLiveDecision(decision) { /* ... */ }
+  navigateToCompletion() { /* ... */ }
+}

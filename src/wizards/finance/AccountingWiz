@@ -1,0 +1,548 @@
+import { el } from '../../../frontend/lib/dom.js';
+import { WizardShell } from '../../components/WizardShell.js';
+
+/**
+ * AccountingWizard - Finance Phase 1
+ * 
+ * Sets up fiscal year, chart of accounts, and core accounting policies.
+ * 
+ * CRITICAL: Finance setup affects INVENTORY VALUATION, MANUFACTURING COSTING, and SALES INVOICING
+ * Must be completed BEFORE finalizing those operational areas.
+ * 
+ * Odoo Sequence: Finance comes AFTER Manufacturing setup (for costing integration)
+ * Odoo Models: account.account, account.journal, res.company (fiscal fields), account.tax
+ */
+
+export class AccountingWizard extends WizardShell {
+  constructor(options = {}) {
+    super({
+      title: 'Set Up Your Company Accounting',
+      subtitle: 'Define fiscal year, accounting method, and tax policies',
+      icon: 'calculator',
+      phase: 'finance',
+      warning: '⚠️ This affects inventory valuation, manufacturing costs, and sales pricing',
+      ...options
+    });
+
+    this.phases = [
+      { id: 'fiscal', label: 'Fiscal Setup', icon: 'calendar' },
+      { id: 'accounts', label: 'Chart of Accounts', icon: 'list' },
+      { id: 'taxes', label: 'Taxes', icon: 'percent' },
+      { id: 'valuation', label: 'Inventory Valuation', icon: 'package' },
+      { id: 'journals', label: 'Journals', icon: 'book' },
+      { id: 'review', label: 'Review & Apply', icon: 'check' }
+    ];
+  }
+
+  renderFiscalPhase() {
+    return el('div', { className: 'wizard-phase' }, [
+      el('h3', { text: 'When is your fiscal year?' }),
+      el('p', { className: 'help-text', text: 'This determines reporting periods, tax filings, and year-end closing.' }),
+
+      el('div', { className: 'form-section critical' }, [
+        el('div', { className: 'warning-badge' }, [
+          el('span', { text: '⚠️' }),
+          el('strong', { text: 'Critical Decision' }),
+          el('p', { text: 'Cannot be easily changed after transactions exist' })
+        ]),
+
+        el('h4', { text: 'Fiscal Year Configuration' }),
+        
+        this.formSelect('fiscal_year_start', 'Fiscal Year Start Month', [
+          { value: '1', label: 'January (Calendar Year)' },
+          { value: '2', label: 'February' },
+          { value: '3', label: 'March' },
+          { value: '4', label: 'April' },
+          { value: '5', label: 'May' },
+          { value: '6', label: 'June' },
+          { value: '7', label: 'July' },
+          { value: '8', label: 'August' },
+          { value: '9', label: 'September' },
+          { value: '10', label: 'October' },
+          { value: '11', label: 'November' },
+          { value: '12', label: 'December' }
+        ], { helpText: 'When does your financial year begin?' }),
+
+        this.formField('fiscal_year_lock', 'Lock Date (transactions before this date are locked)', 'date', {
+          helpText: 'Typically the last day of your previous fiscal year'
+        }),
+
+        this.formSelect('accounting_basis', 'Accounting Basis', [
+          { value: 'accrual', label: 'Accrual (recognize revenue/expense when earned/incurred)' },
+          { value: 'cash', label: 'Cash (recognize when money moves)' },
+          { value: 'hybrid', label: 'Hybrid (accrual for sales, cash for expenses)' }
+        ], { 
+          helpText: 'Accrual is recommended for manufacturing; Cash is simpler for retail',
+          warning: 'Affects inventory valuation method'
+        })
+      ]),
+
+      el('div', { className: 'form-section' }, [
+        el('h4', { text: 'Currency & Localization' }),
+        this.formSelect('main_currency', 'Main Currency', [
+          { value: 'USD', label: 'USD - US Dollar' },
+          { value: 'EUR', label: 'EUR - Euro' },
+          { value: 'GBP', label: 'GBP - British Pound' },
+          { value: 'ZAR', label: 'ZAR - South African Rand' },
+          { value: 'AUD', label: 'AUD - Australian Dollar' },
+          { value: 'CAD', label: 'CAD - Canadian Dollar' },
+          { value: 'other', label: 'Other (search...)' }
+        ]),
+        this.formToggle('multi_currency', 'Enable Multi-Currency', {
+          helpText: 'Needed if you buy/sell in currencies other than your main currency'
+        })
+      ]),
+
+      el('div', { className: 'info-box critical' }, [
+        el('strong', { text: 'Impact Warning:' }),
+        el('p', { text: 'Inventory valuation (FIFO, average cost) and manufacturing cost rollups depend on these settings. Sales pricing and margins are calculated using these figures.' })
+      ]),
+
+      this.renderWizardActions(['Back', 'Next'])
+    ]);
+  }
+
+  renderAccountsPhase() {
+    return el('div', { className: 'wizard-phase' }, [
+      el('h3', { text: 'Set up your Chart of Accounts' }),
+      el('p', { className: 'help-text', text: 'Accounts track where money comes from and goes. Odoo includes standard templates.' }),
+
+      el('div', { className: 'form-section' }, [
+        el('h4', { text: 'Chart Template Selection' }),
+        
+        this.renderTemplateSelector('chart_template', [
+          { 
+            id: 'generic_coa', 
+            name: 'Generic Chart of Accounts', 
+            description: 'Standard accounts suitable for most businesses',
+            accounts: 45,
+            popular: true
+          },
+          { 
+            id: 'manufacturing_coa', 
+            name: 'Manufacturing Chart', 
+            description: 'Includes WIP, overhead absorption, variance accounts',
+            accounts: 62,
+            recommendedFor: ['Manufacturing']
+          },
+          { 
+            id: 'retail_coa', 
+            name: 'Retail/Trading Chart', 
+            description: 'Optimized for buy-sell operations',
+            accounts: 38,
+            recommendedFor: ['Retail', 'Distribution']
+          },
+          { 
+            id: 'service_coa', 
+            name: 'Service Business Chart', 
+            description: 'Professional services, consulting',
+            accounts: 32,
+            recommendedFor: ['Services']
+          }
+        ]),
+
+        el('div', { className: 'account-preview' }, [
+          el('h5', { text: 'Key Accounts Preview' }),
+          el('div', { className: 'account-list' }, [
+            el('div', { className: 'account-row header' }, [
+              el('span', { text: 'Code' }),
+              el('span', { text: 'Account Name' }),
+              el('span', { text: 'Type' })
+            ]),
+            el('div', { className: 'account-row' }, [
+              el('span', { text: '1000' }),
+              el('span', { text: 'Cash and Bank' }),
+              el('span', { className: 'type-asset', text: 'Asset' })
+            ]),
+            el('div', { className: 'account-row' }, [
+              el('span', { text: '1100' }),
+              el('span', { text: 'Accounts Receivable' }),
+              el('span', { className: 'type-asset', text: 'Asset' })
+            ]),
+            el('div', { className: 'account-row' }, [
+              el('span', { text: '1200' }),
+              el('span', { text: 'Inventory' }),
+              el('span', { className: 'type-asset', text: 'Asset' })
+            ]),
+            el('div', { className: 'account-row' }, [
+              el('span', { text: '2100' }),
+              el('span', { text: 'Accounts Payable' }),
+              el('span', { className: 'type-liability', text: 'Liability' })
+            ]),
+            el('div', { className: 'account-row' }, [
+              el('span', { text: '4000' }),
+              el('span', { text: 'Sales Revenue' }),
+              el('span', { className: 'type-income', text: 'Income' })
+            ]),
+            el('div', { className: 'account-row' }, [
+              el('span', { text: '5000' }),
+              el('span', { text: 'Cost of Goods Sold' }),
+              el('span', { className: 'type-expense', text: 'Expense' })
+            ])
+          ])
+        ])
+      ]),
+
+      el('div', { className: 'form-section' }, [
+        el('h4', { text: 'Custom Accounts (Optional)' }),
+        this.renderDynamicList('custom_accounts', [
+          { name: 'code', label: 'Account Code', type: 'text', width: '100px' },
+          { name: 'name', label: 'Account Name', type: 'text' },
+          { name: 'type', label: 'Type', type: 'select', options: ['Asset', 'Liability', 'Equity', 'Income', 'Expense'] }
+        ])
+      ]),
+
+      this.renderWizardActions(['Back', 'Next'])
+    ]);
+  }
+
+  renderTaxesPhase() {
+    return el('div', { className: 'wizard-phase' }, [
+      el('h3', { text: 'Set up your tax configuration' }),
+      el('p', { className: 'help-text', text: 'Taxes affect sales prices, purchase costs, and financial reports.' }),
+
+      el('div', { className: 'form-section' }, [
+        el('h4', { text: 'Sales Taxes (Output VAT)' }),
+        
+        this.renderTaxTemplateSelector('sales_taxes', [
+          { country: 'US', name: 'US Sales Tax', rates: ['0%', '5%', '8%', '10%'] },
+          { country: 'EU', name: 'EU VAT', rates: ['0%', '5%', '10%', '20%'] },
+          { country: 'UK', name: 'UK VAT', rates: ['0%', '5%', '20%'] },
+          { country: 'ZA', name: 'South Africa VAT', rates: ['0%', '15%'] },
+          { country: 'AU', name: 'Australia GST', rates: ['0%', '10%'] },
+          { country: 'other', name: 'Custom Configuration', rates: ['Define manually'] }
+        ]),
+
+        this.formMultiSelect('applicable_sales_taxes', 'Taxes to Apply', [
+          { value: 'standard', label: 'Standard Rate (most sales)' },
+          { value: 'reduced', label: 'Reduced Rate (essential goods)' },
+          { value: 'zero', label: 'Zero Rate (exports, exempt)' }
+        ]),
+
+        this.formToggle('tax_included_prices', 'Prices include tax', {
+          helpText: 'Toggle between tax-included (retail) vs tax-excluded (B2B) pricing'
+        })
+      ]),
+
+      el('div', { className: 'form-section' }, [
+        el('h4', { text: 'Purchase Taxes (Input VAT)' }),
+        this.formSelect('purchase_tax_treatment', 'Default Purchase Tax', [
+          { value: 'recoverable', label: 'Recoverable (deduct from VAT owed)' },
+          { value: 'non_recoverable', label: 'Non-recoverable (add to product cost)' },
+          { value: 'mixed', label: 'Mixed (depends on product category)' }
+        ], {
+          helpText: 'How purchase tax affects your product costs',
+          warning: 'Directly impacts inventory valuation and COGS'
+        })
+      ]),
+
+      el('div', { className: 'info-box' }, [
+        el('strong', { text: 'Tax Impact on Inventory:' }),
+        el('p', { text: 'When purchase tax is non-recoverable, it is added to the product cost. This increases inventory value and Cost of Goods Sold.' })
+      ]),
+
+      this.renderWizardActions(['Back', 'Next'])
+    ]);
+  }
+
+  renderValuationPhase() {
+    return el('div', { className: 'wizard-phase' }, [
+      el('h3', { text: 'How should inventory be valued?' }),
+      el('p', { className: 'help-text', text: 'This determines your Cost of Goods Sold and inventory asset value.' }),
+
+      el('div', { className: 'form-section critical' }, [
+        el('div', { className: 'warning-badge' }, [
+          el('span', { text: '⚠️' }),
+          el('strong', { text: 'Manufacturing Impact' }),
+          el('p', { text: 'Affects production costing and variance reporting' })
+        ]),
+
+        el('h4', { text: 'Inventory Valuation Method' }),
+        
+        this.renderValuationMethodSelector('valuation_method', [
+          { 
+            id: 'standard', 
+            name: 'Standard Cost', 
+            description: 'Fixed cost per unit, variances tracked separately',
+            pros: ['Predictable margins', 'Easy budgeting', 'Variance analysis'],
+            cons: ['Requires cost updates', 'Variances need management'],
+            bestFor: ['Manufacturing', 'Stable pricing']
+          },
+          { 
+            id: 'average', 
+            name: 'Average Cost (AVCO)', 
+            description: 'Weighted average of all receipts',
+            pros: ['Smooths price fluctuations', 'Automatic updates'],
+            cons: ['Lagging indicator', 'Less precise than standard'],
+            bestFor: ['Trading', 'Volatile prices', 'Simplicity']
+          },
+          { 
+            id: 'fifo', 
+            name: 'FIFO (First In, First Out)', 
+            description: 'Oldest stock used first',
+            pros: ['Matches physical flow', 'Lower COGS in inflation'],
+            cons: ['Complex tracking', 'Inflated margins in deflation'],
+            bestFor: ['Perishables', 'Regulatory requirement']
+          },
+          { 
+            id: 'real', 
+            name: 'Real Price/Actual', 
+            description: 'Exact lot tracking (lots/serials)',
+            pros: ['Most accurate', 'Required for regulated products'],
+            cons: ['High overhead', 'Requires lot tracking'],
+            bestFor: ['Pharma', 'Aerospace', 'Traceability required']
+          }
+        ]),
+
+        this.formSelect('valuation_accounting', 'Accounting Method', [
+          { value: 'continental', label: 'Continental (Stock account is asset, moves to expense at sale)' },
+          { value: 'anglo_saxon', label: 'Anglo-Saxon (Direct to COGS at sale)' }
+        ], {
+          helpText: 'Continental shows inventory as asset; Anglo-Saxon is simpler but less visible'
+        })
+      ]),
+
+      el('div', { className: 'valuation-impact-preview' }, [
+        el('h4', { text: 'Impact on Your Business' }),
+        el('div', { className: 'impact-grid' }, [
+          el('div', { className: 'impact-item' }, [
+            el('strong', { text: 'Inventory Report' }),
+            el('p', { text: 'Asset value on balance sheet' })
+          ]),
+          el('div', { className: 'impact-item' }, [
+            el('strong', { text: 'Profit & Loss' }),
+            el('p', { text: 'Cost of Goods Sold affects gross margin' })
+          ]),
+          el('div', { className: 'impact-item' }, [
+            el('strong', { text: 'Manufacturing' }),
+            el('p', { text: 'Component costs roll up to finished goods' })
+          ]),
+          el('div', { className: 'impact-item' }, [
+            el('strong', { text: 'Pricing' }),
+            el('p', { text: 'Markup calculations use these costs' })
+          ])
+        ])
+      ]),
+
+      this.renderWizardActions(['Back', 'Next'])
+    ]);
+  }
+
+  renderJournalsPhase() {
+    return el('div', { className: 'wizard-phase' }, [
+      el('h3', { text: 'Configure accounting journals' }),
+      el('p', { className: 'help-text', text: 'Journals organize transactions by type (sales, purchases, bank, etc.)' }),
+
+      el('div', { className: 'form-section' }, [
+        el('h4', { text: 'Core Journals (Required)' }),
+        
+        this.renderJournalConfig('sales_journal', 'Sales Journal', {
+          type: 'sale',
+          defaultAccount: '4000 - Sales Revenue',
+          required: true
+        }),
+        
+        this.renderJournalConfig('purchase_journal', 'Purchase Journal', {
+          type: 'purchase',
+          defaultAccount: '5000 - Cost of Goods Sold',
+          required: true
+        }),
+        
+        this.renderJournalConfig('bank_journal', 'Bank Journal', {
+          type: 'bank',
+          defaultAccount: '1000 - Cash and Bank',
+          required: true
+        }),
+        
+        this.renderJournalConfig('cash_journal', 'Cash Journal', {
+          type: 'cash',
+          defaultAccount: '1000 - Cash and Bank',
+          required: true
+        }),
+        
+        this.renderJournalConfig('inventory_journal', 'Inventory Journal', {
+          type: 'general',
+          defaultAccount: '1200 - Inventory',
+          required: true,
+          note: 'Used for stock valuation adjustments'
+        }),
+        
+        this.renderJournalConfig('production_journal', 'Production Journal', {
+          type: 'general',
+          defaultAccount: '6000 - Manufacturing Overhead',
+          required: false,
+          note: 'For manufacturing variance postings',
+          showOnlyIf: 'has_manufacturing'
+        })
+      ]),
+
+      el('div', { className: 'form-section' }, [
+        el('h4', { text: 'Journal Configuration' }),
+        this.formToggle('centralized_journal', 'Centralized Journals', {
+          helpText: 'One journal per type for all branches vs. separate journals per location'
+        }),
+        this.formToggle('auto_post', 'Auto-post journal entries', {
+          helpText: 'Draft entries are posted automatically (vs. manual review)'
+        })
+      ]),
+
+      this.renderWizardActions(['Back', 'Next'])
+    ]);
+  }
+
+  renderReviewPhase() {
+    return el('div', { className: 'wizard-phase' }, [
+      el('h3', { text: 'Review your accounting setup' }),
+      
+      el('div', { className: 'warning-box critical' }, [
+        el('strong', { text: '⚠️ Critical Impact Warning' }),
+        el('p', { text: 'These settings will affect inventory valuation, manufacturing costs, sales margins, and all financial reports. Once transactions exist, changing these requires data migration.' })
+      ]),
+
+      this.renderPreviewPanel('Fiscal Configuration', [
+        ['Fiscal Year Start', this.getMonthName(this.getField('fiscal_year_start'))],
+        ['Accounting Basis', this.getField('accounting_basis')],
+        ['Main Currency', this.getField('main_currency')],
+        ['Multi-Currency', this.getField('multi_currency') ? 'Enabled' : 'Disabled']
+      ]),
+
+      this.renderPreviewPanel('Chart of Accounts', [
+        ['Template', this.getField('chart_template')],
+        ['Accounts', '45+ accounts'],
+        ['Custom Accounts', `${this.listLength('custom_accounts')} added`]
+      ]),
+
+      this.renderPreviewPanel('Taxes & Valuation', [
+        ['Sales Tax', this.getField('applicable_sales_taxes')?.join(', ')],
+        ['Tax in Prices', this.getField('tax_included_prices') ? 'Included' : 'Excluded'],
+        ['Purchase Tax', this.getField('purchase_tax_treatment')],
+        ['Inventory Method', this.getField('valuation_method')]
+      ]),
+
+      this.renderPreviewPanel('Journals', [
+        ['Sales Journal', 'Active'],
+        ['Purchase Journal', 'Active'],
+        ['Bank Journal', 'Active'],
+        ['Inventory Journal', 'Active']
+      ]),
+
+      el('div', { className: 'safety-notice critical' }, [
+        el('span', { className: 'safety-icon', text: '🛡️' }),
+        el('p', { text: 'Rollback available but limited. Accounting configurations create database structures that persist even after rollback. Test in a sandbox first if possible.' })
+      ]),
+
+      el('div', { className: 'confirmation-checkbox' }, [
+        el('input', { type: 'checkbox', id: 'accounting_confirm', required: true }),
+        el('label', { htmlFor: 'accounting_confirm' }, [
+          el('strong', { text: 'I understand this affects my entire financial reporting' }),
+          el('p', { text: 'I confirm these settings match my accountant\'s requirements and my business model.' })
+        ])
+      ]),
+
+      this.renderWizardActions(['Back', 'Apply Accounting Setup'])
+    ]);
+  }
+
+  renderValuationMethodSelector(id, methods) {
+    return el('div', { className: 'valuation-selector' },
+      methods.map(m => el('div', { className: 'valuation-card', 'data-method': m.id }, [
+        el('div', { className: 'card-header' }, [
+          el('input', { type: 'radio', name: id, value: m.id, id: `val-${m.id}` }),
+          el('label', { htmlFor: `val-${m.id}` }, [
+            el('strong', { text: m.name }),
+            el('span', { className: 'recommended-badge', text: m.bestFor?.join(', ') })
+          ])
+        ]),
+        el('p', { className: 'description', text: m.description }),
+        el('div', { className: 'pros-cons' }, [
+          el('div', { className: 'pros' }, [
+            el('strong', { text: 'Pros:' }),
+            el('ul', {}, m.pros.map(p => el('li', { text: p })))
+          ]),
+          el('div', { className: 'cons' }, [
+            el('strong', { text: 'Cons:' }),
+            el('ul', {}, m.cons.map(c => el('li', { text: c })))
+          ])
+        ])
+      ]))
+    );
+  }
+
+  renderJournalConfig(id, name, config) {
+    return el('div', { className: `journal-config ${config.required ? 'required' : ''}` }, [
+      el('div', { className: 'journal-header' }, [
+        el('input', { type: 'checkbox', checked: config.required, disabled: config.required, id: id }),
+        el('label', { htmlFor: id }, [
+          el('strong', { text: name }),
+          config.required ? el('span', { className: 'required-badge', text: 'Required' }) : null
+        ])
+      ]),
+      el('div', { className: 'journal-details' }, [
+        el('span', { text: `Type: ${config.type}` }),
+        el('span', { text: `Default: ${config.defaultAccount}` }),
+        config.note ? el('small', { text: config.note }) : null
+      ])
+    ]);
+  }
+
+  async onApply() {
+    const rollback = new RollbackEngine({ client: this.odooClient });
+    
+    // Verify confirmation checkbox
+    if (!this.getField('accounting_confirm')) {
+      this.showError('You must confirm understanding of the accounting impact.');
+      return;
+    }
+
+    try {
+      rollback.beginTransaction('Accounting Setup');
+
+      // Update company fiscal settings
+      await rollback.execute('res.company', 'write', 1, {
+        fiscalyear_last_month: parseInt(this.getField('fiscal_year_start')),
+        account_sale_tax_id: this.getTaxId('sales'),
+        account_purchase_tax_id: this.getTaxId('purchase')
+      });
+
+      // Install chart of accounts from template
+      const chartTemplate = this.getField('chart_template');
+      await this.installChartOfAccounts(chartTemplate, rollback);
+
+      // Create custom accounts
+      const customAccounts = this.getList('custom_accounts');
+      for (const acc of customAccounts) {
+        await rollback.execute('account.account', 'create', {
+          code: acc.code,
+          name: acc.name,
+          account_type: this.mapAccountType(acc.type)
+        });
+      }
+
+      // Configure taxes
+      await this.configureTaxes(rollback);
+
+      // Set inventory valuation method on product categories
+      await this.configureInventoryValuation(rollback);
+
+      // Create/update journals
+      await this.configureJournals(rollback);
+
+      rollback.commit();
+      this.showSuccess('Accounting setup complete!');
+      this.navigateToNextWizard('GoLiveWizard');
+
+    } catch (error) {
+      await rollback.rollback();
+      this.showError('Accounting setup failed: ' + error.message);
+    }
+  }
+
+  // Helper methods would be implemented here
+  getMonthName(monthNum) { /* ... */ }
+  getTaxId(type) { /* ... */ }
+  async installChartOfAccounts(template, rollback) { /* ... */ }
+  mapAccountType(type) { /* ... */ }
+  async configureTaxes(rollback) { /* ... */ }
+  async configureInventoryValuation(rollback) { /* ... */ }
+  async configureJournals(rollback) { /* ... */ }
+}

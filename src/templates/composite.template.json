@@ -1,0 +1,174 @@
+{
+  "name": "Composite (Manufacturing + Distribution)",
+  "slug": "composite",
+  "description": "Full-featured manufacturing and distribution operation with advanced inventory, quality, and logistics",
+  "icon": "layers",
+  "category": "mixed",
+  "odooVersion": "19.0",
+  "modules": {
+    "required": [
+      "mrp",
+      "stock",
+      "purchase",
+      "sales"
+    ],
+    "recommended": [
+      "quality_control",
+      "maintenance",
+      "stock_dropshipping",
+      "delivery"
+    ],
+    "optional": [
+      "plm",
+      "subcontracting",
+      "stock_landed_costs",
+      "stock_picking_batch"
+    ]
+  },
+  "dependencies": {
+    "after": ["foundation", "users", "master_data"],
+    "before": ["finance"]
+  },
+  "checkpoints": [
+    {
+      "id": "multi_warehouse",
+      "name": "Multi-Warehouse Setup",
+      "description": "Configure multiple warehouses for manufacturing and distribution",
+      "required": true,
+      "validation": {
+        "model": "stock.warehouse",
+        "condition": "count >= 2"
+      }
+    },
+    {
+      "id": "manufacturing_setup",
+      "name": "Manufacturing Configuration",
+      "description": "Work centers and BOMs configured",
+      "required": true,
+      "validation": {
+        "model": "mrp.workcenter",
+        "condition": "count > 0"
+      }
+    },
+    {
+      "id": "quality_system",
+      "name": "Quality Management",
+      "description": "Quality control points and checks configured",
+      "required": true,
+      "validation": {
+        "model": "quality.point",
+        "condition": "count > 0"
+      }
+    },
+    {
+      "id": "supplier_network",
+      "name": "Supplier Network",
+      "description": "Multiple suppliers configured with lead times",
+      "required": true,
+      "validation": {
+        "model": "res.partner",
+        "condition": "supplier_count > 0"
+      }
+    },
+    {
+      "id": "logistics_routes",
+      "name": "Logistics Routes",
+      "description": "Purchase, manufacturing, and fulfillment routes configured",
+      "required": true,
+      "validation": {
+        "model": "stock.route",
+        "condition": "count >= 3"
+      }
+    }
+  ],
+  "defaultData": {
+    "warehouses": [
+      {
+        "name": "Main Manufacturing Plant",
+        "code": "MFG",
+        "is_manufacturing_location": true
+      },
+      {
+        "name": "Central Distribution Center",
+        "code": "CDC",
+        "is_manufacturing_location": false
+      },
+      {
+        "name": "Regional Warehouse North",
+        "code": "RWN"
+      },
+      {
+        "name": "Regional Warehouse South",
+        "code": "RWS"
+      }
+    ],
+    "locations": [
+      {
+        "name": "Raw Materials Store",
+        "usage": "supplier",
+        "location_type": "storage"
+      },
+      {
+        "name": "Production Floor",
+        "usage": "production",
+        "location_type": "production"
+      },
+      {
+        "name": "Quality Control",
+        "usage": "quality",
+        "location_type": "qc"
+      },
+      {
+        "name": "Finished Goods",
+        "usage": "internal",
+        "location_type": "storage"
+      },
+      {
+        "name": "Packing Zone",
+        "usage": "packing",
+        "location_type": "packing"
+      },
+      {
+        "name": "Shipping Dock",
+        "usage": "internal",
+        "location_type": "output"
+      }
+    ],
+    "routes": [
+      {
+        "name": "Buy to Manufacturing",
+        "rule_type": "buy"
+      },
+      {
+        "name": "Manufacture to Stock",
+        "rule_type": "manufacture"
+      },
+      {
+        "name": "Stock to Customer",
+        "rule_type": "sell"
+      },
+      {
+        "name": "Drop Ship to Customer",
+        "rule_type": "dropship"
+      },
+      {
+        "name": "Transfer CDC to Regional",
+        "rule_type": "transfer"
+      }
+    ]
+  },
+  "workflow": {
+    "procurement": "buy",
+    "manufacturing": "make_to_order",
+    "inventory_method": "average",
+    "valuation": "real_time"
+  },
+  "settings": {
+    "manufacture_lead": 5,
+    "group_mrp_by_product": true,
+    "quality_control_at_receive": true,
+    "quality_control_at_produce": true,
+    "use_minimum_planning": true,
+    "propagate_minimum_planning": true
+  }
+}

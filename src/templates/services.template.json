@@ -1,0 +1,98 @@
+{
+  "name": "Services",
+  "slug": "services",
+  "description": "Projects, timesheets, service invoicing, and service level management",
+  "icon": "briefcase",
+  "category": "operations",
+  "odooVersion": "19.0",
+  "modules": {
+    "required": [
+      "project",
+      "sale_timesheet",
+      "account_analytic"
+    ],
+    "recommended": [
+      "helpdesk",
+      "timesheet_grid",
+      "project_forecast",
+      "rating"
+    ],
+    "optional": [
+      "project_purchase",
+      "project_mrp",
+      "helpdesk_account",
+      "field_service"
+    ]
+  },
+  "dependencies": {
+    "after": ["foundation", "users"],
+    "before": ["finance"]
+  },
+  "checkpoints": [
+    {
+      "id": "project_structure",
+      "name": "Project Structure",
+      "description": "Create at least one project",
+      "required": true,
+      "validation": {
+        "model": "project.project",
+        "condition": "count > 0"
+      }
+    },
+    {
+      "id": "project_stages",
+      "name": "Project Stages",
+      "description": "Define project lifecycle stages",
+      "required": true,
+      "validation": {
+        "model": "project.task.type",
+        "condition": "count > 0"
+      }
+    },
+    {
+      "id": "timesheet_employees",
+      "name": "Employee Timesheet Access",
+      "description": "Configure employee timesheet settings",
+      "required": true,
+      "validation": {
+        "model": "hr.employee",
+        "condition": "count > 0"
+      }
+    },
+    {
+      "id": "billing_rules",
+      "name": "Service Billing Rules",
+      "description": "Set up invoicing policies",
+      "required": true,
+      "validation": {
+        "model": "sale.order.template",
+        "condition": "count >= 0"
+      }
+    }
+  ],
+  "defaultData": {
+    "projects": [
+      {
+        "name": "Default Service Project",
+        "allow_timesheets": true,
+        "allow_billing": true,
+        "timesheet_encode_uom_id": "hour"
+      }
+    ],
+    "stages": [
+      {"name": "New", "sequence": 1},
+      {"name": "In Progress", "sequence": 2},
+      {"name": "Review", "sequence": 3},
+      {"name": "Done", "sequence": 4}
+    ]
+  },
+  "workflow": {
+    "billing": "timesheet",
+    "invoicing_policy": "delivery"
+  },
+  "settings": {
+    "project_time_mode_id": "hour",
+    "allow_timesheet_timer": true,
+    "timesheet_encode_uom_id": "hour"
+  }
+}

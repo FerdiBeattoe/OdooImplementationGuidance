@@ -1,0 +1,106 @@
+{
+  "name": "Professional Services",
+  "slug": "professional_services",
+  "description": "CRM, project management, time billing, and financial management for consulting firms",
+  "icon": "users",
+  "category": "services",
+  "odooVersion": "19.0",
+  "modules": {
+    "required": [
+      "crm",
+      "sale",
+      "project",
+      "account"
+    ],
+    "recommended": [
+      "sale_timesheet",
+      "timesheet_grid",
+      "crm_helpdesk",
+      "documents"
+    ],
+    "optional": [
+      "appointment",
+      "crm_iap_lead",
+      "crm_voip",
+      "mass_mailing"
+    ]
+  },
+  "dependencies": {
+    "after": ["foundation", "users"],
+    "before": []
+  },
+  "checkpoints": [
+    {
+      "id": "crm_pipeline",
+      "name": "CRM Pipeline",
+      "description": "Define sales pipeline stages",
+      "required": true,
+      "validation": {
+        "model": "crm.stage",
+        "condition": "count > 0"
+      }
+    },
+    {
+      "id": "sales_team",
+      "name": "Sales Teams",
+      "description": "Set up sales team structure",
+      "required": true,
+      "validation": {
+        "model": "crm.team",
+        "condition": "count > 0"
+      }
+    },
+    {
+      "id": "lead_sources",
+      "name": "Lead Sources",
+      "description": "Configure lead source tracking",
+      "required": false,
+      "validation": {
+        "model": "utm.source",
+        "condition": "count >= 0"
+      }
+    },
+    {
+      "id": "service_pricelist",
+      "name": "Service Pricelist",
+      "description": "Define billing rates",
+      "required": true,
+      "validation": {
+        "model": "product.pricelist",
+        "condition": "count > 0"
+      }
+    }
+  ],
+  "defaultData": {
+    "crm_stages": [
+      {"name": "New Lead", "sequence": 1, "is_won": false},
+      {"name": "Qualified", "sequence": 2, "is_won": false},
+      {"name": "Proposal", "sequence": 3, "is_won": false},
+      {"name": "Negotiation", "sequence": 4, "is_won": false},
+      {"name": "Won", "sequence": 5, "is_won": true},
+      {"name": "Lost", "sequence": 6, "is_won": false}
+    ],
+    "teams": [
+      {
+        "name": "Sales Team",
+        "member_ids": []
+      }
+    ],
+    "projects": [
+      {
+        "name": "Client Projects",
+        "allow_timesheets": true,
+        "allow_billing": true
+      }
+    ]
+  },
+  "workflow": {
+    "sales": "quotation",
+    "invoicing": "manual"
+  },
+  "settings": {
+    "use_lead": true,
+    "lead_duplicates": "merge",
+    "group_use_lead": true
+  }
+}

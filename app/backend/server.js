@@ -17,6 +17,36 @@ import {
   previewDomain
 } from "./engine.js";
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 10; // 10 requests per minute
+const requestLog = new Map();
+
+function checkRateLimit(clientId) {
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW_MS;
+  
+  // Clean old entries
+  for (const [key, timestamp] of requestLog) {
+    if (timestamp < windowStart) {
+      requestLog.delete(key);
+    }
+  }
+  
+  // Count requests in current window
+  const clientRequests = Array.from(requestLog.entries())
+    .filter(([key, timestamp]) => key.startsWith(`${clientId}:`) && timestamp >= windowStart)
+    .length;
+  
+  if (clientRequests >= RATE_LIMIT_MAX_REQUESTS) {
+    return { allowed: false, retryAfter: Math.ceil((RATE_LIMIT_WINDOW_MS - (now - windowStart)) / 1000) };
+  }
+  
+  // Log this request
+  requestLog.set(`${clientId}:${now}`, now);
+  return { allowed: true };
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..", "..");
@@ -47,6 +77,19 @@ if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
 export function createAppServer() {
   return createServer(async (req, res) => {
     try {
+      // Rate limiting
+      const clientId = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+      const rateCheck = checkRateLimit(clientId);
+      
+      if (!rateCheck.allowed) {
+        res.writeHead(429, {
+          "Content-Type": "application/json; charset=utf-8",
+          "Retry-After": rateCheck.retryAfter
+        });
+        res.end(JSON.stringify({ error: "Rate limit exceeded. Please try again later.", retryAfter: rateCheck.retryAfter }));
+        return;
+      }
+
       const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
       const pathname = requestUrl.pathname;
 

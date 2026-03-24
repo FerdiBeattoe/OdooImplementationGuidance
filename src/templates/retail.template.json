@@ -1,0 +1,114 @@
+{
+  "name": "Retail & Commerce",
+  "slug": "retail",
+  "description": "Point of Sale, eCommerce, inventory tracking, and multi-channel retail operations",
+  "icon": "shopping-cart",
+  "category": "commerce",
+  "odooVersion": "19.0",
+  "modules": {
+    "required": [
+      "point_of_sale",
+      "sale",
+      "stock"
+    ],
+    "recommended": [
+      "website_sale",
+      "website_sale_delivery",
+      "website_payment",
+      "loyalty"
+    ],
+    "optional": [
+      "pos_restaurant",
+      "pos_self_checkout",
+      "pos_blackbox_be",
+      "amazon_connector",
+      "shopify_connector"
+    ]
+  },
+  "dependencies": {
+    "after": ["foundation", "users", "master_data"],
+    "before": ["finance"]
+  },
+  "checkpoints": [
+    {
+      "id": "pos_config",
+      "name": "POS Configuration",
+      "description": "Set up point of sale terminals",
+      "required": true,
+      "validation": {
+        "model": "pos.config",
+        "condition": "count > 0"
+      }
+    },
+    {
+      "id": "pos_payment_methods",
+      "name": "Payment Methods",
+      "description": "Configure accepted payment methods",
+      "required": true,
+      "validation": {
+        "model": "pos.payment.method",
+        "condition": "count > 0"
+      }
+    },
+    {
+      "id": "pos_products",
+      "name": "POS Product Setup",
+      "description": "Products configured for point of sale",
+      "required": true,
+      "validation": {
+        "model": "product.product",
+        "condition": "count > 0"
+      }
+    },
+    {
+      "id": "inventory_locations",
+      "name": "Inventory Locations",
+      "description": "Warehouse and stock locations configured",
+      "required": true,
+      "validation": {
+        "model": "stock.location",
+        "condition": "count > 2"
+      }
+    }
+  ],
+  "defaultData": {
+    "warehouses": [
+      {
+        "name": "Main Store",
+        "code": "SHOP",
+        "is_retail_location": true
+      }
+    ],
+    "locations": [
+      {
+        "name": "Shop Floor",
+        "usage": "internal"
+      },
+      {
+        "name": "Storage Room",
+        "usage": "internal"
+      },
+      {
+        "name": "Returns",
+        "usage": "internal"
+      }
+    ],
+    "pricelists": [
+      {
+        "name": "Retail Price List",
+        "type": "sale"
+      }
+    ]
+  },
+  "workflow": {
+    "procurement": "buy",
+    "inventory_method": "average",
+    "valuation": "real_time"
+  },
+  "settings": {
+    "pos_auto_close": true,
+    "pos_receipt_footer": "Thank you for shopping with us!",
+    "allow_discount": true,
+    "max_discount": 10.0
+  }
+}

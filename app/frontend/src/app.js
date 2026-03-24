@@ -68,7 +68,8 @@ import {
   updateSalesEvidence,
   updateWebsiteEcommerceConfiguration,
   updateWebsiteEcommerceEvidence,
-  updateProjectIdentity
+  updateProjectIdentity,
+  addCompletedWizard
 } from "./state/app-store.js";
 import { renderLayoutShell } from "./components/layout-shell.js";
 import { renderConnectionPage } from "./views/connection-page.js";
@@ -76,6 +77,19 @@ import { renderDashboardView } from "./views/dashboard-view.js";
 import { renderDecisionsReadinessView } from "./views/decisions-readiness-view.js";
 import { renderDomainsView } from "./views/domains-view.js";
 import { renderStagesView } from "./views/stages-view.js";
+import { renderWizardLauncherView } from "./views/wizard-launcher-view.js";
+
+// Import wizards
+import { renderDatabaseCreationWizard } from "../../../src/wizards/DatabaseCreationWizard.js";
+import { renderCompanySetupWizard } from "../../../src/wizards/CompanySetupWizard.js";
+import { renderMasterDataWizard } from "../../../src/wizards/MasterDataWizard.js";
+import { renderCrmSetupWizard } from "../../../src/wizards/operations/CrmSetupWizard.js";
+import { renderSalesSetupWizard } from "../../../src/wizards/operations/SalesSetupWizard.js";
+import { renderInventorySetupWizard } from "../../../src/wizards/operations/InventorySetupWizard.js";
+import { renderPurchaseSetupWizard } from "../../../src/wizards/operations/PurchaseSetupWizard.js";
+import { renderManufacturingSetupWizard } from "../../../src/wizards/manufacturing/ManufacturingSetupWizard.js";
+import { renderAccountingSetupWizard } from "../../../src/wizards/finance/AccountingSetupWizard.js";
+import { renderGoLiveReadinessWizard } from "../../../src/wizards/finance/GoLiveReadinessWizard.js";
 
 export function renderApp(root) {
   const render = () => {
@@ -83,8 +97,7 @@ export function renderApp(root) {
     const { activeProject, notifications, projectStore } = getState();
     clearNode(root);
 
-    // ── First-time user: show the non-technical connection page
-    //    bypassing the full layout shell until they press Begin.
+    // First-time user: show the non-technical connection page
     const isFirstVisit = !activeProject.projectIdentity.projectName &&
       activeProject.workflowState.currentView === "dashboard";
 
@@ -132,6 +145,12 @@ export function renderApp(root) {
 }
 
 function renderCurrentView(project) {
+  // Wizard routes
+  if (project.workflowState.currentView.startsWith("wizard-")) {
+    const wizardId = project.workflowState.currentView.replace("wizard-", "");
+    return renderWizardView(project, wizardId);
+  }
+
   switch (project.workflowState.currentView) {
     case "stages":
       return renderStagesView(project, (stageId) => setCurrentView("stages", stageId));
@@ -191,8 +210,7 @@ function renderCurrentView(project) {
         onUpdateAccountingEvidence: updateAccountingEvidence,
         onUpdateInventoryConfiguration: updateInventoryConfiguration,
         onUpdateInventoryEvidence: updateInventoryEvidence,
-        onSelectDomain: (domainId) => setCurrentView("domains", domainId)
-        ,
+        onSelectDomain: (domainId) => setCurrentView("domains", domainId),
         onInspectDomain: (domainId) => {
           void inspectDomain(domainId);
         },
@@ -205,6 +223,12 @@ function renderCurrentView(project) {
       });
     case "decisions":
       return renderDecisionsReadinessView(project);
+    case "wizard-launcher":
+      return renderWizardLauncherView(
+        project,
+        (wizardId) => setCurrentView(`wizard-${wizardId}`),
+        () => setCurrentView("dashboard")
+      );
     case "dashboard":
     default:
       return renderDashboardView({
@@ -225,5 +249,46 @@ function renderCurrentView(project) {
           void disconnectProject();
         }
       });
+  }
+}
+
+function renderWizardView(project, wizardId) {
+  const wizardProps = {
+    project,
+    onComplete: () => {
+      addCompletedWizard(wizardId);
+      setCurrentView("wizard-launcher");
+    },
+    onCancel: () => setCurrentView("wizard-launcher"),
+    onNavigate: (view) => setCurrentView(view)
+  };
+
+  switch (wizardId) {
+    case "database-creation":
+      return renderDatabaseCreationWizard(wizardProps);
+    case "company-setup":
+      return renderCompanySetupWizard(wizardProps);
+    case "master-data":
+      return renderMasterDataWizard(wizardProps);
+    case "crm-setup":
+      return renderCrmSetupWizard(wizardProps);
+    case "sales-setup":
+      return renderSalesSetupWizard(wizardProps);
+    case "inventory-setup":
+      return renderInventorySetupWizard(wizardProps);
+    case "purchase-setup":
+      return renderPurchaseSetupWizard(wizardProps);
+    case "manufacturing-setup":
+      return renderManufacturingSetupWizard(wizardProps);
+    case "accounting-setup":
+      return renderAccountingSetupWizard(wizardProps);
+    case "go-live-readiness":
+      return renderGoLiveReadinessWizard(wizardProps);
+    default:
+      return el("div", { className: "error" }, [
+        el("h2", { text: "Wizard Not Found" }),
+        el("p", { text: `The wizard "${wizardId}" is not available.` }),
+        el("button", { text: "Return to Dashboard", onclick: () => setCurrentView("dashboard") })
+      ]);
   }
 }

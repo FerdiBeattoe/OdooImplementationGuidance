@@ -448,6 +448,18 @@ export function getProjectSummary() {
   };
 }
 
+export function addCompletedWizard(wizardId) {
+  if (!state.activeProject.workflowState.completedWizards) {
+    state.activeProject.workflowState.completedWizards = [];
+  }
+  
+  if (!state.activeProject.workflowState.completedWizards.includes(wizardId)) {
+    state.activeProject.workflowState.completedWizards.push(wizardId);
+    pushNotification(`Wizard "${wizardId}" marked as complete.`, "success");
+    notify();
+  }
+}
+
 export function getInventoryCheckpointGroups() {
   return INVENTORY_CHECKPOINT_GROUPS.map((group) => ({
     ...group,
@@ -632,35 +644,43 @@ function syncBranchCheckpoint() {
 }
 
 function getProjectEntryGatingIssue(options = { requireSavedProject: true }) {
-  const setupError = validateProjectSetup(state.activeProject.projectIdentity);
+  const { edition, deployment, projectMode } = state.activeProject.projectIdentity;
+  const combinationError = getCombinationError(state.activeProject.projectIdentity);
 
-  if (setupError) {
-    return setupError;
+  if (combinationError) {
+    return combinationError;
   }
 
-  if (!state.activeProject.projectIdentity.projectName.trim()) {
-    return "Project name is required before controlled progression.";
+  if (!edition || !deployment || !projectMode) {
+    return "Complete project identity before opening implementation views.";
   }
 
-  if (!state.activeProject.projectIdentity.projectOwner.trim()) {
-    return "Project owner is required before controlled progression.";
+  if (options.requireSavedProject && !state.activeProject.projectIdentity.projectId) {
+    return "Save the project at least once before opening implementation views.";
   }
 
-  if (options.requireSavedProject && !isSavedProject(state.activeProject.projectIdentity.projectId)) {
-    return "Save the project entry before opening governed workspaces.";
-  }
-
-  return "";
+  return null;
 }
 
 function isSavedProject(projectId) {
   return state.projectStore.projects.some((project) => project.projectIdentity?.projectId === projectId);
 }
 
-function pushNotification(message, tone) {
-  state.notifications = [{ id: crypto.randomUUID(), message, tone }, ...state.notifications].slice(0, 4);
+function pushNotification(message, type = "info") {
+  state.notifications.push({
+    id: `notification-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    message,
+    type,
+    timestamp: new Date().toISOString()
+  });
+
+  // Auto-dismiss after 5 seconds
+  setTimeout(() => {
+    state.notifications = state.notifications.filter((n) => n.message !== message);
+    notify();
+  }, 5000);
 }
 
 function notify() {
-  listeners.forEach((listener) => listener(state));
+  listeners.forEach((listener) => listener());
 }

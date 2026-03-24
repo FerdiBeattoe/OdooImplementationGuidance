@@ -126,6 +126,35 @@ const GRIDS = [
     ]
   },
   {
+    id: "reorderingRules",
+    label: "Reordering Rules",
+    icon: "sync_alt",
+    desc: "Automatic replenishment rules",
+    columns: [
+      { key: "product",       label: "Product",           type: "dropdown", optionsFn: () => getProductOptions().map(o => o.label), required: true },
+      { key: "warehouse",     label: "Warehouse",         type: "text",     required: false },
+      { key: "location",      label: "Location",          type: "text",     required: false },
+      { key: "minQty",        label: "Min Quantity",      type: "number",   required: true },
+      { key: "maxQty",        label: "Max Quantity",      type: "number",   required: true },
+      { key: "qtyMultiple",   label: "Qty Multiple",      type: "number",   required: false },
+      { key: "route",         label: "Route",             type: "select",   options: ["Buy", "Manufacture", "Resupply"], required: false },
+      { key: "leadDays",      label: "Lead Days",         type: "number",   required: false }
+    ]
+  },
+  {
+    id: "putawayRules",
+    label: "Putaway Rules",
+    icon: "warehouse",
+    desc: "Product storage location rules",
+    columns: [
+      { key: "product",       label: "Product",           type: "dropdown", optionsFn: () => getProductOptions().map(o => o.label), required: false },
+      { key: "category",      label: "Product Category",  type: "text",     required: false },
+      { key: "sourceLocation",label: "Source Location",   type: "text",     required: true },
+      { key: "destLocation",  label: "Destination Location",type: "text",   required: true },
+      { key: "sequence",      label: "Priority",          type: "number",   required: false }
+    ]
+  },
+  {
     id: "salesOrders",
     label: "Sales Orders (Historical)",
     icon: "receipt_long",

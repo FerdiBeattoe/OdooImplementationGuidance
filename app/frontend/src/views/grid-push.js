@@ -169,6 +169,46 @@ export async function pushOpeningBalanceRow(row) {
   }
 }
 
+// ── Reordering Rules ────────────────────────────────────────────
+export async function pushReorderingRuleRow(row) {
+  try {
+    await apiCall("/api/odoo/create", {
+      model: "stock.warehouse.orderpoint",
+      values: {
+        product_id: row.product || false,
+        warehouse_id: row.warehouse || false,
+        location_id: row.location || false,
+        product_min_qty: parseFloat(row.minQty) || 0,
+        product_max_qty: parseFloat(row.maxQty) || 0,
+        qty_multiple: parseFloat(row.qtyMultiple) || 1,
+        route_id: row.route || false
+      }
+    });
+    return { success: true, detail: `Reordering rule for "${row.product}" created` };
+  } catch (err) {
+    return { success: false, detail: err.message };
+  }
+}
+
+// ── Putaway Rules ───────────────────────────────────────────────
+export async function pushPutawayRuleRow(row) {
+  try {
+    await apiCall("/api/odoo/create", {
+      model: "stock.putaway.rule",
+      values: {
+        product_id: row.product || false,
+        category_id: row.category || false,
+        location_in_id: row.sourceLocation || false,
+        location_out_id: row.destLocation || false,
+        sequence: parseInt(row.sequence) || 10
+      }
+    });
+    return { success: true, detail: `Putaway rule for "${row.product || row.category}" created` };
+  } catch (err) {
+    return { success: false, detail: err.message };
+  }
+}
+
 // ── Sales Orders ────────────────────────────────────────────────
 export async function pushSalesOrderRow(row) {
   try {
@@ -199,6 +239,8 @@ export const GRID_PUSH_MAP = {
   vendors: pushVendorRow,
   billsOfMaterials: pushBomRow,
   employees: pushEmployeeRow,
+  reorderingRules: pushReorderingRuleRow,
+  putawayRules: pushPutawayRuleRow,
   openingBalances: pushOpeningBalanceRow,
   salesOrders: pushSalesOrderRow
 };

@@ -34,14 +34,14 @@ export function renderDashboardView({
   return el("section", { className: "workspace" }, [
     header(
       "Project Overview",
-      "Governed implementation work, live inspection, preview, and bounded execution stay explicit and under-claimed."
+      "Guided and Safe implementation work, live inspection, preview, and bounded execution stay explicit and under-claimed."
     ),
     el("section", { className: "hero-panel" }, [
       el("div", { className: "hero-panel__content" }, [
-        el("p", { className: "hero-panel__eyebrow", text: "Governed and bounded" }),
+        el("p", { className: "hero-panel__eyebrow", text: "Guided and Safe" }),
         el("h3", { text: "Control setup, inspect the target, preview intended changes, and execute only approved safe slices." }),
         el("p", {
-          text: "Checkpoint truth stays primary. Live connection is application-layer only, preview stays mandatory before execution, and blocked actions remain visible and non-executable."
+          text: "Step-by-step guidance stays primary. Optional live link to Odoo is application-layer only, preview stays mandatory before execution, and blocked actions remain visible and non-executable."
         }),
         el("div", { className: "hero-panel__actions" }, [
           heroAction("Open Setup Journey", () => onNavigate("stages", project.workflowState.currentStageId)),
@@ -143,15 +143,15 @@ function renderDashboardSection({
 function renderOverviewSection({ project, summary, checkpointSummary, primaryCheckpoint, guidanceBlock, connection, onNavigate }) {
   return el("div", { className: "stack" }, [
     el("div", { className: "summary-grid" }, [
-      summaryCard("Configuration", project.workflowState.configurationCompletionStatus, renderStatusBadge(project.workflowState.configurationCompletionStatus)),
-      summaryCard("Readiness", project.workflowState.operationalReadinessStatus, renderStatusBadge(project.workflowState.operationalReadinessStatus)),
-      summaryCard("Connection", connection.status, null),
+      summaryCard("Setup Progress", project.workflowState.configurationCompletionStatus, renderStatusBadge(project.workflowState.configurationCompletionStatus)),
+      summaryCard("Ready to Use", project.workflowState.operationalReadinessStatus, renderStatusBadge(project.workflowState.operationalReadinessStatus)),
+      summaryCard("Live Odoo Link", connection.status, null),
       summaryCard("Needs Attention", String(checkpointSummary.blocked + checkpointSummary.warnings), null),
       summaryCard("Saved Projects", String(summary.savedProjects), null)
     ]),
     el("div", { className: "two-column" }, [
       el("section", { className: "panel panel--strong" }, [
-        el("h3", { text: "Next governed step" }),
+        el("h3", { text: "Your next step" }),
         el("p", {
           text: primaryCheckpoint ? primaryCheckpoint.title : "No checkpoint is currently selected."
         }),
@@ -159,22 +159,22 @@ function renderOverviewSection({ project, summary, checkpointSummary, primaryChe
           className: "subtle",
           text:
             primaryCheckpoint?.status === "Fail"
-              ? "This checkpoint remains blocking."
-              : "Review the checkpoint, then inspect, preview, or execute only where the domain capability panel marks those actions as supported."
+              ? "This step needs your attention before continuing."
+              : "Review the guidance, then check your Odoo, review changes, or apply safe actions where available."
         }),
         el("div", { className: "hero-panel__actions" }, [
-          heroAction("Continue Journey", () => onNavigate("stages", project.workflowState.currentStageId)),
-          heroAction("Open Domains", () => onNavigate("domains", project.workflowState.currentDomainId))
+          heroAction("Continue Your Journey", () => onNavigate("stages", project.workflowState.currentStageId)),
+          heroAction("Explore Setup Areas", () => onNavigate("domains", project.workflowState.currentDomainId))
         ])
       ]),
       el("section", { className: "panel" }, [
-        el("h3", { text: "Project truth" }),
+        el("h3", { text: "About your project" }),
         el("p", { text: labelValue("Owner", project.projectIdentity.projectOwner || "Not recorded") }),
         el("p", { text: labelValue("Current stage", project.workflowState.currentStageId || "Not set") }),
-        el("p", { text: labelValue("Current domain", project.workflowState.currentDomainId || "Not set") }),
+        el("p", { text: labelValue("Current area", project.workflowState.currentDomainId || "Not set") }),
         el("div", { className: "info-box" }, [
-          el("strong", { text: "Execution boundary" }),
-          el("p", { text: "This product never upgrades blocked or conditional actions into permitted actions silently." })
+          el("strong", { text: "Safety note" }),
+          el("p", { text: "This guide never applies changes without your explicit approval. Blocked steps stay visible and require your decision." })
         ])
       ])
     ]),

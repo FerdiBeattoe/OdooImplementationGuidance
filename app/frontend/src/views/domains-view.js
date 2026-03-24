@@ -329,31 +329,31 @@ function renderCapabilityPanel(project, domainId, capability, onInspectDomain, o
   const lastExecution = (project.executionState?.executions || []).filter((execution) => execution.domainId === domainId).slice(-1)[0];
 
   return el("section", { className: "panel panel--strong" }, [
-    el("h3", { text: "Capability truth" }),
-    el("p", { className: "status-line", text: `Current: L${capability.currentLevel} ${capability.label}` }),
-    el("p", { text: `Target in this build: L${capability.targetLevel} ${capability.targetLabel}. ${capability.summary}` }),
+    el("h3", { text: "What this guide can do" }),
+    el("p", { className: "status-line", text: `Current: ${capability.label}` }),
+    el("p", { text: `This build supports: ${capability.targetLabel}. ${capability.summary}` }),
     el("div", { className: "summary-grid" }, [
-      summaryCard("Inspection", capability.supportsInspection ? "Supported" : "Not in this build"),
-      summaryCard("Preview", capability.supportsPreview ? "Supported" : "Not in this build"),
-      summaryCard("Execution", capability.supportsExecution ? "Bounded and conditional" : "Not in this build")
+      summaryCard("Check your Odoo", capability.supportsInspection ? "Available" : "Not available"),
+      summaryCard("Review changes", capability.supportsPreview ? "Available" : "Not available"),
+      summaryCard("Apply changes", capability.supportsExecution ? "Guided and safe" : "Not available")
     ]),
     renderCapabilityBoundaryNote(capability),
     el("div", { className: "hero-panel__actions" }, [
-      heroButton("Inspect domain", () => onInspectDomain(domainId), { disabled: !capability.supportsInspection }),
-      heroButton("Generate preview", () => onPreviewDomain(domainId), { disabled: !capability.supportsPreview })
+      heroButton("Check your Odoo setup", () => onInspectDomain(domainId), { disabled: !capability.supportsInspection }),
+      heroButton("Review what would change", () => onPreviewDomain(domainId), { disabled: !capability.supportsPreview })
     ]),
     !capability.supportsInspection
-      ? el("p", { className: "checkpoint-panel__dependency", text: "Inspection is not supported for this domain in the current build." })
+      ? el("p", { className: "checkpoint-panel__dependency", text: "Live connection not available for this area in the current build." })
       : null,
     !capability.supportsPreview
-      ? el("p", { className: "checkpoint-panel__dependency", text: "Preview generation is not supported for this domain in the current build." })
+      ? el("p", { className: "checkpoint-panel__dependency", text: "Change review not available for this area in the current build." })
       : null,
     inspection
       ? el("div", { className: "info-box" }, [
-          el("strong", { text: "Latest inspection" }),
-          el("p", { text: inspection.summary || "Inspection completed." })
+          el("strong", { text: "Latest check" }),
+          el("p", { text: inspection.summary || "Your Odoo has been checked." })
         ])
-      : el("p", { className: "checkpoint-panel__dependency", text: "No live inspection has been recorded for this domain yet." }),
+      : el("p", { className: "checkpoint-panel__dependency", text: "No live check has been done for this area yet." }),
     previews.length
       ? el(
           "div",
@@ -361,27 +361,29 @@ function renderCapabilityPanel(project, domainId, capability, onInspectDomain, o
           previews.map((preview) =>
             el("section", { className: "checkpoint-panel" }, [
               el("h4", { text: preview.title }),
-              el("p", { text: `${preview.targetModel} :: ${preview.operation}` }),
-              el("p", { className: "checkpoint-panel__dependency", text: `Intended changes: ${preview.intendedChanges.length}` }),
-              el("p", { className: "checkpoint-panel__dependency", text: `Safety: ${preview.safetyClass}` }),
-              preview.prerequisites.length
-                ? el("p", { className: "checkpoint-panel__dependency", text: `Prerequisites: ${preview.prerequisites.join("; ")}` })
+              el("p", { text: `This would ${preview.operation === "create" ? "create" : "update"}: ${preview.title}` }),
+              preview.intendedChanges.length
+                ? el("p", { className: "checkpoint-panel__dependency", 
+                    text: `Fields affected: ${preview.intendedChanges.map(c => c.field).join(", ")}` })
                 : null,
               preview.confirmationRequired
-                ? el("p", { className: "checkpoint-panel__dependency", text: "Execution requires explicit confirmation." })
+                ? el("p", { className: "info-box", text: "⚠️ This change needs your explicit approval first." })
                 : null,
               preview.downstreamImpact
-                ? el("p", { className: "checkpoint-panel__dependency", text: `Downstream impact: ${preview.downstreamImpact}` })
+                ? el("p", { className: "checkpoint-panel__dependency", text: `Impact: ${preview.downstreamImpact}` })
                 : null,
               canExecutePreview(preview, capability)
-                ? heroButton("Execute safe action", () => onExecutePreview(preview))
+                ? heroButton("Apply this change", () => onExecutePreview(preview))
                 : el("p", { className: "checkpoint-panel__dependency", text: getPreviewExecutionConstraint(preview, capability) })
             ])
           )
         )
-      : el("p", { className: "checkpoint-panel__dependency", text: "No previews recorded for this domain yet." }),
+      : null,
     lastExecution
-      ? el("p", { className: "checkpoint-panel__dependency", text: `Last execution: ${lastExecution.status}. ${lastExecution.resultSummary || "No summary recorded."}${lastExecution.failureReason ? ` Failure reason: ${lastExecution.failureReason}` : ""}` })
+      ? el("div", { className: "info-box" }, [
+          el("strong", { text: "Last change applied" }),
+          el("p", { text: `${lastExecution.resultSummary} (${lastExecution.status})` })
+        ])
       : null
   ]);
 }
@@ -1148,7 +1150,7 @@ function renderGenericConfigurationSection(section, onAdd, onUpdate, getFields, 
       text: `Captured rows: ${section.summary.totalRecords}. In-scope rows: ${section.summary.inScopeRecords}.`
     }),
     el("div", { className: "checkpoint-panel__actions" }, [
-      el("button", { className: "button", text: "Add capture row", onclick: () => onAdd(section.id) })
+      el("button", { className: "button", text: "Add record", onclick: () => onAdd(section.id) })
     ]),
     ...section.records.map((record) => renderGenericConfigurationRecord(section, record, onUpdate, getFields, labelBuilder))
   ]);
@@ -1182,66 +1184,6 @@ function renderGenericConfigurationField(sectionId, recordKey, fieldConfig, onUp
 
   return field(fieldConfig.label, fieldConfig.value, (value) =>
     onUpdate(sectionId, recordKey, { [fieldConfig.key]: value })
-  );
-}
-
-function getManufacturingConfigurationFields(sectionId, record) {
-  switch (sectionId) {
-    case "productionModeCapture":
-      return [
-        { key: "productionModeLabel", label: "Production mode label", value: record.productionModeLabel },
-        { key: "productionStrategyNotes", label: "Production strategy notes", value: record.productionStrategyNotes },
-        { key: "exceptionNotes", label: "Exception notes", value: record.exceptionNotes },
-        { key: "inScope", label: "Active / in-scope", value: String(record.inScope), type: "select", options: ["true", "false"], boolean: true }
-      ];
-    case "bomGovernanceCapture":
-      return [
-        { key: "bomOwnerRoleNote", label: "BOM owner / role note", value: record.bomOwnerRoleNote },
-        { key: "bomReviewPolicyNotes", label: "BOM review policy notes", value: record.bomReviewPolicyNotes },
-        { key: "revisionControlNotes", label: "Revision control notes", value: record.revisionControlNotes },
-        { key: "inScope", label: "Active / in-scope", value: String(record.inScope), type: "select", options: ["true", "false"], boolean: true }
-      ];
-    case "routingControlCapture":
-      return [
-        { key: "routingRequired", label: "Routing required", value: String(record.routingRequired), type: "select", options: ["true", "false"], boolean: true },
-        { key: "workOrderControlNote", label: "Work-order control note", value: record.workOrderControlNote },
-        { key: "controlNotes", label: "Control notes", value: record.controlNotes },
-        { key: "inScope", label: "Active / in-scope", value: String(record.inScope), type: "select", options: ["true", "false"], boolean: true }
-      ];
-    case "productionHandoffCapture":
-      return [
-        { key: "handoffType", label: "Handoff type", value: record.handoffType },
-        { key: "downstreamHandoffNote", label: "Downstream handoff note", value: record.downstreamHandoffNote },
-        { key: "dependencyNote", label: "Dependency note", value: record.dependencyNote },
-        { key: "inScope", label: "Active / in-scope", value: String(record.inScope), type: "select", options: ["true", "false"], boolean: true }
-      ];
-    default:
-      return [];
-  }
-}
-
-function manufacturingRecordLabel(sectionId, record) {
-  switch (sectionId) {
-    case "productionModeCapture":
-      return record.productionModeLabel || "Production mode capture record";
-    case "bomGovernanceCapture":
-      return record.bomOwnerRoleNote || "BOM governance capture record";
-    case "routingControlCapture":
-      return record.workOrderControlNote || (record.routingRequired ? "Routing-required capture record" : "Routing control capture record");
-    case "productionHandoffCapture":
-      return record.handoffType || "Production handoff capture record";
-    default:
-      return "Structured record";
-  }
-}
-
-function renderManufacturingConfigurationSection(section, onAddManufacturingConfiguration, onUpdateManufacturingConfiguration) {
-  return renderGenericConfigurationSection(
-    section,
-    onAddManufacturingConfiguration,
-    onUpdateManufacturingConfiguration,
-    getManufacturingConfigurationFields,
-    manufacturingRecordLabel
   );
 }
 
@@ -1638,6 +1580,7 @@ function renderAccountingEvidenceSection(checkpoint, onUpdateAccountingEvidence)
     }),
     el("div", { className: "entry-grid" }, [
       field("Evidence classification", getAccountingEvidenceLabel(evidence), () => {}, { readOnly: true }),
+      field("Sufficiency / readiness", getAccountingEvidenceSufficiency(checkpoint), () => {}, { readOnly: true }),
       field("Evidence summary", evidence.summary, (value) =>
         onUpdateAccountingEvidence(checkpoint.id, { summary: value })
       , { readOnly: !assertionEditable }),
@@ -2395,10 +2338,10 @@ function summaryCard(label, value) {
 
 function formatDomainCapabilityCardLine(capability) {
   if (!capability) {
-    return `Current: L0 ${renderDomainCapabilityLevel(0)} | Target: L0 ${renderDomainCapabilityLevel(0)}`;
+    return `Current: Manual-only guide | Available in this build: Manual-only`;
   }
 
-  return `Current: L${capability.currentLevel} ${capability.label} | Target: L${capability.targetLevel} ${capability.targetLabel}`;
+  return `Current: ${capability.label} | Available in this build: ${capability.targetLabel}`;
 }
 
 function renderCapabilityBoundaryNote(capability) {

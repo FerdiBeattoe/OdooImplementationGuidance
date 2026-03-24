@@ -640,7 +640,7 @@ export function normalizeProjectState(state = createInitialProjectState()) {
   normalized.edition = normalized.projectIdentity.edition;
   normalized.deployment = normalized.projectIdentity.deployment;
   normalized.projectMode = normalized.projectIdentity.projectMode;
-  normalized.metadata.updatedAt = new Date().toISOString();
+  if (normalized.metadata) normalized.metadata.updatedAt = new Date().toISOString();
   return normalized;
 }
 

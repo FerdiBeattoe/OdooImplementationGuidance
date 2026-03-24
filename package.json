@@ -8,12 +8,17 @@
   "scripts": {
     "start": "node app/backend/server.js",
     "dev": "node app/backend/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "build:css": "node_modules/.bin/tailwindcss --input app/frontend/styles/tw-input.css --output app/frontend/styles/tailwind.css --minify",
+    "watch:css": "node_modules/.bin/tailwindcss --input app/frontend/styles/tw-input.css --output app/frontend/styles/tailwind.css --watch"
   },
   "dependencies": {
+    "@tailwindcss/cli": "^4.2.2",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "jsdom": "^29.0.1"
+    "@tailwindcss/forms": "^0.5.11",
+    "jsdom": "^29.0.1",
+    "tailwindcss": "^4.2.2"
   }
 }

@@ -61,7 +61,8 @@ import {
   getProjectStoreRecordId,
   USERS_SECURITY_CHECKPOINT_GROUPS,
   validateProjectSetup,
-  validateStateShape
+  validateStateShape,
+  getCombinationError
 } from "/shared/index.js";
 import {
   connectProject as connectProjectRequest,

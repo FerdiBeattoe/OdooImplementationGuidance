@@ -230,6 +230,7 @@ function buildGrid(gridDef, onBack) {
 
   const tableBody = el("tbody");
   const countBadge = el("span", { className: "badge badge--secondary text-xs" });
+  let selectedRows = new Set();
 
   function emptyRow() {
     const row = { _status: "pending" };
@@ -244,6 +245,11 @@ function buildGrid(gridDef, onBack) {
   function renderRows() {
     while (tableBody.firstChild) tableBody.removeChild(tableBody.firstChild);
     rows.forEach((row, ri) => {
+      const checkCell = el("td", { className: "px-2 py-1 w-8" });
+      const cb = el("input", { type: "checkbox", className: "w-3.5 h-3.5 rounded border-outline text-primary focus:ring-primary/20 cursor-pointer" });
+      cb.checked = selectedRows.has(ri);
+      cb.addEventListener("change", () => { if (cb.checked) selectedRows.add(ri); else selectedRows.delete(ri); updateDeleteSelected(); });
+      checkCell.append(cb);
       const statusCell = el("td", { className: "px-3 py-2 w-8" }, [
         el("div", { className: `w-2 h-2 rounded-full ${
           row._status === "success" ? "bg-green-500" :
@@ -262,15 +268,40 @@ function buildGrid(gridDef, onBack) {
       const deleteCell = el("td", { className: "px-2 py-1 w-8" }, [
         el("button", {
           className: "p-1 text-on-surface-variant hover:text-error transition-colors",
-          onclick: () => { rows.splice(ri, 1); if (rows.length === 0) rows.push(emptyRow()); renderRows(); updateCount(); }
+          onclick: () => { rows.splice(ri, 1); selectedRows.delete(ri); if (rows.length === 0) rows.push(emptyRow()); renderRows(); updateCount(); }
         }, [el("span", { className: "material-symbols-outlined text-[14px]", text: "delete" })])
       ]);
-      tableBody.append(el("tr", { className: "hover:bg-surface-container-low border-b border-outline-variant/10" }, [statusCell, ...cells, deleteCell]));
+      tableBody.append(el("tr", { className: "hover:bg-surface-container-low border-b border-outline-variant/10" }, [checkCell, statusCell, ...cells, deleteCell]));
     });
     updateCount();
   }
 
   renderRows();
+
+  const deleteSelectedBtn = el("button", {
+    className: "flex items-center gap-1.5 text-xs font-semibold text-error hover:underline px-2 py-1 hidden",
+    onclick: () => {
+      const indices = [...selectedRows].sort((a, b) => b - a);
+      indices.forEach(i => rows.splice(i, 1));
+      selectedRows.clear();
+      if (rows.length === 0) rows.push(emptyRow());
+      renderRows();
+      updateCount();
+      updateDeleteSelected();
+    }
+  }, [
+    el("span", { className: "material-symbols-outlined text-[14px]", text: "delete_sweep" }),
+    el("span", { text: "Delete Selected" })
+  ]);
+
+  function updateDeleteSelected() {
+    if (selectedRows.size > 0) {
+      deleteSelectedBtn.classList.remove("hidden");
+      deleteSelectedBtn.querySelector("span:last-child").textContent = `Delete Selected (${selectedRows.size})`;
+    } else {
+      deleteSelectedBtn.classList.add("hidden");
+    }
+  }
 
   const addRowBtn = el("button", {
     className: "flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline px-2 py-1",
@@ -421,6 +452,18 @@ function buildGrid(gridDef, onBack) {
         el("table", { className: "w-full text-xs" }, [
           el("thead", { className: "bg-surface-container-high" }, [
             el("tr", {}, [
+              el("th", { className: "px-2 py-2.5 w-8" }, [
+                (() => {
+                  const selectAll = el("input", { type: "checkbox", className: "w-3.5 h-3.5 rounded border-outline text-primary focus:ring-primary/20 cursor-pointer" });
+                  selectAll.addEventListener("change", () => {
+                    if (selectAll.checked) rows.forEach((_, i) => selectedRows.add(i));
+                    else selectedRows.clear();
+                    renderRows();
+                    updateDeleteSelected();
+                  });
+                  return selectAll;
+                })()
+              ]),
               el("th", { className: "px-3 py-2.5 w-8", text: "" }),
               ...gridDef.columns.map(col =>
                 el("th", { className: "px-3 py-2.5 text-left font-bold text-on-surface-variant uppercase tracking-wide whitespace-nowrap" }, [
@@ -435,7 +478,7 @@ function buildGrid(gridDef, onBack) {
         ])
       ]),
       el("div", { className: "px-4 py-3 border-t border-outline-variant/10 flex items-center justify-between" }, [
-        addRowBtn,
+        el("div", { className: "flex items-center gap-3" }, [addRowBtn, deleteSelectedBtn]),
         importBtn
       ])
     ])

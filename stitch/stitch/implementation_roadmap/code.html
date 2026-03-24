@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Odoo Implementation Roadmap</title>
+<!-- Tailwind CSS with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Manrope & Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-fixed": "#ffd7f1",
+              "on-secondary": "#ffffff",
+              "tertiary-container": "#43587a",
+              "inverse-primary": "#e9b8d9",
+              "surface-container-lowest": "#ffffff",
+              "background": "#f7f9fb",
+              "on-tertiary-container": "#b9cff6",
+              "on-primary": "#ffffff",
+              "tertiary-fixed": "#d5e3ff",
+              "on-secondary-container": "#18697e",
+              "secondary-container": "#a1e7ff",
+              "primary": "#57344f",
+              "on-primary-fixed-variant": "#5f3b56",
+              "on-primary-container": "#f0bfe0",
+              "on-error": "#ffffff",
+              "surface-container-high": "#e6e8ea",
+              "secondary-fixed": "#b2ebff",
+              "error-container": "#ffdad6",
+              "surface": "#f7f9fb",
+              "surface-container": "#eceef0",
+              "surface-tint": "#79526f",
+              "on-tertiary-fixed-variant": "#324768",
+              "inverse-surface": "#2d3133",
+              "secondary": "#13677b",
+              "outline-variant": "#d1c3ca",
+              "tertiary": "#2b4161",
+              "error": "#ba1a1a",
+              "secondary-fixed-dim": "#8bd1e8",
+              "surface-container-highest": "#e0e3e5",
+              "on-surface": "#191c1e",
+              "on-tertiary": "#ffffff",
+              "inverse-on-surface": "#eff1f3",
+              "primary-fixed-dim": "#e9b8d9",
+              "on-secondary-fixed-variant": "#004e5f",
+              "on-error-container": "#93000a",
+              "on-background": "#191c1e",
+              "primary-container": "#714b67",
+              "surface-container-low": "#f2f4f6",
+              "on-secondary-fixed": "#001f27",
+              "outline": "#80747a",
+              "on-tertiary-fixed": "#021c3a",
+              "surface-variant": "#e0e3e5",
+              "on-surface-variant": "#4e444a",
+              "on-primary-fixed": "#2f1029",
+              "tertiary-fixed-dim": "#b2c7ef",
+              "surface-dim": "#d8dadc",
+              "surface-bright": "#f7f9fb"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      body { font-family: 'Inter', sans-serif; }
+      h1, h2, h3, h4 { font-family: 'Manrope', sans-serif; }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(12px);
+      }
+      /* Custom scrollbar for timeline */
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm dark:shadow-none">
+<div class="flex items-center justify-between px-6 py-3 max-w-full mx-auto">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tight text-plum-900 dark:text-plum-50 text-primary">Odoo Implementation Portal</span>
+<div class="hidden md:flex items-center gap-6 font-manrope text-sm font-medium">
+<a class="text-slate-500 dark:text-slate-400 hover:text-plum-600 transition-all" href="#">Dashboard</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-plum-600 transition-all" href="#">Setup</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-plum-600 transition-all" href="#">Modules</a>
+<a class="text-plum-700 dark:text-plum-300 border-b-2 border-plum-600 dark:border-plum-400 pb-1" href="#">Roadmap</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-lg hover:bg-slate-50 transition-all active:scale-95">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+</button>
+<button class="p-2 rounded-lg hover:bg-slate-50 transition-all active:scale-95">
+<span class="material-symbols-outlined text-on-surface-variant">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden border border-outline-variant/30">
+<img alt="Executive User Profile" class="w-full h-full object-cover" data-alt="Professional executive user profile portrait with a neutral background and professional lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsL49MPhkB0rugjcHpkvZToJ2PU-QQulniLuHeSh01N2aWTnmy9wHls-no-wQfyCHIZvLzE_yMwDQtKKagO23FEnewWqWQHn8QsccndSSX0BaA0jPTBouxX7Kn7QPUE-yCxyksjmjZhojQFfiT2lBJ_P1wBVQrACfgRDbvaZjw6aBkk5IiGO0Mpu9GejDc7tqJWgeiI8KA3W7-yQsXuwvThSxm3NPrcecWUfmTx_0n8rkp6a3HKgR9OSf9U0LJyDybn2lHabofSpM"/>
+</div>
+</div>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 z-40 bg-slate-50 dark:bg-slate-900 flex flex-col p-4 space-y-2 pt-20">
+<div class="mb-8 px-4">
+<h2 class="font-manrope font-extrabold text-plum-900 dark:text-plum-50 text-lg leading-tight">Project Alpha</h2>
+<p class="text-[11px] text-slate-500 uppercase tracking-widest font-semibold mt-1">Enterprise ERP v17</p>
+</div>
+<div class="space-y-1">
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 px-4 py-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors duration-150 font-inter text-[13px] tracking-wide" href="#">
+<span class="material-symbols-outlined text-lg">dashboard</span>
+                Overview
+            </a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 px-4 py-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors duration-150 font-inter text-[13px] tracking-wide" href="#">
+<span class="material-symbols-outlined text-lg">tune</span>
+                Configuration
+            </a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 px-4 py-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors duration-150 font-inter text-[13px] tracking-wide" href="#">
+<span class="material-symbols-outlined text-lg">health_metrics</span>
+                Project Health
+            </a>
+<a class="bg-plum-50 dark:bg-plum-900/30 text-plum-700 dark:text-plum-300 font-semibold rounded-lg px-4 py-2 flex items-center gap-3 font-inter text-[13px] tracking-wide" href="#">
+<span class="material-symbols-outlined text-lg">route</span>
+                Timeline
+            </a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 px-4 py-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors duration-150 font-inter text-[13px] tracking-wide" href="#">
+<span class="material-symbols-outlined text-lg">description</span>
+                Documentation
+            </a>
+</div>
+<div class="mt-auto pt-4 space-y-1">
+<button class="w-full bg-primary text-on-primary py-2.5 rounded-xl font-manrope font-bold text-sm mb-4 shadow-lg shadow-primary/20 hover:opacity-90 transition-all">
+                New Module
+            </button>
+<a class="flex items-center gap-3 text-slate-600 px-4 py-2 hover:bg-slate-200 rounded-lg font-inter text-[13px]" href="#">
+<span class="material-symbols-outlined text-lg">help_outline</span>
+                Support
+            </a>
+<a class="flex items-center gap-3 text-slate-600 px-4 py-2 hover:bg-slate-200 rounded-lg font-inter text-[13px]" href="#">
+<span class="material-symbols-outlined text-lg">settings</span>
+                Settings
+            </a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-64 pt-20 p-8 min-h-screen">
+<!-- Header Section -->
+<header class="mb-10 flex justify-between items-end">
+<div>
+<h1 class="text-4xl font-extrabold tracking-tight text-on-surface mb-2 font-headline">Implementation Roadmap</h1>
+<p class="text-on-surface-variant font-body max-w-2xl">Visualizing the transition to Odoo Enterprise. Tracking milestones from initial kickoff to global go-live for FY25.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 bg-surface-container-high px-4 py-2 rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-lg">file_download</span>
+                    Export PDF
+                </button>
+<button class="flex items-center gap-2 bg-primary px-4 py-2 rounded-xl text-sm font-semibold text-on-primary hover:opacity-90 transition-all shadow-md">
+<span class="material-symbols-outlined text-lg">calendar_today</span>
+                    Share View
+                </button>
+</div>
+</header>
+<!-- Implementation Health Overview Card -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+<div class="col-span-1 md:col-span-3 surface-container-lowest glass-card rounded-xl p-6 shadow-sm relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary/10 blur-[60px] rounded-full -mr-10 -mt-10"></div>
+<div class="flex items-center justify-between relative z-10">
+<div>
+<span class="text-xs font-bold uppercase tracking-widest text-secondary mb-1 block">Current Phase</span>
+<h3 class="text-2xl font-bold font-headline text-on-surface">Development &amp; Customization</h3>
+<p class="text-sm text-on-surface-variant mt-1">Sprints 4/12 Completed • On Track</p>
+</div>
+<div class="text-right">
+<span class="text-4xl font-black font-headline text-primary">64%</span>
+<div class="w-48 h-2 bg-secondary-container rounded-full mt-2 overflow-hidden">
+<div class="w-[64%] h-full bg-secondary transition-all"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-primary p-6 rounded-xl shadow-lg relative overflow-hidden group">
+<div class="absolute -bottom-4 -right-4 text-white/5 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-8xl" style="font-variation-settings: 'FILL' 1;">rocket_launch</span>
+</div>
+<h4 class="text-on-primary/70 text-sm font-bold font-headline">Go-Live Target</h4>
+<p class="text-on-primary text-3xl font-black font-headline mt-1">Oct 12</p>
+<p class="text-on-primary/60 text-xs mt-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">timer</span> 
+                    42 Days Remaining
+                </p>
+</div>
+</section>
+<!-- Gantt-Style Timeline Canvas -->
+<section class="surface-container-low rounded-3xl p-8 mb-10 shadow-inner min-h-[500px] overflow-x-auto no-scrollbar relative">
+<div class="min-w-[1200px]">
+<!-- Time Labels -->
+<div class="grid grid-cols-5 border-b border-outline-variant/20 pb-4 mb-8">
+<div class="text-center text-xs font-bold text-outline uppercase tracking-tighter">Q1 - Kickoff &amp; Foundations</div>
+<div class="text-center text-xs font-bold text-outline uppercase tracking-tighter">Q2 - Analysis &amp; Blueprints</div>
+<div class="text-center text-xs font-bold text-outline uppercase tracking-tighter">Q3 - Development &amp; Sprints</div>
+<div class="text-center text-xs font-bold text-outline uppercase tracking-tighter">Q4 - UAT &amp; Validation</div>
+<div class="text-center text-xs font-bold text-outline uppercase tracking-tighter">Q5 - Deployment &amp; Go-Live</div>
+</div>
+<!-- The Tracks -->
+<div class="space-y-6 relative py-4">
+<!-- Vertical "You are here" Indicator -->
+<div class="absolute left-[54%] top-0 bottom-0 w-0.5 bg-primary/40 z-30 flex flex-col items-center">
+<div class="bg-primary text-on-primary text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap -mt-3 shadow-md">YOU ARE HERE</div>
+<div class="h-full border-l-2 border-dashed border-primary/30"></div>
+</div>
+<!-- Track 1: Global Phases -->
+<div class="relative h-16 flex items-center">
+<!-- Phase 1 -->
+<div class="absolute left-0 w-[15%] h-12 bg-plum-100/50 rounded-xl border border-plum-200/50 flex items-center px-4 group cursor-pointer hover:bg-plum-100 transition-colors">
+<span class="text-xs font-bold text-primary">Kickoff</span>
+</div>
+<!-- Phase 2 -->
+<div class="absolute left-[16%] w-[20%] h-12 bg-secondary-container/40 rounded-xl border border-secondary/20 flex items-center px-4 group cursor-pointer hover:bg-secondary-container/60 transition-colors">
+<span class="text-xs font-bold text-secondary">Analysis</span>
+</div>
+<!-- Phase 3 (Active) -->
+<div class="absolute left-[37%] w-[30%] h-12 bg-primary rounded-xl flex items-center px-4 shadow-lg shadow-primary/30 ring-4 ring-primary/10">
+<span class="text-xs font-bold text-on-primary">Development &amp; Customization</span>
+<span class="material-symbols-outlined text-on-primary/50 text-xs ml-auto" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<!-- Phase 4 -->
+<div class="absolute left-[68%] w-[18%] h-12 bg-surface-container-highest/50 rounded-xl border border-outline-variant/30 flex items-center px-4 text-outline">
+<span class="text-xs font-bold">UAT Phase</span>
+</div>
+<!-- Phase 5 -->
+<div class="absolute left-[87%] w-[13%] h-12 bg-surface-container-highest/50 rounded-xl border border-outline-variant/30 flex items-center px-4 text-outline">
+<span class="text-xs font-bold">Go-Live</span>
+</div>
+</div>
+<!-- Milestones Layer -->
+<div class="relative h-12">
+<div class="absolute left-[12%] flex flex-col items-center">
+<div class="w-3 h-3 bg-secondary rounded-full border-2 border-white mb-1"></div>
+<span class="text-[10px] font-bold text-secondary text-center leading-tight">Project<br/>Charter Signed</span>
+</div>
+<div class="absolute left-[35%] flex flex-col items-center">
+<div class="w-3 h-3 bg-secondary rounded-full border-2 border-white mb-1"></div>
+<span class="text-[10px] font-bold text-secondary text-center leading-tight">Functional<br/>Specs Frozen</span>
+</div>
+<div class="absolute left-[65%] flex flex-col items-center">
+<div class="w-3 h-3 bg-outline rounded-full border-2 border-white mb-1"></div>
+<span class="text-[10px] font-bold text-outline text-center leading-tight">Internal<br/>Beta v1</span>
+</div>
+<div class="absolute left-[92%] flex flex-col items-center">
+<div class="w-5 h-5 bg-primary rounded-full border-4 border-primary-fixed flex items-center justify-center mb-1 shadow-lg">
+<span class="material-symbols-outlined text-[12px] text-on-primary" style="font-variation-settings: 'FILL' 1;">flag</span>
+</div>
+<span class="text-[10px] font-bold text-primary text-center leading-tight uppercase">Launch Day</span>
+</div>
+</div>
+<!-- Track 2: Core Modules -->
+<div class="space-y-3 pt-6">
+<div class="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest pl-2">Track: Core ERP Modules</div>
+<div class="relative h-10 flex items-center">
+<div class="absolute left-[10%] w-[40%] h-8 bg-tertiary/10 border border-tertiary/20 rounded-lg flex items-center px-3">
+<span class="text-[11px] font-medium text-tertiary">Financial Foundation (Odoo Accounting)</span>
+</div>
+</div>
+<div class="relative h-10 flex items-center">
+<div class="absolute left-[20%] w-[50%] h-8 bg-tertiary/10 border border-tertiary/20 rounded-lg flex items-center px-3">
+<span class="text-[11px] font-medium text-tertiary">Inventory &amp; WMS Mapping</span>
+</div>
+</div>
+<div class="relative h-10 flex items-center">
+<div class="absolute left-[40%] w-[45%] h-8 bg-secondary/10 border border-secondary/20 rounded-lg flex items-center px-3 border-dashed">
+<span class="text-[11px] font-medium text-secondary">Custom CRM Connectors (Dev Phase)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Detailed Phase View (Bento Style) -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Active Sprint Details -->
+<div class="lg:col-span-2 surface-container-lowest glass-card rounded-3xl p-8 border border-outline-variant/10">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-primary-fixed rounded-2xl flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">developer_board</span>
+</div>
+<div>
+<h3 class="text-xl font-bold font-headline">Development Sprint #4</h3>
+<p class="text-sm text-on-surface-variant font-body">Custom Logic &amp; Data Migration Scripts</p>
+</div>
+</div>
+<span class="bg-secondary/10 text-secondary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Active Cycle</span>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-4 hover:bg-surface-container-low rounded-2xl transition-all cursor-pointer border border-transparent hover:border-outline-variant/20">
+<div class="flex items-center gap-4">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="text-sm font-semibold">Legacy Data Cleanup (SQL Scripts)</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex -space-x-2">
+<img alt="Dev 1" class="w-6 h-6 rounded-full border-2 border-white" data-alt="Close up portrait of a technical lead developer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBa5UWR4cYvpmzkQswsKkSxcd9KG6D6AJgrW4HX7bMANcSYXWv893X_YS1RyTpxRM9GLJbyCN4ui95Fz8cDuhDcSj5wxgSuIkh4u2H_uBQ_VYDOd_xwktsUbGSaNHnQZofkwWhxYpLaS-4zfIKSl6lNDWQNuMKqDfBDynNByl61ZLgjMnHMTlJK_tbnUQw5U6_MQ1BdsztZD5mwm2R7vw5vYYJcOdP0FMKLeMKCQ4fU780AhmyFl-SiwjjuNTxjLcWaEbf6pvMk7M"/>
+<img alt="Dev 2" class="w-6 h-6 rounded-full border-2 border-white" data-alt="Close up portrait of a software engineer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCr_nfZDyQXfiYMH74wS7M-2cev39VNO_g-2PQSPjlj6TJpJLFWyTABNvrdVeIMzs295tkxAhdyYg8NhvdPwTFMijsUQjwxgV0h06lxGJ1RtVnUXi9gVGOZTF0SKAhLNuGcACFuaHMFTqerAo4RKRNslRB9ZrGav3kFDAy2CJg_M4O_JeS1HBHTobuPu0Ya46Ml4lYYfTar_DdpsN7J8RZou4IH4NjsSoBwYEFBV3mSwaggdVvGApSL0BNNq5qpLZc4QvhZdkU3X5o"/>
+</div>
+<span class="text-xs text-on-surface-variant font-medium">92% Done</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-4 hover:bg-surface-container-low rounded-2xl transition-all cursor-pointer border border-transparent hover:border-outline-variant/20">
+<div class="flex items-center gap-4">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="text-sm font-semibold">Product Variant Matrix Logic</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex -space-x-2">
+<img alt="PO" class="w-6 h-6 rounded-full border-2 border-white" data-alt="Portrait of a female product owner" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqwG2Lohd-G7zGyLP2bcYQxsgmK1ZAa9v7DNaMhjaOAPwFWA9UB8hDKqRdFnBXkMhrM9sX9sakuCDoPZ3vUr-mUlXYBRXyFVtAtKfJbqF3jCZ2eL6fIP2zg9gPSgJPFCl3TLxeqVhNRVv9yg1LSK1_ZVsPSgrMPrlN9xwyDAKYX2SO2lbXS4hEt-wArSiIJ_eSfcZp3Bnkxn54BDfL_ou09nNiD_XW_NsR1PCH2xJKmUMsoZneWLMaBoM0kD0mUgIc_8SGejLHG9E"/>
+</div>
+<span class="text-xs text-on-surface-variant font-medium">45% Done</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-4 bg-primary/5 rounded-2xl border border-primary/10">
+<div class="flex items-center gap-4">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="text-sm font-bold text-primary">Warehouse Automated Routes Configuration</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex -space-x-2">
+<span class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-[10px] font-bold">+3</span>
+</div>
+<span class="text-xs text-primary font-bold">IN PROGRESS</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Stakeholders & Experts -->
+<div class="surface-container-lowest glass-card rounded-3xl p-8 border border-outline-variant/10">
+<h3 class="text-lg font-bold font-headline mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">groups</span>
+                    Phase Leads
+                </h3>
+<div class="space-y-6">
+<div class="flex items-center gap-4">
+<img alt="Manager" class="w-10 h-10 rounded-xl object-cover shadow-sm" data-alt="Portrait of a male executive project manager in professional attire" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2QDpjrhHstJshJw99WoV4qe67Ih5_mRz2Dx6QWg_GQVY0f3ns8qVLEbHVRsRyx6LpW4ygdIXLp69XnMhjMZAsrm6m72VmMDhBjwO0YimeV05l-1LtVlegg2z03vMQr1s8UEcGQJDckomOY9CBhw-3Or88gMgUCAm_su9FrCZvMaZqB1dkxS4XwZn6EflGVbV5pqxWXNwscrLA05xKkHABXH8JOWkEmCuZhOJm6Rel8GKVEDMxAZfOPuLVxdHiNoPiIR5Q5ikqAWc"/>
+<div>
+<p class="text-sm font-bold">Marcus Sterling</p>
+<p class="text-[11px] text-on-surface-variant">Lead Solutions Architect</p>
+</div>
+<button class="ml-auto p-2 rounded-lg hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-lg">mail</span>
+</button>
+</div>
+<div class="flex items-center gap-4">
+<img alt="Analyst" class="w-10 h-10 rounded-xl object-cover shadow-sm" data-alt="Portrait of a female business analyst in a workspace" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTL7E4MvQQrVABmjrPMJCGC8df-szRb14_cNZOwvW4ApF47fIx5Y369cPPgRHtzRAjxtdPWwcl7uZM7x8acOOqlj9wOXTBKFyiwaI8i7KhvD9A1-EGgiaKYhxIBirmdZeOtxRUIgPKTuPja-MLXvCBJ2PrmSdb6pgr5acKaJPBC-4MeGWRSMAGhBadBc0D3-lHmVcPuTWPlkPu4fZ0_RPYRM-FVTqD9a1ngVVybKTzfQ40W1TNUiBZ7vXGdND4x3thC3gDX_RORfg"/>
+<div>
+<p class="text-sm font-bold">Elena Rodriguez</p>
+<p class="text-[11px] text-on-surface-variant">Business Systems Analyst</p>
+</div>
+<button class="ml-auto p-2 rounded-lg hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-lg">mail</span>
+</button>
+</div>
+<div class="flex items-center gap-4 opacity-50">
+<div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">person_add</span>
+</div>
+<div>
+<p class="text-sm font-bold">UAT Specialist</p>
+<p class="text-[11px] text-on-surface-variant">To be assigned in Q4</p>
+</div>
+</div>
+</div>
+<div class="mt-10 p-4 bg-tertiary-fixed rounded-2xl">
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-tertiary-fixed-variant mb-2">Expert Insight</p>
+<p class="text-xs italic text-on-tertiary-fixed-variant leading-relaxed">"The inventory track is outpacing the schedule. Consider moving the UAT for the warehouse module forward by 2 weeks."</p>
+</div>
+</div>
+</section>
+<!-- Implementation Health Legend -->
+<footer class="mt-12 py-6 border-t border-outline-variant/10 flex items-center justify-between text-on-surface-variant text-xs font-medium">
+<div class="flex gap-8">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                    Completed / On Track
+                </div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+                    Currently Active
+                </div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+                    Delayed / Critical Path
+                </div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span>
+                    Upcoming Phase
+                </div>
+</div>
+<div>
+                System Last Updated: Aug 31, 2024 • 14:20 PM
+            </div>
+</footer>
+</main>
+</body></html>

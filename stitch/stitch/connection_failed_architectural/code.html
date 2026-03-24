@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-dim": "#e0d8da",
+              "on-primary": "#ffffff",
+              "outline-variant": "#d1c3ca",
+              "surface-container": "#f4ecee",
+              "secondary-container": "#f5dbea",
+              "surface-variant": "#e9e0e3",
+              "inverse-surface": "#342f31",
+              "on-primary-container": "#f0bfe0",
+              "primary": "#57344f",
+              "on-secondary-fixed-variant": "#53424d",
+              "on-error": "#ffffff",
+              "on-error-container": "#93000a",
+              "surface": "#fff7f9",
+              "on-secondary-fixed": "#251721",
+              "tertiary-container": "#4b5d33",
+              "tertiary": "#34451e",
+              "outline": "#80747a",
+              "secondary": "#6c5965",
+              "secondary-fixed-dim": "#d8c0ce",
+              "on-tertiary-fixed-variant": "#3b4c24",
+              "on-primary-fixed-variant": "#5f3b56",
+              "surface-container-low": "#faf1f4",
+              "surface-bright": "#fff7f9",
+              "primary-fixed-dim": "#e9b8d9",
+              "on-tertiary-fixed": "#112000",
+              "tertiary-fixed": "#d5eab4",
+              "on-surface-variant": "#4e444a",
+              "tertiary-fixed-dim": "#b9ce9a",
+              "on-primary-fixed": "#2f1029",
+              "background": "#fff7f9",
+              "on-tertiary": "#ffffff",
+              "on-secondary": "#ffffff",
+              "primary-container": "#714b67",
+              "primary-fixed": "#ffd7f1",
+              "error-container": "#ffdad6",
+              "on-tertiary-container": "#c0d5a0",
+              "error": "#ba1a1a",
+              "secondary-fixed": "#f5dbea",
+              "surface-container-highest": "#e9e0e3",
+              "surface-tint": "#79526f",
+              "on-secondary-container": "#725f6b",
+              "surface-container-lowest": "#ffffff",
+              "on-background": "#1e1b1d",
+              "inverse-primary": "#e9b8d9",
+              "on-surface": "#1e1b1d",
+              "surface-container-high": "#efe6e9",
+              "inverse-on-surface": "#f7eef1"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Manrope"],
+              "label": ["Manrope"]
+            },
+            borderRadius: {"DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col">
+<!-- TopNavBar (Shared Component Logic) -->
+<nav class="bg-[#fff7f9] dark:bg-[#1e1b1d] flex justify-between items-center w-full px-8 py-4 fixed top-0 z-50">
+<div class="text-xl font-bold tracking-tighter text-[#57344f] dark:text-[#ffd7f1]">
+            Odoo Architect
+        </div>
+<div class="hidden md:flex items-center gap-8">
+<a class="text-[#4e444a] dark:text-[#d1c3ca] hover:text-[#57344f] font-['Manrope'] text-sm tracking-tight uppercase font-semibold" href="#">Projects</a>
+<a class="text-[#4e444a] dark:text-[#d1c3ca] hover:text-[#57344f] font-['Manrope'] text-sm tracking-tight uppercase font-semibold" href="#">Team</a>
+<a class="text-[#4e444a] dark:text-[#d1c3ca] hover:text-[#57344f] font-['Manrope'] text-sm tracking-tight uppercase font-semibold" href="#">Activity</a>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant p-2 hover:bg-[#efe6e9] transition-colors cursor-pointer" data-icon="settings">settings</span>
+<span class="material-symbols-outlined text-on-surface-variant p-2 hover:bg-[#efe6e9] transition-colors cursor-pointer" data-icon="help">help</span>
+<button class="bg-primary text-on-primary font-['Manrope'] text-sm tracking-tight uppercase font-semibold px-6 py-2 transition-transform active:scale-95">Deploy</button>
+</div>
+</nav>
+<!-- SideNavBar (Shared Component Logic - Filtered Out for Transactional Error State but using styles for reference) -->
+<!-- Not rendered to prioritize content focus on the Connection Failed task -->
+<main class="flex-grow pt-24 pb-16 px-8 flex justify-center items-start">
+<div class="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-12 gap-0 border-0">
+<!-- Main Content Area -->
+<div class="lg:col-span-8 bg-surface-container-lowest p-12 shadow-wash relative">
+<!-- Architectural Accent -->
+<div class="absolute top-0 left-0 w-1 h-full bg-error"></div>
+<!-- Error Header -->
+<div class="mb-12">
+<div class="flex items-center gap-4 mb-4">
+<span class="material-symbols-outlined text-error text-4xl" data-icon="link_off">link_off</span>
+<span class="text-[0.75rem] uppercase tracking-[0.05em] font-medium text-error bg-error-container px-3 py-1">Error Code: 503_HANDSHAKE_FAILED</span>
+</div>
+<h1 class="text-[2.75rem] font-bold tracking-tighter text-on-surface leading-tight mb-4">Connection Failed</h1>
+<p class="text-on-surface-variant max-w-xl leading-relaxed">
+                        The architect could not establish a secure handshake with the specified Odoo instance. Verify your credentials and network configuration below.
+                    </p>
+</div>
+<!-- Form Fields -->
+<div class="space-y-8">
+<!-- URL Field -->
+<div class="group">
+<label class="text-[0.75rem] uppercase tracking-[0.05em] font-medium text-on-surface-variant block mb-2">Target Instance URL</label>
+<div class="relative">
+<input class="w-full bg-surface-container-high border-b-2 border-outline focus:border-primary px-4 py-4 text-on-surface font-medium outline-none transition-all" readonly="" type="text" value="https://alpha-enterprise-v17.odoo.com"/>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline" data-icon="lock">lock</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Database Name -->
+<div>
+<label class="text-[0.75rem] uppercase tracking-[0.05em] font-medium text-on-surface-variant block mb-2">Database Name</label>
+<input class="w-full bg-surface-container-high border-b-2 border-outline focus:border-primary px-4 py-4 text-on-surface font-medium outline-none transition-all" type="text" value="project_alpha_prod"/>
+</div>
+<!-- Admin Login -->
+<div>
+<label class="text-[0.75rem] uppercase tracking-[0.05em] font-medium text-on-surface-variant block mb-2">Administrator Login</label>
+<input class="w-full bg-surface-container-high border-b-2 border-outline focus:border-primary px-4 py-4 text-on-surface font-medium outline-none transition-all" type="text" value="admin@odoo-architect.io"/>
+</div>
+</div>
+<!-- Password (Cleared) -->
+<div>
+<label class="text-[0.75rem] uppercase tracking-[0.05em] font-medium text-on-surface-variant block mb-2">Administrator Password</label>
+<input class="w-full bg-surface-container-high border-b-2 border-primary px-4 py-4 text-on-surface font-medium outline-none transition-all ring-offset-2 ring-primary/10 ring-2 ring-opacity-100" placeholder="Re-enter password to retry" type="password"/>
+</div>
+<!-- Action Row -->
+<div class="pt-8 flex items-center justify-between">
+<button class="bg-surface-container-high text-on-surface font-['Manrope'] text-sm tracking-tight uppercase font-semibold px-8 py-4 hover:bg-surface-container-highest transition-colors">
+                            Return to Dashboard
+                        </button>
+<button class="bg-primary text-on-primary font-['Manrope'] text-sm tracking-tight uppercase font-bold px-12 py-4 hover:bg-primary-container transition-all flex items-center gap-3">
+<span class="material-symbols-outlined text-lg" data-icon="refresh">refresh</span>
+                            Retry Connection
+                        </button>
+</div>
+</div>
+</div>
+<!-- Troubleshooting Sidebar -->
+<div class="lg:col-span-4 bg-surface-container-low p-12 flex flex-col">
+<div class="mb-10">
+<h2 class="text-[1.375rem] font-semibold text-on-surface mb-2">Troubleshooting</h2>
+<div class="h-1 w-12 bg-primary"></div>
+</div>
+<div class="space-y-12">
+<!-- Protocol Mismatch -->
+<section>
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="rule">rule</span>
+<h3 class="text-[0.75rem] uppercase tracking-[0.05em] font-bold text-on-surface">Protocol Mismatch</h3>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed mb-4">
+                            Ensure the instance version (v17 Enterprise) matches your local XML-RPC library requirements. Version drift may prevent secure method calls.
+                        </p>
+<a class="text-xs font-bold text-primary flex items-center gap-1 hover:underline" href="#">
+                            READ DOCUMENTATION <span class="material-symbols-outlined text-xs" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</section>
+<!-- CORS Policy -->
+<section>
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="security">security</span>
+<h3 class="text-[0.75rem] uppercase tracking-[0.05em] font-bold text-on-surface">CORS Policy</h3>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                            Web requests from this domain may be blocked by Odoo's security headers. Verify your architect IP is whitelisted in the instance system parameters.
+                        </p>
+</section>
+<!-- Database Integrity -->
+<section>
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="database">database</span>
+<h3 class="text-[0.75rem] uppercase tracking-[0.05em] font-bold text-on-surface">Database Verification</h3>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                            Confirm that the database <span class="font-mono bg-surface-container-highest px-1">project_alpha_prod</span> is currently in the 'Running' state and not undergoing maintenance.
+                        </p>
+</section>
+<!-- Support Prompt -->
+<div class="mt-auto pt-12 border-t border-outline-variant/30">
+<div class="bg-surface-container-lowest p-6 flex flex-col gap-4">
+<p class="text-xs font-medium text-on-surface-variant uppercase">Need Architect Assistance?</p>
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="support_agent">support_agent</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Live Support</p>
+<p class="text-xs text-on-surface-variant">Available for Enterprise</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Visual Footer Texture (Editorial Detail) -->
+<div class="fixed bottom-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-primary-container to-primary-fixed"></div>
+<!-- Background Decoration (Architectural Subtlety) -->
+<div class="fixed top-0 right-0 p-12 opacity-[0.03] pointer-events-none select-none overflow-hidden h-screen w-1/3">
+<h2 class="text-[12rem] font-black leading-none transform rotate-90 origin-top-right">ARCHITECT</h2>
+</div>
+</body></html>

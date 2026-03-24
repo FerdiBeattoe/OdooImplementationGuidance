@@ -106,7 +106,7 @@ export function createWizardShell({ title, subtitle, icon, steps, onComplete, on
       contentArea.style.transform = "translateY(0)";
       updateStepper();
       updateNav();
-    }, 120);
+    }, 150);
   }
 
   function render() {

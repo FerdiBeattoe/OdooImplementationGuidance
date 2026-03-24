@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-high": "#efe6e9",
+              "surface-container": "#f4ecee",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary": "#ffffff",
+              "inverse-on-surface": "#f7eef1",
+              "primary-fixed": "#ffd7f1",
+              "primary": "#57344f",
+              "outline": "#80747a",
+              "on-surface-variant": "#4e444a",
+              "tertiary-container": "#4b5d33",
+              "on-tertiary-fixed": "#112000",
+              "surface": "#fff7f9",
+              "on-error-container": "#93000a",
+              "surface-container-low": "#faf1f4",
+              "secondary-fixed": "#f5dbea",
+              "surface-tint": "#79526f",
+              "surface-variant": "#e9e0e3",
+              "inverse-primary": "#e9b8d9",
+              "on-secondary-fixed-variant": "#53424d",
+              "on-background": "#1e1b1d",
+              "on-surface": "#1e1b1d",
+              "inverse-surface": "#342f31",
+              "background": "#fff7f9",
+              "tertiary": "#34451e",
+              "on-primary-container": "#f0bfe0",
+              "on-error": "#ffffff",
+              "on-secondary": "#ffffff",
+              "on-primary": "#ffffff",
+              "on-secondary-fixed": "#251721",
+              "secondary-container": "#f5dbea",
+              "secondary": "#6c5965",
+              "primary-fixed-dim": "#e9b8d9",
+              "tertiary-fixed-dim": "#b9ce9a",
+              "secondary-fixed-dim": "#d8c0ce",
+              "error-container": "#ffdad6",
+              "error": "#ba1a1a",
+              "outline-variant": "#d1c3ca",
+              "on-tertiary-fixed-variant": "#3b4c24",
+              "on-tertiary-container": "#c0d5a0",
+              "on-primary-fixed": "#2f1029",
+              "on-secondary-container": "#725f6b",
+              "surface-bright": "#fff7f9",
+              "primary-container": "#714b67",
+              "tertiary-fixed": "#d5eab4",
+              "surface-dim": "#e0d8da",
+              "surface-container-highest": "#e9e0e3",
+              "on-primary-fixed-variant": "#5f3b56"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Manrope"],
+              "label": ["Manrope"]
+            },
+            borderRadius: {"DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- TopNavBar -->
+<header class="bg-[#fff7f9] dark:bg-[#1e1b1d] font-['Manrope'] text-sm tracking-tight uppercase font-semibold flex justify-between items-center w-full px-8 py-4 fixed top-0 z-50">
+<div class="text-xl font-bold tracking-tighter text-[#57344f] dark:text-[#ffd7f1]">
+            Odoo Architect
+        </div>
+<nav class="hidden md:flex items-center space-x-8">
+<a class="text-[#4e444a] dark:text-[#d1c3ca] hover:text-[#57344f] hover:bg-[#efe6e9] dark:hover:bg-[#362f33] transition-colors duration-150" href="#">Projects</a>
+<a class="text-[#4e444a] dark:text-[#d1c3ca] hover:text-[#57344f] hover:bg-[#efe6e9] dark:hover:bg-[#362f33] transition-colors duration-150" href="#">Team</a>
+<a class="text-[#4e444a] dark:text-[#d1c3ca] hover:text-[#57344f] hover:bg-[#efe6e9] dark:hover:bg-[#362f33] transition-colors duration-150" href="#">Activity</a>
+</nav>
+<div class="flex items-center space-x-6">
+<div class="flex items-center space-x-4">
+<span class="material-symbols-outlined text-[#57344f] cursor-pointer hover:bg-[#efe6e9] p-2 transition-colors">settings</span>
+<span class="material-symbols-outlined text-[#57344f] cursor-pointer hover:bg-[#efe6e9] p-2 transition-colors">help</span>
+</div>
+<button class="bg-primary text-on-primary px-6 py-2 font-bold tracking-widest hover:bg-primary-container transition-all active:scale-95">
+                Deploy
+            </button>
+</div>
+</header>
+<!-- Main Layout -->
+<div class="flex pt-20">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-screen flex flex-col pt-20 bg-[#faf1f4] dark:bg-[#1a1819] w-64 border-r-0 z-40">
+<div class="px-6 py-8 border-b border-outline-variant/10">
+<h2 class="text-lg font-black text-[#57344f] uppercase tracking-tighter">Project Alpha</h2>
+<p class="font-['Manrope'] text-[0.75rem] uppercase tracking-[0.05em] font-medium text-on-surface-variant">v17 Enterprise</p>
+</div>
+<nav class="flex-grow py-4">
+<a class="text-[#4e444a] dark:text-[#d1c3ca] flex items-center px-6 py-4 w-full hover:bg-[#efe6e9] dark:hover:bg-[#2b2629] font-['Manrope'] text-[0.75rem] uppercase tracking-[0.05em] font-medium" href="#">
+<span class="material-symbols-outlined mr-3">dashboard</span>
+                    Dashboard
+                </a>
+<a class="text-[#4e444a] dark:text-[#d1c3ca] flex items-center px-6 py-4 w-full hover:bg-[#efe6e9] dark:hover:bg-[#2b2629] font-['Manrope'] text-[0.75rem] uppercase tracking-[0.05em] font-medium" href="#">
+<span class="material-symbols-outlined mr-3">timeline</span>
+                    Roadmap
+                </a>
+<a class="text-[#4e444a] dark:text-[#d1c3ca] flex items-center px-6 py-4 w-full hover:bg-[#efe6e9] dark:hover:bg-[#2b2629] font-['Manrope'] text-[0.75rem] uppercase tracking-[0.05em] font-medium" href="#">
+<span class="material-symbols-outlined mr-3">extension</span>
+                    Modules
+                </a>
+<a class="bg-[#57344f] text-white dark:bg-[#714b67] border-l-4 border-[#ffd7f1] flex items-center px-6 py-4 w-full font-['Manrope'] text-[0.75rem] uppercase tracking-[0.05em] font-medium" href="#">
+<span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 1;">settings_input_component</span>
+                    Configuration
+                </a>
+</nav>
+<div class="p-6">
+<button class="w-full bg-primary text-on-primary py-3 px-4 font-bold uppercase tracking-widest text-[0.75rem] hover:bg-primary-container transition-colors">
+                    New Module
+                </button>
+</div>
+<div class="mt-auto py-4 border-t border-outline-variant/10">
+<a class="text-[#4e444a] dark:text-[#d1c3ca] flex items-center px-6 py-3 w-full hover:bg-[#efe6e9] font-['Manrope'] text-[0.75rem] uppercase tracking-[0.05em] font-medium" href="#">
+<span class="material-symbols-outlined mr-3">description</span>
+                    Documentation
+                </a>
+<a class="text-[#4e444a] dark:text-[#d1c3ca] flex items-center px-6 py-3 w-full hover:bg-[#efe6e9] font-['Manrope'] text-[0.75rem] uppercase tracking-[0.05em] font-medium" href="#">
+<span class="material-symbols-outlined mr-3">contact_support</span>
+                    Support
+                </a>
+</div>
+</aside>
+<!-- Configuration Canvas -->
+<main class="ml-64 w-full p-12 bg-surface min-h-screen">
+<!-- Breadcrumbs & Header -->
+<div class="max-w-5xl mx-auto">
+<div class="mb-12">
+<div class="flex items-center space-x-2 text-on-surface-variant font-label text-[0.75rem] uppercase tracking-widest mb-4">
+<span>Modules</span>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span>Inventory Management</span>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="text-primary font-bold">Configuration Wizard</span>
+</div>
+<h1 class="text-[3.5rem] font-black leading-none tracking-tighter text-on-surface mb-2">
+                        Inventory <span class="text-outline">Engine</span>
+</h1>
+<p class="text-on-surface-variant max-w-2xl text-lg leading-relaxed">
+                        Configure architectural parameters for the core inventory tracking system. These settings dictate the logic of stock valuation, warehouse routing, and real-time synchronization.
+                    </p>
+</div>
+<!-- Stepper Navigation -->
+<div class="grid grid-cols-4 gap-4 mb-16">
+<div class="group border-b-4 border-primary pb-4">
+<span class="block font-label text-[0.7rem] font-bold text-primary mb-1 uppercase tracking-widest">Step 01</span>
+<h3 class="font-headline text-lg font-bold text-on-surface flex items-center">
+                            General
+                            <span class="material-symbols-outlined ml-auto text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</h3>
+</div>
+<div class="group border-b-4 border-primary pb-4">
+<span class="block font-label text-[0.7rem] font-bold text-primary mb-1 uppercase tracking-widest">Step 02</span>
+<h3 class="font-headline text-lg font-bold text-on-surface">Security</h3>
+</div>
+<div class="group border-b-4 border-outline-variant/30 pb-4">
+<span class="block font-label text-[0.7rem] font-bold text-outline-variant mb-1 uppercase tracking-widest">Step 03</span>
+<h3 class="font-headline text-lg font-bold text-outline-variant">API Access</h3>
+</div>
+<div class="group border-b-4 border-outline-variant/30 pb-4">
+<span class="block font-label text-[0.7rem] font-bold text-outline-variant mb-1 uppercase tracking-widest">Step 04</span>
+<h3 class="font-headline text-lg font-bold text-outline-variant">Advanced</h3>
+</div>
+</div>
+<!-- Wizard Content Area -->
+<div class="grid grid-cols-12 gap-12">
+<!-- Form Side -->
+<div class="col-span-8 space-y-12">
+<!-- Security Policy Section -->
+<section class="space-y-8">
+<div class="flex items-baseline justify-between border-b border-outline-variant/20 pb-4">
+<h2 class="font-headline text-2xl font-bold tracking-tight text-on-surface">Security Policy</h2>
+<span class="font-label text-xs font-bold text-primary px-3 py-1 bg-primary-fixed uppercase">High Sensitivity</span>
+</div>
+<div class="grid grid-cols-2 gap-8">
+<div class="space-y-2">
+<label class="font-label text-[0.75rem] uppercase font-bold text-on-surface-variant tracking-wider">Access Protocol</label>
+<div class="relative group">
+<select class="w-full bg-surface-container-high border-0 border-b-2 border-outline focus:border-primary focus:ring-0 text-on-surface py-4 px-4 appearance-none font-medium cursor-pointer">
+<option>Role-Based Authentication</option>
+<option>Multi-Factor Required</option>
+<option>Manual Verification</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+</div>
+<p class="text-[0.7rem] text-outline italic">Defines how users authenticate against the inventory ledger.</p>
+</div>
+<div class="space-y-2">
+<label class="font-label text-[0.75rem] uppercase font-bold text-on-surface-variant tracking-wider">Session Timeout</label>
+<div class="flex items-center">
+<input class="w-full bg-surface-container-high border-0 border-b-2 border-outline focus:border-primary focus:ring-0 text-on-surface py-4 px-4 font-medium" type="number" value="120"/>
+<span class="bg-surface-container-high border-b-2 border-outline py-4 pr-4 text-on-surface-variant font-bold text-sm">MIN</span>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<label class="font-label text-[0.75rem] uppercase font-bold text-on-surface-variant tracking-wider">Encryption Method</label>
+<div class="grid grid-cols-3 gap-0">
+<button class="bg-primary text-on-primary py-4 px-6 text-sm font-bold border border-primary">AES-256</button>
+<button class="bg-surface-container-high text-on-surface-variant py-4 px-6 text-sm font-bold border border-outline-variant/20 hover:bg-surface-container-highest transition-colors">RSA-4096</button>
+<button class="bg-surface-container-high text-on-surface-variant py-4 px-6 text-sm font-bold border border-outline-variant/20 hover:bg-surface-container-highest transition-colors">ChaCha20</button>
+</div>
+</div>
+<div class="flex items-start space-x-4 p-6 bg-surface-container-low border-l-4 border-primary">
+<span class="material-symbols-outlined text-primary mt-1">info</span>
+<div>
+<h4 class="font-headline text-sm font-bold text-on-surface uppercase tracking-tight">Technical Advisory</h4>
+<p class="text-sm text-on-surface-variant mt-1">Changing encryption methods will require a full database re-indexing, which can take up to 2 hours for large datasets.</p>
+</div>
+</div>
+</section>
+<!-- Permissions Grid -->
+<section class="space-y-6">
+<h2 class="font-headline text-2xl font-bold tracking-tight text-on-surface border-b border-outline-variant/20 pb-4">Permission Matrix</h2>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest hover:bg-surface-container transition-colors group">
+<div class="flex items-center space-x-4">
+<div class="w-10 h-10 bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary">inventory_2</span>
+</div>
+<div>
+<p class="font-headline font-bold text-on-surface">Warehouse Supervisor</p>
+<p class="text-xs text-on-surface-variant">Full CRUD on all stock locations</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none ring-0 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest hover:bg-surface-container transition-colors">
+<div class="flex items-center space-x-4">
+<div class="w-10 h-10 bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary">forklift</span>
+</div>
+<div>
+<p class="font-headline font-bold text-on-surface">Stock Handler</p>
+<p class="text-xs text-on-surface-variant">Read-only with receipt confirmation rights</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none ring-0 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</section>
+</div>
+<!-- Sidebar/Info Panel -->
+<div class="col-span-4 space-y-8">
+<div class="bg-surface-container p-8 space-y-6">
+<h3 class="font-headline text-lg font-bold text-on-surface uppercase tracking-tighter">Configuration Health</h3>
+<div class="space-y-6">
+<div class="flex items-center justify-between">
+<span class="text-sm font-medium text-on-surface-variant">Compliance Score</span>
+<span class="text-sm font-bold text-tertiary">94%</span>
+</div>
+<div class="w-full bg-outline-variant/30 h-2">
+<div class="bg-tertiary h-full w-[94%]"></div>
+</div>
+<div class="space-y-4 pt-4">
+<div class="flex items-start space-x-3">
+<span class="material-symbols-outlined text-tertiary text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<p class="text-xs text-on-surface-variant">GDPR compliant data handling</p>
+</div>
+<div class="flex items-start space-x-3">
+<span class="material-symbols-outlined text-tertiary text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<p class="text-xs text-on-surface-variant">Encrypted at rest</p>
+</div>
+<div class="flex items-start space-x-3">
+<span class="material-symbols-outlined text-error text-sm" style="font-variation-settings: 'FILL' 1;">warning</span>
+<p class="text-xs text-on-surface-variant">API exposure level is high</p>
+</div>
+</div>
+</div>
+</div>
+<div class="relative overflow-hidden group">
+<img class="w-full h-48 object-cover brightness-50 grayscale hover:grayscale-0 transition-all duration-700" data-alt="Modern logistics center with organized shipping pallets and industrial lighting in a cold blue architectural style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXrsCpy24aLU97-08xmgjjgK4xHhNvJ83Pvw5KpE7hE_sVqTgPvBtY5jR36jSLCEgoe0QskKbkd2u9kn5iyuac6ILJjeJBv8-ogPTxnbbaS9b4L4lebiFKQzEQm4QO54t8kTPf5OiR_Obh6AyjENMjO-0_TFPrn67bK7phIoEl4AYOeZKvdonYAnjwwewGyboZlhWnIBUWVCQ6UoRhNPnonrpQ19ZCC0Va9YvpIBupRi1XEnj48Nh4BMUK-oIANQ5wMF7mgPYqCgc"/>
+<div class="absolute inset-0 p-6 flex flex-col justify-end">
+<p class="text-white text-xs uppercase tracking-[0.2em] font-bold mb-2">Architectural View</p>
+<p class="text-white/80 text-[0.7rem] leading-relaxed">Real-time mapping of configuration to physical warehouse logic.</p>
+</div>
+</div>
+<div class="border-2 border-primary p-6">
+<h4 class="font-headline text-sm font-black uppercase tracking-widest text-primary mb-2">Need Help?</h4>
+<p class="text-xs text-on-surface-variant mb-4 leading-relaxed">Schedule a 15-minute call with an Odoo architect to review your security parameters.</p>
+<button class="w-full py-3 border border-primary text-primary font-bold text-xs uppercase hover:bg-primary hover:text-white transition-colors">
+                                Book Review
+                            </button>
+</div>
+</div>
+</div>
+<!-- Footer Navigation -->
+<div class="mt-20 pt-8 border-t border-outline-variant/30 flex justify-between items-center">
+<button class="flex items-center space-x-2 text-on-surface-variant hover:text-primary font-bold uppercase tracking-widest text-xs transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+<span>Back to General</span>
+</button>
+<div class="flex space-x-4">
+<button class="px-8 py-4 bg-surface-container-high text-on-surface font-bold uppercase tracking-widest text-xs hover:bg-surface-container-highest transition-colors">
+                            Save Draft
+                        </button>
+<button class="px-10 py-4 bg-primary text-on-primary font-bold uppercase tracking-widest text-xs hover:bg-primary-container transition-colors flex items-center space-x-3">
+<span>Continue to API</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

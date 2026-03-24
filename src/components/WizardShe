@@ -1,0 +1,232 @@
+import { el } from '../../frontend/lib/dom.js';
+import { VisualProgressTracker } from './VisualProgressTracker.js';
+import { RollbackEngine } from '../engine/RollbackEngine.js';
+
+/**
+ * Wizard Shell - Universal Framework for All Setup Wizards
+ * Provides: Step navigation, validation, rollback, progress tracking, mobile responsiveness
+ */
+
+export class WizardShell {
+  constructor(options = {}) {
+    this.options = {
+      title: options.title || 'Setup Wizard',
+      description: options.description || '',
+      wizard: options.wizard || null,
+      onComplete: options.onComplete || (() => {}),
+      onCancel: options.onCancel || (() => {}),
+      client: options.client || null,
+      allowRollback: options.allowRollback !== false,
+      ...options
+    };
+    
+    this.rollbackEngine = new RollbackEngine({ client: this.options.client });
+    this.transactionId = null;
+    
+    this.phases = [
+      { id: 'entry', name: 'Database', icon: '🚀', steps: 5 },
+      { id: 'foundation', name: 'Foundation', icon: '🏗️', steps: 4 },
+      { id: 'crm', name: 'CRM', icon: '🤝', steps: 4 },
+      { id: 'sales', name: 'Sales', icon: '💰', steps: 5 },
+      { id: 'purchase', name: 'Purchase', icon: '🛒', steps: 4 },
+      { id: 'inventory', name: 'Inventory', icon: '📦', steps: 5 },
+      { id: 'manufacturing', name: 'MRP', icon: '⚙️', steps: 4 },
+      { id: 'finance', name: 'Finance', icon: '📊', steps: 5 },
+      { id: 'ready', name: 'Go Live', icon: '✅', steps: 3 }
+    ];
+  }
+  
+  render() {
+    return el('div', { className: 'wizard-shell' }, [
+      this.renderHeader(),
+      this.renderBody(),
+      this.renderFooter()
+    ]);
+  }
+  
+  renderHeader() {
+    return el('header', { className: 'wizard-header' }, [
+      el('div', { className: 'wizard-brand' }, [
+        el('h1', { text: this.options.title }),
+        el('p', { text: this.options.description })
+      ]),
+      this.renderSafetyIndicator()
+    ]);
+  }
+  
+  renderSafetyIndicator() {
+    if (!this.options.allowRollback) return null;
+    
+    const hasTransaction = this.transactionId !== null;
+    
+    return el('div', { className: `safety-indicator ${hasTransaction ? 'active' : ''}` }, [
+      el('span', { className: 'shield-icon', text: '🛡️' }),
+      el('span', { text: hasTransaction ? 'Rollback Ready' : 'Safe Mode' })
+    ]);
+  }
+  
+  renderBody() {
+    return el('div', { className: 'wizard-body' }, [
+      this.renderProgressPanel(),
+      this.renderWizardContent()
+    ]);
+  }
+  
+  renderProgressPanel() {
+    const tracker = new VisualProgressTracker({
+      phases: this.phases,
+      currentPhase: this.getCurrentPhaseIndex(),
+      completedSteps: this.getCompletedSteps(),
+      onPhaseClick: (idx) => this.navigateToPhase(idx)
+    });
+    
+    return el('aside', { className: 'wizard-progress-panel' }, [
+      tracker.render()
+    ]);
+  }
+  
+  renderWizardContent() {
+    if (!this.options.wizard) {
+      return el('div', { className: 'wizard-content empty' }, [
+        el('p', { text: 'No wizard loaded' })
+      ]);
+    }
+    
+    return el('main', { className: 'wizard-content' }, [
+      this.options.wizard.render()
+    ]);
+  }
+  
+  renderFooter() {
+    return el('footer', { className: 'wizard-footer' }, [
+      this.renderActions(),
+      this.renderHelpLink()
+    ]);
+  }
+  
+  renderActions() {
+    const actions = [];
+    
+    // Cancel button
+    actions.push(el('button', {
+      className: 'btn-secondary',
+      onclick: () => this.handleCancel()
+    }, 'Cancel'));
+    
+    // Rollback button (if transaction active)
+    if (this.transactionId && this.options.allowRollback) {
+      actions.push(el('button', {
+        className: 'btn-warning',
+        onclick: () => this.handleRollback()
+      }, '↩️ Undo Changes'));
+    }
+    
+    // Complete button
+    actions.push(el('button', {
+      className: 'btn-primary',
+      onclick: () => this.handleComplete()
+    }, 'Complete Setup'));
+    
+    return el('div', { className: 'wizard-actions' }, actions);
+  }
+  
+  renderHelpLink() {
+    return el('div', { className: 'wizard-help' }, [
+      el('a', {
+        href: 'https://www.odoo.com/documentation/19.0/',
+        target: '_blank'
+      }, '📚 Odoo Documentation'),
+      el('span', { text: ' | ' }),
+      el('a', {
+        href: '#',
+        onclick: () => this.showContextHelp()
+      }, '❓ Help for This Step')
+    ]);
+  }
+  
+  // Event handlers
+  handleCancel() {
+    if (this.transactionId) {
+      const confirm = window.confirm('You have unsaved changes. Rollback and exit?');
+      if (confirm) {
+        this.rollbackEngine.rollback(this.transactionId);
+      } else {
+        return;
+      }
+    }
+    this.options.onCancel();
+  }
+  
+  async handleRollback() {
+    if (!this.transactionId) return;
+    
+    const confirm = window.confirm('Undo all changes from this session? This cannot be undone.');
+    if (!confirm) return;
+    
+    try {
+      const result = await this.rollbackEngine.rollback(this.transactionId);
+      
+      if (result.success) {
+        alert('✅ Changes successfully rolled back');
+        this.transactionId = null;
+        this.options.onCancel();
+      } else {
+        alert(`⚠️ Rollback incomplete. ${result.failures.length} operations could not be reversed.`);
+      }
+    } catch (error) {
+      alert('❌ Rollback failed: ' + error.message);
+    }
+  }
+  
+  handleComplete() {
+    if (this.options.wizard) {
+      // Start transaction if not already
+      if (!this.transactionId) {
+        this.transactionId = this.rollbackEngine.beginTransaction(this.options.title);
+      }
+      
+      // Apply wizard
+      this.options.wizard.apply();
+    }
+  }
+  
+  navigateToPhase(phaseIndex) {
+    // Navigate to specific phase
+    console.log('Navigate to phase:', phaseIndex);
+  }
+  
+  getCurrentPhaseIndex() {
+    // Determine current phase from wizard type
+    const phaseMap = {
+      'DatabaseCreationWizard': 0,
+      'CompanySetupWizard': 1,
+      'MasterDataWizard': 1,
+      'CrmWizard': 2,
+      'SalesWizard': 3,
+      'PurchaseWizard': 4,
+      'InventoryWizard': 5,
+      'ManufacturingWizard': 6,
+      'AccountingWizard': 7
+    };
+    
+    const wizardName = this.options.wizard?.constructor?.name || '';
+    return phaseMap[wizardName] || 0;
+  }
+  
+  getCompletedSteps() {
+    // Get completed steps from localStorage or session
+    return [];
+  }
+  
+  showContextHelp() {
+    // Show help modal for current step
+    alert('Context help: This would show video/tutorial content for the current step');
+  }
+  
+  // Mobile responsive checks
+  isMobile() {
+    return window.innerWidth < 768;
+  }
+}
+
+export default WizardShell;

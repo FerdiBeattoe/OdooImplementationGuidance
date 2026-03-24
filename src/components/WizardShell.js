@@ -140,7 +140,12 @@ export function createWizardShell(options = {}) {
           isValid = String(value).length <= (params.max || Infinity);
           break;
         case "pattern":
-          isValid = new RegExp(params.pattern).test(String(value));
+          try {
+            isValid = new RegExp(params.pattern).test(String(value));
+          } catch (e) {
+            console.warn(`[WizardShell] Invalid regex pattern: ${params.pattern}`, e);
+            isValid = false;
+          }
           break;
         case "email":
           isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value));

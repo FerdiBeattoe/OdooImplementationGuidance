@@ -181,14 +181,14 @@ export function createRollbackEngine(options = {}) {
     let targetTransaction = null;
     if (transactionId) {
       // Check operationLog first, then currentTransaction
-      const fromLog = operationLog.find(op => op.transactionId === transactionId)?.transactionId;
+      const fromLog = operationLog.find(op => op.transactionId === transactionId);
       if (fromLog) {
-        targetTransaction = fromLog;
+        targetTransaction = { id: transactionId };
       } else if (currentTransaction?.id === transactionId) {
-        targetTransaction = currentTransaction.id;
+        targetTransaction = currentTransaction;
       }
     } else {
-      targetTransaction = currentTransaction?.id;
+      targetTransaction = currentTransaction;
     }
 
     if (!targetTransaction) {
@@ -196,7 +196,7 @@ export function createRollbackEngine(options = {}) {
     }
 
     const opsToRollback = operationLog.filter(op =>
-      op.transactionId === targetTransaction && !op.rolledBack
+      op.transactionId === targetTransaction.id && !op.rolledBack
     ).sort((a, b) => b.timestamp - a.timestamp);
 
     const rollbackResults = [];
@@ -213,14 +213,14 @@ export function createRollbackEngine(options = {}) {
       }
     }
 
-    if (currentTransaction && currentTransaction.id === targetTransaction) {
+    if (currentTransaction && currentTransaction.id === targetTransaction.id) {
       currentTransaction.state = TRANSACTION_STATES.ROLLED_BACK;
       currentTransaction.endTime = Date.now();
       currentTransaction = null;
     }
 
     onRollback({
-      transactionId: targetTransaction,
+      transactionId: targetTransaction.id,
       operationsRolledBack: rollbackResults.length,
       errors
     });

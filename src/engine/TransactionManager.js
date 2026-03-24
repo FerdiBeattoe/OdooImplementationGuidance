@@ -15,12 +15,20 @@ const EXECUTION_STRATEGIES = {
   CHUNKED: "chunked"
 };
 
+class TimeoutError extends Error {
+  constructor(message = "Operation timed out") {
+    super(message);
+    this.name = "TimeoutError";
+  }
+}
+
 export function createTransactionManager(options = {}) {
   const {
     maxConcurrent = 3,
     chunkSize = 10,
     retryAttempts = 3,
     retryDelay = 1000,
+    operationTimeout = 30000, // 30 seconds default
     onBatchStart = () => {},
     onBatchComplete = () => {},
     onBatchError = () => {},
@@ -262,7 +270,16 @@ export function createTransactionManager(options = {}) {
       try {
         const previousState = await capturePreviousState(operation);
 
-        const result = await operation.execute(context);
+        let result;
+        let timeoutHandle;
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutHandle = setTimeout(() => reject(new TimeoutError(`Operation timed out after ${operationTimeout}ms`)), operationTimeout);
+        });
+        try {
+          result = await Promise.race([operation.execute(context), timeoutPromise]);
+        } finally {
+          clearTimeout(timeoutHandle);
+        }
 
         rollbackEngine.registerOperation({
           type: operation.type || OPERATION_TYPES.UPDATE,
@@ -496,4 +513,4 @@ export function createTransactionManager(options = {}) {
   };
 }
 
-export { BATCH_STATES, EXECUTION_STRATEGIES, OPERATION_TYPES };
+export { BATCH_STATES, EXECUTION_STRATEGIES, OPERATION_TYPES, TimeoutError };

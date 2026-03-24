@@ -12,6 +12,9 @@ import { OdooClient, OdooRpcError, detectInstalledModules, detectVersion } from 
 
 const connectionRegistry = new Map();
 
+const CONNECTION_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
 export async function connectProject(project, payload, fetchImpl = fetch) {
   const client = new OdooClient({
     baseUrl: payload.url,
@@ -34,7 +37,8 @@ export async function connectProject(project, payload, fetchImpl = fetch) {
     baseUrl: client.baseUrl,
     database: client.database,
     sessionId: client.sessionId,
-    uid: client.uid
+    uid: client.uid,
+    timestamp: Date.now()
   });
 
   return normalizeConnectionState(
@@ -383,3 +387,14 @@ function addDuplicateNameSignal(inspection, recordKey, label) {
     inspection.blockedReasons.push(`${label} duplicate names detected in live inspection.`);
   }
 }
+
+function cleanupStaleConnections() {
+  const now = Date.now();
+  for (const [projectId, entry] of connectionRegistry.entries()) {
+    if (now - (entry.timestamp || 0) > CONNECTION_TTL_MS) {
+      connectionRegistry.delete(projectId);
+    }
+  }
+}
+
+setInterval(cleanupStaleConnections, CLEANUP_INTERVAL_MS);

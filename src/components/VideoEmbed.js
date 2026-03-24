@@ -9,6 +9,15 @@ const VIDEO_PROVIDERS = {
 const YOUTUBE_REGEX = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/;
 const VIMEO_REGEX = /(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/;
 
+function escapeAttr(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export function extractVideoId(url, provider) {
   if (!url) return null;
 
@@ -115,7 +124,7 @@ export function createVideoEmbed(options = {}) {
       el("img", {
         className: "video-embed__thumbnail",
         src: thumbnail,
-        alt: title,
+        alt: escapeAttr(title),
         loading: "lazy"
       }),
       el("button", {
@@ -136,7 +145,7 @@ export function createVideoEmbed(options = {}) {
     iframe = el("iframe", {
       className: "video-embed__iframe",
       src: embedUrl,
-      title,
+      title: escapeAttr(title),
       frameborder: "0",
       allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
       allowfullscreen: true,

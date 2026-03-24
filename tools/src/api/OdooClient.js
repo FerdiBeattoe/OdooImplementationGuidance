@@ -11,6 +11,11 @@ export class OdooClient {
     if (!baseUrl || !database || !username || !password) {
       throw new Error('Missing required config: baseUrl, database, username, and password are required');
     }
+
+    const isLocal = baseUrl.startsWith('http://localhost') || baseUrl.startsWith('http://127.0.0.1');
+    if (!baseUrl.startsWith('https://') && !isLocal) {
+      throw new Error(`OdooClient requires HTTPS. Received: ${baseUrl}`);
+    }
     
     this.baseUrl = baseUrl.replace(/\/+$/, '');
     this.database = database;
@@ -83,7 +88,7 @@ export class OdooClient {
     return this.executeKw(model, 'create', [values], { context: this.context });
   }
 
-  async createBatch(model, valuesArray, batchSize = 100) {
+  async createBatch(model, valuesArray, batchSize = 100, options = {}) {
     const results = [];
     const errors = [];
     
@@ -95,7 +100,11 @@ export class OdooClient {
         results.push(...(Array.isArray(ids) ? ids : [ids]));
       } catch (error) {
         errors.push({ batchIndex: i, error: error.message, records: batch });
-        if (options?.continueOnError) { // continue } else throw error;
+        if (options?.continueOnError) {
+          // continue
+        } else {
+          throw error;
+        }
       }
     }
     

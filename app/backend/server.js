@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { createServer } from "node:http";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -22,6 +24,7 @@ const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 10; // 10 requests per minute
 const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB limit
 const requestLog = new Map();
+const REQUEST_LOG_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 function checkRateLimit(clientId) {
   const now = Date.now();
@@ -360,3 +363,15 @@ function sendJson(res, status, payload) {
   });
   res.end(JSON.stringify(payload, null, 2));
 }
+
+function cleanupStaleRequestLogEntries() {
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW_MS;
+  for (const [key, timestamp] of requestLog.entries()) {
+    if (timestamp < windowStart) {
+      requestLog.delete(key);
+    }
+  }
+}
+
+setInterval(cleanupStaleRequestLogEntries, REQUEST_LOG_CLEANUP_INTERVAL_MS);

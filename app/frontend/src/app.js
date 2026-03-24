@@ -80,16 +80,16 @@ import { renderStagesView } from "./views/stages-view.js";
 import { renderWizardLauncherView } from "./views/wizard-launcher-view.js";
 
 // Import wizards
-import { renderDatabaseCreationWizard } from "../../../src/wizards/DatabaseCreationWizard.js";
-import { renderCompanySetupWizard } from "../../../src/wizards/CompanySetupWizard.js";
-import { renderMasterDataWizard } from "../../../src/wizards/MasterDataWizard.js";
-import { renderCrmSetupWizard } from "../../../src/wizards/operations/CrmSetupWizard.js";
-import { renderSalesSetupWizard } from "../../../src/wizards/operations/SalesSetupWizard.js";
-import { renderInventorySetupWizard } from "../../../src/wizards/operations/InventorySetupWizard.js";
-import { renderPurchaseSetupWizard } from "../../../src/wizards/operations/PurchaseSetupWizard.js";
-import { renderManufacturingSetupWizard } from "../../../src/wizards/manufacturing/ManufacturingSetupWizard.js";
-import { renderAccountingSetupWizard } from "../../../src/wizards/finance/AccountingSetupWizard.js";
-import { renderGoLiveReadinessWizard } from "../../../src/wizards/finance/GoLiveReadinessWizard.js";
+// import { renderDatabaseCreationWizard } from "./wizards/DatabaseCreationWizard.js";
+// import { renderCompanySetupWizard } from "./wizards/CompanySetupWizard.js";
+// import { renderMasterDataWizard } from "./wizards/MasterDataWizard.js";
+// import { renderCrmSetupWizard } from "./wizards/operations/CrmSetupWizard.js";
+// import { renderSalesSetupWizard } from "./wizards/operations/SalesSetupWizard.js";
+// import { renderInventorySetupWizard } from "./wizards/operations/InventorySetupWizard.js";
+// import { renderPurchaseSetupWizard } from "./wizards/operations/PurchaseSetupWizard.js";
+// import { renderManufacturingSetupWizard } from "./wizards/manufacturing/ManufacturingSetupWizard.js";
+// import { renderAccountingSetupWizard } from "./wizards/finance/AccountingSetupWizard.js";
+// import { renderGoLiveReadinessWizard } from "./wizards/finance/GoLiveReadinessWizard.js";
 
 export function renderApp(root) {
   const render = () => {
@@ -263,27 +263,34 @@ function renderWizardView(project, wizardId) {
     onNavigate: (view) => setCurrentView(view)
   };
 
+  // Wizard implementations - commented out until fully wired
+  const wizardComingSoon = (name) => el("div", { className: "panel" }, [
+    el("h2", { text: `${name} - Coming Soon` }),
+    el("p", { text: "This wizard is under development. Use the manual setup guide in the meantime." }),
+    el("button", { text: "Return to Wizard Launcher", onclick: () => setCurrentView("wizard-launcher") })
+  ]);
+
   switch (wizardId) {
     case "database-creation":
-      return renderDatabaseCreationWizard(wizardProps);
+      return wizardComingSoon("Database Creation");
     case "company-setup":
-      return renderCompanySetupWizard(wizardProps);
+      return wizardComingSoon("Company Setup");
     case "master-data":
-      return renderMasterDataWizard(wizardProps);
+      return wizardComingSoon("Master Data");
     case "crm-setup":
-      return renderCrmSetupWizard(wizardProps);
+      return wizardComingSoon("CRM Setup");
     case "sales-setup":
-      return renderSalesSetupWizard(wizardProps);
+      return wizardComingSoon("Sales Setup");
     case "inventory-setup":
-      return renderInventorySetupWizard(wizardProps);
+      return wizardComingSoon("Inventory Setup");
     case "purchase-setup":
-      return renderPurchaseSetupWizard(wizardProps);
+      return wizardComingSoon("Purchase Setup");
     case "manufacturing-setup":
-      return renderManufacturingSetupWizard(wizardProps);
+      return wizardComingSoon("Manufacturing Setup");
     case "accounting-setup":
-      return renderAccountingSetupWizard(wizardProps);
+      return wizardComingSoon("Accounting Setup");
     case "go-live-readiness":
-      return renderGoLiveReadinessWizard(wizardProps);
+      return wizardComingSoon("Go-Live Readiness");
     default:
       return el("div", { className: "error" }, [
         el("h2", { text: "Wizard Not Found" }),

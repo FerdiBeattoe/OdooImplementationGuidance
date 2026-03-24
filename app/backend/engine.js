@@ -22,16 +22,54 @@ export async function connectProject(project, payload, fetchImpl = fetch) {
     fetchImpl
   });
 
-  await client.authenticate(payload.username, payload.password);
-  const version = await detectVersion(client);
+  try {
+    // Attempt authentication
+    await client.authenticate(payload.username, payload.password);
+  } catch (authError) {
+    // Categorize authentication errors
+    const errorMsg = authError.message.toLowerCase();
+    if (errorMsg.includes('database') || errorMsg.includes('db')) {
+      throw new OdooRpcError(`Database not found: "${payload.database}". Please verify the database name exists on this Odoo server.`, 'DATABASE_NOT_FOUND');
+    }
+    if (errorMsg.includes('credential') || errorMsg.includes('login') || errorMsg.includes('password') || errorMsg.includes('authentication')) {
+      throw new OdooRpcError(`Authentication failed. Please check your username and password.`, 'AUTHENTICATION_FAILED');
+    }
+    throw new OdooRpcError(`Unable to connect to Odoo server. Please check the URL and ensure the server is accessible.`, 'CONNECTION_FAILED');
+  }
 
+  // Detect version
+  let version;
+  try {
+    version = await detectVersion(client);
+  } catch (versionError) {
+    throw new OdooRpcError(`Unable to retrieve Odoo version information. The server may not be responding correctly.`, 'VERSION_DETECTION_FAILED');
+  }
+
+  // Validate version
   const versionString = String(version.serverSerie || "");
   const majorVersionMatch = versionString.match(/(\d+)/);
   const majorVersion = majorVersionMatch ? majorVersionMatch[1] : "";
   if (majorVersion !== ODOO_VERSION) {
-    throw new OdooRpcError(`Unsupported Odoo version. Found ${versionString}, expected Odoo ${ODOO_VERSION}.`);
+    throw new OdooRpcError(`Unsupported Odoo version. Found ${versionString}, expected Odoo ${ODOO_VERSION}. This guide only supports Odoo 19.`, 'UNSUPPORTED_VERSION');
   }
 
+  // Detect deployment type from URL
+  const url = payload.url.toLowerCase();
+  let detectedDeployment = project?.projectIdentity?.deployment || "";
+  let detectedEdition = version.edition || project?.projectIdentity?.edition || "";
+  
+  // Auto-detect deployment type from URL patterns
+  if (url.includes('.odoo.com') || url.includes('odoo.online')) {
+    detectedDeployment = 'Odoo Online';
+  } else if (url.includes('.odoo.sh') || url.includes('odoo.sh')) {
+    detectedDeployment = 'Odoo.sh';
+  } else if (url.includes('localhost') || url.includes('127.0.0.1') || url.includes('192.168.') || url.includes('10.')) {
+    detectedDeployment = 'On-Premise';
+  } else {
+    detectedDeployment = detectedDeployment || 'On-Premise';
+  }
+
+  // Store connection in registry
   const projectId = project?.projectIdentity?.projectId;
   connectionRegistry.set(projectId, {
     baseUrl: client.baseUrl,
@@ -58,10 +96,19 @@ export async function connectProject(project, payload, fetchImpl = fetch) {
         database: client.database,
         serverVersion: version.serverVersion,
         serverSerie: version.serverSerie,
-        edition: project?.projectIdentity?.edition || "",
-        deployment: project?.projectIdentity?.deployment || "",
+        edition: detectedEdition,
+        deployment: detectedDeployment,
         branchTarget: project?.environmentContext?.target?.targetBranch || "",
         environmentTarget: project?.environmentContext?.target?.targetEnvironment || ""
+      },
+      // Include detected info for comparison with user selection
+      detectedInfo: {
+        edition: detectedEdition,
+        deployment: detectedDeployment,
+        version: version.serverVersion,
+        matchesUserSelection: 
+          detectedEdition === project?.projectIdentity?.edition &&
+          detectedDeployment === project?.projectIdentity?.deployment
       }
     },
     project?.projectIdentity

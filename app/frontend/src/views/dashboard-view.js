@@ -11,6 +11,7 @@ import { renderGuidanceBlock } from "../components/guidance-block.js";
 import { renderStatusBadge } from "../components/status-badge.js";
 import { renderProjectEntryView } from "./project-entry-view.js";
 import { DASHBOARD_SECTIONS, getConnectionWorkspaceModel, getDashboardSection } from "./dashboard-model.js";
+import { getState, getConnectionAttempt, clearConnectionAttempt } from "../state/app-store.js";
 
 export function renderDashboardView({
   project,
@@ -185,12 +186,93 @@ function renderOverviewSection({ project, summary, checkpointSummary, primaryChe
 }
 
 function renderConnectionSection(connection, onNavigate, onSelectDashboardSection, project, onConnect, onDisconnect) {
-  const urlInput = el("input", { placeholder: "https://your-odoo.example.com" });
-  const databaseInput = el("input", { placeholder: "Database name" });
-  const usernameInput = el("input", { placeholder: "Username" });
-  const passwordInput = el("input", { type: "password", placeholder: "Password" });
+  // Get stored connection attempt for pre-fill (except password)
+  const connectionAttempt = getConnectionAttempt();
+  const hasAttempt = !!connectionAttempt;
+  
+  // Get connection error details if connection failed
+  const errorDetails = project.connectionState?.errorDetails;
+  const hasError = project.connectionState?.status === "failed" && errorDetails;
+
+  // Create input fields with pre-filled values from stored attempt
+  const urlInput = el("input", { 
+    id: "conn-url",
+    placeholder: "https://your-odoo.example.com",
+    value: connectionAttempt?.url || ""
+  });
+  
+  const databaseInput = el("input", { 
+    id: "conn-database",
+    placeholder: "Database name",
+    value: connectionAttempt?.database || ""
+  });
+  
+  const usernameInput = el("input", { 
+    id: "conn-username",
+    placeholder: "Username",
+    value: connectionAttempt?.username || ""
+  });
+  
+  // Password is ALWAYS empty for security (never stored)
+  const passwordInput = el("input", { 
+    id: "conn-password",
+    type: "password", 
+    placeholder: "Password",
+    value: ""  // Never pre-filled
+  });
+
+  // Build error panel if there's an error
+  const errorPanel = hasError
+    ? el("section", { 
+        className: "panel panel--error", 
+        role: "alert",
+        style: "border-left: 4px solid #dc2626; background: #fef2f2;"
+      }, [
+        el("h3", { text: "❌ Connection Failed", style: "color: #dc2626; margin-bottom: 12px;" }),
+        el("p", { 
+          className: "error-message",
+          style: "font-weight: 500; color: #7f1d1d;",
+          text: errorDetails.userMessage 
+        }),
+        el("p", { 
+          className: "error-detail subtle",
+          style: "font-size: 0.9em; color: #6b7280; margin-top: 8px;",
+          text: `Technical: ${project.connectionState?.lastError || 'Unknown error'}` 
+        }),
+        el("p", { 
+          style: "font-size: 0.85em; color: #059669; margin-top: 12px;",
+          text: `✓ URL, Database, and Username are preserved. Only the password needs to be re-entered.` 
+        })
+      ])
+    : null;
+
+  // Build preserved fields indicator
+  const preservedIndicator = hasAttempt && !hasError
+    ? el("p", { 
+        className: "preserved-indicator",
+        style: "font-size: 0.85em; color: #059669; margin-bottom: 12px;",
+        text: "✓ Your previous connection details are preserved (except password for security)"
+      })
+    : null;
+
+  // Build clear/retry button if there's a stored attempt
+  const clearButton = hasAttempt
+    ? el("button", {
+        className: "button button--secondary",
+        style: "margin-left: 12px;",
+        onclick: () => {
+          clearConnectionAttempt();
+          // Clear form fields
+          urlInput.value = "";
+          databaseInput.value = "";
+          usernameInput.value = "";
+          passwordInput.value = "";
+        }
+      }, [el("span", { text: "Clear & Start Fresh" })])
+    : null;
 
   return el("div", { className: "stack" }, [
+    errorPanel,
     el("section", { className: "panel panel--strong" }, [
       el("h3", { text: "Connection capability" }),
       el("p", { className: "status-line", text: connection.status }),
@@ -206,6 +288,7 @@ function renderConnectionSection(connection, onNavigate, onSelectDashboardSectio
       el("p", {
         text: "This uses application-layer session access only. Secrets are not saved in project state."
       }),
+      preservedIndicator,
       el("div", { className: "entry-grid" }, [
         field("Odoo URL", urlInput),
         field("Database", databaseInput),
@@ -221,8 +304,9 @@ function renderConnectionSection(connection, onNavigate, onSelectDashboardSectio
             password: passwordInput.value
           })
         ),
-        heroAction("Disconnect", () => onDisconnect())
-      ])
+        heroAction("Disconnect", () => onDisconnect()),
+        clearButton
+      ].filter(Boolean)) // Remove null elements
     ]),
     el("div", { className: "two-column" }, [
       el("section", { className: "panel" }, [

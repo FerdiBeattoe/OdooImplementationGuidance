@@ -91,12 +91,108 @@ export function getState() {
 }
 
 export async function connectProject(credentials) {
+  // Store credentials attempt (password will be cleared after, others preserved)
+  state.activeProject = normalizeProjectState({
+    ...state.activeProject,
+    _connectionAttempt: {
+      url: credentials.url,
+      database: credentials.database,
+      username: credentials.username,
+      // Password NOT stored for security
+      attemptedAt: new Date().toISOString()
+    }
+  });
+
   try {
     state.activeProject = normalizeProjectState(await connectProjectRequest(state.activeProject, credentials));
+    // Clear connection attempt on success - credentials no longer needed
+    state.activeProject._connectionAttempt = null;
     pushNotification("Live Odoo connection established.", "success");
   } catch (error) {
-    pushNotification(error.message, "error");
+    // Preserve credentials for retry (except password)
+    state.activeProject = normalizeProjectState({
+      ...state.activeProject,
+      connectionState: {
+        ...state.activeProject.connectionState,
+        status: "failed",
+        lastError: error.message,
+        lastErrorAt: new Date().toISOString(),
+        errorDetails: categorizeConnectionError(error.message)
+      }
+    });
+    pushNotification(`Connection failed: ${error.message}`, "error");
   }
+  notify();
+}
+
+/**
+ * Categorize connection errors for user-friendly messaging
+ */
+function categorizeConnectionError(message) {
+  const lowerMsg = message.toLowerCase();
+  
+  if (lowerMsg.includes('authentication') || lowerMsg.includes('login') || lowerMsg.includes('password')) {
+    return {
+      category: 'authentication',
+      userMessage: 'Invalid username or password. Please check your credentials.',
+      preserveFields: ['url', 'database', 'username']
+    };
+  }
+  
+  if (lowerMsg.includes('database') || lowerMsg.includes('db')) {
+    return {
+      category: 'database',
+      userMessage: 'Database not found. Please verify the database name.',
+      preserveFields: ['url', 'username']
+    };
+  }
+  
+  if (lowerMsg.includes('url') || lowerMsg.includes('host') || lowerMsg.includes('network') || lowerMsg.includes('fetch')) {
+    return {
+      category: 'url',
+      userMessage: 'Cannot reach Odoo server. Please check the URL and ensure the server is accessible.',
+      preserveFields: ['database', 'username']
+    };
+  }
+  
+  if (lowerMsg.includes('version') || lowerMsg.includes('unsupported')) {
+    return {
+      category: 'version',
+      userMessage: 'This guide only supports Odoo 19. Please connect to an Odoo 19 instance.',
+      preserveFields: ['url', 'database', 'username']
+    };
+  }
+  
+  if (lowerMsg.includes('https') || lowerMsg.includes('ssl') || lowerMsg.includes('tls')) {
+    return {
+      category: 'https',
+      userMessage: 'HTTPS connection required. Please ensure your Odoo instance uses HTTPS.',
+      preserveFields: ['url', 'database', 'username']
+    };
+  }
+  
+  return {
+    category: 'unknown',
+    userMessage: 'Connection failed. Please check all fields and try again.',
+    preserveFields: ['url', 'database', 'username']
+  };
+}
+
+/**
+ * Get stored connection attempt for form pre-fill
+ */
+export function getConnectionAttempt() {
+  return state.activeProject?._connectionAttempt || null;
+}
+
+/**
+ * Clear connection attempt data
+ */
+export function clearConnectionAttempt() {
+  state.activeProject = normalizeProjectState({
+    ...state.activeProject,
+    _connectionAttempt: null
+  });
   notify();
 }
 

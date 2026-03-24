@@ -43,7 +43,7 @@
   font-family: var(--font-headline);
   font-size: 2rem;
   line-height: var(--lh-tight);
-  color: #ffffff;
+  color: var(--color-on-primary, #ffffff);
 }
 
 .conn-brand__sub {

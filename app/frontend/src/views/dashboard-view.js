@@ -304,22 +304,22 @@ function renderConnectionSection(connection, onNavigate, onSelectDashboardSectio
     ? el("section", { 
         className: "panel panel--error", 
         role: "alert",
-        style: "border-left: 4px solid #dc2626; background: #fef2f2;"
+        style: "border-left: 4px solid var(--color-error, #dc2626); background: var(--color-error-container, #fef2f2);"
       }, [
-        el("h3", { text: "❌ Connection Failed", style: "color: #dc2626; margin-bottom: 12px;" }),
-        el("p", { 
+        el("h3", { text: "❌ Connection Failed", style: "color: var(--color-error, #dc2626); margin-bottom: 12px;" }),
+        el("p", {
           className: "error-message",
-          style: "font-weight: 500; color: #7f1d1d;",
-          text: errorDetails.userMessage 
+          style: "font-weight: 500; color: var(--color-on-error-container, #7f1d1d);",
+          text: errorDetails.userMessage
         }),
-        el("p", { 
+        el("p", {
           className: "error-detail subtle",
-          style: "font-size: 0.9em; color: #6b7280; margin-top: 8px;",
-          text: `Technical: ${project.connectionState?.lastError || 'Unknown error'}` 
+          style: "font-size: 0.9em; color: var(--color-outline, #6b7280); margin-top: 8px;",
+          text: `Technical: ${project.connectionState?.lastError || 'Unknown error'}`
         }),
-        el("p", { 
-          style: "font-size: 0.85em; color: #059669; margin-top: 12px;",
-          text: `✓ URL, Database, and Username are preserved. Only the password needs to be re-entered.` 
+        el("p", {
+          style: "font-size: 0.85em; color: var(--color-secondary, #059669); margin-top: 12px;",
+          text: `✓ URL, Database, and Username are preserved. Only the password needs to be re-entered.`
         })
       ])
     : null;
@@ -328,7 +328,7 @@ function renderConnectionSection(connection, onNavigate, onSelectDashboardSectio
   const preservedIndicator = hasAttempt && !hasError
     ? el("p", { 
         className: "preserved-indicator",
-        style: "font-size: 0.85em; color: #059669; margin-bottom: 12px;",
+        style: "font-size: 0.85em; color: var(--color-secondary, #059669); margin-bottom: 12px;",
         text: "✓ Your previous connection details are preserved (except password for security)"
       })
     : null;

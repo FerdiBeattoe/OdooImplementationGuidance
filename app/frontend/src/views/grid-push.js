@@ -32,6 +32,8 @@ export async function pushProductRow(row) {
         uom_id: row.uom || false,
         categ_id: row.category || false,
         barcode: row.barcode || false,
+        description_sale: row.saleDescription || false,
+        description_purchase: row.purchaseDescription || false,
         sale_ok: row.canBeSold !== false,
         purchase_ok: row.canBePurchased !== false
       }
@@ -73,6 +75,7 @@ export async function pushCustomerRow(row) {
         street: row.street || false,
         city: row.city || false,
         country_id: row.country || false,
+        state_id: row.state || false,
         vat: row.taxId || false,
         customer_rank: 1
       }

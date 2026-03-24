@@ -23,6 +23,8 @@ const GRIDS = [
       { key: "uom",            label: "Unit of Measure", type: "text",     required: false },
       { key: "category",       label: "Category",        type: "text",     required: false },
       { key: "barcode",        label: "Barcode",         type: "text",     required: false },
+      { key: "saleDescription", label: "Sales Description",type: "text",     required: false },
+      { key: "purchaseDescription",label: "Purchase Description",type: "text", required: false },
       { key: "canBeSold",      label: "Can Be Sold",     type: "checkbox", required: false },
       { key: "canBePurchased", label: "Can Be Purchased",type: "checkbox", required: false }
     ]
@@ -54,6 +56,7 @@ const GRIDS = [
       { key: "street",      label: "Street",         type: "text",     required: false },
       { key: "city",        label: "City",           type: "text",     required: false },
       { key: "country",     label: "Country",        type: "text",     required: false },
+      { key: "state",       label: "State / Region", type: "text",     required: false },
       { key: "taxId",       label: "Tax ID",         type: "text",     required: false },
       { key: "pricelist",   label: "Pricelist",      type: "dropdown", optionsFn: () => getPricelistOptions().map(o => o.label), required: false },
       { key: "paymentTerms",label: "Payment Terms",  type: "dropdown", optionsFn: () => getPaymentTermOptions().map(o => o.label), required: false }
@@ -102,6 +105,7 @@ const GRIDS = [
       { key: "department",    label: "Department",       type: "dropdown", optionsFn: () => getDepartmentOptions().map(o => o.label), required: false },
       { key: "workEmail",     label: "Work Email",       type: "email",    required: false },
       { key: "workPhone",     label: "Work Phone",       type: "text",     required: false },
+      { key: "manager",       label: "Manager",          type: "dropdown", optionsFn: () => getDepartmentOptions().map(o => o.label), required: false },
       { key: "contractType",  label: "Contract Type",    type: "select",   options: ["Permanent", "Fixed Term", "Part-time", "Freelance"], required: false },
       { key: "wage",          label: "Wage",             type: "number",   required: false },
       { key: "startDate",     label: "Start Date",       type: "date",     required: false }
@@ -133,6 +137,7 @@ const GRIDS = [
       { key: "quantity",    label: "Quantity",     type: "number",   required: true },
       { key: "unitPrice",   label: "Unit Price",   type: "number",   required: true },
       { key: "discount",    label: "Discount %",   type: "number",   required: false },
+      { key: "salesperson", label: "Salesperson",   type: "text",     required: false },
       { key: "deliveryDate",label: "Delivery Date",type: "date",     required: false }
     ]
   }

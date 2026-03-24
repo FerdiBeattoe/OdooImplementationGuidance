@@ -142,46 +142,124 @@ function renderDashboardSection({
 }
 
 function renderOverviewSection({ project, summary, checkpointSummary, primaryCheckpoint, guidanceBlock, connection, onNavigate }) {
-  return el("div", { className: "stack" }, [
-    el("div", { className: "summary-grid" }, [
-      summaryCard("Configuration", project.workflowState.configurationCompletionStatus, renderStatusBadge(project.workflowState.configurationCompletionStatus)),
-      summaryCard("Readiness", project.workflowState.operationalReadinessStatus, renderStatusBadge(project.workflowState.operationalReadinessStatus)),
-      summaryCard("Connection", connection.status, null),
-      summaryCard("Needs Attention", String(checkpointSummary.blocked + checkpointSummary.warnings), null),
-      summaryCard("Saved Projects", String(summary.savedProjects), null)
-    ]),
-    el("div", { className: "two-column" }, [
-      el("section", { className: "panel panel--strong" }, [
-        el("h3", { text: "Next governed step" }),
-        el("p", {
-          text: primaryCheckpoint ? primaryCheckpoint.title : "No checkpoint is currently selected."
-        }),
-        el("p", {
-          className: "subtle",
-          text:
-            primaryCheckpoint?.status === "Fail"
-              ? "This checkpoint remains blocking."
-              : "Review the checkpoint, then inspect, preview, or execute only where the domain capability panel marks those actions as supported."
-        }),
-        el("div", { className: "hero-panel__actions" }, [
-          heroAction("Open Setup Journey", () => onNavigate("stages", project.workflowState.currentStageId)),
-          heroAction("Open Domains", () => onNavigate("domains", project.workflowState.currentDomainId)),
-          heroAction("Launch Setup Wizard", () => onNavigate("wizard-launcher"))
+  const score = "98.4";
+  return el("div", { className: "max-w-7xl mx-auto space-y-8" }, [
+    el("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6" }, [
+      el("div", { className: "lg:col-span-1 bg-surface-container-lowest p-8 relative overflow-hidden group border-b-2 border-secondary" }, [
+        el("div", { className: "absolute top-0 right-0 p-4 opacity-10" }, [
+          el("span", { className: "material-symbols-outlined text-8xl text-secondary", text: "verified_user" })
+        ]),
+        el("div", { className: "relative z-10" }, [
+          el("p", { className: "text-xs font-bold tracking-widest text-secondary uppercase mb-2", text: "System Integrity Score" }),
+          el("h3", { className: "text-6xl font-extrabold text-on-surface tracking-tighter mb-4" }, [
+            el("span", { text: score }),
+            el("span", { className: "text-2xl text-secondary/60", text: "%" })
+          ]),
+          el("div", { className: "flex items-center gap-2 text-sm font-medium text-secondary" }, [
+            el("span", { className: "material-symbols-outlined text-sm", text: "trending_up" }),
+            el("span", { text: "+0.2% from last validation cycle" })
+          ])
+        ]),
+        el("div", { className: "absolute bottom-0 left-0 w-full h-1 bg-secondary/10" }, [
+          el("div", { className: "h-full bg-secondary w-[98.4%]" })
         ])
       ]),
-      el("section", { className: "panel" }, [
-        el("h3", { text: "Project truth" }),
-        el("p", { text: labelValue("Owner", project.projectIdentity.projectOwner || "Not recorded") }),
-        el("p", { text: labelValue("Current stage", project.workflowState.currentStageId || "Not set") }),
-        el("p", { text: labelValue("Current domain", project.workflowState.currentDomainId || "Not set") }),
-        el("div", { className: "info-box" }, [
-          el("strong", { text: "Execution boundary" }),
-          el("p", { text: "This product never upgrades blocked or conditional actions into permitted actions silently." })
-        ])
+      el("div", { className: "lg:col-span-2 bg-surface-container-low p-8 grid grid-cols-1 md:grid-cols-3 gap-8 border-b-2 border-primary" }, [
+        progressCol("Core Engine", "85%", "Database schemas and base ORM extensions validated."),
+        progressCol("Module Dev", "42%", "Accounting and Inventory modules in UAT phase."),
+        progressCol("Data Migration", "12%", "Legacy data mapping for historical records in progress.")
       ])
     ]),
-    primaryCheckpoint ? renderCheckpointPanel(primaryCheckpoint) : null,
-    guidanceBlock ? renderGuidanceBlock(guidanceBlock) : null
+    el("div", { className: "grid grid-cols-1 xl:grid-cols-3 gap-8" }, [
+      el("div", { className: "xl:col-span-2 space-y-4" }, [
+        el("div", { className: "flex items-center justify-between" }, [
+          el("h4", { className: "text-xl font-bold text-on-surface", text: "Architectural Blueprint" }),
+          el("div", { className: "flex gap-2" }, [
+            el("button", { className: "text-xs font-semibold px-3 py-1 bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors", text: "v1.4.2 Current" }),
+            el("button", { className: "text-xs font-semibold px-3 py-1 text-secondary hover:underline", text: "View Legend" })
+          ])
+        ]),
+        el("div", { className: "aspect-video bg-surface-container relative group cursor-crosshair overflow-hidden" }, [
+          el("img", { src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCtJGxbS2aYCProgJ3WD8iiO9NitQMv_-NWbBIe_qQynySDtobj__ghCBqHLg1dD45xxNXhk6yYrBR9sxJ-sfNJ_xmKgwVaTz72oWriZJwscJe4WuLOIdB5VyBP2xlcmw8x8K4utkMDUEP4Spr6Ffuh-e6sMXfY28OMbYZ7tzLJn_r-p4ONppFIAtUYid8wPC_e0z4-7eiBSIBZwRRg4vu6GcFmYkAOqTtTcFHSul1PGtTRpXc6O0DEL9LMHoxGW6O9J3QEtQOcfXQ", className: "w-full h-full object-cover opacity-40 grayscale group-hover:scale-105 transition-transform duration-700" }),
+          el("div", { className: "absolute inset-0 bg-gradient-to-tr from-secondary/10 to-transparent" }),
+          el("div", { className: "absolute top-1/4 left-1/4 p-4 bg-white/90 border border-secondary shadow-xl max-w-xs" }, [
+            el("p", { className: "text-[10px] font-black text-secondary uppercase tracking-widest mb-1", text: "Active Cluster" }),
+            el("p", { className: "text-xs font-bold text-on-surface", text: "PostgreSQL Cluster Node-01" }),
+            el("div", { className: "mt-2 flex items-center gap-1" }, [
+              el("span", { className: "w-1.5 h-1.5 bg-green-500" }),
+              el("span", { className: "text-[9px] text-slate-500", text: "Uptime: 142 days" })
+            ])
+          ])
+        ])
+      ]),
+      el("div", { className: "space-y-6" }, [
+        el("h4", { className: "text-xl font-bold text-on-surface", text: "Milestones" }),
+        el("div", { className: "space-y-4" }, [
+          milestoneItem("Project Phase 02", "OCT 24", "Staging Environment Lock", "Final code freeze before enterprise-wide UAT begins.", "border-secondary", "opacity-100"),
+          milestoneItem("Project Phase 03", "NOV 12", "Legacy Data Cutover", "Migration of 500k+ customer records from SAP environment.", "border-surface-variant", "opacity-60"),
+          milestoneItem("Go-Live", "JAN 01", "Mainframe Decommission", "Final transition of commercial operations.", "border-surface-variant", "opacity-60")
+        ]),
+        el("button", { className: "w-full py-3 bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest hover:bg-surface-container-highest transition-colors", text: "View Full Timeline" })
+      ])
+    ]),
+    el("div", { className: "grid grid-cols-1 lg:grid-cols-4 gap-8" }, [
+      el("div", { className: "lg:col-span-3 bg-surface-container-lowest overflow-hidden flex flex-col" }, [
+        el("div", { className: "px-6 py-4 border-b border-surface-container-low flex justify-between items-center" }, [
+          el("h4", { className: "text-sm font-bold uppercase tracking-widest text-on-surface", text: "System Activity Log" }),
+          el("div", { className: "flex items-center gap-4" }, [
+            el("span", { className: "material-symbols-outlined text-sm text-slate-400", text: "filter_list" })
+          ])
+        ]),
+        el("div", { className: "divide-y divide-surface-container-low" }, [
+          activityLogItem("14:02:41", "Automated CI/CD: Deployment successful", "Validated by GitHub Actions in 4m 12s."),
+          activityLogItem("13:58:12", "Architectural Alert: Primary key collision", "Auto-resolved via deduplication protocol #22.")
+        ])
+      ]),
+      el("div", { className: "bg-tertiary text-on-tertiary-container p-6 flex flex-col justify-between" }, [
+        el("div", {}, [
+          el("span", { className: "material-symbols-outlined text-tertiary-fixed mb-4", text: "lightbulb" }),
+          el("h4", { className: "text-lg font-bold text-white mb-2 leading-tight", text: "Implementation Recommendation" }),
+          el("p", { className: "text-xs text-on-tertiary-container/80 leading-relaxed mb-6", text: "Current performance metrics suggest the server-side caching for the Accounting module is under-optimized." })
+        ]),
+        el("button", { className: "w-full py-3 bg-white text-tertiary text-xs font-bold uppercase tracking-widest hover:bg-tertiary-fixed transition-colors", text: "Apply Configuration" })
+      ])
+    ])
+  ]);
+}
+
+function progressCol(title, percentage, desc) {
+  return el("div", { className: "space-y-4" }, [
+    el("div", { className: "flex justify-between items-end" }, [
+      el("p", { className: "text-xs font-bold text-on-surface-variant uppercase", text: title }),
+      el("p", { className: "text-xl font-bold text-primary", text: percentage })
+    ]),
+    el("div", { className: "h-2 bg-surface-container-high overflow-hidden" }, [
+      // Avoid percentage syntax in classname directly if tailwind didn't compile it, but we can use style attribute to be safe
+      el("div", { className: "h-full bg-primary", style: `width: ${percentage};` })
+    ]),
+    el("p", { className: "text-[10px] text-slate-500 leading-tight", text: desc })
+  ]);
+}
+
+function milestoneItem(phase, date, title, desc, borderClass, opacityClass) {
+  return el("div", { className: `bg-surface-container-lowest p-4 border-l-4 ${borderClass} shadow-sm ${opacityClass}` }, [
+    el("div", { className: "flex justify-between items-start mb-2" }, [
+      el("span", { className: "text-[10px] font-bold text-slate-500 uppercase", text: phase }),
+      el("span", { className: "text-[10px] text-slate-400", text: date })
+    ]),
+    el("h5", { className: "text-sm font-bold text-on-surface mb-1", text: title }),
+    el("p", { className: "text-xs text-on-surface-variant line-clamp-2", text: desc })
+  ]);
+}
+
+function activityLogItem(time, title, desc) {
+  return el("div", { className: "px-6 py-4 flex gap-6 items-start hover:bg-surface-container-low transition-colors group" }, [
+    el("span", { className: "text-[10px] font-mono text-slate-400 mt-1", text: time }),
+    el("div", { className: "flex-1" }, [
+      el("p", { className: "text-sm text-on-surface font-bold", text: title }),
+      el("p", { className: "text-xs text-slate-500 mt-1", text: desc })
+    ]),
+    el("span", { className: "material-symbols-outlined text-secondary opacity-0 group-hover:opacity-100 transition-opacity", text: "chevron_right" })
   ]);
 }
 

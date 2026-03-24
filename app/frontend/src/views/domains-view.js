@@ -278,48 +278,54 @@ export function renderDomainsView({
       )
     : null;
 
-  return el("section", { className: "workspace" }, [
-    header("Explore Setup Areas", "Jump directly into specific areas of your business setup. Everything here works together to build your final Odoo 19 system."),
-    renderDomainProgress({
-      domains: DOMAINS,
-      currentDomainId: project.workflowState.currentDomainId,
-      checkpoints: project.checkpoints,
-      onSelectDomain
-    }),
-    el(
-      "div",
-      { className: "list-grid" },
-      DOMAINS.map((domain) =>
-        {
-          const capability = capabilityMap.get(domain.id);
-          return el(
-          "button",
-          {
-            className: `list-card ${domain.id === selectedDomain.id ? "list-card--active" : ""}`,
-            onclick: () => onSelectDomain(domain.id)
-          },
-          [
-            el("h3", { text: domain.label }),
-            renderStatusBadge(findStatus(project.domains, domain.id)),
-            el("p", { className: "subtle", text: formatDomainCapabilityCardLine(capability) })
-          ]
-        );
-        }
-      )
-    ),
-    renderCapabilityPanel(project, selectedDomain.id, selectedCapability, onInspectDomain, onPreviewDomain, onExecutePreview),
-    renderGuidanceBlock(guidance),
-    scaffoldPanel,
-    masterDataPanel,
-    foundationOnlyPanel,
-    crmPanel,
-    websitePanel,
-    manufacturingPanel,
-    posPanel,
-    purchasePanel,
-    salesPanel,
-    accountingPanel,
-    inventoryPanel
+  return el("section", { className: "workspace max-w-7xl mx-auto" }, [
+    el("header", { className: "mb-10" }, [
+      el("div", { className: "flex flex-col md:flex-row md:items-end justify-between gap-6" }, [
+        el("div", {}, [
+          el("h1", { className: "font-headline text-4xl font-extrabold text-primary tracking-tight mb-2", text: "Module Configuration" }),
+          el("p", { className: "text-on-surface-variant max-w-2xl font-body", text: "Explore Setup Areas. Configure and orchestrate your enterprise ecosystem." })
+        ])
+      ])
+    ]),
+    el("div", { className: "grid grid-cols-12 gap-8" }, [
+      el("div", { className: "col-span-12 lg:col-span-8 space-y-8" }, [
+        el("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6" }, 
+          DOMAINS.map((domain) => {
+            const capability = capabilityMap.get(domain.id);
+            const isActive = domain.id === selectedDomain.id;
+            return el("div", {
+              className: `group bg-surface-container-lowest glass-card rounded-xl p-6 transition-all cursor-pointer ${isActive ? 'ring-2 ring-primary active-glow shadow-md relative overflow-hidden' : 'border border-outline-variant/10 hover:border-secondary/30'}`,
+              onclick: () => onSelectDomain(domain.id)
+            }, [
+              isActive ? el("div", { className: "absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12" }) : null,
+              el("div", { className: "flex justify-between items-start mb-6 relative z-10" }, [
+                el("div", { className: `w-14 h-14 rounded-xl flex items-center justify-center ${isActive ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' : 'bg-secondary-container text-secondary'}` }, [
+                  el("span", { className: "material-symbols-outlined text-3xl", style: "font-variation-settings: 'FILL' 1;", text: "extension" })
+                ]),
+                el("span", { className: `px-3 py-1 text-[11px] font-bold tracking-wider rounded-full uppercase ${isActive ? 'bg-secondary/10 text-secondary' : 'bg-surface-container-high text-on-surface-variant'}`, text: isActive ? 'Active' : 'Configure' })
+              ]),
+              el("h3", { className: "font-headline text-xl font-bold mb-1 relative z-10 group-hover:text-primary transition-colors", text: domain.label }),
+              el("p", { className: "text-sm text-on-surface-variant line-clamp-2 mt-2", text: formatDomainCapabilityCardLine(capability) })
+            ]);
+          })
+        ),
+        renderCapabilityPanel(project, selectedDomain.id, selectedCapability, onInspectDomain, onPreviewDomain, onExecutePreview)
+      ]),
+      el("div", { className: "col-span-12 lg:col-span-4 space-y-6" }, [
+        renderGuidanceBlock(guidance),
+        scaffoldPanel,
+        masterDataPanel,
+        foundationOnlyPanel,
+        crmPanel,
+        websitePanel,
+        manufacturingPanel,
+        posPanel,
+        purchasePanel,
+        salesPanel,
+        accountingPanel,
+        inventoryPanel
+      ].filter(Boolean))
+    ])
   ]);
 }
 

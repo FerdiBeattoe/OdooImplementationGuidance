@@ -1,39 +1,88 @@
 /**
- * Odoo Implementation Platform - Phase 7-8 Finance & Advanced Wizards
- * Export all finance and advanced module wizards
+ * Odoo Implementation Platform - Phase 9-12: UX & Safety Systems
+ * 
+ * This module exports all the visual progress tracking, rollback safety,
+ * auto-detection, and PDF export functionality.
  */
 
-// Finance Wizards
-export { ChartOfAccountsWizard, COA_STEPS, IMPORT_MODES } from './wizards/finance/ChartOfAccountsWizard.js';
-export { TaxConfigurationWizard, TAX_STEPS, TAX_TYPES, TAX_AMOUNT_TYPES } from './wizards/finance/TaxConfigurationWizard.js';
-export { BankSetupWizard, BANK_STEPS, PAYMENT_TYPES, JOURNAL_TYPES } from './wizards/finance/BankSetupWizard.js';
+// Visual Progress Components
+export {
+  createVisualProgressTracker,
+  createMobileProgressTracker,
+  createDomainProgressTracker,
+  createWizardProgressTracker,
+  ICONS,
+  STEP_STATES
+} from "./components/VisualProgressTracker.js";
 
-// Advanced Module Wizards
-export { PlmWizard, PLM_STEPS, ECO_TYPES, ECO_STATES, DOCUMENT_STATES } from './wizards/advanced/PlmWizard.js';
-export { PosWizard, POS_STEPS, PAYMENT_INTERFACE_TYPES, SESSION_STATES } from './wizards/advanced/PosWizard.js';
-export { WebsiteWizard, WEBSITE_STEPS, DELIVERY_TYPES } from './wizards/advanced/WebsiteWizard.js';
+// Video Embedding
+export {
+  createVideoEmbed,
+  createVideoPlaylist,
+  createHelpVideo,
+  createErrorEmbed,
+  extractVideoId,
+  detectVideoProvider,
+  buildEmbedUrl,
+  VIDEO_PROVIDERS
+} from "./components/VideoEmbed.js";
 
-// Foundation Wizards (existing)
-export { CompanySetupWizard, COMPANY_STEPS } from './wizards/foundation/CompanySetupWizard.js';
-export { LocalizationWizard } from './wizards/foundation/LocalizationWizard.js';
-export { MasterDataWizard } from './wizards/foundation/MasterDataWizard.js';
-export { UsersSetupWizard } from './wizards/foundation/UsersSetupWizard.js';
+// Wizard Shell
+export {
+  createWizardShell,
+  WIZARD_STATES,
+  WIZARD_DIRECTIONS
+} from "./components/WizardShell.js";
 
-// Operations Wizards (existing)
-export { CrmWizard, CRM_STAGES } from './wizards/operations/CrmWizard.js';
-export { SalesWizard, SALES_STEPS } from './wizards/operations/SalesWizard.js';
-export { PurchaseWizard, PURCHASE_STEPS } from './wizards/operations/PurchaseWizard.js';
-export { InventoryWizard, INVENTORY_STEPS } from './wizards/operations/InventoryWizard.js';
+// Rollback Safety Engine
+export {
+  createRollbackEngine,
+  TRANSACTION_STATES,
+  OPERATION_TYPES
+} from "./engine/RollbackEngine.js";
 
-// Manufacturing Wizards (existing)
-export { BomBuilder, BOM_STEPS } from './wizards/manufacturing/BomBuilder.js';
-export { WorkcenterWizard, WORKCENTER_STEPS } from './wizards/manufacturing/WorkcenterWizard.js';
+// Transaction Manager
+export {
+  createTransactionManager,
+  BATCH_STATES,
+  EXECUTION_STRATEGIES
+} from "./engine/TransactionManager.js";
 
-// Database Creation Wizard
-export { DatabaseCreationWizard, DB_CREATION_STEPS } from './wizards/DatabaseCreationWizard.js';
+// Auto-Detection
+export {
+  createAutoDetector,
+  DEPLOYMENT_TYPES,
+  ODOO_VERSIONS,
+  MODULE_PATTERNS
+} from "./utils/AutoDetect.js";
 
-// COA Templates
-export { AVAILABLE_TEMPLATES, getTemplateByCountry, getTemplateByCode, searchTemplates } from './templates/coa/index.js';
+// PDF Export
+export {
+  createPdfExporter,
+  PDF_SECTIONS,
+  PDF_STYLES
+} from "./export/PdfExporter.js";
 
-// Re-export API client
-export { OdooClient, OdooError } from './api/OdooClient.js';
+// Version info
+export const VERSION = "1.0.0";
+export const BUILD_DATE = "2026-03-24";
+export const PHASE = "9-12";
+
+// Convenience factory function
+export function createImplementationPlatform(config = {}) {
+  return {
+    progress: createVisualProgressTracker(config.progress),
+    video: {
+      embed: createVideoEmbed,
+      playlist: createVideoPlaylist,
+      help: createHelpVideo
+    },
+    wizard: createWizardShell(config.wizard),
+    safety: {
+      rollback: createRollbackEngine(config.rollback),
+      transactions: createTransactionManager(config.transactions)
+    },
+    detection: createAutoDetector(config.detection),
+    export: createPdfExporter(config.export)
+  };
+}

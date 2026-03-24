@@ -32,6 +32,264 @@ const MODULE_PATTERNS = {
   field_service: ["industry_fsm"]
 };
 
+// Exported internal functions for testing
+export async function detectVersionFromUrl(url) {
+  const versionPatterns = [
+    { pattern: /\/([0-9]+)\.[0-9]+\/web/, extract: (m) => m[1] },
+    { pattern: /\/web\/([0-9]+)\.[0-9]+\//, extract: (m) => m[1] },
+    { pattern: /odoo-([0-9]+)/, extract: (m) => m[1] },
+    { pattern: /\/saas~([0-9]+)\//, extract: (m) => m[1] }
+  ];
+
+  for (const { pattern, extract } of versionPatterns) {
+    const match = url.match(pattern);
+    if (match) {
+      const major = parseInt(extract(match), 10);
+      return {
+        version: major,
+        major,
+        source: "url_pattern",
+        confidence: 0.8
+      };
+    }
+  }
+
+  return null;
+}
+
+export async function detectVersionFromMeta(url, normalizeUrlFn = normalizeUrl) {
+  try {
+    const response = await fetchWithTimeoutStatic(`${normalizeUrlFn(url)}/web/login`, { method: "GET" }, 10000);
+    const html = await response.text();
+
+    const patterns = [
+      /<meta name="version" content="([0-9]+)\./,
+      /Odoo\s+([0-9]+)\./,
+      /data-oe-model="ir\.ui\.view"[^>]*data-oe-id="([0-9]+)"/,
+      /odoo\.define\(['"]web\.web_client['"][^,]+\{[^}]*version\s*:\s*['"]([0-9]+)/
+    ];
+
+    for (const pattern of patterns) {
+      const match = html.match(pattern);
+      if (match) {
+        const major = parseInt(match[1], 10);
+        return {
+          version: major,
+          major,
+          source: "page_meta",
+          confidence: 0.9
+        };
+      }
+    }
+
+    if (html.includes('odoo.__session_info__')) {
+      const sessionMatch = html.match(/server_version_info:\s*\[\s*([0-9]+)/);
+      if (sessionMatch) {
+        const major = parseInt(sessionMatch[1], 10);
+        return {
+          version: major,
+          major,
+          source: "session_info",
+          confidence: 0.95
+        };
+      }
+    }
+
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function detectVersionFromApi(url, credentials, normalizeUrlFn = normalizeUrl) {
+  if (!credentials) return null;
+
+  try {
+    const response = await fetchWithTimeoutStatic(
+      `${normalizeUrlFn(url)}/jsonrpc`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "call",
+          params: {
+            service: "common",
+            method: "version",
+            args: []
+          },
+          id: Date.now()
+        })
+      },
+      10000
+    );
+
+    const data = await response.json();
+
+    if (data.result) {
+      const version = data.result.server_version || data.result;
+      const major = typeof version === "string"
+        ? parseInt(version.split(".")[0], 10)
+        : version;
+
+      return {
+        version: major,
+        major,
+        source: "api",
+        confidence: 1.0,
+        fullVersion: version
+      };
+    }
+
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function detectVersionFromLoginPage(url, normalizeUrlFn = normalizeUrl) {
+  try {
+    const response = await fetchWithTimeoutStatic(`${normalizeUrlFn(url)}/web/login`, { method: "GET" }, 10000);
+    const html = await response.text();
+
+    if (html.includes('odoo-19') || html.includes('Odoo 19') || html.includes('/saas~19/')) {
+      return { version: 19, major: 19, source: "login_page_indicators", confidence: 0.7 };
+    }
+
+    if (html.includes('odoo-18') || html.includes('Odoo 18')) {
+      return { version: 18, major: 18, source: "login_page_indicators", confidence: 0.7 };
+    }
+
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
+export function categorizeModules(modules) {
+  const categorized = {};
+  const moduleNames = modules.map(m => m.name);
+
+  for (const [category, patterns] of Object.entries(MODULE_PATTERNS)) {
+    const matches = [];
+
+    for (const pattern of patterns) {
+      const matching = moduleNames.filter(name =>
+        name === pattern || name.startsWith(`${pattern}_`)
+      );
+      matches.push(...matching);
+    }
+
+    if (matches.length > 0) {
+      categorized[category] = matches;
+    }
+  }
+
+  categorized.other = moduleNames.filter(name =>
+    !Object.values(MODULE_PATTERNS).flat().some(pattern =>
+      name === pattern || name.startsWith(`${pattern}_`)
+    )
+  );
+
+  return categorized;
+}
+
+export function generateRecommendations(deployment, version, modules) {
+  const recommendations = [];
+
+  if (!version.supported) {
+    recommendations.push({
+      type: "warning",
+      message: `Odoo ${version.major} is not officially supported by this platform. Odoo 19 is recommended.`,
+      priority: "high"
+    });
+  }
+
+  if (deployment.type === DEPLOYMENT_TYPES.ODOO_SH) {
+    recommendations.push({
+      type: "info",
+      message: "Odoo.sh detected. Ensure you have the correct branch selected.",
+      priority: "medium"
+    });
+  }
+
+  if (!modules.detected) {
+    recommendations.push({
+      type: "info",
+      message: "Provide credentials to detect installed modules and get personalized setup recommendations.",
+      priority: "low"
+    });
+  }
+
+  return recommendations;
+}
+
+export function calculateConfidence(url, type) {
+  const confidenceScores = {
+    [DEPLOYMENT_TYPES.ODOO_ONLINE]: 0.9,
+    [DEPLOYMENT_TYPES.ODOO_SH]: 0.95,
+    [DEPLOYMENT_TYPES.ON_PREMISE]: 0.6
+  };
+
+  let score = confidenceScores[type] || 0.5;
+
+  if (url.includes("localhost") || url.includes("127.0.0.1")) {
+    score = 0.95;
+  }
+
+  if (url.includes("test") || url.includes("demo")) {
+    score -= 0.1;
+  }
+
+  return Math.max(0, Math.min(1, score));
+}
+
+export function normalizeUrl(url) {
+  let normalized = url.trim();
+
+  if (!normalized.startsWith("http")) {
+    normalized = `https://${normalized}`;
+  }
+
+  normalized = normalized.replace(/\/$/, "");
+  normalized = normalized.replace(/\/web$/, "");
+  normalized = normalized.replace(/\/web\/.*$/, "");
+
+  return normalized;
+}
+
+export function validateVersion(detection) {
+  const versionInfo = ODOO_VERSIONS[`V${detection.major}`];
+
+  return {
+    ...detection,
+    supported: versionInfo?.supported || false,
+    versionName: versionInfo?.name || `Odoo ${detection.major}`,
+    recommendation: versionInfo?.supported
+      ? "Supported version"
+      : "Not supported. Please use Odoo 19."
+  };
+}
+
+async function fetchWithTimeoutStatic(url, options = {}, timeout = 10000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      mode: "cors",
+      credentials: "omit"
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
 export function createAutoDetector(options = {}) {
   const {
     timeout = 10000,
@@ -105,138 +363,6 @@ export function createAutoDetector(options = {}) {
       supported: false,
       error: "Could not detect Odoo version"
     };
-  }
-
-  async function detectVersionFromUrl(url) {
-    const versionPatterns = [
-      { pattern: /\/([0-9]+)\.[0-9]+\/web/, extract: (m) => m[1] },
-      { pattern: /\/web\/([0-9]+)\.[0-9]+\//, extract: (m) => m[1] },
-      { pattern: /odoo-([0-9]+)/, extract: (m) => m[1] },
-      { pattern: /\/saas~([0-9]+)\//, extract: (m) => m[1] }
-    ];
-
-    for (const { pattern, extract } of versionPatterns) {
-      const match = url.match(pattern);
-      if (match) {
-        const major = parseInt(extract(match), 10);
-        return {
-          version: major,
-          major,
-          source: "url_pattern",
-          confidence: 0.8
-        };
-      }
-    }
-
-    return null;
-  }
-
-  async function detectVersionFromMeta(url) {
-    try {
-      const response = await fetchWithTimeout(`${normalizeUrl(url)}/web/login`, { method: "GET" });
-      const html = await response.text();
-
-      const patterns = [
-        /<meta name="version" content="([0-9]+)\./,
-        /Odoo\s+([0-9]+)\./,
-        /data-oe-model="ir\.ui\.view"[^>]*data-oe-id="([0-9]+)"/,
-        /odoo\.define\(['"]web\.web_client['"][^,]+\{[^}]*version\s*:\s*['"]([0-9]+)/
-      ];
-
-      for (const pattern of patterns) {
-        const match = html.match(pattern);
-        if (match) {
-          const major = parseInt(match[1], 10);
-          return {
-            version: major,
-            major,
-            source: "page_meta",
-            confidence: 0.9
-          };
-        }
-      }
-
-      if (html.includes('odoo.__session_info__')) {
-        const sessionMatch = html.match(/server_version_info:\s*\[\s*([0-9]+)/);
-        if (sessionMatch) {
-          const major = parseInt(sessionMatch[1], 10);
-          return {
-            version: major,
-            major,
-            source: "session_info",
-            confidence: 0.95
-          };
-        }
-      }
-
-      return null;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  async function detectVersionFromApi(url, credentials) {
-    if (!credentials) return null;
-
-    try {
-      const response = await fetchWithTimeout(
-        `${normalizeUrl(url)}/jsonrpc`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            method: "call",
-            params: {
-              service: "common",
-              method: "version",
-              args: []
-            },
-            id: Date.now()
-          })
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.result) {
-        const version = data.result.server_version || data.result;
-        const major = typeof version === "string"
-          ? parseInt(version.split(".")[0], 10)
-          : version;
-
-        return {
-          version: major,
-          major,
-          source: "api",
-          confidence: 1.0,
-          fullVersion: version
-        };
-      }
-
-      return null;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  async function detectVersionFromLoginPage(url) {
-    try {
-      const response = await fetchWithTimeout(`${normalizeUrl(url)}/web/login`, { method: "GET" });
-      const html = await response.text();
-
-      if (html.includes('odoo-19') || html.includes('Odoo 19') || html.includes('/saas~19/')) {
-        return { version: 19, major: 19, source: "login_page_indicators", confidence: 0.7 };
-      }
-
-      if (html.includes('odoo-18') || html.includes('Odoo 18')) {
-        return { version: 18, major: 18, source: "login_page_indicators", confidence: 0.7 };
-      }
-
-      return null;
-    } catch (error) {
-      return null;
-    }
   }
 
   async function detectInstalledModules(url, credentials) {
@@ -444,111 +570,6 @@ export function createAutoDetector(options = {}) {
       onDetectionError(errorResult);
       return errorResult;
     }
-  }
-
-  function categorizeModules(modules) {
-    const categorized = {};
-    const moduleNames = modules.map(m => m.name);
-
-    for (const [category, patterns] of Object.entries(MODULE_PATTERNS)) {
-      const matches = [];
-
-      for (const pattern of patterns) {
-        const matching = moduleNames.filter(name =>
-          name === pattern || name.startsWith(`${pattern}_`)
-        );
-        matches.push(...matching);
-      }
-
-      if (matches.length > 0) {
-        categorized[category] = matches;
-      }
-    }
-
-    categorized.other = moduleNames.filter(name =>
-      !Object.values(MODULE_PATTERNS).flat().some(pattern =>
-        name === pattern || name.startsWith(`${pattern}_`)
-      )
-    );
-
-    return categorized;
-  }
-
-  function generateRecommendations(deployment, version, modules) {
-    const recommendations = [];
-
-    if (!version.supported) {
-      recommendations.push({
-        type: "warning",
-        message: `Odoo ${version.major} is not officially supported by this platform. Odoo 19 is recommended.`,
-        priority: "high"
-      });
-    }
-
-    if (deployment.type === DEPLOYMENT_TYPES.ODOO_SH) {
-      recommendations.push({
-        type: "info",
-        message: "Odoo.sh detected. Ensure you have the correct branch selected.",
-        priority: "medium"
-      });
-    }
-
-    if (!modules.detected) {
-      recommendations.push({
-        type: "info",
-        message: "Provide credentials to detect installed modules and get personalized setup recommendations.",
-        priority: "low"
-      });
-    }
-
-    return recommendations;
-  }
-
-  function validateVersion(detection) {
-    const versionInfo = ODOO_VERSIONS[`V${detection.major}`];
-
-    return {
-      ...detection,
-      supported: versionInfo?.supported || false,
-      versionName: versionInfo?.name || `Odoo ${detection.major}`,
-      recommendation: versionInfo?.supported
-        ? "Supported version"
-        : "Not supported. Please use Odoo 19."
-    };
-  }
-
-  function calculateConfidence(url, type) {
-    const confidenceScores = {
-      [DEPLOYMENT_TYPES.ODOO_ONLINE]: 0.9,
-      [DEPLOYMENT_TYPES.ODOO_SH]: 0.95,
-      [DEPLOYMENT_TYPES.ON_PREMISE]: 0.6
-    };
-
-    let score = confidenceScores[type] || 0.5;
-
-    if (url.includes("localhost") || url.includes("127.0.0.1")) {
-      score = 0.95;
-    }
-
-    if (url.includes("test") || url.includes("demo")) {
-      score -= 0.1;
-    }
-
-    return Math.max(0, Math.min(1, score));
-  }
-
-  function normalizeUrl(url) {
-    let normalized = url.trim();
-
-    if (!normalized.startsWith("http")) {
-      normalized = `https://${normalized}`;
-    }
-
-    normalized = normalized.replace(/\/$/, "");
-    normalized = normalized.replace(/\/web$/, "");
-    normalized = normalized.replace(/\/web\/.*$/, "");
-
-    return normalized;
   }
 
   async function fetchWithTimeout(url, options = {}) {

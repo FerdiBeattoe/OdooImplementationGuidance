@@ -59,7 +59,7 @@ export function renderCompanySetupWizard({ onComplete, onCancel }) {
           cityInput.addEventListener("input",   e => setData({ city: e.target.value }));
           zipInput.addEventListener("input",    e => setData({ zip: e.target.value }));
           return formSection("Company Address", [
-            formGrid([formField("Country", countryInput), formField("State / Province", stateInput)]),
+            formGrid([formField("Country", countryInput, null, true), formField("State / Province", stateInput)]),
             formField("Street Address", streetInput),
             formGrid([formField("City", cityInput), formField("Post / Zip Code", zipInput)])
           ]);
@@ -612,7 +612,7 @@ export function renderInventoryConfigWizard({ onComplete, onCancel }) {
           };
           renderList();
           const addBtn = el("button", { className: "bg-primary text-on-primary text-sm font-semibold px-4 py-2.5 rounded-xl hover:opacity-90 transition-all", onclick: () => { if (nameIn.value) { warehouses.push({ name: nameIn.value, shortName: shortIn.value || "WH", address: addrIn.value }); nameIn.value = ""; shortIn.value = ""; addrIn.value = ""; setData({ warehouses }); renderList(); } } }, [el("span", { text: "Add Warehouse" })]);
-          return el("div", { className: "space-y-4" }, [listEl, formSection("New Warehouse", [formGrid([formField("Warehouse Name", nameIn), formField("Short Name", shortIn)]), formField("Address", addrIn), addBtn])]);
+          return el("div", { className: "space-y-4" }, [listEl, formSection("New Warehouse", [formGrid([formField("Warehouse Name", nameIn, null, true), formField("Short Name", shortIn, null, true)]), formField("Address", addrIn), addBtn])]);
         }
       },
       {
@@ -1068,7 +1068,7 @@ export function renderWebsiteEcommerceWizard({ onComplete, onCancel }) {
           langIn.addEventListener("change", e => setData({ language: e.target.value }));
           currIn.addEventListener("change", e => setData({ currency: e.target.value }));
           return formSection("Website Settings", [
-            formField("Website Name", nameIn),
+            formField("Website Name", nameIn, null, true),
             formGrid([formField("Default Language", langIn), formField("Default Currency", currIn)])
           ]);
         }
@@ -1153,7 +1153,7 @@ export function renderPosWizard({ onComplete, onCancel }) {
           nameIn.addEventListener("input", e => setData({ posName: e.target.value }));
           journalIn.addEventListener("change", e => setData({ linkedJournal: e.target.value }));
           return formSection("POS Terminal Setup", [
-            formField("POS Name", nameIn),
+            formField("POS Name", nameIn, null, true),
             formField("Linked Journal", journalIn)
           ]);
         }

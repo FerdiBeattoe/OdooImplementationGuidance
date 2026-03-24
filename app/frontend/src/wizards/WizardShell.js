@@ -19,6 +19,29 @@ export function createWizardShell({ title, subtitle, icon, steps, onComplete, on
   let nextBtn = null;
   let progressLabel = null;
 
+  function validateCurrentStep() {
+    if (!contentArea) return true;
+    const requiredInputs = contentArea.querySelectorAll("[data-required='true']");
+    let valid = true;
+    requiredInputs.forEach(input => {
+      const val = (input.value || "").trim();
+      const errorEl = input.parentElement?.querySelector(".field-error");
+      if (!val) {
+        input.classList.add("error");
+        if (errorEl) errorEl.classList.add("visible");
+        valid = false;
+      } else {
+        input.classList.remove("error");
+        if (errorEl) errorEl.classList.remove("visible");
+      }
+    });
+    if (!valid) {
+      const first = contentArea.querySelector("input.error, select.error");
+      if (first) first.focus();
+    }
+    return valid;
+  }
+
   function getCurrentContent() {
     return steps[currentStep]?.render({
       data: stepData[currentStep],
@@ -133,6 +156,7 @@ export function createWizardShell({ title, subtitle, icon, steps, onComplete, on
       className: "flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-bold shadow-sm hover:opacity-90 active:scale-95 transition-all",
       onclick: () => {
         if (currentStep < steps.length - 1) {
+          if (!validateCurrentStep()) return;
           goToStep(currentStep + 1);
         } else {
           onComplete && onComplete(stepData);
@@ -205,13 +229,24 @@ export function createWizardShell({ title, subtitle, icon, steps, onComplete, on
 // ── Reusable form field helpers ─────────────────────────────────
 
 export function formField(label, inputEl, helperText, required = false) {
+  if (required && inputEl) {
+    inputEl.setAttribute("data-required", "true");
+    inputEl.addEventListener("input", () => {
+      if ((inputEl.value || "").trim()) {
+        inputEl.classList.remove("error");
+        const errEl = inputEl.parentElement?.querySelector(".field-error");
+        if (errEl) errEl.classList.remove("visible");
+      }
+    });
+  }
   return el("div", { className: "space-y-1.5" }, [
     el("label", { className: "block text-sm font-semibold text-on-surface-variant" }, [
       el("span", { text: label }),
       required ? el("span", { className: "text-error ml-0.5", text: "*" }) : null
     ]),
     inputEl,
-    helperText ? el("p", { className: "text-xs text-on-surface-variant", text: helperText }) : null
+    helperText ? el("p", { className: "text-xs text-on-surface-variant", text: helperText }) : null,
+    required ? el("p", { className: "field-error", text: `${label} is required` }) : null
   ]);
 }
 

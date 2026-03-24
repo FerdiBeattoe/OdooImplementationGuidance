@@ -81,21 +81,23 @@ if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
 export function createAppServer() {
   return createServer(async (req, res) => {
     try {
-      // Rate limiting
-      const clientId = req.socket.remoteAddress || 'unknown';
-      const rateCheck = checkRateLimit(clientId);
-      
-      if (!rateCheck.allowed) {
-        res.writeHead(429, {
-          "Content-Type": "application/json; charset=utf-8",
-          "Retry-After": rateCheck.retryAfter
-        });
-        res.end(JSON.stringify({ error: "Rate limit exceeded. Please try again later.", retryAfter: rateCheck.retryAfter }));
-        return;
-      }
-
       const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
       const pathname = requestUrl.pathname;
+
+      // Rate limiting — only apply to API routes
+      if (pathname.startsWith("/api/")) {
+        const clientId = req.socket.remoteAddress || 'unknown';
+        const rateCheck = checkRateLimit(clientId);
+
+        if (!rateCheck.allowed) {
+          res.writeHead(429, {
+            "Content-Type": "application/json; charset=utf-8",
+            "Retry-After": rateCheck.retryAfter
+          });
+          res.end(JSON.stringify({ error: "Rate limit exceeded. Please try again later.", retryAfter: rateCheck.retryAfter }));
+          return;
+        }
+      }
 
       if (pathname === "/api/health" && req.method === "GET") {
         return sendJson(res, 200, { ok: true, service: "implementation-control-platform" });

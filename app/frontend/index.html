@@ -116,11 +116,21 @@
       }
     </style>
 
-    <!-- Stylesheets ----------------------------------------------------- -->
+    <!-- Stylesheets (design-system MUST be first) ----------------------- -->
     <link rel="stylesheet" href="/styles/design-system.css" />
     <link rel="stylesheet" href="/styles/wizard-modern.css" />
     <link rel="stylesheet" href="/src/styles/app.css" />
     <link rel="stylesheet" href="/src/styles/connection.css" />
+    <style>
+      /* Sidebar responsive */
+      .sidebar { transition: transform 200ms ease; }
+      @media (max-width: 767px) {
+        .sidebar { transform: translateX(-100%); }
+        .sidebar.sidebar--open { transform: translateX(0); }
+        header { left: 0 !important; }
+        main { margin-left: 0 !important; }
+      }
+    </style>
   </head>
   <body class="bg-surface font-body text-on-surface">
     <!-- Skip navigation for keyboard/screen reader users -->

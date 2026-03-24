@@ -35,6 +35,30 @@ The following boundaries are non-negotiable:
 - Odoo.sh Enterprise work must be branch-aware whenever a change target or deployment path is relevant.
 - Coding tasks may improve execution, structure, and clarity, but may not redefine product direction beyond the governed execution model.
 
+## Repository Structure & Component Scope
+
+This repository contains multiple components with distinct governance boundaries:
+
+### Core Platform (`app/`, `src/`)
+The implementation control platform — documentation-led, checkpoint-enforced, bounded execution.
+
+### Data Onboarding Tools (`tools/`)
+**Status: Adjacent utility, NOT core platform scope**
+
+The `tools/` directory contains standalone CLI utilities for data migration and import preparation. These tools:
+- Are NOT governed by the checkpoint enforcement system
+- Do NOT perform "implementation control" — they perform data transformation
+- Are NOT subject to preview-before-execution requirements
+- Are designed for pre-implementation data preparation (cleaning, validation, transformation)
+- May be moved to a separate repository in future releases
+
+**Critical distinction:** Data onboarding is preparation work done *before* the implementation control platform takes over. Once data enters the platform's bounded execution flow, tools/ utilities are no longer the appropriate surface — the platform's checkpoint-governed workflows take over.
+
+Agents must not:
+- Conflate tools/ CLI capabilities with platform capabilities
+- Extend tools/ to perform implementation control functions
+- Remove tools/ without explicit product-owner direction
+
 ## Production Readiness Status
 
 **Current Status: PILOT / PRODUCTION-CANDIDATE**

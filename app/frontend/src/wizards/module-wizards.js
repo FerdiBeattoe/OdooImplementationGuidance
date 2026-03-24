@@ -5,6 +5,11 @@
 import { createWizardShell, formField, formInput, formSelect, formCheckbox, formSection, formGrid, pushSummaryStep } from "./WizardShell.js";
 import { el } from "../lib/dom.js";
 import {
+  pushCompanySetup, pushUsersAccess, pushChartOfAccounts, pushSalesConfig,
+  pushCrmConfig, pushInventoryConfig, pushAccountingConfig, pushPurchaseConfig,
+  pushManufacturingConfig, pushHrPayroll, pushWebsiteEcommerce, pushPosConfig
+} from "./wizard-push.js";
+import {
   setWizardData, getWizardData, addActivityLog,
   getUserOptions, getDefaultCurrency, getDefaultCountry,
   getSalesTeamOptions, getAccountOptions, getDepartmentOptions, getJobPositionOptions,
@@ -107,7 +112,7 @@ export function renderCompanySetupWizard({ onComplete, onCancel }) {
         label: "Review",
         render: ({ allData, setData }) => {
           const merged = Object.assign({}, ...allData);
-          return pushSummaryStep("Company Setup", merged, null);
+          return pushSummaryStep("Company Setup", merged, pushCompanySetup);
         }
       }
     ]
@@ -228,7 +233,7 @@ export function renderUsersAccessWizard({ onComplete, onCancel }) {
       },
       {
         label: "Review",
-        render: ({ allData }) => pushSummaryStep("Users & Access", { userCount: users.length, users: users.map(u => u.name).join(", ") }, null)
+        render: ({ allData }) => pushSummaryStep("Users & Access", { userCount: users.length, users: users.map(u => u.name).join(", ") }, pushUsersAccess)
       }
     ]
   });
@@ -338,7 +343,7 @@ export function renderChartOfAccountsWizard({ onComplete, onCancel }) {
       },
       {
         label: "Review",
-        render: ({ allData }) => pushSummaryStep("Chart of Accounts", { accountCount: accounts.length }, null)
+        render: ({ allData }) => pushSummaryStep("Chart of Accounts", { accountCount: accounts.length }, pushChartOfAccounts)
       }
     ]
   });
@@ -462,7 +467,7 @@ export function renderSalesConfigWizard({ onComplete, onCancel }) {
       },
       {
         label: "Review",
-        render: ({ allData }) => pushSummaryStep("Sales Config", Object.assign({}, ...allData), null)
+        render: ({ allData }) => pushSummaryStep("Sales Config", Object.assign({}, ...allData), pushSalesConfig)
       }
     ]
   });
@@ -568,7 +573,7 @@ export function renderCrmConfigWizard({ onComplete, onCancel }) {
       },
       {
         label: "Review",
-        render: ({ allData }) => pushSummaryStep("CRM Config", Object.assign({}, ...allData), null)
+        render: ({ allData }) => pushSummaryStep("CRM Config", Object.assign({}, ...allData), pushCrmConfig)
       }
     ]
   });
@@ -664,7 +669,7 @@ export function renderInventoryConfigWizard({ onComplete, onCancel }) {
       },
       {
         label: "Review",
-        render: ({ allData }) => pushSummaryStep("Inventory Config", Object.assign({}, ...allData), null)
+        render: ({ allData }) => pushSummaryStep("Inventory Config", Object.assign({}, ...allData), pushInventoryConfig)
       }
     ]
   });
@@ -777,7 +782,7 @@ export function renderAccountingConfigWizard({ onComplete, onCancel }) {
       },
       {
         label: "Review",
-        render: ({ allData }) => pushSummaryStep("Accounting Config", Object.assign({}, ...allData), null)
+        render: ({ allData }) => pushSummaryStep("Accounting Config", Object.assign({}, ...allData), pushAccountingConfig)
       }
     ]
   });
@@ -843,7 +848,7 @@ export function renderPurchaseConfigWizard({ onComplete, onCancel }) {
       },
       {
         label: "Review",
-        render: ({ allData }) => pushSummaryStep("Purchase Config", Object.assign({}, ...allData), null)
+        render: ({ allData }) => pushSummaryStep("Purchase Config", Object.assign({}, ...allData), pushPurchaseConfig)
       }
     ]
   });
@@ -922,7 +927,7 @@ export function renderManufacturingConfigWizard({ onComplete, onCancel }) {
       },
       {
         label: "Review",
-        render: ({ allData }) => pushSummaryStep("Manufacturing Config", Object.assign({}, ...allData), null)
+        render: ({ allData }) => pushSummaryStep("Manufacturing Config", Object.assign({}, ...allData), pushManufacturingConfig)
       }
     ]
   });
@@ -1032,7 +1037,7 @@ export function renderHrPayrollWizard({ onComplete, onCancel }) {
       },
       {
         label: "Review",
-        render: ({ allData }) => pushSummaryStep("HR & Payroll Config", Object.assign({}, ...allData), null)
+        render: ({ allData }) => pushSummaryStep("HR & Payroll Config", Object.assign({}, ...allData), pushHrPayroll)
       }
     ]
   });
@@ -1119,7 +1124,7 @@ export function renderWebsiteEcommerceWizard({ onComplete, onCancel }) {
       },
       {
         label: "Review",
-        render: ({ allData }) => pushSummaryStep("Website & eCommerce", Object.assign({}, ...allData), null)
+        render: ({ allData }) => pushSummaryStep("Website & eCommerce", Object.assign({}, ...allData), pushWebsiteEcommerce)
       }
     ]
   });
@@ -1190,7 +1195,7 @@ export function renderPosWizard({ onComplete, onCancel }) {
       },
       {
         label: "Review",
-        render: ({ allData }) => pushSummaryStep("POS Config", Object.assign({}, ...allData), null)
+        render: ({ allData }) => pushSummaryStep("POS Config", Object.assign({}, ...allData), pushPosConfig)
       }
     ]
   });

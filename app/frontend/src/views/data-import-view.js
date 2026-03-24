@@ -33,10 +33,12 @@ const GRIDS = [
     icon: "category",
     desc: "Attributes and variants for products",
     columns: [
-      { key: "product",   label: "Product",    type: "dropdown", optionsFn: () => getProductOptions().map(o => o.label), required: true },
-      { key: "attribute", label: "Attribute",  type: "select",   options: ["Size", "Color", "Material", "Weight"], required: true },
-      { key: "values",    label: "Values (comma separated)", type: "text", required: true },
-      { key: "extraPrice",label: "Extra Price",type: "number",   required: false }
+      { key: "product",        label: "Product",         type: "dropdown", optionsFn: () => getProductOptions().map(o => o.label), required: true },
+      { key: "attribute",      label: "Attribute",       type: "select",   options: ["Size", "Color", "Material", "Weight", "Style", "Finish"], required: true },
+      { key: "displayType",    label: "Display Type",    type: "select",   options: ["radio", "pills", "select", "color"], required: false },
+      { key: "createVariant",  label: "Variant Creation",type: "select",   options: ["always", "dynamic", "no_variant"], required: false },
+      { key: "values",         label: "Values (comma separated)", type: "text", required: true },
+      { key: "extraPrice",     label: "Extra Price",     type: "number",   required: false }
     ]
   },
   {

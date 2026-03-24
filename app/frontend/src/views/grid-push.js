@@ -49,10 +49,12 @@ export async function pushProductVariantRow(row) {
       model: "product.attribute",
       values: {
         name: row.attribute,
+        display_type: row.displayType || "radio",
+        create_variant: row.createVariant || "always",
         value_ids: (row.values || "").split(",").map(v => v.trim()).filter(Boolean)
       }
     });
-    return { success: true, detail: `Attribute "${row.attribute}" created for ${row.product}` };
+    return { success: true, detail: `Attribute "${row.attribute}" (${row.displayType || "radio"}) created for ${row.product}` };
   } catch (err) {
     return { success: false, detail: err.message };
   }

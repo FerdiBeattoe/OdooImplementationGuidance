@@ -1037,12 +1037,19 @@ export function renderManufacturingConfigWizard({ onComplete, onCancel }) {
     steps: [
       {
         label: "Settings",
-        render: ({ data, setData }) => formSection("Manufacturing Settings", [
-          formCheckbox("Work Orders (operations/routing)", data.workOrders ?? false, v => setData({ workOrders: v })),
-          formCheckbox("Enable Byproducts", data.byproducts ?? false, v => setData({ byproducts: v })),
-          formCheckbox("Enable Scrap Locations", data.scrapLocations ?? true, v => setData({ scrapLocations: v })),
-          formCheckbox("Unlock Finished Products", data.unlockFinished ?? false, v => setData({ unlockFinished: v }))
-        ])
+        render: ({ data, setData }) => {
+          const warehouseOpts = getWarehouseOptions();
+          const mfgWarehouse = formSelect(warehouseOpts.length ? warehouseOpts.map(w => w.label) : ["Configure warehouses in Inventory wizard first"], data.mfgWarehouse || "");
+          mfgWarehouse.addEventListener("change", e => setData({ mfgWarehouse: e.target.value }));
+          return formSection("Manufacturing Settings", [
+            formField("Manufacturing Warehouse", mfgWarehouse, "Warehouse where manufactured products are stored"),
+            warehouseOpts.length === 0 ? el("p", { className: "text-xs text-warning mb-2", text: "⚠ Complete the Inventory wizard first to see warehouses here." }) : null,
+            formCheckbox("Work Orders (operations/routing)", data.workOrders ?? false, v => setData({ workOrders: v })),
+            formCheckbox("Enable Byproducts", data.byproducts ?? false, v => setData({ byproducts: v })),
+            formCheckbox("Enable Scrap Locations", data.scrapLocations ?? true, v => setData({ scrapLocations: v })),
+            formCheckbox("Unlock Finished Products", data.unlockFinished ?? false, v => setData({ unlockFinished: v }))
+          ]);
+        }
       },
       {
         label: "Workcenters",
@@ -1316,11 +1323,16 @@ export function renderPosWizard({ onComplete, onCancel }) {
         render: ({ data, setData }) => {
           const nameIn    = formInput({ placeholder: "Main POS", value: data.posName || existing.posName || "" });
           const journalIn = formSelect(["Cash Journal", "Bank Journal", "POS Journal"], data.linkedJournal || "");
+          const warehouseOpts = getWarehouseOptions();
+          const warehouseIn = formSelect(warehouseOpts.length ? warehouseOpts.map(w => w.label) : ["Configure warehouses in Inventory wizard first"], data.warehouse || "");
           nameIn.addEventListener("input", e => setData({ posName: e.target.value }));
           journalIn.addEventListener("change", e => setData({ linkedJournal: e.target.value }));
+          warehouseIn.addEventListener("change", e => setData({ warehouse: e.target.value }));
           return formSection("POS Terminal Setup", [
             formField("POS Name", nameIn, null, true),
-            formField("Linked Journal", journalIn)
+            formField("Linked Journal", journalIn),
+            formField("Stock Warehouse", warehouseIn, "Inventory will be decremented from this warehouse"),
+            warehouseOpts.length === 0 ? el("p", { className: "text-xs text-warning", text: "⚠ Complete the Inventory wizard first to see warehouses here." }) : null
           ]);
         }
       },

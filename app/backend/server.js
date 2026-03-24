@@ -139,6 +139,10 @@ export function createAppServer() {
         return serveStatic(res, path.resolve(frontendRoot, `.${pathname}`), frontendRoot);
       }
 
+      if (pathname.startsWith("/styles/") && req.method === "GET") {
+        return serveStatic(res, path.resolve(frontendRoot, `.${pathname}`), frontendRoot);
+      }
+
       if (pathname.startsWith("/src/") && req.method === "GET") {
         return serveStatic(res, path.resolve(frontendRoot, `.${pathname}`), frontendRoot);
       }

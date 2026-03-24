@@ -20,6 +20,7 @@ import {
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 10; // 10 requests per minute
+const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB limit
 const requestLog = new Map();
 
 function checkRateLimit(clientId) {
@@ -78,7 +79,7 @@ export function createAppServer() {
   return createServer(async (req, res) => {
     try {
       // Rate limiting
-      const clientId = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+      const clientId = req.socket.remoteAddress || 'unknown';
       const rateCheck = checkRateLimit(clientId);
       
       if (!rateCheck.allowed) {
@@ -306,8 +307,13 @@ async function writeProjectStore(payload) {
 
 async function readJsonBody(req) {
   const chunks = [];
+  let totalSize = 0;
 
   for await (const chunk of req) {
+    totalSize += chunk.length;
+    if (totalSize > MAX_BODY_SIZE) {
+      throw new Error("Request body exceeds 10MB limit");
+    }
     chunks.push(Buffer.from(chunk));
   }
 
@@ -315,7 +321,11 @@ async function readJsonBody(req) {
     return {};
   }
 
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch (e) {
+    throw new Error("Invalid JSON in request body");
+  }
 }
 
 async function serveStatic(res, requestedPath, allowedRoot) {
@@ -343,7 +353,10 @@ async function serveStatic(res, requestedPath, allowedRoot) {
 function sendJson(res, status, payload) {
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store"
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'"
   });
   res.end(JSON.stringify(payload, null, 2));
 }

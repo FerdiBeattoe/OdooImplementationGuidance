@@ -67,7 +67,7 @@ export class OdooShAPI {
     return {
       id: data.id,
       name: data.name,
-      url: data.url || `https://${data.name}.odo.sh`,
+      url: data.url || `https://${data.name}.odoo.sh`,
       status: data.status || 'creating',
       branch_url: data.branch_url || null
     };

@@ -95,7 +95,7 @@ export class OdooClient {
         results.push(...(Array.isArray(ids) ? ids : [ids]));
       } catch (error) {
         errors.push({ batchIndex: i, error: error.message, records: batch });
-        if (!CONFIG.import.skipErrors) throw error;
+        if (options?.continueOnError) { // continue } else throw error;
       }
     }
     

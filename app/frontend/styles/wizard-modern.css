@@ -367,3 +367,148 @@
   font-size: 0.875rem;
   color: var(--color-text-secondary);
 }
+
+/* ── Bridge Classes for Existing Domain View Panels ─────────────────────── */
+
+/* Bridge existing panel classes to design system */
+.panel {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  border: 1px solid var(--color-border);
+}
+
+.panel--strong {
+  background: var(--color-surface-secondary);
+  border-color: var(--color-border-hover);
+}
+
+.panel h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+  color: var(--color-text-primary);
+}
+
+/* List cards in domain selector */
+.list-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.list-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.list-card--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+/* Checkpoint panels */
+.checkpoint-panel {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border);
+}
+
+.checkpoint-panel__dependency {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: var(--space-sm) 0;
+}
+
+.checkpoint-panel__actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+/* Inventory/config groups */
+.inventory-group {
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.inventory-config-capture {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+}
+
+/* Workspace layout */
+.workspace {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: var(--space-xl);
+  padding: var(--space-lg);
+}
+
+@media (max-width: 768px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Hero panel actions */
+.hero-panel__actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+/* Accounting readiness summary */
+.accounting-readiness-summary {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border);
+}
+
+/* Workflow panels */
+.checkpoint-panel__workflow {
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+}
+
+/* Utility text classes */
+.subtle {
+  color: var(--color-text-secondary);
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+/* Status line */
+.status-line {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-sm);
+}
+
+/* Entry grid for forms */
+.entry-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+  margin: var(--space-md) 0;
+}
+
+@media (max-width: 768px) {
+  .entry-grid {
+    grid-template-columns: 1fr;
+  }
+}

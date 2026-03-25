@@ -28,15 +28,15 @@ function withTimeout(promise, ms, errorMessage) {
 
 export async function connectProject(project, payload, fetchImpl = fetch) {
   const client = new OdooClient({
-    baseUrl: payload.url,
-    database: payload.database,
+    baseUrl: payload.credentials?.url,
+    database: payload.credentials?.database,
     fetchImpl
   });
 
   try {
     // Attempt authentication with timeout
     await withTimeout(
-      client.authenticate(payload.username, payload.password),
+      client.authenticate(payload.credentials?.username, payload.credentials?.password),
       CONNECT_TIMEOUT_MS,
       'Connection timed out. The Odoo server did not respond within 15 seconds.'
     );
@@ -50,7 +50,7 @@ export async function connectProject(project, payload, fetchImpl = fetch) {
     if (errorMsg.includes('credential') || errorMsg.includes('login') || errorMsg.includes('password') || errorMsg.includes('authentication')) {
       throw new OdooRpcError(`Authentication failed. Please check your username and password.`, 'AUTHENTICATION_FAILED');
     }
-    throw new OdooRpcError(`Unable to connect to Odoo server at ${payload.url}. Original error: ${authError.message}`, 'CONNECTION_FAILED');
+    throw new OdooRpcError(`Unable to connect to Odoo server at ${payload.credentials?.url}. Original error: ${authError.message}`, 'CONNECTION_FAILED');
   }
 
   // Detect version
@@ -70,7 +70,7 @@ export async function connectProject(project, payload, fetchImpl = fetch) {
   }
 
   // Detect deployment type from URL
-  const url = payload.url.toLowerCase();
+  const url = (payload.credentials?.url || "").toLowerCase();
   let detectedDeployment = project?.projectIdentity?.deployment || "";
   let detectedEdition = version.edition || project?.projectIdentity?.edition || "";
   

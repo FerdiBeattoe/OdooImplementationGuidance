@@ -123,9 +123,12 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
         onInput: (e) => { 
           instanceUrl = e.target.value.trim();
           if (instanceType === "online" && instanceUrl.includes(".odoo.com")) {
-            const match = instanceUrl.match(/https?:\/\/([^.]+)\.odoo\.com/);
+            // Extract full subdomain before .odoo.com (handles www.subdomain cases)
+            const match = instanceUrl.match(/https?:\/\/(.+?)\.odoo\.com/);
             if (match && !database) {
-              database = match[1];
+              // Use last segment as database name (e.g., "www.test236" → "test236")
+              const subdomainParts = match[1].split('.');
+              database = subdomainParts[subdomainParts.length - 1];
             }
           }
         }

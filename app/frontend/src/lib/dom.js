@@ -18,6 +18,11 @@ export function el(tag, options = {}, children = []) {
       return;
     }
 
+    if (key === "disabled" || key === "checked" || key === "selected") {
+      node[key] = !!value;
+      return;
+    }
+
     if (key.startsWith("on") && typeof value === "function") {
       node.addEventListener(key.slice(2).toLowerCase(), value);
       return;

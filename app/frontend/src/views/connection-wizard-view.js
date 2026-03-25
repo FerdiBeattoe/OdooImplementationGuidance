@@ -114,6 +114,8 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
     // URL Input (store reference)
     content.append(el("p", { style: "font-size: 13px; font-weight: 600; color: var(--ee-on-surface-variant); margin: 16px 0 8px;" }, "Your Odoo Address"));
     
+    let continueBtn = null;
+
     inputs.url = el("input", {
       type: "text",
       className: "ee-input",
@@ -123,17 +125,23 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
         let val = e.target.value.trim().toLowerCase();
         val = val.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
         state.instanceUrl = val;
-        
+
         // Update preview
         const preview = content.querySelector("#url-preview");
         if (preview) preview.textContent = val ? `https://${val}` : "https://yourcompany.odoo.com";
-        
+
         // Update database
         const match = val.match(/^(?:www\.)?([^\.]+)/);
         const db = match ? match[1] : val;
         state.database = db;
         const dbPreview = content.querySelector("#db-preview");
         if (dbPreview) dbPreview.textContent = db || "yourcompany";
+
+        // Enable/disable continue button reactively
+        if (continueBtn) {
+          continueBtn.disabled = val.length === 0;
+          continueBtn.style.opacity = val.length === 0 ? "0.5" : "";
+        }
       }
     });
     content.append(inputs.url);
@@ -150,12 +158,12 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
       ])
     ]));
 
-    // Continue
-    const canContinue = state.instanceUrl.length > 0;
-    content.append(el("button", {
+    // Continue — read state.instanceUrl directly, never the closed-over canContinue
+    const initialCanContinue = state.instanceUrl.length > 0;
+    continueBtn = el("button", {
       className: "ee-btn ee-btn--primary ee-btn--full",
-      style: `margin-top: 24px; ${!canContinue ? "opacity: 0.5;" : ""}`,
-      disabled: !canContinue,
+      style: `margin-top: 24px; ${!initialCanContinue ? "opacity: 0.5;" : ""}`,
+      disabled: !initialCanContinue,
       onclick: () => {
         if (inputs.url) {
           let val = inputs.url.value.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
@@ -163,12 +171,13 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
           const match = val.match(/^(?:www\.)?([^\.]+)/);
           state.database = match ? match[1] : val;
         }
-        if (canContinue) {
+        if (state.instanceUrl.length > 0) {
           state.step = 2;
           render();
         }
       }
-    }, [el("span", { text: "Continue →" })]));
+    }, [el("span", { text: "Continue →" })]);
+    content.append(continueBtn);
 
     return content;
   }

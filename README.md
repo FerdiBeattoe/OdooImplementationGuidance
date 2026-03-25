@@ -1,22 +1,28 @@
-# Odoo 19 Implementation Control Platform
+# Odoo 19 Implementation Platform
 
-First runnable skeleton for the implementation control platform defined by the governance documents in this repository.
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
-## Run
+A documentation-led implementation control and bounded execution platform for Odoo 19.
 
-- `npm start`
-- open `http://127.0.0.1:4174`
+## Quick Start
 
-## Test
+```bash
+npm install
+npm run build:css
+npm start
+```
 
-- `npm test`
+Then open http://localhost:4174
 
-## Current Scope
+## Features
 
-- implementation control shell only
-- project entry flow with supported combination enforcement
-- save/resume foundation
-- dashboard, stages, domains, and decisions/readiness surfaces
-- checkpoint, guidance, grid-shell, and Odoo.sh branch-target foundations
+- Guided setup wizards for all Odoo 19 modules
+- Roadmap with phase-based progress tracking
+- Bulk data import with validation
+- Knowledge base with best practices
+- Analytics and success tracking
+- Live Odoo connection (optional, bounded)
 
-This application does not perform remediation, migration repair, diagnostics, or unrestricted Odoo writes.
+## Live Demo
+
+[View on Render](https://odoo-implementation-platform.onrender.com)

@@ -345,7 +345,20 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
       el("button", {
         className: "ee-btn ee-btn--primary ee-btn--full",
         style: "margin: 16px 0;",
-        onclick: () => onConnect(state)
+        onclick: () => {
+          const rawUrl = (state.instanceUrl || "").trim()
+            .replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+          
+          onConnect({
+            url: rawUrl ? `https://${rawUrl}` : "",
+            database: state.database,
+            username: state.username,
+            password: state.password,
+            edition: state.edition,
+            instanceType: state.instanceType,
+            createNewDatabase: state.isNewDatabase
+          });
+        }
       }, [el("span", { text: state.isNewDatabase ? "Create Database & Connect" : "Connect to Odoo" })]),
 
       el("div", { style: "display: flex; gap: 12px;" }, [

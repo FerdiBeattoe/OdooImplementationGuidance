@@ -12,7 +12,7 @@ export class OdooClient {
       throw new Error(`OdooClient: baseUrl is required but received: ${JSON.stringify(baseUrl)}`);
     }
     // Ensure it has a protocol so new URL() works everywhere
-    this.baseUrl = /^https?:\///i.test(cleanBase) ? cleanBase : `https://${cleanBase}`;
+    this.baseUrl = (cleanBase.startsWith("https://") || cleanBase.startsWith("http://")) ? cleanBase : `https://${cleanBase}`;
     this.database = database || "";
     this.sessionId = sessionId || "";
     this.uid = uid || 0;

@@ -42,6 +42,7 @@ export async function connectProject(project, payload, fetchImpl = fetch) {
     );
   } catch (authError) {
     // Categorize authentication errors
+    console.error('Connection error details:', authError.message, authError.cause, authError.code);
     const errorMsg = authError.message.toLowerCase();
     if (errorMsg.includes('database') || errorMsg.includes('db')) {
       throw new OdooRpcError(`Database not found: "${payload.database}". Please verify the database name exists on this Odoo server.`, 'DATABASE_NOT_FOUND');
@@ -49,7 +50,7 @@ export async function connectProject(project, payload, fetchImpl = fetch) {
     if (errorMsg.includes('credential') || errorMsg.includes('login') || errorMsg.includes('password') || errorMsg.includes('authentication')) {
       throw new OdooRpcError(`Authentication failed. Please check your username and password.`, 'AUTHENTICATION_FAILED');
     }
-    throw new OdooRpcError(`Unable to connect to Odoo server. Please check the URL and ensure the server is accessible.`, 'CONNECTION_FAILED');
+    throw new OdooRpcError(`Unable to connect to Odoo server at ${payload.url}. Original error: ${authError.message}`, 'CONNECTION_FAILED');
   }
 
   // Detect version

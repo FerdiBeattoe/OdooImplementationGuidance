@@ -245,10 +245,7 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
         render();
 
         try {
-          const res = await fetch("/api/connection/connect", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+          const payload = {
               project: { projectIdentity: { projectId: "test-connection" } },
               credentials: {
                 url: state.instanceUrl,
@@ -259,7 +256,12 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
                 instanceType: state.instanceType,
                 createNewDatabase: state.isNewDatabase
               }
-            })
+            };
+            console.log('Sending to backend:', JSON.stringify(payload));
+            const res = await fetch("/api/connection/connect", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
           });
 
           const data = await res.json();
@@ -274,8 +276,9 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
             state.canContinue = true;
           }
         } catch (e) {
+          console.error('Connection test fetch error:', e);
           state.testStatus = "error";
-          state.testError = { message: "Cannot reach server", suggestion: "Check your internet connection." };
+          state.testError = { message: "Cannot reach server", suggestion: e.message || "Check your internet connection and that the backend is running." };
           state.canContinue = false;
         }
 

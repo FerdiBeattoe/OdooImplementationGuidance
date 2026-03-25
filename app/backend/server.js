@@ -212,7 +212,7 @@ async function handleConnectionConnect(req, res) {
 
     return sendJson(res, 200, { project: nextProject });
   } catch (error) {
-    console.log('[CONNECT] connectProject failed:', error.message);
+    console.error('[CONNECT] connectProject failed:', error.message, '| code:', error.code, '| cause:', error.cause);
     const nextProject = normalizeProjectState({
       ...project,
       auditLog: normalizeAuditLog([

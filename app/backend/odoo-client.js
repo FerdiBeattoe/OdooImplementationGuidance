@@ -7,7 +7,12 @@ export class OdooRpcError extends Error {
 
 export class OdooClient {
   constructor({ baseUrl, database, sessionId = "", uid = 0, fetchImpl = fetch }) {
-    this.baseUrl = String(baseUrl || "").replace(/\/+$/, "");
+    const cleanBase = String(baseUrl || "").trim().replace(/\/+$/, "");
+    if (!cleanBase || cleanBase === "undefined") {
+      throw new Error(`OdooClient: baseUrl is required but received: ${JSON.stringify(baseUrl)}`);
+    }
+    // Ensure it has a protocol so new URL() works everywhere
+    this.baseUrl = /^https?:\///i.test(cleanBase) ? cleanBase : `https://${cleanBase}`;
     this.database = database || "";
     this.sessionId = sessionId || "";
     this.uid = uid || 0;
@@ -15,7 +20,9 @@ export class OdooClient {
   }
 
   async authenticate(username, password) {
-    const response = await this.fetchImpl(`${this.baseUrl}/web/session/authenticate`, {
+    const authUrl = new URL("/web/session/authenticate", this.baseUrl).toString();
+    console.log('[OdooClient] authenticate URL:', authUrl);
+    const response = await this.fetchImpl(authUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

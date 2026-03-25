@@ -245,20 +245,33 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
         render();
 
         try {
+          // Normalise URL: re-derive from raw input to avoid state.instanceUrl missing protocol
+          const rawUrl = (inputs.url?.value || state.instanceUrl || "").trim()
+            .replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+          const canonicalUrl = rawUrl ? `https://${rawUrl}` : "";
+
+          if (!canonicalUrl) {
+            state.testStatus = "error";
+            state.testError = { message: "No server URL", suggestion: "Enter your Odoo instance address in Step 1." };
+            state.canContinue = false;
+            render();
+            return;
+          }
+
           const payload = {
-              project: { projectIdentity: { projectId: "test-connection" } },
-              credentials: {
-                url: state.instanceUrl,
-                database: db,
-                username: user,
-                password: pass,
-                edition: state.edition,
-                instanceType: state.instanceType,
-                createNewDatabase: state.isNewDatabase
-              }
-            };
-            console.log('Sending to backend:', JSON.stringify(payload));
-            const res = await fetch("/api/connection/connect", {
+            project: { projectIdentity: { projectId: "test-connection" } },
+            credentials: {
+              url: canonicalUrl,
+              database: db,
+              username: user,
+              password: pass,
+              edition: state.edition,
+              instanceType: state.instanceType,
+              createNewDatabase: state.isNewDatabase
+            }
+          };
+          console.log('Sending to backend:', JSON.stringify(payload));
+          const res = await fetch("/api/connection/connect", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)

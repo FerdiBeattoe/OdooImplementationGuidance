@@ -4,4 +4,4 @@ ui_export_current.txt
 .env.*.local
 node_modules/
 dist/
-*.log
+*.log"node_modules/" 

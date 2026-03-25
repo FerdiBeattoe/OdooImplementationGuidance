@@ -187,11 +187,15 @@ export function createAppServer() {
 }
 
 async function handleConnectionConnect(req, res) {
+  console.log('[CONNECT] Starting connection request');
   const payload = await readJsonBody(req);
+  console.log('[CONNECT] Payload received:', { url: payload.credentials?.url, database: payload.credentials?.database, username: payload.credentials?.username });
   const project = normalizeProjectState(payload.project);
 
   try {
+    console.log('[CONNECT] Calling connectProject...');
     const connectionState = await connectProject(project, payload.credentials);
+    console.log('[CONNECT] connectProject succeeded');
     const nextProject = normalizeProjectState({
       ...project,
       connectionState,
@@ -203,6 +207,7 @@ async function handleConnectionConnect(req, res) {
 
     return sendJson(res, 200, { project: nextProject });
   } catch (error) {
+    console.log('[CONNECT] connectProject failed:', error.message);
     const nextProject = normalizeProjectState({
       ...project,
       auditLog: normalizeAuditLog([

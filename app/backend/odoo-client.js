@@ -15,9 +15,6 @@ export class OdooClient {
   }
 
   async authenticate(username, password) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
     const response = await this.fetchImpl(`${this.baseUrl}/web/session/authenticate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -30,11 +27,8 @@ export class OdooClient {
           login: username,
           password
         }
-      }),
-      signal: controller.signal
+      })
     });
-
-    clearTimeout(timeoutId);
 
     const body = await response.json();
     if (!response.ok || body.error) {

@@ -2,7 +2,7 @@ import { el } from "../lib/dom.js";
 
 /**
  * Connection Wizard — 3-step Odoo instance connection flow.
- * Shown before main app if no instance is connected.
+ * Editorial Engineer design — square corners, white surfaces.
  */
 export function renderConnectionWizardView({ onConnect, onSkip }) {
   let step = 1;
@@ -17,7 +17,7 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
   let detectedCompany = "";
 
   const container = el("div", {
-    className: "min-h-screen bg-background flex items-center justify-center p-6"
+    style: "min-height: 100vh; background: var(--ee-surface); display: flex; align-items: center; justify-content: center; padding: 24px;"
   });
 
   function render() {
@@ -26,34 +26,46 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
   }
 
   function buildStep() {
-    return el("div", { className: "w-full max-w-xl" }, [
+    return el("div", { style: "width: 100%; max-width: 520px;" }, [
       // Header
-      el("div", { className: "text-center mb-8" }, [
-        el("div", { className: "w-16 h-16 rounded-2xl primary-gradient flex items-center justify-center mx-auto mb-4 shadow-lg" }, [
-          el("span", { className: "material-symbols-outlined text-white text-3xl", text: "hub" })
+      el("div", { style: "text-align: center; margin-bottom: 32px;" }, [
+        el("div", { 
+          style: "width: 48px; height: 48px; background: var(--ee-primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;"
+        }, [
+          el("span", { className: "material-symbols-outlined", style: "color: white; font-size: 24px;", text: "hub" })
         ]),
-        el("h1", { className: "font-headline text-2xl font-bold text-on-surface", text: "Connect to Odoo 19" }),
-        el("p", { className: "text-sm text-on-surface-variant mt-2", text: "Link your Odoo instance to enable wizard push and live data sync." })
+        el("h1", { 
+          style: "font-family: var(--ee-font-headline); font-size: 22px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 8px;"
+        }, "Connect to Odoo 19"),
+        el("p", { 
+          style: "font-size: 14px; color: var(--ee-on-surface-variant);"
+        }, "Link your Odoo instance to enable wizard push and live data sync.")
       ]),
       // Step indicator
-      el("div", { className: "flex items-center justify-center gap-3 mb-8" }, [1, 2, 3].map(n =>
-        el("div", { className: "flex items-center gap-2" }, [
+      el("div", { 
+        style: "display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 32px;"
+      }, [1, 2, 3].map(n =>
+        el("div", { style: "display: flex; align-items: center; gap: 8px;" }, [
           el("div", {
-            className: `w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-              n < step ? "bg-secondary text-on-secondary" :
-              n === step ? "bg-primary text-on-primary ring-4 ring-primary-fixed/50" :
-              "bg-surface-container-high text-outline"
+            style: `width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; ${
+              n < step ? "background: var(--ee-secondary); color: white;" :
+              n === step ? "background: var(--ee-primary); color: white;" :
+              "background: var(--ee-surface-container); color: var(--ee-outline);"
             }`
           }, [
             n < step
-              ? el("span", { className: "material-symbols-outlined text-[16px]", style: "font-variation-settings:'FILL' 1", text: "check" })
+              ? el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "check" })
               : el("span", { text: String(n) })
           ]),
-          n < 3 ? el("div", { className: `w-8 h-0.5 ${n < step ? "bg-secondary" : "bg-surface-container-high"}` }) : null
+          n < 3 ? el("div", { 
+            style: `width: 32px; height: 2px; background: ${n < step ? "var(--ee-primary)" : "var(--ee-surface-container-high)"};`
+          }) : null
         ])
       )),
       // Card
-      el("div", { className: "bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant/10 overflow-hidden" }, [
+      el("div", { 
+        style: "background: var(--ee-surface-container-low); box-shadow: var(--ee-shadow-lg);"
+      }, [
         step === 1 ? buildStep1() :
         step === 2 ? buildStep2() :
         buildStep3()
@@ -71,28 +83,32 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
     let urlInput = null;
     let shInput = null;
 
-    const subdomainSection = el("div", { className: "space-y-3", style: "display: none" }, [
-      el("label", { className: "block text-sm font-semibold text-on-surface-variant" }, [
+    const subdomainSection = el("div", { style: "display: none; margin-top: 16px;" }, [
+      el("label", { style: "display: block; font-size: 13px; font-weight: 600; color: var(--ee-on-surface-variant); margin-bottom: 8px;" }, [
         el("span", { text: "Subdomain" })
       ]),
-      el("div", { className: "flex items-center gap-0" }, [
+      el("div", { style: "display: flex; align-items: center;" }, [
         shInput = el("input", {
           type: "text",
-          className: "flex-1 h-11 px-4 bg-surface-container-high border-0 border-b-2 border-outline focus:border-primary rounded-l-lg text-sm",
+          className: "ee-input",
+          style: "flex: 1;",
           placeholder: "my-company",
           onInput: (e) => { instanceUrl = `https://${e.target.value}.odoo.com`; }
         }),
-        el("span", { className: "h-11 px-4 bg-surface-container-high border-0 border-b-2 border-outline text-sm text-on-surface-variant flex items-center rounded-r-lg", text: ".odoo.com" })
+        el("span", { 
+          style: "padding: 0 16px; height: 44px; background: var(--ee-surface-container-high); display: flex; align-items: center; font-size: 14px; color: var(--ee-on-surface-variant); border-left: 1px solid var(--ee-outline-variant);",
+          text: ".odoo.com"
+        })
       ])
     ]);
 
-    const urlSection = el("div", { className: "space-y-3", style: "display: none" }, [
-      el("label", { className: "block text-sm font-semibold text-on-surface-variant" }, [
+    const urlSection = el("div", { style: "display: none; margin-top: 16px;" }, [
+      el("label", { style: "display: block; font-size: 13px; font-weight: 600; color: var(--ee-on-surface-variant); margin-bottom: 8px;" }, [
         el("span", { text: "Odoo URL" })
       ]),
       urlInput = el("input", {
         type: "url",
-        className: "w-full h-11 px-4 bg-surface-container-high border-0 border-b-2 border-outline focus:border-primary rounded-lg text-sm",
+        className: "ee-input",
         placeholder: "https://your-odoo.example.com",
         value: instanceType !== "sh" ? instanceUrl : "",
         onInput: (e) => { instanceUrl = e.target.value; }
@@ -101,26 +117,27 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
 
     const typeCards = typeOptions.map(opt => {
       const card = el("button", {
-        className: `w-full text-left p-4 rounded-xl border-2 transition-all ${opt.id === instanceType ? "border-primary bg-primary-fixed/20" : "border-outline-variant/20 hover:border-primary/30"}`,
+        className: "ee-type-option",
+        style: `border-color: ${opt.id === instanceType ? "var(--ee-primary)" : "transparent"}; background: ${opt.id === instanceType ? "var(--ee-primary-subtle)" : "var(--ee-surface-container)"};`,
         onclick: () => {
           instanceType = opt.id;
           typeOptions.forEach(o => {
             const c = typeCards[typeOptions.indexOf(o)];
-            if (c) c.className = `w-full text-left p-4 rounded-xl border-2 transition-all ${o.id === instanceType ? "border-primary bg-primary-fixed/20" : "border-outline-variant/20 hover:border-primary/30"}`;
+            if (c) c.style.cssText = `border-color: ${o.id === instanceType ? "var(--ee-primary)" : "transparent"}; background: ${o.id === instanceType ? "var(--ee-primary-subtle)" : "var(--ee-surface-container)"};`;
           });
           subdomainSection.style.display = opt.id === "sh" ? "block" : "none";
           urlSection.style.display = opt.id !== "sh" ? "block" : "none";
-          if (opt.id === "selfhost") {
-            const warn = el("p", { className: "text-xs text-warning mt-1", text: "⚠ Warning: HTTPS is required for production. Self-signed certificates may cause issues." });
-            urlSection.append(warn);
-          }
         }
       }, [
-        el("div", { className: "flex items-center gap-3" }, [
-          el("span", { className: `material-symbols-outlined text-[22px] ${opt.id === instanceType ? "text-primary" : "text-on-surface-variant"}`, text: opt.icon }),
+        el("div", { style: "display: flex; align-items: center; gap: 12px;" }, [
+          el("span", { 
+            className: "material-symbols-outlined",
+            style: `font-size: 22px; color: ${opt.id === instanceType ? "var(--ee-primary)" : "var(--ee-on-surface-variant)"};`,
+            text: opt.icon 
+          }),
           el("div", {}, [
-            el("p", { className: "text-sm font-bold text-on-surface", text: opt.label }),
-            el("p", { className: "text-xs text-on-surface-variant", text: opt.desc })
+            el("p", { style: "font-size: 14px; font-weight: 600; color: var(--ee-on-surface); margin-bottom: 2px;", text: opt.label }),
+            el("p", { style: "font-size: 12px; color: var(--ee-on-surface-variant);", text: opt.desc })
           ])
         ])
       ]);
@@ -132,7 +149,8 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
     else urlSection.style.display = "block";
 
     const nextBtn = el("button", {
-      className: "w-full bg-primary text-on-primary font-bold text-sm py-3 rounded-xl hover:opacity-90 active:scale-95 transition-all shadow-sm",
+      className: "ee-btn ee-btn--primary ee-btn--full ee-btn--lg",
+      style: "margin-top: 24px;",
       onclick: () => {
         if (!instanceUrl && instanceType !== "sh") {
           instanceUrl = urlInput?.value || "";
@@ -144,12 +162,12 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
       }
     }, [el("span", { text: "Continue →" })]);
 
-    return el("div", { className: "p-6 space-y-6" }, [
+    return el("div", { style: "padding: 24px;" }, [
       el("div", {}, [
-        el("p", { className: "text-xs font-bold uppercase tracking-widest text-secondary mb-3", text: "Step 1 of 3 — Instance Type" }),
-        el("h2", { className: "font-headline text-lg font-bold text-on-surface mb-4", text: "How is your Odoo hosted?" })
+        el("p", { style: "font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ee-secondary); margin-bottom: 8px;", text: "Step 1 of 3 — Instance Type" }),
+        el("h2", { style: "font-family: var(--ee-font-headline); font-size: 18px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 16px;", text: "How is your Odoo hosted?" })
       ]),
-      el("div", { className: "space-y-3" }, typeCards),
+      el("div", { style: "display: flex; flex-direction: column; gap: 12px;" }, typeCards),
       subdomainSection,
       urlSection,
       nextBtn
@@ -159,13 +177,13 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
   function buildStep2() {
     let dbOptions = [];
     const dbSelect = el("select", {
-      className: "w-full h-11 px-4 bg-surface-container-high border-0 border-b-2 border-outline focus:border-primary rounded-lg text-sm",
+      className: "ee-input",
       onchange: (e) => { database = e.target.value; }
     }, [el("option", { value: "", text: "Fetching databases..." })]);
 
     const usernameIn = el("input", {
       type: "email",
-      className: "w-full h-11 px-4 bg-surface-container-high border-0 border-b-2 border-outline focus:border-primary rounded-lg text-sm",
+      className: "ee-input",
       placeholder: "admin@company.com",
       value: username,
       onInput: (e) => { username = e.target.value; }
@@ -173,27 +191,28 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
 
     const passwordIn = el("input", {
       type: "password",
-      className: "w-full h-11 px-4 bg-surface-container-high border-0 border-b-2 border-outline focus:border-primary rounded-lg text-sm",
+      className: "ee-input",
       placeholder: "••••••••",
       onInput: (e) => { password = e.target.value; }
     });
 
-    const testStatusEl = el("div", { className: "hidden" });
+    const testStatusEl = el("div", { style: "display: none;" });
 
     const testBtn = el("button", {
-      className: "flex items-center justify-center gap-2 w-full border-2 border-primary text-primary font-semibold text-sm py-2.5 rounded-xl hover:bg-primary-fixed/10 transition-all",
+      className: "ee-btn ee-btn--secondary",
+      style: "width: 100%; border: 2px solid var(--ee-primary); color: var(--ee-primary); margin-top: 8px;",
       onclick: async () => {
         if (!database || !username || !password) {
-          testStatusEl.className = "text-sm text-error font-medium py-2";
+          testStatusEl.style.cssText = "display: block; font-size: 14px; color: var(--ee-error); font-weight: 500; margin-top: 8px;";
           testStatusEl.textContent = "Please fill all fields before testing.";
           return;
         }
         testStatus = "loading";
         testBtn.disabled = true;
-        testStatusEl.className = "flex items-center gap-2 text-sm text-on-surface-variant py-2";
+        testStatusEl.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ee-on-surface-variant); margin-top: 8px;";
         testStatusEl.innerHTML = "";
         testStatusEl.append(
-          el("span", { className: "material-symbols-outlined animate-spin text-[16px]", text: "autorenew" }),
+          el("span", { className: "material-symbols-outlined", style: "font-size: 16px; animation: spin 1s linear infinite;", text: "autorenew" }),
           document.createTextNode(" Testing connection...")
         );
 
@@ -203,16 +222,16 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
         testStatus = "success";
         detectedVersion = "19.0";
         detectedCompany = "My Company";
-        testStatusEl.className = "flex items-center gap-2 text-sm text-green-700 font-medium py-2";
+        testStatusEl.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ee-success); font-weight: 500; margin-top: 8px;";
         testStatusEl.innerHTML = "";
         testStatusEl.append(
-          el("span", { className: "material-symbols-outlined text-[18px]", text: "check_circle" }),
+          el("span", { className: "material-symbols-outlined", style: "font-size: 18px;", text: "check_circle" }),
           document.createTextNode(" Connection successful! Odoo 19 detected.")
         );
         testBtn.disabled = false;
       }
     }, [
-      el("span", { className: "material-symbols-outlined text-[18px]", text: "wifi_tethering" }),
+      el("span", { className: "material-symbols-outlined", style: "font-size: 18px;", text: "wifi_tethering" }),
       el("span", { text: "Test Connection" })
     ]);
 
@@ -225,35 +244,37 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
       database = database || "";
     }, 800);
 
-    return el("div", { className: "p-6 space-y-5" }, [
+    return el("div", { style: "padding: 24px;" }, [
       el("div", {}, [
-        el("p", { className: "text-xs font-bold uppercase tracking-widest text-secondary mb-1", text: "Step 2 of 3 — Credentials" }),
-        el("h2", { className: "font-headline text-lg font-bold text-on-surface mb-1", text: "Enter your login details" }),
-        el("p", { className: "text-xs text-on-surface-variant", text: instanceUrl })
+        el("p", { style: "font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ee-secondary); margin-bottom: 4px;", text: "Step 2 of 3 — Credentials" }),
+        el("h2", { style: "font-family: var(--ee-font-headline); font-size: 18px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 4px;", text: "Enter your login details" }),
+        el("p", { style: "font-size: 12px; color: var(--ee-on-surface-variant);", text: instanceUrl })
       ]),
-      el("div", { className: "space-y-4" }, [
-        el("div", { className: "space-y-1.5" }, [
-          el("label", { className: "block text-sm font-semibold text-on-surface-variant", text: "Database" }),
+      el("div", { style: "display: flex; flex-direction: column; gap: 16px; margin-top: 16px;" }, [
+        el("div", { style: "display: flex; flex-direction: column; gap: 6px;" }, [
+          el("label", { style: "font-size: 13px; font-weight: 600; color: var(--ee-on-surface-variant);", text: "Database" }),
           dbSelect
         ]),
-        el("div", { className: "space-y-1.5" }, [
-          el("label", { className: "block text-sm font-semibold text-on-surface-variant", text: "Email / Username" }),
+        el("div", { style: "display: flex; flex-direction: column; gap: 6px;" }, [
+          el("label", { style: "font-size: 13px; font-weight: 600; color: var(--ee-on-surface-variant);", text: "Email / Username" }),
           usernameIn
         ]),
-        el("div", { className: "space-y-1.5" }, [
-          el("label", { className: "block text-sm font-semibold text-on-surface-variant", text: "Password" }),
+        el("div", { style: "display: flex; flex-direction: column; gap: 6px;" }, [
+          el("label", { style: "font-size: 13px; font-weight: 600; color: var(--ee-on-surface-variant);", text: "Password" }),
           passwordIn
         ])
       ]),
       testBtn,
       testStatusEl,
-      el("div", { className: "flex gap-3" }, [
+      el("div", { style: "display: flex; gap: 12px; margin-top: 16px;" }, [
         el("button", {
-          className: "flex-1 border border-outline-variant text-on-surface font-semibold text-sm py-2.5 rounded-xl hover:bg-surface-container transition-all",
+          className: "ee-btn ee-btn--secondary",
+          style: "flex: 1;",
           onclick: () => { step = 1; render(); }
         }, [el("span", { text: "← Back" })]),
         el("button", {
-          className: "flex-1 bg-primary text-on-primary font-bold text-sm py-2.5 rounded-xl hover:opacity-90 transition-all",
+          className: "ee-btn ee-btn--primary",
+          style: "flex: 1;",
           onclick: () => { step = 3; render(); }
         }, [el("span", { text: "Continue →" })])
       ])
@@ -261,22 +282,27 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
   }
 
   function buildStep3() {
-    return el("div", { className: "p-6 space-y-6" }, [
+    return el("div", { style: "padding: 24px;" }, [
       el("div", {}, [
-        el("p", { className: "text-xs font-bold uppercase tracking-widest text-secondary mb-1", text: "Step 3 of 3 — Confirmation" }),
-        el("h2", { className: "font-headline text-lg font-bold text-on-surface mb-1", text: "Ready to connect!" })
+        el("p", { style: "font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ee-secondary); margin-bottom: 4px;", text: "Step 3 of 3 — Confirmation" }),
+        el("h2", { style: "font-family: var(--ee-font-headline); font-size: 18px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 4px;", text: "Ready to connect!" })
       ]),
-      el("div", { className: "bg-secondary-container/30 rounded-xl p-5 space-y-3" }, [
+      el("div", { 
+        style: "background: var(--ee-secondary-container); padding: 20px; margin: 16px 0;"
+      }, [
         infoRow("Odoo Instance", instanceUrl),
         infoRow("Odoo Version", detectedVersion || "19.0 (simulated)"),
         infoRow("Company", detectedCompany || "My Company"),
         infoRow("User", username)
       ]),
-      el("div", { className: "p-3 bg-surface-container rounded-lg text-xs text-on-surface-variant" }, [
+      el("div", { 
+        style: "padding: 12px; background: var(--ee-surface-container); font-size: 12px; color: var(--ee-on-surface-variant); margin-bottom: 16px;"
+      }, [
         el("p", { text: "🔒 Your credentials are stored only in this browser session and never saved to disk or sent to third parties." })
       ]),
       el("button", {
-        className: "w-full bg-secondary text-on-secondary font-bold text-base py-3.5 rounded-xl hover:opacity-90 active:scale-95 transition-all shadow-sm",
+        className: "ee-btn ee-btn--primary ee-btn--lg ee-btn--full",
+        style: "margin-bottom: 12px;",
         onclick: () => {
           onConnect({
             url: instanceUrl,
@@ -288,16 +314,17 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
           });
         }
       }, [
-        el("span", { className: "material-symbols-outlined text-[20px]", text: "rocket_launch" }),
-        el("span", { className: "ml-2", text: "Start Implementation" })
+        el("span", { className: "material-symbols-outlined", style: "font-size: 20px;", text: "rocket_launch" }),
+        el("span", { text: "Start Implementation" })
       ]),
-      el("div", { className: "flex gap-3" }, [
+      el("div", { style: "display: flex; gap: 12px;" }, [
         el("button", {
-          className: "flex-1 border border-outline-variant text-on-surface font-medium text-sm py-2 rounded-xl hover:bg-surface-container transition-all",
+          className: "ee-btn ee-btn--secondary",
+          style: "flex: 1;",
           onclick: () => { step = 2; render(); }
         }, [el("span", { text: "← Back" })]),
         el("button", {
-          className: "flex-1 text-sm text-on-surface-variant hover:underline",
+          style: "flex: 1; font-size: 14px; color: var(--ee-on-surface-variant); background: none; border: none; cursor: pointer; text-decoration: underline;",
           onclick: onSkip
         }, [el("span", { text: "Skip for now" })])
       ])
@@ -305,11 +332,19 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
   }
 
   function infoRow(label, value) {
-    return el("div", { className: "flex items-center justify-between py-1" }, [
-      el("span", { className: "text-xs text-on-surface-variant font-medium", text: label }),
-      el("span", { className: "text-sm font-bold text-on-surface", text: value || "—" })
+    return el("div", { 
+      style: "display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--ee-surface-container);"
+    }, [
+      el("span", { style: "font-size: 12px; color: var(--ee-on-surface-variant); font-weight: 500;", text: label }),
+      el("span", { style: "font-size: 14px; font-weight: 600; color: var(--ee-on-surface);", text: value || "—" })
     ]);
   }
+
+  // Add spin animation
+  const style = el("style", {}, `
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  `);
+  container.append(style);
 
   render();
   return container;

@@ -59,6 +59,7 @@ const sharedRoot = path.resolve(repoRoot, "app", "shared");
 const dataRoot = path.resolve(repoRoot, "app", "backend", "data");
 const projectStorePath = path.resolve(dataRoot, "projects.json");
 const port = Number(process.env.PORT || 4174);
+const host = process.env.HOST || "0.0.0.0";
 
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
@@ -73,8 +74,8 @@ await ensureDataStore();
 
 if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   const server = createAppServer();
-  server.listen(port, () => {
-    console.log(`Implementation Control Platform running at http://127.0.0.1:${port}`);
+  server.listen(port, host, () => {
+    console.log(`Odoo Implementation Platform running at http://${host}:${port}`);
   });
 }
 

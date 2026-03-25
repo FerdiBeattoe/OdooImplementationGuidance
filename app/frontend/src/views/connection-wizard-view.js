@@ -406,7 +406,7 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
         step = 3;
         render();
       }
-    }, [el("span", { text: "Continue →" })]]));
+    }, [el("span", { text: "Continue →" })]));
 
     content.append(buttonsRow);
 

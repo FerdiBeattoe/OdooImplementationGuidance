@@ -101,9 +101,11 @@ export function renderApp(root) {
     if (currentView === "connection-wizard") {
       root.append(
         renderConnectionWizardView({
-          onConnect: (credentials) => {
-            void connectProject(credentials);
-            setCurrentView("dashboard");
+          onConnect: async (credentials) => {
+            await connectProject(credentials);
+            if (getState().activeProject.connectionState?.status === "connected_execute") {
+              setCurrentView("dashboard");
+            }
           },
           onSkip: () => setCurrentView("dashboard")
         })

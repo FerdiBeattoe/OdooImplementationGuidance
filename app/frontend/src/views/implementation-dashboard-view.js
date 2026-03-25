@@ -35,61 +35,60 @@ export function renderImplementationDashboardView({ onNavigate }) {
   const importedRecords = Object.values(implState.importedData || {}).reduce((acc, arr) => acc + arr.length, 0);
   const overallPct = Math.round((completedWizards / totalWizards) * 100);
 
-  return el("div", { className: "max-w-7xl mx-auto", style: "display: flex; flex-direction: column; gap: 32px;" }, [
+  return el("div", { className: "max-w-6xl mx-auto", style: "display: flex; flex-direction: column; gap: 32px; padding: 32px;" }, [
     // ── Page title ─────────────────────────────────────────
     el("div", {}, [
       el("p", {
-        style: "font-size: 11px; font-weight: 700; letter-spacing: var(--ls-widest); text-transform: uppercase; color: var(--color-secondary); margin-bottom: 4px;",
-        text: "Odoo 19 Implementation"
+        style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin-bottom: 4px;",
+        text: "ODOO 19 IMPLEMENTATION"
       }),
       el("h2", {
-        style: "font-family: var(--font-headline); font-size: 24px; font-weight: 700; color: var(--color-on-surface);",
+        style: "font-family: var(--font-headline); font-size: 28px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug); margin-bottom: 32px;",
         text: "Implementation Dashboard"
       })
     ]),
 
     // ── Top metric cards ──────────────────────────────────
-    el("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-4" },
+    el("div", { style: "display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;" },
       [
-        metricCard("Modules Configured", `${completedWizards}/${totalWizards}`, "tune", "secondary"),
-        metricCard("Data Imported", `${importedRecords} records`, "upload_file", "tertiary"),
-        metricCard("Steps Complete", `${completedSteps}/${totalSteps}`, "task_alt", "primary"),
-        metricCard("Est. Time Remaining", estimateTimeRemaining(completedWizards, totalWizards), "schedule", "outline")
+        metricCard("Modules Configured", `${completedWizards}/${totalWizards}`, "tune"),
+        metricCard("Data Imported", `${importedRecords} records`, "upload_file"),
+        metricCard("Steps Complete", `${completedSteps}/${totalSteps}`, "task_alt"),
+        metricCard("Est. Time Remaining", estimateTimeRemaining(completedWizards, totalWizards), "schedule")
       ]
     ),
 
     // ── Middle row ────────────────────────────────────────
-    el("div", { className: "grid grid-cols-1 lg:grid-cols-5 gap-6" }, [
-      // LEFT 60%: Implementation Progress
+    el("div", { style: "display: grid; grid-template-columns: 3fr 2fr; gap: 24px;" }, [
+      // LEFT: Implementation Progress
       el("div", {
-        className: "lg:col-span-3",
-        style: "background: var(--color-surface-container-lowest); box-shadow: var(--shadow-sm); overflow: hidden;"
+        style: "background: var(--color-surface); box-shadow: var(--shadow-sm); overflow: hidden;"
       }, [
-        el("div", { style: "padding: 20px 24px; background: var(--color-surface-container-low);" }, [
+        el("div", { style: "padding: 16px 24px; background: var(--color-surface-container-low);" }, [
           el("div", { style: "display: flex; align-items: center; justify-content: space-between;" }, [
             el("h3", {
-              style: "font-family: var(--font-headline); font-size: 15px; font-weight: 700; color: var(--color-on-surface);",
+              style: "font-family: var(--font-headline); font-size: 14px; font-weight: 600; color: var(--color-on-surface); letter-spacing: var(--ls-snug);",
               text: "Implementation Progress"
             }),
             el("span", {
-              style: "font-family: var(--font-headline); font-size: 24px; font-weight: 800; color: var(--color-primary);",
+              style: "font-family: var(--font-headline); font-size: 24px; font-weight: 700; color: var(--color-primary);",
               text: `${overallPct}%`
             })
           ]),
-          el("div", { style: "margin-top: 12px; height: 6px; background: var(--color-surface-container-high); overflow: hidden;" }, [
+          el("div", { style: "margin-top: 12px; height: 4px; background: var(--color-surface-container-high); overflow: hidden;" }, [
             el("div", {
               style: `width: ${overallPct}%; height: 100%; background: var(--color-primary); transition: width 500ms ease;`
             })
           ])
         ]),
-        el("div", { style: "padding: 16px 24px; display: flex; flex-direction: column; gap: 2px;" },
+        el("div", { style: "padding: 16px 24px; display: flex; flex-direction: column; gap: 0;" },
           MODULES.map(mod => {
             const data = implState.wizardData?.[toCamelKey(mod.id)];
             const status = data ? "complete" : roadmapStatuses[mod.id] === "in-progress" ? "in-progress" : "not-started";
             const pct = status === "complete" ? 100 : status === "in-progress" ? 40 : 0;
             return el("div", {
-              style: "display: flex; align-items: center; gap: 12px; padding: 8px; cursor: pointer; transition: background 150ms ease;",
-              className: "hover:bg-surface-container-low",
+              style: "display: flex; align-items: center; gap: 12px; padding: 8px 0; cursor: pointer; transition: background 150ms ease;",
+              className: "hover-row",
               onclick: () => onNavigate("wizard-" + mod.wizardId)
             }, [
               el("span", {
@@ -98,12 +97,12 @@ export function renderImplementationDashboardView({ onNavigate }) {
                 text: mod.icon
               }),
               el("span", {
-                style: "font-size: 13px; color: var(--color-on-surface); font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;",
+                style: "font-family: var(--font-body); font-size: 13px; color: var(--color-on-surface); font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;",
                 text: mod.label
               }),
-              el("div", { style: "width: 96px; height: 4px; background: var(--color-surface-container-high); overflow: hidden; flex-shrink: 0;" }, [
+              el("div", { style: "width: 80px; height: 4px; background: var(--color-surface-container-high); overflow: hidden; flex-shrink: 0;" }, [
                 el("div", {
-                  style: `width: ${pct}%; height: 100%; background: ${status === "complete" ? "var(--color-secondary)" : status === "in-progress" ? "var(--color-primary)" : "var(--color-surface-container-highest)"};`
+                  style: `width: ${pct}%; height: 100%; background: ${status === "complete" ? "#059669" : status === "in-progress" ? "var(--color-primary)" : "var(--color-surface-container-highest)"};`
                 })
               ]),
               statusBadge(status)
@@ -111,53 +110,55 @@ export function renderImplementationDashboardView({ onNavigate }) {
           })
         )
       ]),
-      // RIGHT 40%: What's Next
-      el("div", { className: "lg:col-span-2", style: "display: flex; flex-direction: column; gap: 16px;" }, [
+      // RIGHT: What's Next
+      el("div", { style: "display: flex; flex-direction: column; gap: 16px;" }, [
+        // CTA Card
         el("div", {
           style: "background: var(--color-primary); color: var(--color-on-primary); padding: 24px; box-shadow: var(--shadow-sm);"
         }, [
           el("p", {
-            style: "font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: var(--ls-widest); margin-bottom: 8px; opacity: 0.8;",
-            text: "Ready to continue?"
+            style: "font-family: var(--font-label); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-widest); margin-bottom: 6px; opacity: 0.7;",
+            text: "READY TO CONTINUE?"
           }),
           el("h3", {
             style: "font-family: var(--font-headline); font-size: 20px; font-weight: 700; margin-bottom: 16px;",
             text: "Jump Back In"
           }),
           el("button", {
-            style: "width: 100%; background: #fff; color: var(--color-primary); font-weight: 700; font-size: 14px; padding: 12px; border: none; cursor: pointer; transition: background 150ms ease;",
+            style: "width: 100%; background: #ffffff; color: var(--color-primary); font-family: var(--font-label); font-weight: 600; font-size: 13px; padding: 10px; border: none; cursor: pointer; transition: background 150ms ease; height: 36px;",
             onclick: () => onNavigate("implementation-roadmap")
           }, [
             el("span", { text: "Open Roadmap" })
           ])
         ]),
+        // Next Steps Card
         el("div", {
-          style: "background: var(--color-surface-container-lowest); box-shadow: var(--shadow-sm); overflow: hidden;"
+          style: "background: var(--color-surface); box-shadow: var(--shadow-sm); overflow: hidden;"
         }, [
           el("div", { style: "padding: 16px 20px; background: var(--color-surface-container-low);" }, [
             el("h4", {
               style: "font-family: var(--font-headline); font-size: 13px; font-weight: 700; color: var(--color-on-surface); text-transform: uppercase; letter-spacing: var(--ls-widest);",
-              text: "Next Steps"
+              text: "NEXT STEPS"
             })
           ]),
           el("div", {},
             NEXT_TASKS.map((task, i) => el("div", {
-              style: `padding: 16px 20px;${i > 0 ? " background: var(--color-surface-container-low);" : ""}`
+              style: `padding: 14px 20px;${i > 0 ? " border-top: 1px solid var(--color-surface-container-low);" : ""}`
             }, [
-              el("div", { style: "display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px;" }, [
-                el("span", {
-                  style: "font-size: 11px; font-weight: 700; color: var(--color-primary); text-transform: uppercase; letter-spacing: var(--ls-wide);",
-                  text: task.module
-                })
-              ]),
-              el("p", { style: "font-size: 13px; color: var(--color-on-surface); font-weight: 500; margin-bottom: 4px;", text: task.desc }),
-              el("div", { style: "display: flex; align-items: center; justify-content: space-between;" }, [
-                el("span", { style: "display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--color-on-surface-variant);" }, [
+              el("span", {
+                style: "font-family: var(--font-label); font-size: 10px; font-weight: 700; color: var(--color-primary); text-transform: uppercase; letter-spacing: var(--ls-wide); display: block; margin-bottom: 4px;",
+                text: task.module
+              }),
+              el("p", { style: "font-family: var(--font-body); font-size: 13px; color: var(--color-on-surface); font-weight: 500; margin-bottom: 4px;", text: task.desc }),
+              el("div", { style: "display: flex; align-items: center; justify-content: space-between; margin-top: 8px;" }, [
+                el("span", { style: "display: flex; align-items: center; gap: 4px; font-family: var(--font-body); font-size: 11px; color: var(--color-on-surface-variant);" }, [
                   el("span", { className: "material-symbols-outlined", style: "font-size: 14px;", text: "schedule" }),
                   el("span", { text: task.time })
                 ]),
                 el("button", {
-                  style: "font-size: 12px; font-weight: 600; color: var(--color-primary); background: none; border: none; cursor: pointer;",
+                  style: "font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--color-primary); background: none; border: none; cursor: pointer; text-decoration: none;",
+                  onmouseenter: (e) => e.target.style.textDecoration = "underline",
+                  onmouseleave: (e) => e.target.style.textDecoration = "none",
                   onclick: () => onNavigate("wizard-" + task.wizardId)
                 }, [el("span", { text: "Start →" })])
               ])
@@ -169,21 +170,21 @@ export function renderImplementationDashboardView({ onNavigate }) {
 
     // ── Recent Activity ───────────────────────────────────
     el("div", {
-      style: "background: var(--color-surface-container-lowest); box-shadow: var(--shadow-sm); overflow: hidden;"
+      style: "background: var(--color-surface); box-shadow: var(--shadow-sm); overflow: hidden;"
     }, [
       el("div", {
         style: "padding: 16px 24px; background: var(--color-surface-container-low); display: flex; align-items: center; justify-content: space-between;"
       }, [
         el("h4", {
           style: "font-family: var(--font-headline); font-size: 13px; font-weight: 700; color: var(--color-on-surface); text-transform: uppercase; letter-spacing: var(--ls-widest);",
-          text: "Recent Activity"
+          text: "RECENT ACTIVITY"
         }),
-        el("span", { style: "font-size: 12px; color: var(--color-on-surface-variant);", text: `${activityLog.length} events` })
+        el("span", { style: "font-family: var(--font-body); font-size: 12px; color: var(--color-on-surface-variant);", text: `${activityLog.length} events` })
       ]),
       activityLog.length === 0
         ? el("div", { style: "padding: 32px 24px; text-align: center; color: var(--color-on-surface-variant); font-size: 13px;" }, [
             el("span", { className: "material-symbols-outlined", style: "font-size: 36px; display: block; margin-bottom: 8px; opacity: 0.3;", text: "history" }),
-            el("p", { text: "No activity yet. Start by completing a wizard step." })
+            el("p", { style: "font-family: var(--font-body);", text: "No activity yet. Start by completing a wizard step." })
           ])
         : el("div", {},
             activityLog.slice(0, 10).map(item => activityItem(item))
@@ -192,26 +193,17 @@ export function renderImplementationDashboardView({ onNavigate }) {
   ]);
 }
 
-function metricCard(label, value, icon, color) {
-  const colorMap = {
-    primary:   { icon: "var(--color-primary)",   text: "var(--color-primary)" },
-    secondary: { icon: "var(--color-secondary)",  text: "var(--color-secondary)" },
-    tertiary:  { icon: "var(--color-tertiary)",   text: "var(--color-tertiary)" },
-    outline:   { icon: "var(--color-on-surface-variant)", text: "var(--color-on-surface)" }
-  };
-  const c = colorMap[color] || colorMap.outline;
+function metricCard(label, value, icon) {
   return el("div", {
-    style: "background: var(--color-surface-container-lowest); box-shadow: var(--shadow-sm); padding: 20px; display: flex; flex-direction: column; gap: 8px;"
+    style: "background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 20px 24px; display: flex; flex-direction: column; gap: 8px;"
   }, [
-    el("div", { style: "display: flex; align-items: center; justify-content: space-between;" }, [
-      el("span", { className: "material-symbols-outlined", style: `font-size: 22px; color: ${c.icon};`, text: icon }),
-    ]),
+    el("span", { className: "material-symbols-outlined", style: "font-size: 20px; color: var(--color-on-surface-variant); margin-bottom: 8px;", text: icon }),
     el("p", {
-      style: `font-family: var(--font-headline); font-size: 22px; font-weight: 800; color: ${c.text};`,
+      style: "font-family: var(--font-headline); font-size: 28px; font-weight: 700; color: var(--color-primary); margin-top: 24px;",
       text: value
     }),
     el("p", {
-      style: "font-size: 11px; text-transform: uppercase; letter-spacing: var(--ls-widest); color: var(--color-on-surface-variant); font-weight: 600;",
+      style: "font-family: var(--font-label); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-on-surface-variant); font-weight: 500;",
       text: label
     })
   ]);
@@ -219,30 +211,30 @@ function metricCard(label, value, icon, color) {
 
 function statusBadge(status) {
   const map = {
-    "complete":    { bg: "var(--color-secondary-container)", color: "var(--color-on-secondary-container)", label: "Complete" },
-    "in-progress": { bg: "var(--color-primary-fixed)",       color: "var(--color-on-primary-fixed)",       label: "In Progress" },
+    "complete":    { bg: "rgba(16, 185, 129, 0.1)", color: "#059669", label: "Complete" },
+    "in-progress": { bg: "var(--color-primary-subtle)",       color: "var(--color-primary)",       label: "In Progress" },
     "not-started": { bg: "var(--color-surface-container-high)", color: "var(--color-on-surface-variant)",  label: "Not Started" }
   };
   const s = map[status] || map["not-started"];
   return el("span", {
-    style: `font-size: 10px; padding: 2px 8px; font-weight: 600; background: ${s.bg}; color: ${s.color};`,
+    style: `font-family: var(--font-label); font-size: 10px; padding: 2px 6px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide); background: ${s.bg}; color: ${s.color};`,
     text: s.label
   });
 }
 
 function activityItem(item) {
   return el("div", {
-    style: "padding: 10px 24px; display: flex; align-items: flex-start; gap: 16px; transition: background 150ms ease;",
-    className: "hover:bg-surface-container-low"
+    style: "padding: 10px 24px; display: flex; align-items: flex-start; gap: 16px; transition: background 150ms ease; border-bottom: 1px solid var(--color-surface-container-low);",
+    className: "activity-row"
   }, [
     el("span", {
-      style: "font-size: 10px; font-family: var(--font-mono, monospace); color: var(--color-on-surface-variant); opacity: 0.6; margin-top: 2px; flex-shrink: 0; width: 80px;",
+      style: "font-size: 10px; font-family: monospace; color: var(--color-on-surface-variant); opacity: 0.6; margin-top: 2px; flex-shrink: 0; width: 80px;",
       text: formatTime(item.timestamp)
     }),
     el("div", { style: "flex: 1; min-width: 0;" }, [
-      el("p", { style: "font-size: 13px; color: var(--color-on-surface); font-weight: 500;", text: item.action || item.message || "Activity" }),
+      el("p", { style: "font-family: var(--font-body); font-size: 13px; color: var(--color-on-surface); font-weight: 500;", text: item.action || item.message || "Activity" }),
       item.module ? el("span", {
-        style: "display: inline-block; font-size: 10px; margin-top: 4px; padding: 2px 8px; background: var(--color-secondary-container); color: var(--color-on-secondary-container); font-weight: 600;",
+        style: "display: inline-block; font-size: 10px; margin-top: 4px; padding: 2px 8px; background: var(--color-primary-subtle); color: var(--color-primary); font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide);",
         text: item.module
       }) : null
     ])

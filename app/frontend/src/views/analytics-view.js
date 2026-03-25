@@ -32,7 +32,7 @@ export function renderAnalyticsView({ project }) {
   const lastSync = syncHistory[0]?.timestamp || null;
   const apiErrors = activityLog.filter(e => e.type === "error").length;
 
-  const container = el("div", { className: "max-w-6xl mx-auto space-y-8" });
+  const container = el("div", { style: "max-width: 1000px; margin: 0 auto; padding: 32px; display: flex; flex-direction: column; gap: 24px;" });
 
   // ── Load Chart.js ─────────────────────────────────────────
   let chartJsLoaded = typeof Chart !== "undefined";
@@ -65,7 +65,7 @@ export function renderAnalyticsView({ project }) {
           },
           options: {
             cutout: "70%",
-            plugins: { legend: { position: "bottom" } }
+            plugins: { legend: { position: "bottom", labels: { usePointStyle: false, boxWidth: 8, padding: 16, font: { size: 11, family: "'Inter', sans-serif" } } } }
           }
         });
       } catch {}
@@ -97,7 +97,7 @@ export function renderAnalyticsView({ project }) {
               label: "Complete",
               data: WIZARD_KEYS.map(w => wizardData[w.key] ? 100 : 0),
               backgroundColor: "#13677b",
-              borderRadius: 4
+              borderRadius: 0
             }]
           },
           options: {
@@ -120,7 +120,7 @@ export function renderAnalyticsView({ project }) {
               label: "Imported",
               data: Object.values(importedCounts),
               backgroundColor: "#57344f",
-              borderRadius: 4
+              borderRadius: 0
             }]
           },
           options: {
@@ -165,47 +165,48 @@ export function renderAnalyticsView({ project }) {
 
   // Build layout
   container.append(
-    el("div", {}, [
-      el("p", { className: "text-xs font-bold uppercase tracking-widest text-secondary mb-1", text: "Tracking" }),
-      el("h2", { className: "font-headline text-2xl font-bold text-on-surface", text: "Analytics & Success Tracking" })
+    // Header
+    el("div", { style: "margin-bottom: 8px;" }, [
+      el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin-bottom: 4px;", text: "TRACKING" }),
+      el("h2", { style: "font-family: var(--font-headline); font-size: 28px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug);", text: "Analytics & Success Tracking" })
     ]),
 
     // Charts row
-    el("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6" }, [
+    el("div", { style: "display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;" }, [
       // Donut
-      el("div", { className: "bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-6" }, [
-        el("h4", { className: "font-headline text-sm font-bold text-on-surface mb-4", text: "Implementation Progress" }),
-        el("div", { className: "relative h-52" }, [
-          el("canvas", { id: "chart-donut" }),
-          el("div", { className: "absolute inset-0 flex items-center justify-center flex-col pointer-events-none" }, [
-            el("span", { className: "text-3xl font-extrabold text-on-surface", text: `${completedSteps}` }),
-            el("span", { className: "text-xs text-on-surface-variant", text: "of 30 steps" })
+      el("div", { style: "background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 24px;" }, [
+        el("h4", { style: "font-family: var(--font-headline); font-size: 14px; font-weight: 600; color: var(--color-on-surface); margin-bottom: 16px; letter-spacing: var(--ls-snug);", text: "Implementation Progress" }),
+        el("div", { style: "position: relative; height: 200px; display: flex; align-items: center; justify-content: center;" }, [
+          el("canvas", { id: "chart-donut", style: "max-height: 180px;" }),
+          el("div", { style: "position: absolute; display: flex; flex-direction: column; align-items: center;" }, [
+            el("span", { style: "font-family: var(--font-headline); font-size: 32px; font-weight: 700; color: var(--color-on-surface);", text: `${completedSteps}` }),
+            el("span", { style: "font-family: var(--font-label); font-size: 11px; color: var(--color-on-surface-variant); text-transform: uppercase; letter-spacing: var(--ls-wide);", text: "of 30 steps" })
           ])
         ])
       ]),
       // Module bar
-      el("div", { className: "bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-6" }, [
-        el("h4", { className: "font-headline text-sm font-bold text-on-surface mb-4", text: "Module Completion" }),
-        el("canvas", { id: "chart-modules", style: "max-height: 200px" })
+      el("div", { style: "background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 24px;" }, [
+        el("h4", { style: "font-family: var(--font-headline); font-size: 14px; font-weight: 600; color: var(--color-on-surface); margin-bottom: 16px; letter-spacing: var(--ls-snug);", text: "Module Completion" }),
+        el("canvas", { id: "chart-modules", style: "max-height: 200px;" })
       ]),
       // Import bar
-      el("div", { className: "bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-6" }, [
-        el("h4", { className: "font-headline text-sm font-bold text-on-surface mb-4", text: "Data Import Status" }),
-        el("canvas", { id: "chart-import", style: "max-height: 200px" })
+      el("div", { style: "background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 24px;" }, [
+        el("h4", { style: "font-family: var(--font-headline); font-size: 14px; font-weight: 600; color: var(--color-on-surface); margin-bottom: 16px; letter-spacing: var(--ls-snug);", text: "Data Import Status" }),
+        el("canvas", { id: "chart-import", style: "max-height: 200px;" })
       ]),
       // Timeline
-      el("div", { className: "bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-6" }, [
-        el("h4", { className: "font-headline text-sm font-bold text-on-surface mb-4", text: "Progress Over Time" }),
-        el("canvas", { id: "chart-timeline", style: "max-height: 200px" })
+      el("div", { style: "background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 24px;" }, [
+        el("h4", { style: "font-family: var(--font-headline); font-size: 14px; font-weight: 600; color: var(--color-on-surface); margin-bottom: 16px; letter-spacing: var(--ls-snug);", text: "Progress Over Time" }),
+        el("canvas", { id: "chart-timeline", style: "max-height: 200px;" })
       ])
     ]),
 
     // System Health Panel
-    el("div", { className: "bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden" }, [
-      el("div", { className: "px-6 py-4 border-b border-outline-variant/10" }, [
-        el("h4", { className: "font-headline text-sm font-bold text-on-surface uppercase tracking-widest", text: "System Health" })
+    el("div", { style: "background: var(--color-surface); box-shadow: var(--shadow-sm); overflow: hidden;" }, [
+      el("div", { style: "padding: 16px 24px; background: var(--color-surface-container-low); border-bottom: 1px solid var(--color-surface-container-high);" }, [
+        el("h4", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 700; color: var(--color-on-surface); text-transform: uppercase; letter-spacing: var(--ls-widest);", text: "SYSTEM HEALTH" })
       ]),
-      el("div", { className: "divide-y divide-outline-variant/10" }, [
+      el("div", {}, [
         healthRow("Odoo Connection",
           isConnected ? "Connected" : "Not connected",
           isConnected ? "success" : "error",
@@ -242,21 +243,21 @@ export function renderAnalyticsView({ project }) {
 
 function healthRow(label, value, status, detail) {
   const statusConfig = {
-    success: { dot: "bg-green-500", text: "text-green-700" },
-    error:   { dot: "bg-error",     text: "text-error" },
-    warning: { dot: "bg-amber-500", text: "text-amber-700" },
-    neutral: { dot: "bg-outline",   text: "text-on-surface-variant" }
+    success: { dot: "#059669", text: "#059669" },
+    error:   { dot: "var(--color-error)", text: "var(--color-error)" },
+    warning: { dot: "#9a6a13", text: "#9a6a13" },
+    neutral: { dot: "var(--color-outline)", text: "var(--color-on-surface-variant)" }
   };
   const cfg = statusConfig[status] || statusConfig.neutral;
 
-  return el("div", { className: "px-6 py-4 flex items-start gap-4" }, [
-    el("span", { className: `w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${cfg.dot}` }),
-    el("div", { className: "flex-1" }, [
-      el("div", { className: "flex items-center justify-between" }, [
-        el("span", { className: "text-sm font-semibold text-on-surface", text: label }),
-        el("span", { className: `text-sm font-bold ${cfg.text}`, text: value })
+  return el("div", { style: "padding: 16px 24px; display: flex; align-items: flex-start; gap: 16px; border-bottom: 1px solid var(--color-surface-container-low);" }, [
+    el("span", { style: `width: 8px; height: 8px; flex-shrink: 0; margin-top: 6px; background: ${cfg.dot};` }),
+    el("div", { style: "flex: 1;" }, [
+      el("div", { style: "display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px;" }, [
+        el("span", { style: "font-family: var(--font-body); font-size: 14px; font-weight: 500; color: var(--color-on-surface);", text: label }),
+        el("span", { style: `font-family: var(--font-label); font-size: 13px; font-weight: 600; color: ${cfg.text};`, text: value })
       ]),
-      detail ? el("p", { className: "text-xs text-on-surface-variant mt-0.5", text: detail }) : null
+      detail ? el("p", { style: "font-family: var(--font-body); font-size: 12px; color: var(--color-on-surface-variant); margin: 0;", text: detail }) : null
     ])
   ]);
 }

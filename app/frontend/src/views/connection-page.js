@@ -16,31 +16,45 @@ export function renderConnectionPage(project, onIdentityChange, onEnvironmentCha
   const combinationError = getCombinationError(project.projectIdentity);
 
   // ── Left panel ────────────────────────────────────────────────────────
-  const leftPanel = el("aside", { className: "conn-left", "aria-label": "About this guide" }, [
-    el("div", { className: "conn-left__inner" }, [
-      el("div", { className: "conn-brand" }, [
-        el("span", { className: "conn-brand__badge", text: "Odoo 19" }),
-        el("h1", { className: "conn-brand__title", text: "Your free Odoo 19 setup guide" }),
-        el("p", { className: "conn-brand__sub", text: "We walk you through every step in plain English — no IT background needed." })
+  const leftPanel = el("aside", { 
+    style: "width: 50%; min-height: 100vh; background: var(--color-inverse-surface); color: var(--color-inverse-on-surface); padding: 48px; display: flex; flex-direction: column;" 
+  }, [
+    el("div", { style: "flex: 1;" }, [
+      // Badge
+      el("span", { 
+        style: "display: inline-block; font-family: var(--font-label); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-widest); padding: 6px 12px; background: rgba(255, 215, 241, 0.15); color: var(--color-primary-fixed-dim); margin-bottom: 24px;",
+        text: "ODOO 19 SETUP GUIDE" 
+      }),
+      
+      // Title
+      el("h1", { style: "font-family: var(--font-headline); font-size: 32px; font-weight: 700; color: #ffffff; line-height: 1.2; margin-bottom: 16px; letter-spacing: var(--ls-snug);", text: "Your free Odoo 19 setup guide" }),
+      
+      // Subtitle
+      el("p", { style: "font-family: var(--font-body); font-size: 16px; color: rgba(255, 255, 255, 0.6); line-height: 1.6; margin-bottom: 32px;", text: "We walk you through every step in plain English — no IT background needed." }),
+      
+      // Features
+      el("ul", { style: "list-style: none; padding: 0; margin: 0 0 32px 0; display: flex; flex-direction: column; gap: 12px;" }, [
+        featureBullet("check", "Built specifically for Odoo 19"),
+        featureBullet("check", "Tells you exactly what to set up and in what order"),
+        featureBullet("check", "Explains why each decision matters for your business"),
+        featureBullet("check", "Save your progress and come back whenever you like"),
+        featureBullet("check", "Live connection is optional and stays bounded when enabled")
       ]),
-      el("ul", { className: "conn-features", "aria-label": "What this guide does" }, [
-        featureBullet("✓", "Built specifically for Odoo 19"),
-        featureBullet("✓", "tells you exactly what to set up and in what order"),
-        featureBullet("✓", "Explains why each decision matters for your business"),
-        featureBullet("✓", "Save your progress and come back whenever you like"),
-        featureBullet("✓", "Live connection is optional and stays bounded when enabled")
-      ]),
-      el("div", { className: "conn-editions", "aria-label": "Supported Odoo editions" }, [
-        el("p", { className: "conn-editions__label", text: "Works with" }),
-        el("div", { className: "conn-editions__chips" }, [
-          el("span", { className: "conn-chip", text: "Community" }),
-          el("span", { className: "conn-chip", text: "Enterprise" })
+      
+      // Editions
+      el("div", { style: "margin-bottom: 32px;" }, [
+        el("p", { style: "font-family: var(--font-label); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide); color: rgba(255, 255, 255, 0.4); margin-bottom: 8px;", text: "Works with" }),
+        el("div", { style: "display: flex; gap: 8px;" }, [
+          el("span", { style: "font-family: var(--font-label); font-size: 12px; font-weight: 600; padding: 4px 10px; background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.8);", text: "Community" }),
+          el("span", { style: "font-family: var(--font-label); font-size: 12px; font-weight: 600; padding: 4px 10px; background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.8);", text: "Enterprise" })
         ])
-      ]),
-      el("blockquote", { className: "conn-testimonial" }, [
-        el("p", { text: "\"I had no idea where to start. This guide felt like having a knowledgeable friend sitting next to me the whole time.\"" }),
-        el("footer", { text: "— Small business owner, implemented Odoo 19 in 6 weeks" })
       ])
+    ]),
+    
+    // Quote
+    el("blockquote", { style: "border-left: 3px solid var(--color-primary); padding-left: 16px; margin: 0;" }, [
+      el("p", { style: "font-family: var(--font-body); font-size: 14px; font-style: italic; color: rgba(255, 255, 255, 0.6); line-height: 1.6; margin: 0 0 8px 0;", text: '"I had no idea where to start. This guide felt like having a knowledgeable friend sitting next to me the whole time."' }),
+      el("footer", { style: "font-family: var(--font-body); font-size: 12px; color: rgba(255, 255, 255, 0.4);", text: "— Small business owner, implemented Odoo 19 in 6 weeks" })
     ])
   ]);
 
@@ -101,54 +115,47 @@ export function renderConnectionPage(project, onIdentityChange, onEnvironmentCha
 
   const beginDisabled = !!combinationError;
   const beginBtn = el("button", {
-    id: "conn-begin-btn",
-    className: "conn-begin-btn" + (beginDisabled ? " conn-begin-btn--disabled" : ""),
+    style: `width: 100%; height: 48px; font-family: var(--font-headline); font-size: 15px; font-weight: 600; background: ${beginDisabled ? "var(--color-outline)" : "var(--color-primary)"}; color: ${beginDisabled ? "var(--color-on-surface-variant)" : "var(--color-on-primary)"}; border: none; cursor: ${beginDisabled ? "not-allowed" : "pointer"}; opacity: ${beginDisabled ? "0.5" : "1"};`,
     disabled: beginDisabled ? "disabled" : undefined,
     onclick: beginDisabled ? null : () => onBegin(),
-    "aria-label": "Begin my Odoo 19 setup",
     title: beginDisabled ? combinationError : "Start your guided Odoo 19 setup"
   }, [
     el("span", { text: "Begin my setup →" })
   ]);
 
-  const versionNote = el("p", { className: "conn-version-note" }, [
-    el("span", { className: "conn-version-dot", "aria-hidden": "true" }),
-    el("span", { text: `This guide covers Odoo ${ODOO_VERSION} only` })
-  ]);
-
   const errorNote = combinationError
-    ? el("p", { className: "conn-error-note", role: "alert", text: `⚠ ${combinationError}` })
+    ? el("div", { style: "display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--color-error-container); margin-bottom: 16px;" }, [
+        el("span", { className: "material-symbols-outlined", style: "font-size: 18px; color: var(--color-error);", text: "warning" }),
+        el("span", { style: "font-family: var(--font-body); font-size: 13px; color: var(--color-on-error-container);", text: combinationError })
+      ])
     : null;
 
-  const helpLink = el("p", { className: "conn-help-link" }, [
+  const helpLink = el("p", { style: "text-align: center; margin-top: 16px;" }, [
     el("a", {
       href: "https://www.odoo.com/pricing",
       target: "_blank",
       rel: "noopener noreferrer",
+      style: "font-family: var(--font-body); font-size: 13px; color: var(--color-secondary); text-decoration: none;",
+      onmouseenter: (e) => e.target.style.textDecoration = "underline",
+      onmouseleave: (e) => e.target.style.textDecoration = "none",
       text: "Don't have Odoo yet? Compare plans on odoo.com →"
     })
   ]);
 
-  const progressBar = el("div", { className: "conn-progress", "aria-label": "Setup progress: step 1 of 2", role: "progressbar", "aria-valuenow": "1", "aria-valuemin": "0", "aria-valuemax": "2" }, [
-    el("div", { className: "conn-progress__fill" })
-  ]);
-
   const rightPanel = el("main", {
-    className: "conn-right",
-    id: "main-content",
-    "aria-label": "Setup form"
+    style: "width: 50%; min-height: 100vh; background: var(--color-surface); padding: 48px; display: flex; flex-direction: column; justify-content: center;"
   }, [
-    el("div", { className: "conn-right__inner" }, [
-      el("p", { className: "conn-step-label", text: "Step 1 of 2 — Tell us about your Odoo" }),
-      el("h2", { className: "conn-heading", text: "Let's get your Odoo 19 guide ready" }),
-      el("p", { className: "conn-subheading", text: "Answer a few quick questions and we'll tailor the guide to your exact setup. It takes about 2 minutes." }),
+    el("div", { style: "max-width: 400px; margin: 0 auto; width: 100%;" }, [
+      el("p", { style: "font-family: var(--font-label); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: var(--ls-wide); color: var(--color-on-surface-variant); margin-bottom: 8px;", text: "Step 1 of 2 — Tell us about your Odoo" }),
+      el("h2", { style: "font-family: var(--font-headline); font-size: 24px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug); margin-bottom: 8px;", text: "Let's get your Odoo 19 guide ready" }),
+      el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface-variant); margin-bottom: 24px;", text: "Answer a few quick questions and we'll tailor the guide to your exact setup. It takes about 2 minutes." }),
 
-      el("div", { className: "conn-form", role: "form", "aria-label": "Odoo setup details" }, [
+      el("div", { style: "display: flex; flex-direction: column; gap: 20px; margin-bottom: 24px;" }, [
         editionSelect,
         deploymentSelect,
         modeSelect,
-        el("hr", { className: "conn-divider", "aria-hidden": "true" }),
-        el("p", { className: "conn-section-label", text: "A little about you (optional but helpful)" }),
+        el("div", { style: "height: 1px; background: var(--color-surface-container-high); margin: 8px 0;" }),
+        el("p", { style: "font-family: var(--font-label); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide); color: var(--color-on-surface-variant); margin: 0;", text: "A little about you (optional but helpful)" }),
         orgInput,
         ownerInput,
         nameInput
@@ -156,50 +163,49 @@ export function renderConnectionPage(project, onIdentityChange, onEnvironmentCha
 
       errorNote,
       beginBtn,
-      helpLink,
-      versionNote,
-      progressBar
+      helpLink
     ])
   ]);
 
   return el("div", {
-    className: "conn-page",
-    role: "region",
-    "aria-label": "Odoo 19 Setup Guide — getting started"
+    style: "display: flex; min-height: 100vh;"
   }, [leftPanel, rightPanel]);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
 function featureBullet(icon, text) {
-  return el("li", { className: "conn-features__item" }, [
-    el("span", { className: "conn-features__icon", "aria-hidden": "true", text: icon }),
+  return el("li", { style: "display: flex; align-items: center; gap: 12px; font-family: var(--font-body); font-size: 14px; color: rgba(255, 255, 255, 0.8);" }, [
+    el("span", { className: "material-symbols-outlined", style: "font-size: 18px; color: var(--color-primary-fixed-dim); flex-shrink: 0;", text: icon }),
     el("span", { text })
   ]);
 }
 
 function connInput(id, label, placeholder, hint, value, onChange) {
   const input = el("input", {
-    id,
     type: "text",
     placeholder,
     value,
     autocomplete: "off",
-    "aria-describedby": `${id}-hint`,
+    style: "width: 100%; height: 44px; padding: 0 12px; font-family: var(--font-body); font-size: 14px; background: var(--color-surface-container-low); border: none; border-left: 2px solid transparent; outline: none;",
+    onfocus: (e) => { e.target.style.borderLeftColor = "var(--color-primary)"; e.target.style.background = "var(--color-surface-container-highest)"; },
+    onblur: (e) => { e.target.style.borderLeftColor = "transparent"; e.target.style.background = "var(--color-surface-container-low)"; },
     oninput: (event) => onChange(event.target.value)
   });
 
-  return el("div", { className: "conn-field" }, [
-    el("label", { htmlFor: id, className: "conn-field__label", text: label }),
+  return el("div", { style: "display: flex; flex-direction: column; gap: 6px;" }, [
+    el("label", { for: id, style: "font-family: var(--font-label); font-size: 13px; font-weight: 600; color: var(--color-on-surface);", text: label }),
     input,
-    el("p", { id: `${id}-hint`, className: "conn-field__hint", text: hint })
+    el("p", { style: "font-family: var(--font-body); font-size: 12px; color: var(--color-on-surface-variant); margin: 0;", text: hint })
   ]);
 }
 
 function connSelect(id, label, hint, options, selectedValue, onChange) {
   const select = el("select", {
     id,
-    "aria-describedby": `${id}-hint`,
+    style: "width: 100%; height: 44px; padding: 0 12px; font-family: var(--font-body); font-size: 14px; background: var(--color-surface-container-low); border: none; border-left: 2px solid transparent; outline: none; cursor: pointer;",
+    onfocus: (e) => { e.target.style.borderLeftColor = "var(--color-primary)"; e.target.style.background = "var(--color-surface-container-highest)"; },
+    onblur: (e) => { e.target.style.borderLeftColor = "transparent"; e.target.style.background = "var(--color-surface-container-low)"; },
     onchange: (event) => onChange(event.target.value)
   }, options.map((opt) => {
     const option = el("option", { value: opt, text: opt });
@@ -207,9 +213,9 @@ function connSelect(id, label, hint, options, selectedValue, onChange) {
     return option;
   }));
 
-  return el("div", { className: "conn-field" }, [
-    el("label", { htmlFor: id, className: "conn-field__label", text: label }),
-    el("div", { className: "conn-select-wrap" }, [select]),
-    el("p", { id: `${id}-hint`, className: "conn-field__hint", text: hint })
+  return el("div", { style: "display: flex; flex-direction: column; gap: 6px;" }, [
+    el("label", { for: id, style: "font-family: var(--font-label); font-size: 13px; font-weight: 600; color: var(--color-on-surface);", text: label }),
+    select,
+    el("p", { style: "font-family: var(--font-body); font-size: 12px; color: var(--color-on-surface-variant); margin: 0;", text: hint })
   ]);
 }

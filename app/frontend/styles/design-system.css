@@ -965,3 +965,214 @@ main [class*="grid-cols-4"] > div [class*="font-extrabold"] {
 [class*="w-24"] [class*="bg-secondary"] {
   background: var(--color-primary) !important;
 }
+
+/* ================================================================
+   EDITORIAL ENGINEER — Additional Utility Styles
+   ================================================================ */
+
+/* ── HOVER ROWS (for dashboard module list) ─────────────────────── */
+.hover-row:hover {
+  background: var(--color-surface-container-low);
+}
+
+/* ── ACTIVITY ROWS ─────────────────────────────────────────────── */
+.activity-row:hover {
+  background: var(--color-surface-container-low);
+}
+.activity-row:last-child {
+  border-bottom: none;
+}
+
+/* ── FONT FAMILY UTILITIES (for inline style fallbacks) ────────── */
+.font-headline {
+  font-family: var(--font-headline);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.font-label {
+  font-family: var(--font-label);
+}
+
+/* ── EDITORIAL TYPOGRAPHY UTILITIES ───────────────────────────── */
+.text-eyebrow {
+  font-family: var(--font-label);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.text-headline-editorial {
+  font-family: var(--font-headline);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: var(--ls-snug);
+  color: var(--color-on-surface);
+}
+
+.text-section-label {
+  font-family: var(--font-label);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: var(--ls-widest);
+  text-transform: uppercase;
+  color: var(--color-on-surface);
+}
+
+/* ── SHADOW UTILITIES ──────────────────────────────────────────── */
+.shadow-editorial-sm {
+  box-shadow: var(--shadow-sm);
+}
+
+.shadow-editorial-md {
+  box-shadow: var(--shadow-md);
+}
+
+/* ── SURFACE UTILITIES ─────────────────────────────────────────── */
+.surface-editorial {
+  background: var(--color-surface);
+}
+
+.surface-editorial-low {
+  background: var(--color-surface-container-low);
+}
+
+.surface-editorial-high {
+  background: var(--color-surface-container-high);
+}
+
+/* ── STATUS BADGE EDITORIAL ───────────────────────────────────── */
+.status-badge-editorial {
+  font-family: var(--font-label);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+  padding: 2px 6px;
+}
+
+.status-badge-editorial--complete {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.status-badge-editorial--in-progress {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.status-badge-editorial--not-started {
+  background: var(--color-surface-container-high);
+  color: var(--color-on-surface-variant);
+}
+
+/* ── CARD EDITORIAL ───────────────────────────────────────────── */
+.card-editorial {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.card-editorial:hover {
+  box-shadow: var(--shadow-md);
+  background: var(--color-surface-container-low);
+}
+
+/* ── PROGRESS BAR EDITORIAL ────────────────────────────────────── */
+.progress-track-editorial {
+  height: 4px;
+  background: var(--color-surface-container-high);
+  overflow: hidden;
+}
+
+.progress-fill-editorial {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width var(--transition-slow);
+}
+
+/* ── FORM INPUT EDITORIAL ─────────────────────────────────────── */
+.input-editorial {
+  height: 44px;
+  padding: 0 12px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  background: var(--color-surface-container-low);
+  border: none;
+  border-left: 2px solid transparent;
+  outline: none;
+  width: 100%;
+}
+
+.input-editorial:focus {
+  border-left-color: var(--color-primary);
+  background: var(--color-surface-container-highest);
+}
+
+/* ── PRIMARY BUTTON EDITORIAL ──────────────────────────────────── */
+.button-primary-editorial {
+  height: 48px;
+  font-family: var(--font-headline);
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+.button-primary-editorial:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.button-primary-editorial:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── NAV ITEM EDITORIAL ──────────────────────────────────────── */
+.nav-item-editorial {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-inverse-on-surface);
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  width: 100%;
+  text-align: left;
+}
+
+.nav-item-editorial:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-item-editorial--active {
+  background: rgba(255, 255, 255, 0.1);
+  border-left-color: var(--color-primary-fixed-dim);
+  color: var(--color-primary-fixed-dim);
+}
+
+.nav-item-editorial--active .nav-item-icon {
+  color: var(--color-primary-fixed-dim);
+}
+
+.nav-item-icon {
+  font-size: 20px;
+  color: var(--text-sidebar-muted);
+}
+
+.nav-item-editorial--active .nav-item-icon {
+  color: var(--color-primary-fixed-dim);
+}

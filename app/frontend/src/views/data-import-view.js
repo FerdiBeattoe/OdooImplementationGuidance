@@ -76,7 +76,7 @@ const GRIDS = [
       { key: "city",        label: "City",           type: "text",   required: false },
       { key: "country",     label: "Country",        type: "text",   required: false },
       { key: "currency",    label: "Currency",       type: "select", options: ["USD","EUR","GBP","AUD","CAD"], required: false },
-      { key: "paymentTerms",label: "Payment Terms",  type: "dropdown",optionsFn: () => getPaymentTermOptions().map(o => o.label), required: false },
+      { key: "paymentTerms",label: "Payment Terms",  type: "dropdown", optionsFn: () => getPaymentTermOptions().map(o => o.label), required: false },
       { key: "leadTime",    label: "Lead Time (days)",type: "number", required: false }
     ]
   },
@@ -174,7 +174,7 @@ const GRIDS = [
 
 export function renderDataImportView({ onNavigate }) {
   let activeGridId = null;
-  const container = el("div", { className: "max-w-7xl mx-auto space-y-6" });
+  const container = el("div", { style: "max-width: 1100px; margin: 0 auto; padding: 32px;" });
 
   function showGrid(gridId) {
     activeGridId = gridId;
@@ -185,31 +185,33 @@ export function renderDataImportView({ onNavigate }) {
     while (container.firstChild) container.removeChild(container.firstChild);
 
     container.append(
-      el("div", {}, [
-        el("p", { className: "text-xs font-bold uppercase tracking-widest text-secondary mb-1", text: "Bulk Data Entry" }),
-        el("h2", { className: "font-headline text-2xl font-bold text-on-surface", text: "Data Import" }),
-        el("p", { className: "text-sm text-on-surface-variant mt-1", text: "Import records in bulk. Paste from Excel or upload a CSV. All grids validate data before pushing to Odoo." })
+      el("div", { style: "margin-bottom: 32px;" }, [
+        el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin-bottom: 4px;", text: "BULK DATA ENTRY" }),
+        el("h2", { style: "font-family: var(--font-headline); font-size: 28px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug); margin-bottom: 8px;", text: "Data Import" }),
+        el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface-variant);", text: "Import records in bulk. Paste from Excel or upload a CSV. All grids validate data before pushing to Odoo." })
       ])
     );
 
     if (!activeGridId) {
       // Grid selector
       container.append(
-        el("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" },
+        el("div", { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;" },
           GRIDS.map(g => {
             const rows = getImportedData(g.id);
-            return el("button", {
-              className: "text-left bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-5 hover:shadow-md hover:border-primary/20 transition-all active:scale-[0.98]",
+            return el("div", {
+              style: "background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 20px; cursor: pointer; transition: all 150ms ease;",
+              onmouseenter: (e) => { e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.background = "var(--color-surface-container-low)"; },
+              onmouseleave: (e) => { e.currentTarget.style.boxShadow = "var(--shadow-sm)"; e.currentTarget.style.background = "var(--color-surface)"; },
               onclick: () => showGrid(g.id)
             }, [
-              el("div", { className: "flex items-start justify-between mb-3" }, [
-                el("div", { className: "w-10 h-10 rounded-xl primary-gradient flex items-center justify-center" }, [
-                  el("span", { className: "material-symbols-outlined text-[20px] text-on-primary", text: g.icon })
+              el("div", { style: "display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px;" }, [
+                el("div", { style: "width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: var(--color-primary-subtle);" }, [
+                  el("span", { className: "material-symbols-outlined", style: "font-size: 20px; color: var(--color-primary);", text: g.icon })
                 ]),
-                rows.length > 0 ? el("span", { className: "badge badge--secondary text-[10px]", text: `${rows.length} rows` }) : null
+                rows.length > 0 ? el("span", { style: "font-family: var(--font-label); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide); padding: 2px 6px; background: var(--color-secondary-container); color: var(--color-on-secondary-container);", text: `${rows.length} rows` }) : null
               ]),
-              el("h4", { className: "font-headline text-sm font-bold text-on-surface mb-1", text: g.label }),
-              el("p", { className: "text-xs text-on-surface-variant", text: g.desc })
+              el("h4", { style: "font-family: var(--font-headline); font-size: 14px; font-weight: 600; color: var(--color-on-surface); margin-bottom: 4px;", text: g.label }),
+              el("p", { style: "font-family: var(--font-body); font-size: 12px; color: var(--color-on-surface-variant);", text: g.desc })
             ]);
           })
         )
@@ -229,7 +231,7 @@ function buildGrid(gridDef, onBack) {
   if (rows.length === 0) rows = [emptyRow()];
 
   const tableBody = el("tbody");
-  const countBadge = el("span", { className: "badge badge--secondary text-xs" });
+  const countBadge = el("span", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide); padding: 2px 8px; background: var(--color-secondary-container); color: var(--color-on-secondary-container);" });
   let selectedRows = new Set();
 
   function emptyRow() {
@@ -245,36 +247,42 @@ function buildGrid(gridDef, onBack) {
   function renderRows() {
     while (tableBody.firstChild) tableBody.removeChild(tableBody.firstChild);
     rows.forEach((row, ri) => {
-      const checkCell = el("td", { className: "px-2 py-1 w-8" });
-      const cb = el("input", { type: "checkbox", className: "w-3.5 h-3.5 rounded border-outline text-primary focus:ring-primary/20 cursor-pointer" });
+      const checkCell = el("td", { style: "padding: 8px; width: 32px; border-bottom: 1px solid var(--color-surface-container-low);" });
+      const cb = el("input", { type: "checkbox", style: "width: 16px; height: 16px; cursor: pointer;" });
       cb.checked = selectedRows.has(ri);
       cb.addEventListener("change", () => { if (cb.checked) selectedRows.add(ri); else selectedRows.delete(ri); updateDeleteSelected(); });
       checkCell.append(cb);
-      const statusCell = el("td", { className: "px-3 py-2 w-8" }, [
-        el("div", { className: `w-2 h-2 rounded-full ${
-          row._status === "success" ? "bg-green-500" :
-          row._status === "error"   ? "bg-error" :
-          row._status === "importing" ? "bg-secondary animate-pulse" : "bg-outline-variant"
+      
+      const statusCell = el("td", { style: "padding: 8px; width: 24px; border-bottom: 1px solid var(--color-surface-container-low);" }, [
+        el("div", { style: `width: 8px; height: 8px; ${
+          row._status === "success" ? "background: #059669;" :
+          row._status === "error"   ? "background: var(--color-error);" :
+          row._status === "importing" ? "background: var(--color-secondary); animation: pulse 1s infinite;" : "background: var(--color-outline-variant);"
         }`, title: row._statusMessage || row._status })
       ]);
+      
       const cells = gridDef.columns.map(col => {
         const isInvalid = row._invalidCols?.has(col.key);
-        const cellEl = el("td", { className: `px-1 py-1 ${isInvalid ? "bg-error-container/30" : ""}` });
+        const cellEl = el("td", { style: `padding: 4px 8px; border-bottom: 1px solid var(--color-surface-container-low); ${isInvalid ? "background: var(--color-error-container);" : ""}` });
         const inputEl = buildCellInput(col, row[col.key], (val) => {
           rows[ri][col.key] = val;
-          if (val && row._invalidCols) { row._invalidCols.delete(col.key); cellEl.classList.remove("bg-error-container/30"); }
+          if (val && row._invalidCols) { row._invalidCols.delete(col.key); cellEl.style.background = ""; }
         });
-        if (isInvalid) inputEl.classList?.add("border-error");
+        if (isInvalid) inputEl.style.border = "1px solid var(--color-error)";
         cellEl.append(inputEl);
         return cellEl;
       });
-      const deleteCell = el("td", { className: "px-2 py-1 w-8" }, [
+      
+      const deleteCell = el("td", { style: "padding: 8px; width: 32px; border-bottom: 1px solid var(--color-surface-container-low);" }, [
         el("button", {
-          className: "p-1 text-on-surface-variant hover:text-error transition-colors",
+          style: "padding: 4px; color: var(--color-on-surface-variant); background: none; border: none; cursor: pointer;",
+          onmouseenter: (e) => e.target.style.color = "var(--color-error)",
+          onmouseleave: (e) => e.target.style.color = "var(--color-on-surface-variant)",
           onclick: () => { rows.splice(ri, 1); selectedRows.delete(ri); if (rows.length === 0) rows.push(emptyRow()); renderRows(); updateCount(); }
-        }, [el("span", { className: "material-symbols-outlined text-[14px]", text: "delete" })])
+        }, [el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "delete" })])
       ]);
-      tableBody.append(el("tr", { className: "hover:bg-surface-container-low border-b border-outline-variant/10" }, [checkCell, statusCell, ...cells, deleteCell]));
+      
+      tableBody.append(el("tr", { style: "height: 40px;" }, [checkCell, statusCell, ...cells, deleteCell]));
     });
     updateCount();
   }
@@ -282,7 +290,7 @@ function buildGrid(gridDef, onBack) {
   renderRows();
 
   const deleteSelectedBtn = el("button", {
-    className: "flex items-center gap-1.5 text-xs font-semibold text-error hover:underline px-2 py-1 hidden",
+    style: "display: flex; align-items: center; gap: 4px; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--color-error); background: none; border: none; cursor: pointer; padding: 8px; display: none;",
     onclick: () => {
       const indices = [...selectedRows].sort((a, b) => b - a);
       indices.forEach(i => rows.splice(i, 1));
@@ -293,30 +301,30 @@ function buildGrid(gridDef, onBack) {
       updateDeleteSelected();
     }
   }, [
-    el("span", { className: "material-symbols-outlined text-[14px]", text: "delete_sweep" }),
+    el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "delete_sweep" }),
     el("span", { text: "Delete Selected" })
   ]);
 
   function updateDeleteSelected() {
     if (selectedRows.size > 0) {
-      deleteSelectedBtn.classList.remove("hidden");
+      deleteSelectedBtn.style.display = "flex";
       deleteSelectedBtn.querySelector("span:last-child").textContent = `Delete Selected (${selectedRows.size})`;
     } else {
-      deleteSelectedBtn.classList.add("hidden");
+      deleteSelectedBtn.style.display = "none";
     }
   }
 
   const addRowBtn = el("button", {
-    className: "flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline px-2 py-1",
-    onclick: () => { rows.push(emptyRow()); renderRows(); }
+    style: "display: flex; align-items: center; gap: 4px; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--color-primary); background: none; border: none; cursor: pointer; padding: 8px;",
+    onclick: () => { rows.push(emptyRow()); renderRows(); updateCount(); }
   }, [
-    el("span", { className: "material-symbols-outlined text-[16px]", text: "add" }),
+    el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "add" }),
     el("span", { text: "Add Row" })
   ]);
 
   // CSV template download
   const downloadTemplateBtn = el("button", {
-    className: "flex items-center gap-2 text-xs font-semibold text-primary hover:underline px-2 py-1",
+    style: "display: flex; align-items: center; gap: 4px; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--color-on-surface-variant); background: none; border: none; cursor: pointer; padding: 8px;",
     onclick: () => {
       const headers = gridDef.columns.map(c => c.label).join(",");
       const blob = new Blob([headers + "\n"], { type: "text/csv" });
@@ -328,12 +336,12 @@ function buildGrid(gridDef, onBack) {
       URL.revokeObjectURL(url);
     }
   }, [
-    el("span", { className: "material-symbols-outlined text-[16px]", text: "download" }),
+    el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "download" }),
     el("span", { text: "Download CSV Template" })
   ]);
 
   // CSV file upload
-  const fileInput = el("input", { type: "file", accept: ".csv,.txt", className: "hidden" });
+  const fileInput = el("input", { type: "file", accept: ".csv,.txt", style: "display: none;" });
   fileInput.addEventListener("change", () => {
     const file = fileInput.files?.[0];
     if (!file) return;
@@ -351,21 +359,21 @@ function buildGrid(gridDef, onBack) {
   });
 
   const uploadBtn = el("button", {
-    className: "flex items-center gap-2 text-xs font-semibold text-secondary border border-secondary/30 px-4 py-2 rounded-xl hover:bg-secondary-container/20 transition-all",
+    style: "display: flex; align-items: center; gap: 8px; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--color-secondary); border: 1px solid var(--color-secondary); padding: 8px 16px; background: none; cursor: pointer;",
     onclick: () => fileInput.click()
   }, [
-    el("span", { className: "material-symbols-outlined text-[16px]", text: "upload_file" }),
+    el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "upload_file" }),
     el("span", { text: "Upload CSV File" })
   ]);
 
   // CSV paste area
   const csvTextarea = el("textarea", {
-    className: "w-full h-24 px-4 py-3 text-xs font-mono bg-surface-container-high border border-outline-variant/30 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none",
+    style: "width: 100%; height: 100px; padding: 12px; font-family: monospace; font-size: 12px; background: var(--color-surface-container-high); border: 1px solid var(--color-outline-variant); resize: none;",
     placeholder: "Paste CSV data here (first row = headers matching column names)..."
   });
 
   const parseCSVBtn = el("button", {
-    className: "flex items-center gap-2 bg-secondary text-on-secondary text-xs font-semibold px-4 py-2 rounded-xl hover:opacity-90 transition-all",
+    style: "display: flex; align-items: center; gap: 8px; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--color-on-secondary); background: var(--color-secondary); border: none; padding: 8px 16px; cursor: pointer;",
     onclick: () => {
       const text = csvTextarea.value.trim();
       if (!text) return;
@@ -378,12 +386,12 @@ function buildGrid(gridDef, onBack) {
       }
     }
   }, [
-    el("span", { className: "material-symbols-outlined text-[16px]", text: "table_view" }),
+    el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "table_view" }),
     el("span", { text: "Parse & Add Rows" })
   ]);
 
   const importBtn = el("button", {
-    className: "flex items-center gap-2 bg-primary text-on-primary text-sm font-bold px-5 py-2.5 rounded-xl hover:opacity-90 active:scale-95 transition-all shadow-sm",
+    style: "display: flex; align-items: center; gap: 8px; font-family: var(--font-label); font-size: 14px; font-weight: 600; color: var(--color-on-primary); background: var(--color-primary); border: none; padding: 10px 20px; cursor: pointer;",
     onclick: async () => {
       // Validate with per-cell highlighting
       let hasInvalid = false;
@@ -395,8 +403,9 @@ function buildGrid(gridDef, onBack) {
         if (r._invalidCols.size > 0) { r._status = "error"; r._statusMessage = "Missing required fields"; }
       });
       if (hasInvalid) { renderRows(); return; }
-      // Push rows via API (falls back to local save if no connection)
+      // Push rows via API
       importBtn.disabled = true;
+      importBtn.style.opacity = "0.6";
       const pushFn = GRID_PUSH_MAP[gridDef.id];
       for (let i = 0; i < rows.length; i++) {
         rows[i]._status = "importing";
@@ -420,48 +429,53 @@ function buildGrid(gridDef, onBack) {
       setImportedData(gridDef.id, cleanRows);
       addActivityLog({ action: `Imported ${cleanRows.length} ${gridDef.label}`, module: "Data Import" });
       importBtn.disabled = false;
-      importBtn.textContent = `✓ ${cleanRows.length} Records Imported`;
+      importBtn.style.opacity = "1";
+      importBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px;">check</span><span>✓ ${cleanRows.length} Records Imported</span>`;
     }
   }, [
-    el("span", { className: "material-symbols-outlined text-[18px]", text: "cloud_upload" }),
+    el("span", { className: "material-symbols-outlined", style: "font-size: 18px;", text: "cloud_upload" }),
     el("span", { text: `Import ${gridDef.label} to Odoo` })
   ]);
 
-  return el("div", { className: "space-y-5" }, [
+  return el("div", { style: "display: flex; flex-direction: column; gap: 24px;" }, [
     // Header
-    el("div", { className: "flex items-center gap-4" }, [
+    el("div", { style: "display: flex; align-items: center; gap: 16px;" }, [
       el("button", {
-        className: "p-2 rounded-lg hover:bg-surface-container transition-colors",
+        style: "padding: 8px; color: var(--color-on-surface-variant); background: none; border: none; cursor: pointer;",
         onclick: onBack
-      }, [el("span", { className: "material-symbols-outlined", text: "arrow_back" })]),
-      el("div", { className: "flex items-center gap-3 flex-1" }, [
-        el("span", { className: "material-symbols-outlined text-secondary text-[22px]", text: gridDef.icon }),
+      }, [el("span", { className: "material-symbols-outlined", style: "font-size: 24px;", text: "arrow_back" })]),
+      el("div", { style: "display: flex; align-items: center; gap: 12px; flex: 1;" }, [
+        el("div", { style: "width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: var(--color-primary-subtle);" }, [
+          el("span", { className: "material-symbols-outlined", style: "font-size: 20px; color: var(--color-primary);", text: gridDef.icon })
+        ]),
         el("div", {}, [
-          el("h3", { className: "font-headline text-lg font-bold text-on-surface", text: gridDef.label }),
-          el("p", { className: "text-xs text-on-surface-variant", text: gridDef.desc })
+          el("h3", { style: "font-family: var(--font-headline); font-size: 18px; font-weight: 700; color: var(--color-on-surface);", text: gridDef.label }),
+          el("p", { style: "font-family: var(--font-body); font-size: 12px; color: var(--color-on-surface-variant);", text: gridDef.desc })
         ])
       ]),
       countBadge
     ]),
-    // CSV import
-    el("div", { className: "bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-4 space-y-3" }, [
-      el("div", { className: "flex items-center justify-between" }, [
-        el("p", { className: "text-xs font-semibold text-on-surface-variant uppercase tracking-wide", text: "CSV Import" }),
-        el("div", { className: "flex items-center gap-3" }, [downloadTemplateBtn, uploadBtn])
+    
+    // CSV import panel
+    el("div", { style: "background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 20px; display: flex; flex-direction: column; gap: 12px;" }, [
+      el("div", { style: "display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;" }, [
+        el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-on-surface-variant);", text: "CSV Import" }),
+        el("div", { style: "display: flex; align-items: center; gap: 12px;" }, [downloadTemplateBtn, uploadBtn])
       ]),
       fileInput,
       csvTextarea,
       parseCSVBtn
     ]),
+    
     // Grid table
-    el("div", { className: "bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden" }, [
-      el("div", { className: "overflow-x-auto" }, [
-        el("table", { className: "w-full text-xs" }, [
-          el("thead", { className: "bg-surface-container-high" }, [
+    el("div", { style: "background: var(--color-surface); box-shadow: var(--shadow-sm); overflow: hidden;" }, [
+      el("div", { style: "overflow-x: auto;" }, [
+        el("table", { style: "width: 100%; font-size: 12px; border-collapse: collapse;" }, [
+          el("thead", {}, [
             el("tr", {}, [
-              el("th", { className: "px-2 py-2.5 w-8" }, [
+              el("th", { style: "padding: 8px; font-family: var(--font-label); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-on-surface-variant); text-align: left;" }, [
                 (() => {
-                  const selectAll = el("input", { type: "checkbox", className: "w-3.5 h-3.5 rounded border-outline text-primary focus:ring-primary/20 cursor-pointer" });
+                  const selectAll = el("input", { type: "checkbox", style: "width: 16px; height: 16px; cursor: pointer;" });
                   selectAll.addEventListener("change", () => {
                     if (selectAll.checked) rows.forEach((_, i) => selectedRows.add(i));
                     else selectedRows.clear();
@@ -471,21 +485,21 @@ function buildGrid(gridDef, onBack) {
                   return selectAll;
                 })()
               ]),
-              el("th", { className: "px-3 py-2.5 w-8", text: "" }),
+              el("th", { style: "padding: 8px; width: 24px;" }),
               ...gridDef.columns.map(col =>
-                el("th", { className: "px-3 py-2.5 text-left font-bold text-on-surface-variant uppercase tracking-wide whitespace-nowrap" }, [
+                el("th", { style: "padding: 8px; font-family: var(--font-label); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-on-surface-variant); text-align: left; white-space: nowrap;" }, [
                   el("span", { text: col.label }),
-                  col.required ? el("span", { className: "text-error ml-0.5", text: "*" }) : null
+                  col.required ? el("span", { style: "color: var(--color-error); margin-left: 2px;", text: "*" }) : null
                 ])
               ),
-              el("th", { className: "px-2 py-2.5 w-8", text: "" })
+              el("th", { style: "padding: 8px; width: 32px;" })
             ])
           ]),
           tableBody
         ])
       ]),
-      el("div", { className: "px-4 py-3 border-t border-outline-variant/10 flex items-center justify-between" }, [
-        el("div", { className: "flex items-center gap-3" }, [addRowBtn, deleteSelectedBtn]),
+      el("div", { style: "padding: 12px 16px; border-top: 1px solid var(--color-surface-container-low); display: flex; align-items: center; justify-content: space-between;" }, [
+        el("div", { style: "display: flex; align-items: center; gap: 12px;" }, [addRowBtn, deleteSelectedBtn]),
         importBtn
       ])
     ])

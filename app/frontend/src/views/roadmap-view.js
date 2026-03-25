@@ -82,17 +82,17 @@ export function renderRoadmapView({ onNavigate }) {
   const stepStatusMap = {};
   allSteps.forEach(s => { stepStatusMap[s.id] = getRoadmapStepStatus(`step-${s.id}`); });
 
-  const container = el("div", { className: "max-w-3xl mx-auto space-y-8" });
+  const container = el("div", { style: "max-width: 800px; margin: 0 auto; padding: 32px;" });
 
   function rerender() {
     // Clear and rebuild
     while (container.firstChild) container.removeChild(container.firstChild);
 
     container.append(
-      el("div", { className: "mb-6" }, [
-        el("p", { className: "text-xs font-bold uppercase tracking-widest text-secondary mb-1", text: "Odoo 19 Setup" }),
-        el("h2", { className: "font-headline text-2xl font-bold text-on-surface", text: "Implementation Roadmap" }),
-        el("p", { className: "text-sm text-on-surface-variant mt-1", text: "Follow these phases in order for the best results. Steps with unmet dependencies are locked." })
+      el("div", { style: "margin-bottom: 32px;" }, [
+        el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin-bottom: 4px;", text: "ODOO 19 SETUP" }),
+        el("h2", { style: "font-family: var(--font-headline); font-size: 28px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug); margin-bottom: 8px;", text: "Implementation Roadmap" }),
+        el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface-variant); margin-top: 4px;", text: "Follow these phases in order for the best results. Steps with unmet dependencies are locked." })
       ])
     );
 
@@ -111,83 +111,75 @@ export function renderRoadmapView({ onNavigate }) {
 }
 
 function buildPhase(phase, stepStatusMap, onNavigate, onStatusChange) {
-  const colorMap = {
-    primary:   { accent: "bg-primary text-on-primary",     connector: "bg-primary",   label: "text-primary" },
-    secondary: { accent: "bg-secondary text-on-secondary", connector: "bg-secondary", label: "text-secondary" },
-    tertiary:  { accent: "bg-tertiary text-on-tertiary",   connector: "bg-tertiary",  label: "text-tertiary" }
-  };
-  const c = colorMap[phase.color] || colorMap.primary;
-
   const completedCount = phase.steps.filter(s => stepStatusMap[s.id] === "complete").length;
 
-  return el("div", { className: "space-y-1" }, [
+  return el("div", { style: "margin-bottom: 32px;" }, [
     // Phase header
-    el("div", { className: "flex items-center gap-4 mb-4" }, [
-      el("div", { className: `w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${c.accent}` }, [
+    el("div", { style: "display: flex; align-items: center; gap: 16px; margin-bottom: 16px;" }, [
+      el("div", { 
+        style: "width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: var(--color-primary); color: var(--color-on-primary); font-family: var(--font-label); font-size: 12px; font-weight: 700; flex-shrink: 0;" 
+      }, [
         el("span", { text: String(PHASES.findIndex(p => p.id === phase.id) + 1) })
       ]),
-      el("div", { className: "flex-1" }, [
-        el("h3", { className: `font-headline text-base font-bold ${c.label}`, text: phase.label }),
-        el("p", { className: "text-xs text-on-surface-variant", text: `${completedCount}/${phase.steps.length} steps complete` })
+      el("div", { style: "flex: 1;" }, [
+        el("h3", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-primary); margin-bottom: 2px;", text: phase.label }),
+        el("p", { style: "font-family: var(--font-body); font-size: 12px; color: var(--color-on-surface-variant);", text: `${completedCount}/${phase.steps.length} steps complete` })
       ])
     ]),
     // Steps
-    el("div", { className: "relative ml-4 pl-8 border-l-2 border-surface-container-high space-y-3" },
+    el("div", { style: "position: relative; margin-left: 16px; padding-left: 32px; border-left: 2px solid var(--color-surface-container-high); display: flex; flex-direction: column; gap: 12px;" },
       phase.steps.map(step => {
         const status = stepStatusMap[step.id] || "todo";
         const depsOk = step.deps.every(d => stepStatusMap[d] === "complete");
         const locked = !depsOk;
 
-        return buildStep(step, status, locked, c, onNavigate, onStatusChange);
+        return buildStep(step, status, locked, onNavigate, onStatusChange);
       })
     )
   ]);
 }
 
-function buildStep(step, status, locked, colorScheme, onNavigate, onStatusChange) {
+function buildStep(step, status, locked, onNavigate, onStatusChange) {
   const statusConfig = {
-    complete:    { icon: "check_circle", dotClass: "bg-secondary text-on-secondary",        rowClass: "opacity-100" },
-    "in-progress":{ icon: "pending",    dotClass: "bg-primary text-on-primary",             rowClass: "opacity-100" },
-    todo:        { icon: "radio_button_unchecked", dotClass: "bg-surface-container-highest text-outline", rowClass: locked ? "opacity-40" : "opacity-100" }
+    complete:    { icon: "check", bg: "#059669", color: "#ffffff" },
+    "in-progress":{ icon: String(step.id), bg: "var(--color-primary)", color: "#ffffff" },
+    todo:        { icon: String(step.id), bg: "transparent", color: "var(--color-on-surface-variant)", border: "1.5px solid var(--color-outline-variant)" }
   };
   const cfg = statusConfig[status] || statusConfig.todo;
 
   const card = el("div", {
-    className: `relative bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-4 transition-all ${cfg.rowClass} ${locked ? "cursor-not-allowed" : "cursor-pointer hover:shadow-md hover:border-outline-variant/30"}`
+    style: `position: relative; background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 16px 20px; display: flex; align-items: center; gap: 16px; transition: all 150ms ease; ${locked ? "opacity: 0.4; cursor: not-allowed;" : "cursor: pointer;"} ${!locked ? "&:hover { box-shadow: var(--shadow-md); background: var(--color-surface-container-low); }" : ""}`,
+    onclick: () => { if (!locked) onNavigate("wizard-" + step.wizardId); }
   }, [
     // Dot on timeline
     el("div", {
-      className: `absolute -left-[2.6rem] top-4 w-5 h-5 rounded-full flex items-center justify-center ${cfg.dotClass} shadow-sm`,
-      style: "transform: translateX(-50%)"
+      style: `position: absolute; left: -41px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: ${cfg.bg}; color: ${cfg.color}; border: ${cfg.border || "none"}; font-family: var(--font-label); font-size: ${status === "complete" ? "16px" : "12px"}; font-weight: 700;`
     }, [
-      el("span", { className: "material-symbols-outlined text-[14px]", text: cfg.icon })
+      el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: cfg.icon })
     ]),
-    el("div", { className: "flex items-start justify-between gap-3" }, [
-      el("div", { className: "flex-1 min-w-0" }, [
-        el("div", { className: "flex items-center gap-2 mb-1" }, [
-          el("span", { className: "text-[11px] font-bold text-on-surface-variant uppercase tracking-wide", text: `Step ${step.id}` }),
-          locked ? el("span", {
-            className: "badge badge--neutral text-[10px]",
-            text: "Locked"
-          }) : null
-        ]),
-        el("p", { className: "text-sm font-semibold text-on-surface", text: step.title }),
-        el("div", { className: "flex items-center gap-3 mt-2" }, [
-          el("span", { className: "text-xs text-on-surface-variant flex items-center gap-1" }, [
-            el("span", { className: "material-symbols-outlined text-[13px]", text: "schedule" }),
-            el("span", { text: step.est })
-          ])
-        ])
+    el("div", { style: "flex: 1; min-width: 0;" }, [
+      el("div", { style: "display: flex; align-items: center; gap: 8px; margin-bottom: 4px;" }, [
+        el("span", { style: "font-family: var(--font-label); font-size: 10px; font-weight: 700; color: var(--color-on-surface-variant); text-transform: uppercase; letter-spacing: var(--ls-wide);", text: `Step ${step.id}` }),
+        locked ? el("span", { style: "font-size: 10px; padding: 2px 6px; background: var(--color-surface-container-high); color: var(--color-on-surface-variant); font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide);", text: "Locked" }) : null
       ]),
-      el("div", { className: "flex items-center gap-2 flex-shrink-0" }, [
-        statusDropdown(step.id, status, locked, onStatusChange),
-        !locked
-          ? el("button", {
-              className: "text-xs font-semibold text-primary hover:underline px-3 py-1.5 rounded-lg hover:bg-primary-fixed/20 transition-colors",
-              onclick: (e) => { e.stopPropagation(); onNavigate("wizard-" + step.wizardId); }
-            }, [el("span", { text: "Open →" })])
-          : null
+      el("p", { style: "font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--color-on-surface); margin-bottom: 2px;", text: step.title }),
+      el("div", { style: "display: flex; align-items: center; gap: 12px; margin-top: 4px;" }, [
+        el("span", { style: "font-family: var(--font-body); font-size: 11px; color: var(--color-on-surface-variant); display: flex; align-items: center; gap: 4px;" }, [
+          el("span", { className: "material-symbols-outlined", style: "font-size: 13px;", text: "schedule" }),
+          el("span", { text: step.est })
+        ])
       ])
+    ]),
+    el("div", { style: "display: flex; align-items: center; gap: 12px; flex-shrink: 0;" }, [
+      statusDropdown(step.id, status, locked, onStatusChange),
+      !locked
+        ? el("button", {
+            style: "font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--color-primary); background: none; border: none; cursor: pointer; text-decoration: none; padding: 4px 8px;",
+            onmouseenter: (e) => e.target.style.textDecoration = "underline",
+            onmouseleave: (e) => e.target.style.textDecoration = "none",
+            onclick: (e) => { e.stopPropagation(); onNavigate("wizard-" + step.wizardId); }
+          }, [el("span", { text: "Open →" })])
+        : el("span", { className: "material-symbols-outlined", style: "font-size: 18px; color: var(--color-on-surface-variant);", text: "lock" })
     ])
   ]);
 
@@ -196,7 +188,7 @@ function buildStep(step, status, locked, colorScheme, onNavigate, onStatusChange
 
 function statusDropdown(stepId, currentStatus, locked, onStatusChange) {
   const sel = el("select", {
-    className: "text-xs font-semibold border border-outline-variant/30 rounded-lg px-2 py-1 bg-surface-container-low text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary",
+    style: "font-family: var(--font-label); font-size: 11px; font-weight: 600; border: 1px solid var(--color-outline-variant); padding: 4px 8px; background: var(--color-surface-container-low); color: var(--color-on-surface); cursor: pointer;",
     disabled: locked ? "disabled" : null,
     onchange: (e) => onStatusChange(stepId, e.target.value)
   }, [

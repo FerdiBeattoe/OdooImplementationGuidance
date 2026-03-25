@@ -33,12 +33,22 @@ const ARTICLES = [
 
 const CATEGORIES = ["All", "Sales", "CRM", "Inventory", "Accounting", "HR", "Manufacturing", "Technical"];
 
+const CATEGORY_COLORS = {
+  "Sales": { bg: "var(--color-primary-subtle)", color: "var(--color-primary)" },
+  "CRM": { bg: "var(--color-secondary-container)", color: "var(--color-on-secondary-container)" },
+  "Inventory": { bg: "rgba(16, 185, 129, 0.1)", color: "#059669" },
+  "Accounting": { bg: "var(--color-tertiary-fixed)", color: "var(--color-on-tertiary-fixed)" },
+  "HR": { bg: "var(--color-primary-fixed)", color: "var(--color-on-primary-fixed)" },
+  "Manufacturing": { bg: "rgba(154, 106, 19, 0.1)", color: "#9a6a13" },
+  "Technical": { bg: "var(--color-surface-container-high)", color: "var(--color-on-surface-variant)" }
+};
+
 export function renderKnowledgeBaseView() {
   let activeCategory = "All";
   let searchQuery = "";
   let activeArticle = null;
 
-  const container = el("div", { className: "max-w-6xl mx-auto space-y-6" });
+  const container = el("div", { style: "max-width: 1000px; margin: 0 auto; padding: 32px;" });
 
   function filteredArticles() {
     return ARTICLES.filter(a => {
@@ -62,116 +72,143 @@ export function renderKnowledgeBaseView() {
   }
 
   function buildListView() {
-    const searchInput = el("input", {
-      type: "search",
-      className: "w-full h-11 pl-11 pr-4 bg-surface-container-lowest border border-outline-variant/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary",
-      placeholder: "Search articles...",
-      value: searchQuery,
-      onInput: (e) => { searchQuery = e.target.value; render(); }
-    });
-
     const articles = filteredArticles();
 
-    return el("div", { className: "space-y-6" }, [
+    return el("div", { style: "display: flex; flex-direction: column; gap: 24px;" }, [
+      // Header
       el("div", {}, [
-        el("p", { className: "text-xs font-bold uppercase tracking-widest text-secondary mb-1", text: "Help & Guides" }),
-        el("h2", { className: "font-headline text-2xl font-bold text-on-surface", text: "Knowledge Base" })
+        el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin-bottom: 4px;", text: "HELP & GUIDES" }),
+        el("h2", { style: "font-family: var(--font-headline); font-size: 28px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug);", text: "Knowledge Base" })
       ]),
+      
       // Search bar
-      el("div", { className: "relative" }, [
-        el("span", { className: "material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg", text: "search" }),
-        searchInput
+      el("div", { style: "position: relative;" }, [
+        el("span", { className: "material-symbols-outlined", style: "position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 20px; color: var(--color-on-surface-variant);", text: "search" }),
+        el("input", {
+          type: "search",
+          style: "width: 100%; height: 44px; padding: 0 16px 0 44px; font-family: var(--font-body); font-size: 14px; background: var(--color-surface); box-shadow: var(--shadow-sm); border: none;",
+          placeholder: "Search articles...",
+          value: searchQuery,
+          onInput: (e) => { searchQuery = e.target.value; render(); }
+        })
       ]),
+      
       // Category tabs
-      el("div", { className: "flex gap-2 overflow-x-auto no-scrollbar pb-1" },
-        CATEGORIES.map(cat => el("button", {
-          className: `flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
-            cat === activeCategory
-              ? "bg-primary text-on-primary shadow-sm"
-              : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"
-          }`,
-          onclick: () => { activeCategory = cat; render(); }
-        }, [el("span", { text: cat })]))
+      el("div", { style: "display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px;" },
+        CATEGORIES.map(cat => {
+          const isActive = cat === activeCategory;
+          return el("button", {
+            style: `flex-shrink: 0; padding: 8px 16px; font-family: var(--font-label); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 150ms ease; border: none; border-bottom: 2px solid ${isActive ? "var(--color-primary)" : "transparent"}; color: ${isActive ? "var(--color-primary)" : "var(--color-on-surface-variant)"}; background: ${isActive ? "transparent" : "transparent"};`,
+            onmouseenter: (e) => { if (!isActive) e.target.style.background = "var(--color-surface-container-low)"; },
+            onmouseleave: (e) => { if (!isActive) e.target.style.background = "transparent"; },
+            onclick: () => { activeCategory = cat; render(); }
+          }, [el("span", { text: cat })])
+        })
       ),
+      
       // Article grid
       articles.length === 0
-        ? el("div", { className: "text-center py-12 text-on-surface-variant" }, [
-            el("span", { className: "material-symbols-outlined text-5xl block mb-3 opacity-30", text: "search_off" }),
-            el("p", { className: "text-sm", text: "No articles found. Try a different search or category." })
+        ? el("div", { style: "text-align: center; padding: 48px; color: var(--color-on-surface-variant);" }, [
+            el("span", { className: "material-symbols-outlined", style: "font-size: 48px; display: block; margin-bottom: 16px; opacity: 0.3;", text: "search_off" }),
+            el("p", { style: "font-family: var(--font-body); font-size: 14px;", text: "No articles found. Try a different search or category." })
           ])
-        : el("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" },
+        : el("div", { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;" },
             articles.map(article => buildArticleCard(article, () => { activeArticle = article; render(); }))
           )
     ]);
   }
 
   function buildArticleCard(article, onRead) {
+    const colors = CATEGORY_COLORS[article.cat] || CATEGORY_COLORS["Technical"];
+    
     return el("div", {
-      className: "bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-5 flex flex-col hover:shadow-md hover:border-primary/20 transition-all cursor-pointer",
+      style: "background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 20px; cursor: pointer; transition: all 150ms ease; display: flex; flex-direction: column;",
+      onmouseenter: (e) => { e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.background = "var(--color-surface-container-low)"; },
+      onmouseleave: (e) => { e.currentTarget.style.boxShadow = "var(--shadow-sm)"; e.currentTarget.style.background = "var(--color-surface)"; },
       onclick: onRead
     }, [
-      el("div", { className: "flex items-start justify-between mb-3" }, [
-        el("span", { className: "badge badge--secondary text-[10px]", text: article.cat }),
-      ]),
-      el("h4", { className: "font-headline text-sm font-bold text-on-surface mb-2 flex-1", text: article.title }),
-      el("p", { className: "text-xs text-on-surface-variant mb-4 flex-1", text: article.desc }),
+      // Category badge
+      el("span", { 
+        style: `display: inline-block; font-family: var(--font-label); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide); padding: 2px 8px; margin-bottom: 12px; background: ${colors.bg}; color: ${colors.color};`,
+        text: article.cat 
+      }),
+      // Title
+      el("h4", { style: "font-family: var(--font-headline); font-size: 15px; font-weight: 600; color: var(--color-on-surface); margin-bottom: 8px; flex: 1;", text: article.title }),
+      // Description
+      el("p", { style: "font-family: var(--font-body); font-size: 13px; color: var(--color-on-surface-variant); margin-bottom: 16px; line-height: 1.5;", text: article.desc }),
+      // Read link
       el("button", {
-        className: "text-xs font-semibold text-primary hover:underline flex items-center gap-1 mt-auto",
+        style: "align-self: flex-start; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--color-primary); background: none; border: none; cursor: pointer; padding: 0; text-decoration: none;",
+        onmouseenter: (e) => e.target.style.textDecoration = "underline",
+        onmouseleave: (e) => e.target.style.textDecoration = "none",
         onclick: (e) => { e.stopPropagation(); onRead(); }
-      }, [
-        el("span", { text: "Read article" }),
-        el("span", { className: "material-symbols-outlined text-[14px]", text: "arrow_forward" })
-      ])
+      }, [el("span", { text: "Read →" })])
     ]);
   }
 
   function buildArticleDetail(article, onBack) {
     const related = ARTICLES.filter(a => a.cat === article.cat && a.id !== article.id).slice(0, 3);
     const contentParagraphs = article.content.split("\n").filter(Boolean);
+    const colors = CATEGORY_COLORS[article.cat] || CATEGORY_COLORS["Technical"];
 
-    return el("div", { className: "max-w-2xl mx-auto space-y-6" }, [
-      // Back
+    return el("div", { style: "max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;" }, [
+      // Back button
       el("button", {
-        className: "flex items-center gap-2 text-sm font-medium text-on-surface-variant hover:text-primary transition-colors",
+        style: "display: flex; align-items: center; gap: 8px; font-family: var(--font-label); font-size: 13px; font-weight: 500; color: var(--color-on-surface-variant); background: none; border: none; cursor: pointer; padding: 0;",
+        onmouseenter: (e) => e.target.style.color = "var(--color-primary)",
+        onmouseleave: (e) => e.target.style.color = "var(--color-on-surface-variant)",
         onclick: onBack
       }, [
-        el("span", { className: "material-symbols-outlined text-[18px]", text: "arrow_back" }),
+        el("span", { className: "material-symbols-outlined", style: "font-size: 18px;", text: "arrow_back" }),
         el("span", { text: "Back to Knowledge Base" })
       ]),
-      // Article
-      el("div", { className: "bg-surface-container-lowest rounded-xl shadow-card border border-outline-variant/10 overflow-hidden" }, [
-        el("div", { className: "px-8 py-6 border-b border-outline-variant/10" }, [
-          el("span", { className: "badge badge--secondary text-[10px] mb-3 inline-block", text: article.cat }),
-          el("h2", { className: "font-headline text-2xl font-bold text-on-surface", text: article.title }),
-          el("p", { className: "text-sm text-on-surface-variant mt-2", text: article.desc })
+      
+      // Article card
+      el("div", { style: "background: var(--color-surface); box-shadow: var(--shadow-card); overflow: hidden;" }, [
+        // Header
+        el("div", { style: "padding: 24px 32px; border-bottom: 1px solid var(--color-surface-container-low);" }, [
+          el("span", { 
+            style: `display: inline-block; font-family: var(--font-label); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide); padding: 2px 8px; margin-bottom: 12px; background: ${colors.bg}; color: ${colors.color};`,
+            text: article.cat 
+          }),
+          el("h2", { style: "font-family: var(--font-headline); font-size: 24px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug); margin-bottom: 8px;", text: article.title }),
+          el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface-variant);", text: article.desc })
         ]),
-        el("div", { className: "px-8 py-6 space-y-4" },
+        
+        // Content
+        el("div", { style: "padding: 24px 32px; display: flex; flex-direction: column; gap: 16px;" },
           contentParagraphs.map(para => {
             if (para.startsWith("**Pro Tip:**")) {
-              return el("div", { className: "bg-secondary-container/30 border-l-4 border-secondary rounded-r-xl p-4" }, [
-                el("p", { className: "text-sm font-medium text-on-secondary-container", text: para })
+              return el("div", { style: "background: var(--color-primary-subtle); border-left: 3px solid var(--color-primary); padding: 16px 20px;" }, [
+                el("p", { style: "font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--color-on-surface); margin: 0;", text: para })
               ]);
             }
             if (para.startsWith("**Common mistake:**") || para.startsWith("**Common error:**")) {
-              return el("div", { className: "bg-error-container/20 border-l-4 border-error rounded-r-xl p-4" }, [
-                el("p", { className: "text-sm font-medium text-on-error-container", text: para })
+              return el("div", { style: "background: var(--color-error-container); border-left: 3px solid var(--color-error); padding: 16px 20px;" }, [
+                el("p", { style: "font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--color-on-error-container); margin: 0;", text: para })
               ]);
             }
-            return el("p", { className: "text-sm text-on-surface leading-relaxed", text: para });
+            if (para.match(/^\d+\./)) {
+              return el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface); line-height: 1.6; margin: 0; padding-left: 16px; position: relative;", text: para });
+            }
+            return el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface); line-height: 1.6; margin: 0;", text: para });
           })
         )
       ]),
+      
       // Related articles
       related.length > 0
-        ? el("div", { className: "space-y-3" }, [
-            el("h4", { className: "font-headline text-sm font-bold text-on-surface-variant uppercase tracking-widest", text: "Related Articles" }),
-            el("div", { className: "space-y-2" },
-              related.map(r => el("button", {
-                className: "w-full text-left bg-surface-container-lowest rounded-xl border border-outline-variant/10 px-5 py-3 flex items-center justify-between hover:border-primary/20 transition-all",
+        ? el("div", { style: "display: flex; flex-direction: column; gap: 12px;" }, [
+            el("h4", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 700; color: var(--color-on-surface-variant); text-transform: uppercase; letter-spacing: var(--ls-widest);", text: "Related Articles" }),
+            el("div", { style: "display: flex; flex-direction: column; gap: 8px;" },
+              related.map(r => el("div", {
+                style: "background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 150ms ease;",
+                onmouseenter: (e) => { e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.background = "var(--color-surface-container-low)"; },
+                onmouseleave: (e) => { e.currentTarget.style.boxShadow = "var(--shadow-sm)"; e.currentTarget.style.background = "var(--color-surface)"; },
                 onclick: () => { activeArticle = r; render(); }
               }, [
-                el("span", { className: "text-sm font-medium text-on-surface", text: r.title }),
-                el("span", { className: "material-symbols-outlined text-on-surface-variant text-[18px]", text: "chevron_right" })
+                el("span", { style: "font-family: var(--font-body); font-size: 14px; font-weight: 500; color: var(--color-on-surface);", text: r.title }),
+                el("span", { className: "material-symbols-outlined", style: "font-size: 20px; color: var(--color-on-surface-variant);", text: "chevron_right" })
               ]))
             )
           ])

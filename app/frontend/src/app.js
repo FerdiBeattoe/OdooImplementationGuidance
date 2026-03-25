@@ -132,8 +132,8 @@ export function renderApp(root) {
   };
 
   subscribe(render);
-  void bootstrapStore().then(render);
   render();
+  void bootstrapStore();
 }
 
 function renderCurrentView(project, projectStore) {

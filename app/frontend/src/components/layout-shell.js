@@ -86,7 +86,7 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
         : el("button", {
             className: "flex items-center gap-2 text-sm font-semibold px-4 py-2",
             style: "background: var(--color-primary); color: var(--color-on-primary);",
-            onclick: () => onNavigate("dashboard")
+            onclick: () => onNavigate("connection-wizard")
           }, [
             el("span", { className: "material-symbols-outlined text-[18px]", text: "link" }),
             el("span", { className: "hidden sm:inline", text: "Connect Odoo" })

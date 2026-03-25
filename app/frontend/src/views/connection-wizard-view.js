@@ -121,12 +121,19 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
         placeholder: "https://your-odoo.example.com",
         value: instanceType === "online" ? (instanceUrl || "https://") : instanceUrl,
         onInput: (e) => { 
-          instanceUrl = e.target.value.trim();
+          let val = e.target.value.trim();
+          
+          // Force HTTPS for Odoo Online - replace http:// with https://
+          if (instanceType === "online" && val.startsWith("http://") && val.includes(".odoo.com")) {
+            val = val.replace("http://", "https://");
+          }
+          
+          instanceUrl = val;
+          
+          // Auto-extract database name from URL
           if (instanceType === "online" && instanceUrl.includes(".odoo.com")) {
-            // Extract full subdomain before .odoo.com (handles www.subdomain cases)
             const match = instanceUrl.match(/https?:\/\/(.+?)\.odoo\.com/);
             if (match && !database) {
-              // Use last segment as database name (e.g., "www.test236" → "test236")
               const subdomainParts = match[1].split('.');
               database = subdomainParts[subdomainParts.length - 1];
             }

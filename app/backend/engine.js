@@ -10,9 +10,6 @@ import { generateDomainPreview } from "../shared/preview-engine.js";
 import { ODOO_VERSION } from "../shared/constants.js";
 import { OdooClient, OdooRpcError, detectInstalledModules, detectVersion } from "./odoo-client.js";
 
-// Ensure fetch is available (Node.js 18+)
-const fetchImpl = globalThis.fetch || (await import('node-fetch')).default;
-
 const connectionRegistry = new Map();
 
 const CONNECTION_TTL_MS = 30 * 60 * 1000; // 30 minutes

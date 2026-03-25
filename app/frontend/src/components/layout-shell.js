@@ -2,12 +2,13 @@ import { getProjectStoreRecordId, getProjectStoreRecordLabel, renderConnectionCa
 import { el } from "../lib/dom.js";
 
 const NAV_ITEMS = [
-  { id: "dashboard",              icon: "dashboard",          label: "Dashboard" },
-  { id: "implementation-roadmap", icon: "route",              label: "Implementation Roadmap" },
-  { id: "module-setup",           icon: "tune",               label: "Module Setup" },
-  { id: "data-import",            icon: "upload_file",        label: "Data Import" },
-  { id: "knowledge-base",         icon: "menu_book",          label: "Knowledge Base" },
-  { id: "analytics",              icon: "bar_chart",          label: "Analytics" }
+  { id: "new-project",          icon: "add",                label: "New Project" },
+  { id: "dashboard",            icon: "dashboard",          label: "Dashboard" },
+  { id: "implementation-roadmap", icon: "route",          label: "Implementation Roadmap" },
+  { id: "module-setup",         icon: "tune",               label: "Module Setup" },
+  { id: "data-import",          icon: "upload_file",        label: "Data Import" },
+  { id: "knowledge-base",       icon: "menu_book",          label: "Knowledge Base" },
+  { id: "analytics",            icon: "bar_chart",          label: "Analytics" }
 ];
 
 export function renderLayoutShell({ project, content, notifications, onNavigate, onSave, onResume, onConnect, onDisconnect }) {
@@ -22,15 +23,15 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
   let sidebarOpen = false;
   const sidebarEl = buildSidebar(project, currentView, onNavigate, onSave, savedProjects, onResume, isConnected, instanceUrl, () => {
     sidebarOpen = false;
-    sidebarEl.classList.remove("sidebar--open");
+    sidebarEl.classList.remove("pd-sidebar--open");
     overlay.classList.add("hidden");
   });
 
   const overlay = el("div", {
-    className: "fixed inset-0 bg-black/30 z-30 hidden md:hidden",
+    className: "fixed inset-0 bg-black/50 z-30 hidden md:hidden",
     onclick: () => {
       sidebarOpen = false;
-      sidebarEl.classList.remove("sidebar--open");
+      sidebarEl.classList.remove("pd-sidebar--open");
       overlay.classList.add("hidden");
     }
   });
@@ -40,60 +41,56 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
   const sectionTitle = currentNavItem?.label || "Dashboard";
 
   const topHeader = el("header", {
-    className: "fixed top-0 right-0 z-50 flex items-center justify-between px-6 py-3",
-    style: "left: 256px; background: var(--color-surface-container-lowest); box-shadow: var(--shadow-sm);"
+    className: "pd-header",
+    style: "position: fixed; top: 0; right: 0; left: 260px; z-index: 40;"
   }, [
     el("div", { className: "flex items-center gap-4" }, [
       el("button", {
-        className: "md:hidden p-2 hover:bg-surface-container transition-colors",
+        className: "md:hidden p-2 rounded-lg hover:bg-white/5 transition-colors",
         onclick: () => {
           sidebarOpen = !sidebarOpen;
-          sidebarEl.classList.toggle("sidebar--open", sidebarOpen);
+          sidebarEl.classList.toggle("pd-sidebar--open", sidebarOpen);
           overlay.classList.toggle("hidden", !sidebarOpen);
         },
         "aria-label": "Toggle sidebar"
       }, [
-        el("span", { className: "material-symbols-outlined text-on-surface-variant", text: "menu" })
+        el("span", { className: "material-symbols-outlined text-[#94a3b8]", text: "menu" })
       ]),
       el("h1", {
-        className: "font-headline text-lg font-bold text-on-surface",
-        style: "letter-spacing: var(--ls-snug);",
+        className: "pd-header__title",
         text: sectionTitle
       })
     ]),
     el("div", { className: "flex items-center gap-3" }, [
-      el("div", { className: "hidden sm:flex items-center gap-2" }, [
+      el("div", { className: "hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1e293b] border border-[rgba(148,163,184,0.1)]" }, [
         el("span", {
-          className: `w-2 h-2 flex-shrink-0 ${isConnected ? "bg-green-500" : ""}`,
-          style: isConnected ? "" : "background: var(--color-error);",
-          title: isConnected ? "Connected" : "Not connected"
+          className: `w-2 h-2 rounded-full ${isConnected ? "bg-[#22c55e]" : "bg-[#ef4444]"}`,
+          style: isConnected ? "box-shadow: 0 0 8px #22c55e;" : "box-shadow: 0 0 8px #ef4444;"
         }),
         el("span", {
           className: "text-xs font-medium",
-          style: isConnected ? "color: var(--color-success);" : "color: var(--color-error);",
+          style: `color: ${isConnected ? "#22c55e" : "#ef4444"};`,
           text: isConnected ? (instanceUrl || "Connected") : "Not connected"
         })
       ]),
       isConnected
         ? el("button", {
-            className: "flex items-center gap-2 text-sm font-semibold px-4 py-2",
-            style: "background: var(--color-primary); color: var(--color-on-primary);",
+            className: "pd-btn pd-btn--primary",
             onclick: onSave
           }, [
             el("span", { className: "material-symbols-outlined text-[18px]", text: "sync" }),
             el("span", { className: "hidden sm:inline", text: "Sync to Odoo" })
           ])
         : el("button", {
-            className: "flex items-center gap-2 text-sm font-semibold px-4 py-2",
-            style: "background: var(--color-primary); color: var(--color-on-primary);",
+            className: "pd-btn pd-btn--primary",
             onclick: () => onNavigate("connection-wizard")
           }, [
             el("span", { className: "material-symbols-outlined text-[18px]", text: "link" }),
             el("span", { className: "hidden sm:inline", text: "Connect Odoo" })
           ]),
       el("div", {
-        className: "w-8 h-8 flex items-center justify-center text-xs font-bold",
-        style: "background: var(--color-primary); color: var(--color-on-primary);"
+        className: "w-9 h-9 flex items-center justify-center text-sm font-bold rounded-full",
+        style: "background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white;"
       }, [
         el("span", { text: companyName ? companyName.substring(0, 2).toUpperCase() : "US" })
       ])
@@ -102,14 +99,14 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
 
   // ── Notifications ────────────────────────────────────────
   const notificationBar = notifications?.length
-    ? el("div", { className: "fixed top-16 right-4 z-50 space-y-2 max-w-sm" },
+    ? el("div", { className: "fixed top-20 right-4 z-50 space-y-2 max-w-sm" },
         notifications.map(n => el("div", {
-          className: "flex items-center gap-3 px-4 py-3 text-sm font-medium",
+          className: "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl border",
           style: n.type === "error"
-            ? "background: var(--color-error-container); color: var(--color-on-error-container); box-shadow: var(--shadow-md);"
+            ? "background: rgba(239, 68, 68, 0.1); color: #fca5a5; border-color: rgba(239, 68, 68, 0.2);"
             : n.type === "success"
-              ? "background: var(--color-secondary-container); color: var(--color-on-secondary-container); box-shadow: var(--shadow-md);"
-              : "background: var(--color-surface-container-lowest); color: var(--color-on-surface); box-shadow: var(--shadow-md);"
+              ? "background: rgba(34, 197, 94, 0.1); color: #86efac; border-color: rgba(34, 197, 94, 0.2);"
+              : "background: rgba(30, 41, 59, 0.8); color: #f8fafc; border-color: rgba(148, 163, 184, 0.1);"
         }, [
           el("span", {
             className: "material-symbols-outlined text-[18px]",
@@ -123,18 +120,18 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
   // ── Main Area ─────────────────────────────────────────────
   const mainArea = el("main", {
     id: "main-content",
-    className: "min-h-screen pt-16 p-6 md:p-8",
-    style: "margin-left: 256px; background: var(--color-background);"
+    className: "pd-main",
+    style: "padding-top: 80px;"
   }, [content]);
 
   // ── Responsive: override left on small screens ─────────────
   const mobileStyle = el("style", {}, [
-    "@media (max-width: 767px) { header[style] { left: 0 !important; } main[style] { margin-left: 0 !important; } }"
+    "@media (max-width: 768px) { .pd-header { left: 0 !important; } .pd-main { margin-left: 0 !important; } }"
   ]);
 
   return el("div", {
-    className: "app-wrapper font-body",
-    style: "background: var(--color-background); color: var(--color-on-surface);"
+    className: "pd-app",
+    style: "background: #0f172a; min-height: 100vh;"
   }, [
     mobileStyle,
     overlay,
@@ -151,19 +148,17 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
   const navLinks = NAV_ITEMS.map(item => {
     const isActive = currentView === item.id ||
       (item.id === "module-setup" && currentView.startsWith("wizard-")) ||
-      (item.id === "dashboard" && (currentView === "dashboard" || currentView === "overview" || currentView === "stages" || currentView === "domains" || currentView === "decisions" || currentView === "wizard-launcher"));
+      (item.id === "dashboard" && (currentView === "dashboard" || currentView === "overview"));
 
     return el("button", {
-      className: "sidebar-nav__item" + (isActive ? " sidebar-nav__item--active" : ""),
-      style: `width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 16px; border: none; cursor: pointer; text-align: left; font-size: 13px; font-weight: ${isActive ? "600" : "500"}; letter-spacing: 0.02em; transition: background 150ms ease; color: ${isActive ? "var(--color-primary-fixed-dim)" : "var(--color-inverse-on-surface)"}; background: ${isActive ? "var(--color-primary-subtle)" : "transparent"};`,
+      className: `pd-nav__item ${isActive ? "pd-nav__item--active" : ""}`,
       onclick: () => {
         onNavigate(item.id);
         if (onClose) onClose();
       }
     }, [
       el("span", {
-        className: "material-symbols-outlined",
-        style: `font-size: 20px; color: ${isActive ? "var(--color-primary-fixed-dim)" : "var(--text-sidebar-muted)"};`,
+        className: `material-symbols-outlined pd-nav__icon ${isActive ? "text-[#6366f1]" : ""}`,
         text: item.icon
       }),
       el("span", { text: item.label })
@@ -176,55 +171,47 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
   });
 
   return el("aside", {
-    className: "sidebar",
-    style: "height: 100vh; width: 256px; position: fixed; left: 0; top: 0; z-index: 40; display: flex; flex-direction: column; overflow-y: auto; background: var(--color-inverse-surface); color: var(--color-inverse-on-surface);"
+    className: "pd-sidebar"
   }, [
     // Logo / Brand
-    el("div", { style: "padding: 24px 20px 16px;" }, [
-      el("div", { style: "display: flex; align-items: center; gap: 12px; margin-bottom: 4px;" }, [
-        el("div", {
-          style: "width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--gradient-primary);"
-        }, [
-          el("span", { className: "material-symbols-outlined", style: "color: #fff; font-size: 18px;", text: "hub" })
-        ]),
-        el("span", {
-          style: "font-family: var(--font-headline); font-weight: 800; color: #fff; font-size: 14px; letter-spacing: var(--ls-snug); line-height: 1.2;",
-          text: "Odoo Setup Portal"
-        })
+    el("div", { className: "pd-sidebar__brand" }, [
+      el("div", { className: "pd-sidebar__logo" }, [
+        el("span", { className: "material-symbols-outlined pd-sidebar__logo-icon", text: "hub" })
       ]),
-      el("p", {
-        style: "font-size: 11px; text-transform: uppercase; letter-spacing: var(--ls-widest); color: var(--text-sidebar-muted); font-weight: 600; margin-left: 44px;",
-        text: "v19 Implementation"
-      })
+      el("span", { className: "pd-sidebar__title", text: "Odoo Setup Portal" })
     ]),
+    el("p", { className: "pd-sidebar__subtitle", text: "v19 Implementation" }),
+    
     // Project name
-    el("div", { style: "padding: 0 16px 12px;" }, [
+    el("div", { className: "mb-4 px-2" }, [
       el("div", {
-        style: "background: var(--bg-sidebar-hover); padding: 8px 12px; display: flex; align-items: center; gap: 8px;"
+        className: "flex items-center gap-2 px-3 py-2 rounded-lg",
+        style: "background: rgba(255,255,255,0.05);"
       }, [
-        el("span", { className: "material-symbols-outlined", style: "font-size: 16px; color: var(--text-sidebar-muted);", text: "folder" }),
+        el("span", { className: "material-symbols-outlined text-[16px] text-[#64748b]", text: "folder" }),
         el("span", {
-          style: "font-size: 12px; font-weight: 600; color: var(--color-inverse-on-surface); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;",
+          className: "text-xs font-semibold text-[#94a3b8] truncate",
           text: projectName
         })
       ])
     ]),
+    
     // Navigation
-    el("nav", { style: "flex: 1; padding: 0 8px; display: flex; flex-direction: column; gap: 2px;" }, navLinks),
+    el("nav", { className: "pd-nav" }, navLinks),
+    
     // Bottom section
-    el("div", { style: "padding: 16px; display: flex; flex-direction: column; gap: 12px;" }, [
-      // Save button
+    el("div", { className: "pd-sidebar__actions" }, [
       el("button", {
-        style: "width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--gradient-primary); color: var(--color-on-primary); padding: 10px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: transform 150ms ease;",
+        className: "pd-btn pd-btn--primary pd-btn--full",
         onclick: onSave
       }, [
-        el("span", { className: "material-symbols-outlined", style: "font-size: 18px;", text: "save" }),
+        el("span", { className: "material-symbols-outlined text-[18px]", text: "save" }),
         el("span", { text: "Save Progress" })
       ]),
-      // Resume dropdown
       savedProjects.length
         ? el("select", {
-            style: "width: 100%; background: var(--bg-sidebar-hover); border: none; padding: 8px; font-size: 12px; color: var(--text-sidebar-muted); font-weight: 500;",
+            className: "pd-input text-xs",
+            style: "height: auto; padding: 8px;",
             onchange: (e) => {
               if (e.target.value) {
                 onResume(e.target.value);
@@ -235,15 +222,17 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
         : null,
       // Connection status footer
       el("div", {
-        style: `display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: ${isConnected ? "rgba(45, 106, 60, 0.15)" : "rgba(186, 26, 26, 0.15)"};`
+        className: "flex items-center gap-2 px-3 py-2 rounded-lg",
+        style: `background: ${isConnected ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)"}; border: 1px solid ${isConnected ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)"};`
       }, [
         el("span", {
-          style: `width: 8px; height: 8px; flex-shrink: 0; background: ${isConnected ? "var(--color-success)" : "var(--color-error)"};`
+          className: "w-2 h-2 rounded-full",
+          style: `background: ${isConnected ? "#22c55e" : "#ef4444"}; box-shadow: 0 0 6px ${isConnected ? "#22c55e" : "#ef4444"};`
         }),
         el("span", {
-          style: `font-size: 11px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: ${isConnected ? "#a3d9b1" : "var(--color-danger-soft)"};`,
-          text: isConnected ? (instanceUrl || "Connected") : "Not connected",
-          title: isConnected ? instanceUrl : "No Odoo instance connected"
+          className: "text-[11px] font-medium truncate",
+          style: `color: ${isConnected ? "#86efac" : "#fca5a5"};`,
+          text: isConnected ? (instanceUrl || "Connected") : "Not connected"
         })
       ])
     ])

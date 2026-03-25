@@ -587,9 +587,23 @@ export function validateProjectSetup(projectIdentity) {
 }
 
 export function normalizeProjectState(state = createInitialProjectState()) {
-  const normalized = structuredClone(state || createInitialProjectState());
+  const initial = createInitialProjectState();
+  const normalized = structuredClone({
+    ...initial,
+    ...(state || {}),
+    environmentContext: {
+      ...initial.environmentContext,
+      ...(state?.environmentContext || {}),
+      target: {
+        ...initial.environmentContext.target,
+        ...(state?.environmentContext?.target || {})
+      }
+    }
+  });
   normalized.projectIdentity.version = ODOO_VERSION;
-  normalized.environmentContext.target.enabled = requiresBranchTarget(normalized.projectIdentity);
+  if (normalized.environmentContext?.target) {
+    normalized.environmentContext.target.enabled = requiresBranchTarget(normalized.projectIdentity);
+  }
   normalized.connectionState = normalizeConnectionState(normalized.connectionState, normalized.projectIdentity);
   normalized.inspectionState = normalizeInspectionState(normalized.inspectionState);
   normalized.previewState = normalizePreviewState(normalized.previewState);

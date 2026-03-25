@@ -14,7 +14,7 @@ const connectionRegistry = new Map();
 
 const CONNECTION_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-const CONNECT_TIMEOUT_MS = 8000; // 8 seconds for connection
+const CONNECT_TIMEOUT_MS = 15000; // 15 seconds for connection
 
 // Helper to add timeout to any promise
 function withTimeout(promise, ms, errorMessage) {
@@ -38,7 +38,7 @@ export async function connectProject(project, payload, fetchImpl = fetch) {
     await withTimeout(
       client.authenticate(payload.username, payload.password),
       CONNECT_TIMEOUT_MS,
-      'Connection timed out. The Odoo server did not respond within 8 seconds.'
+      'Connection timed out. The Odoo server did not respond within 15 seconds.'
     );
   } catch (authError) {
     // Categorize authentication errors

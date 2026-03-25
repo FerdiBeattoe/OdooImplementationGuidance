@@ -137,23 +137,23 @@ export function createAppServer() {
       }
 
       if (pathname === "/api/connection/connect" && req.method === "POST") {
-        return handleConnectionConnect(req, res);
+        return await handleConnectionConnect(req, res);
       }
 
       if (pathname === "/api/connection/disconnect" && req.method === "POST") {
-        return handleConnectionDisconnect(req, res);
+        return await handleConnectionDisconnect(req, res);
       }
 
       if (pathname === "/api/domain/inspect" && req.method === "POST") {
-        return handleDomainInspect(req, res);
+        return await handleDomainInspect(req, res);
       }
 
       if (pathname === "/api/domain/preview" && req.method === "POST") {
-        return handleDomainPreview(req, res);
+        return await handleDomainPreview(req, res);
       }
 
       if (pathname === "/api/domain/execute" && req.method === "POST") {
-        return handleDomainExecute(req, res);
+        return await handleDomainExecute(req, res);
       }
 
       if (pathname.startsWith("/shared/") && req.method === "GET") {
@@ -188,9 +188,14 @@ export function createAppServer() {
 
 async function handleConnectionConnect(req, res) {
   console.log('[CONNECT] Starting connection request');
-  const payload = await readJsonBody(req);
-  console.log('[CONNECT] Payload received:', { url: payload.credentials?.url, database: payload.credentials?.database, username: payload.credentials?.username });
-  const project = normalizeProjectState(payload.project);
+  let payload, project;
+  try {
+    payload = await readJsonBody(req);
+    console.log('[CONNECT] Payload received:', { url: payload.credentials?.url, database: payload.credentials?.database, username: payload.credentials?.username });
+    project = normalizeProjectState(payload.project);
+  } catch (parseError) {
+    return sendJson(res, 400, { error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
+  }
 
   try {
     console.log('[CONNECT] Calling connectProject...');

@@ -15,8 +15,8 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
   const savedProjects = (project.savedProjects || []).filter((item) => getProjectStoreRecordId(item));
   const currentView = project.workflowState?.currentView || "dashboard";
   const connectionStatus = project.connectionState?.status || "disconnected";
-  const isConnected = connectionStatus === "connected";
-  const instanceUrl = project.connectionState?.url || null;
+  const isConnected = connectionStatus.startsWith("connected");
+  const instanceUrl = project.connectionState?.environmentIdentity?.urlOrigin || null;
   const companyName = project.connectionState?.companyName || null;
 
   // ── Mobile hamburger state ────────────────────────────────

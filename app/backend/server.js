@@ -4,6 +4,16 @@ import { createServer } from "node:http";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+// Catch unhandled errors
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled rejection:', err);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+});
+
 import { normalizeProjectStorePayload } from "../shared/project-store.js";
 import { normalizeProjectState } from "../shared/project-state.js";
 import { normalizeAuditLog } from "../shared/audit-log.js";

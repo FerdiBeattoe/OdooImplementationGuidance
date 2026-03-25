@@ -334,7 +334,7 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
             el("span", { className: "material-symbols-outlined", style: "font-size: 20px; color: var(--ee-error);", text: "error" }),
             el("span", { style: "font-size: 14px; font-weight: 600; color: var(--ee-error);", text: testError.message })
           ]),
-          el("p", { style: "font-size: 13px; color: var(--ee-on-surface-variant); white-space: "pre-line";", text: testError.suggestion })
+          el("p", { style: "font-size: 13px; color: var(--ee-on-surface-variant); white-space: pre-line;", text: testError.suggestion })
         ])
       );
     } else if (testStatus === "success") {

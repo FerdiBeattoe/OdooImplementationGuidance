@@ -113,36 +113,55 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
 
     const urlSection = el("div", { style: "display: none; margin-top: 16px;" }, [
       el("label", { style: "display: block; font-size: 13px; font-weight: 600; color: var(--ee-on-surface-variant); margin-bottom: 8px;" }, [
-        el("span", { text: "Odoo URL" })
+        el("span", { text: "Your Odoo Address" })
       ]),
       el("input", {
-        type: "url",
+        type: "text",
         className: "ee-input",
-        placeholder: "https://your-odoo.example.com",
-        value: instanceType === "online" ? (instanceUrl || "https://") : instanceUrl,
+        placeholder: "mycompany.odoo.com",
+        value: instanceUrl.replace(/^https?:\/\//i, '').toLowerCase(),
         onInput: (e) => { 
-          let val = e.target.value.trim();
+          let val = e.target.value.trim().toLowerCase();
           
-          // Force HTTPS for Odoo Online - replace http:// with https://
-          if (instanceType === "online" && val.startsWith("http://") && val.includes(".odoo.com")) {
-            val = val.replace("http://", "https://");
-          }
+          // Remove any protocol if user included it
+          val = val.replace(/^https?:\/\//, '');
           
-          instanceUrl = val;
+          // Remove any paths or query strings
+          val = val.replace(/\/.*$/, '');
+          val = val.replace(/\?.*$/, '');
           
-          // Auto-extract database name from URL
-          if (instanceType === "online" && instanceUrl.includes(".odoo.com")) {
-            const match = instanceUrl.match(/https?:\/\/(.+?)\.odoo\.com/);
-            if (match && !database) {
-              const subdomainParts = match[1].split('.');
-              database = subdomainParts[subdomainParts.length - 1];
+          // Always use https://
+          instanceUrl = val ? `https://${val}` : '';
+          
+          // Extract database name - handles both www.test236.odoo.com and test236.odoo.com
+          if (instanceUrl.includes('.odoo.com')) {
+            const match = instanceUrl.match(/https?:\/\/([^\/]+)\.odoo\.com/i);
+            if (match) {
+              const subdomain = match[1];
+              // Remove www. prefix if present
+              const cleanSubdomain = subdomain.replace(/^www\./, '');
+              database = cleanSubdomain;
             }
           }
+          
+          render();
         }
       }),
-      instanceType === "online" ? el("p", { 
-        style: "font-size: 12px; color: var(--ee-on-surface-variant); margin-top: 6px;"
-      }, "Enter your Odoo Online URL (e.g., https://mycompany.odoo.com)") : null
+      el("div", { 
+        style: "margin-top: 8px; padding: 10px 12px; background: var(--ee-surface-container); border-left: 3px solid var(--ee-secondary);"
+      }, [
+        el("p", { style: "font-size: 12px; color: var(--ee-on-surface-variant); margin: 0;" }, [
+          el("span", { style: "font-weight: 600; color: var(--ee-on-surface);" }, "Connecting to: "),
+          el("span", { text: instanceUrl || 'https://yourcompany.odoo.com' })
+        ]),
+        database ? el("p", { style: "font-size: 12px; color: var(--ee-secondary); margin: '4px 0 0 0';" }, [
+          el("span", { style: "font-weight: 600;" }, "Database: "),
+          el("span", { text: database })
+        ]) : null
+      ]),
+      el("p", { 
+        style: "font-size: 11px; color: var(--ee-outline); margin-top: 8px;"
+      }, "💡 Just type your company name like \"mycompany.odoo.com\" — with or without www.")
     ]);
 
     const typeCards = typeOptions.map(opt => {

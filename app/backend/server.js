@@ -85,6 +85,18 @@ export function createAppServer() {
       const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
       const pathname = requestUrl.pathname;
 
+      // Handle CORS preflight
+      if (req.method === "OPTIONS") {
+        res.writeHead(200, {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          "Access-Control-Max-Age": "86400"
+        });
+        res.end();
+        return;
+      }
+
       // Rate limiting — only apply to API routes
       if (pathname.startsWith("/api/")) {
         const clientId = req.socket.remoteAddress || 'unknown';
@@ -370,7 +382,10 @@ function sendJson(res, status, payload) {
     "Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
-    "Content-Security-Policy": "default-src 'self'; script-src 'self'"
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization"
   });
   res.end(JSON.stringify(payload, null, 2));
 }

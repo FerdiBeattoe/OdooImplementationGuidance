@@ -114,9 +114,9 @@ export function renderRoadmapView({ onNavigate }) {
 
     container.append(
       el("div", { style: "margin-bottom: 32px;" }, [
-        el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin-bottom: 4px;", text: "ODOO 19 SETUP" }),
-        el("h2", { style: "font-family: var(--font-headline); font-size: 28px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug); margin-bottom: 8px;", text: "Implementation Roadmap" }),
-        el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface-variant); margin-top: 4px;", text: "Follow these phases in order for the best results. Steps with unmet dependencies are locked. Progress is saved in governed project state." })
+        el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin-bottom: 4px;", text: "PROJECTODOO" }),
+        el("h2", { style: "font-family: var(--font-headline); font-size: 28px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug); margin-bottom: 8px;", text: "Your Odoo Journey" }),
+        el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface-variant); margin-top: 4px;", text: "Follow these phases in order. Progress saves automatically. ProjectOdoo guides you every step of the way." })
       ])
     );
 

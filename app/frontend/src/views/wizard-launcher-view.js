@@ -44,8 +44,8 @@ export function renderWizardLauncherView(project, onLaunchWizard, onBack) {
   return el("div", { style: "max-width: 1100px; margin: 0 auto; padding: 32px; display: flex; flex-direction: column; gap: 32px;" }, [
     // Header
     el("div", {}, [
-      el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin-bottom: 4px;", text: "MODULE SETUP" }),
-      el("h2", { style: "font-family: var(--font-headline); font-size: 28px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug); margin-bottom: 8px;", text: "Guided Setup Wizards" }),
+      el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin-bottom: 4px;", text: "PROJECTODOO SETUP" }),
+      el("h2", { style: "font-family: var(--font-headline); font-size: 28px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug); margin-bottom: 8px;", text: "Setup Wizards" }),
       el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface-variant);", text: "Step-by-step assistants to configure Odoo correctly. Each wizard guides you through the right sequence of decisions." })
     ]),
     

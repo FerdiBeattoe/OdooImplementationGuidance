@@ -47,8 +47,8 @@ export function renderDashboardView({
     ),
     el("section", { className: "hero-panel" }, [
       el("div", { className: "hero-panel__content" }, [
-        el("p", { className: "hero-panel__eyebrow", text: "Guided and Safe" }),
-        el("h3", { text: "Control setup, inspect the target, preview intended changes, and execute only approved safe slices." }),
+        el("p", { className: "hero-panel__eyebrow", text: "ProjectOdoo" }),
+        el("h3", { text: "Odoo made easy — Guided setup, live inspection, preview changes, and execute safely." }),
         el("p", {
           text: "Step-by-step guidance stays primary. Optional live link to Odoo is application-layer only, preview stays mandatory before execution, and blocked actions remain visible and non-executable."
         }),
@@ -505,7 +505,7 @@ function renderHelpLimitsSection() {
 }
 
 function header(title, description) {
-  return el("header", { className: "workspace__header" }, [el("h2", { text: title }), el("p", { text: description })]);
+  return el("header", { className: "workspace__header" }, [el("h2", { className: "text-brand-headline", text: title }), el("p", { text: description })]);
 }
 
 function summaryCard(label, value, badge) {

@@ -179,9 +179,9 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
       el("div", { className: "ee-sidebar__logo" }, [
         el("span", { className: "material-symbols-outlined ee-sidebar__logo-icon", text: "hub" })
       ]),
-      el("span", { className: "ee-sidebar__title", text: "Odoo Setup Portal" })
+      el("span", { className: "ee-sidebar__title", text: "ProjectOdoo" })
     ]),
-    el("p", { className: "ee-sidebar__subtitle", text: "v19 Implementation" }),
+    el("p", { className: "ee-sidebar__subtitle", text: "Odoo made easy" }),
     
     // Project name
     el("div", { style: "margin: 16px 8px;" }, [

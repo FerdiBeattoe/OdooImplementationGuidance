@@ -1176,3 +1176,83 @@ main [class*="grid-cols-4"] > div [class*="font-extrabold"] {
 .nav-item-editorial--active .nav-item-icon {
   color: var(--color-primary-fixed-dim);
 }
+
+/* ================================================================
+   BRAND ENHANCEMENT UTILITIES — ProjectOdoo Additions
+   ================================================================ */
+
+/* Brand accent glow for focus states */
+:root {
+  --color-brand-glow: rgba(113, 75, 103, 0.15);
+}
+
+/* ── BRAND TYPOGRAPHY UTILITIES ──────────────────────────────── */
+
+.text-brand-eyebrow {
+  font-family: var(--font-label);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.text-brand-headline {
+  font-family: var(--font-headline);
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-on-surface);
+  line-height: var(--lh-tight);
+}
+
+/* ── GRADIENT UTILITIES ─────────────────────────────────────── */
+.brand-gradient {
+  background: linear-gradient(135deg, #57344f 0%, #714b67 50%, #13677b 100%);
+}
+
+/* ── SURFACE ELEVATION ──────────────────────────────────────── */
+.surface-elevated {
+  background: var(--color-surface-container-lowest);
+  box-shadow: var(--shadow-md);
+}
+
+/* ── CARD CRISP (cleaner shadow treatment) ───────────────────── */
+.card-crisp {
+  background: var(--color-surface-container-lowest);
+  box-shadow: 0 1px 3px rgba(25, 28, 30, 0.04), 0 4px 12px rgba(25, 28, 30, 0.06);
+  border: 1px solid var(--color-surface-container-high);
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+
+.card-crisp:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* ── BUTTON CRISP (refined button styling) ──────────────────── */
+.button-crisp {
+  height: 44px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-family: var(--font-headline);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 20px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  transition: background 150ms ease;
+}
+
+.button-crisp:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.button-crisp:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

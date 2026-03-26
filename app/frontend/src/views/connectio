@@ -1,0 +1,251 @@
+import { el } from "../lib/dom.js";
+
+export function renderConnectionWizardView({ onConnect, onSkip }) {
+  // ==== SIMPLE STATE ====
+  const state = { step: 1, instanceType: "online", edition: "community", url: "", db: "", user: "", pass: "", testing: false, testResult: null };
+  
+  const container = el("div", { style: "min-height: 100vh; background: #f8f7f5; display: flex; align-items: center; justify-content: center; padding: 24px;" });
+  
+  function render() {
+    container.innerHTML = "";
+    
+    const card = el("div", { style: "width: 100%; max-width: 480px; background: white; box-shadow: 0 4px 20px rgba(0,0,0,0.08);" });
+    
+    // Header
+    card.append(el("div", { style: "text-align: center; padding: 32px 24px 16px;" }, [
+      el("div", { style: "width: 48px; height: 48px; background: #6b4c5c; display: flex; align-items: center; justify-content: center; margin: "0 auto 16px";" }, 
+        el("span", { className: "material-symbols-outlined", style: "color: white; font-size: 24px;", text: "hub" })),
+      el("h1", { style: "font-size: 22px; font-weight: 700; margin: "0 0 8px";" }, "Connect to Odoo 19"),
+      el("p", { style: "font-size: 14px; color: #6b7280; margin: 0;" }, "Link your Odoo instance to enable wizard push and live data sync.")
+    ]));
+    
+    // Steps
+    const steps = el("div", { style: "display: flex; justify-content: center; gap: 8px; padding: "0 24px 24px";" });
+    [1, 2, 3].forEach(n => {
+      const isDone = n < state.step;
+      const isActive = n === state.step;
+      steps.append(el("div", { style: `width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; ${isDone ? "background: #22c55e; color: white;" : isActive ? "background: #6b4c5c; color: white;" : "background: #e5e7eb; color: #9ca3af;"}` }, 
+        isDone ? el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "check" }) : String(n)));
+      if (n < 3) steps.append(el("div", { style: `width: 32px; height: 2px; background: ${n < state.step ? "#6b4c5c" : "#e5e7eb"};` }));
+    });
+    card.append(steps);
+    
+    // Content
+    const content = el("div", { style: "padding: 0 24px 24px;" });
+    
+    if (state.step === 1) {
+      // Step 1: Instance Type
+      content.append(el("p", { style: "font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #0891b2; margin: "0 0 8px";" }, "Step 1 of 3 — Instance Type"));
+      content.append(el("h2", { style: "font-size: 18px; font-weight: 700; margin: "0 0 16px";" }, "How is your Odoo hosted?"));
+      
+      const types = [
+        { id: "online", icon: "public", label: "Odoo Online", desc: "odoo.com hosted subscription" },
+        { id: "sh", icon: "cloud", label: "Odoo.sh", desc: "Managed cloud on Odoo.sh platform" },
+        { id: "selfhost", icon: "dns", label: "Self-hosted", desc: "On-premise or private cloud" }
+      ];
+      
+      types.forEach(t => {
+        const isSelected = state.instanceType === t.id;
+        content.append(el("button", { 
+          style: `width: 100%; text-align: left; padding: 16px; margin-bottom: 12px; background: ${isSelected ? "#6b4c5c10" : "#f3f4f6"}; border-left: 3px solid ${isSelected ? "#6b4c5c" : "transparent"}; cursor: pointer;`,
+          onclick: () => { state.instanceType = t.id; render(); }
+        }, [
+          el("div", { style: "display: flex; align-items: center; gap: 12px;" }, [
+            el("span", { className: "material-symbols-outlined", style: `font-size: 22px; color: ${isSelected ? "#6b4c5c" : "#9ca3af"};`, text: t.icon }),
+            el("div", {}, [
+              el("p", { style: "font-size: 14px; font-weight: 600; margin: "0 0 2px";" }, t.label),
+              el("p", { style: "font-size: 12px; color: #6b7280; margin: 0;" }, t.desc)
+            ])
+          ])
+        ]));
+      });
+      
+      // Edition
+      content.append(el("p", { style: "font-size: 13px; font-weight: 600; color: #374151; margin: "16px 0 12px";" }, "Edition"));
+      const editions = el("div", { style: "display: flex; gap: 12px; margin-bottom: 16px;" });
+      [{id:"community",label:"Community"},{id:"enterprise",label:"Enterprise"}].forEach(e => {
+        const sel = state.edition === e.id;
+        editions.append(el("button", { 
+          style: `flex: 1; padding: 12px; text-align: center; background: ${sel ? "#6b4c5c" : "#f3f4f6"}; color: ${sel ? "white" : "#374151"}; font-weight: 600; cursor: pointer;`,
+          onclick: () => { state.edition = e.id; render(); }
+        }, e.label));
+      });
+      content.append(editions);
+      
+      // URL Input - SIMPLE TEXT FIELD
+      content.append(el("p", { style: "font-size: 13px; font-weight: 600; color: #374151; margin: "16px 0 8px";" }, "Your Odoo Address"));
+      const urlInput = el("input", { 
+        type: "text",
+        style: "width: 100%; padding: 12px 16px; font-size: 14px; border: 1px solid #d1d5db; background: #f9fafb;",
+        placeholder: "mycompany.odoo.com",
+        value: state.url.replace(/^https?:\/\//i, ''),
+        onchange: (e) => {
+          let v = e.target.value.trim().toLowerCase();
+          v = v.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+          state.url = v ? `https://${v}` : '';
+          // Extract DB name
+          const m = state.url.match(/\/\/([^\/]+)\.odoo\.com/i);
+          if (m) state.db = m[1].replace(/^www\./, '');
+        }
+      });
+      content.append(urlInput);
+      
+      // Preview
+      if (state.url) {
+        content.append(el("div", { style: "margin-top: 8px; padding: 10px 12px; background: #f3f4f6; border-left: 3px solid #0891b2;" }, [
+          el("p", { style: "font-size: 12px; color: #6b7280; margin: 0;" }, [
+            el("span", { style: "font-weight: 600; color: #374151;" }, "Connecting to: "),
+            state.url
+          ]),
+          state.db ? el("p", { style: "font-size: 12px; color: #0891b2; margin: "4px 0 0";" }, [
+            el("span", { style: "font-weight: 600;" }, "Database: "),
+            state.db
+          ]) : null
+        ]));
+      }
+      
+      content.append(el("p", { style: "font-size: 11px; color: #9ca3af; margin: "8px 0 0";" }, "💡 Just type like \"mycompany.odoo.com\" — with or without www."));
+      
+      // Continue button
+      const canContinue = state.url && state.db;
+      content.append(el("button", { 
+        style: `width: 100%; margin-top: 24px; padding: 14px; font-size: 14px; font-weight: 600; color: white; background: ${canContinue ? "#6b4c5c" : "#d1d5db"}; cursor: ${canContinue ? "pointer" : "not-allowed"};`,
+        disabled: !canContinue,
+        onclick: () => { if (canContinue) { state.step = 2; render(); } }
+      }, "Continue →"));
+      
+    } else if (state.step === 2) {
+      // Step 2: Credentials
+      content.append(el("p", { style: "font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #0891b2; margin: "0 0 8px";" }, "Step 2 of 3 — Credentials"));
+      content.append(el("h2", { style: "font-size: 18px; font-weight: 700; margin: "0 0 4px";" }, "Enter your login details"));
+      content.append(el("p", { style: "font-size: 12px; color: #6b7280; margin: "0 0 16px";" }, state.url));
+      
+      // DB Name
+      content.append(el("p", { style: "font-size: 13px; font-weight: 600; color: #374151; margin: "0 0 6px";" }, "Database Name"));
+      content.append(el("input", { 
+        type: "text", style: "width: 100%; padding: 12px 16px; margin-bottom: 12px; font-size: 14px; border: 1px solid #d1d5db; background: #f9fafb;",
+        value: state.db,
+        onchange: (e) => { state.db = e.target.value; }
+      }));
+      
+      // Create new DB checkbox
+      content.append(el("div", { style: "display: flex; align-items: center; gap: 12px; padding: 12px; background: #f3f4f6; margin-bottom: 16px; cursor: pointer;", onclick: () => { /* toggle */ } }, [
+        el("div", { style: "width: 20px; height: 20px; border: 2px solid #d1d5db;" }),
+        el("span", { style: "font-size: 14px; color: #374151;" }, "Create new database")
+      ]));
+      
+      // Username
+      content.append(el("p", { style: "font-size: 13px; font-weight: 600; color: #374151; margin: "0 0 6px";" }, "Email / Username"));
+      content.append(el("input", { 
+        type: "email", style: "width: 100%; padding: 12px 16px; margin-bottom: 16px; font-size: 14px; border: 1px solid #d1d5db; background: #f9fafb;",
+        placeholder: "admin@company.com",
+        value: state.user,
+        onchange: (e) => { state.user = e.target.value; }
+      }));
+      
+      // Password
+      content.append(el("p", { style: "font-size: 13px; font-weight: 600; color: #374151; margin: "0 0 6px";" }, "Password"));
+      content.append(el("input", { 
+        type: "password", style: "width: 100%; padding: 12px 16px; margin-bottom: 16px; font-size: 14px; border: 1px solid #d1d5db; background: #f9fafb;",
+        placeholder: "••••••••",
+        value: state.pass,
+        onchange: (e) => { state.pass = e.target.value; }
+      }));
+      
+      // Test Connection Button
+      const testBtn = el("button", { 
+        style: "width: 100%; padding: 14px; margin-bottom: 16px; font-size: 14px; font-weight: 600; color: #6b4c5c; background: white; border: 2px solid #6b4c5c; cursor: pointer;",
+        onclick: async () => {
+          if (!state.db || !state.user || !state.pass) {
+            state.testResult = { ok: false, message: "Please fill in all fields" };
+            render();
+            return;
+          }
+          state.testing = true;
+          state.testResult = null;
+          render();
+          
+          const payload = {
+            project: { projectIdentity: { projectId: "test" } },
+            credentials: { url: state.url, database: state.db, username: state.user, password: state.pass, edition: state.edition, instanceType: state.instanceType }
+          };
+          console.log(payload);
+          
+          try {
+            const resp = await fetch("/api/connection/connect", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            const data = await resp.json();
+            state.testing = false;
+            if (resp.ok) {
+              state.testResult = { ok: true, message: "Connection successful!" };
+            } else {
+              state.testResult = { ok: false, message: data.error || "Connection failed" };
+            }
+          } catch (err) {
+            state.testing = false;
+            state.testResult = { ok: false, message: "Network error: " + err.message };
+          }
+          render();
+        }
+      }, state.testing ? "Testing..." : "Test Connection");
+      content.append(testBtn);
+      
+      // Test result
+      if (state.testResult) {
+        const color = state.testResult.ok ? "#22c55e" : "#ef4444";
+        const bg = state.testResult.ok ? "#f0fdf4" : "#fef2f2";
+        content.append(el("div", { style: `padding: 16px; background: ${bg}; border-left: 3px solid ${color}; margin-bottom: 16px;` }, [
+          el("p", { style: `font-size: 14px; font-weight: 600; color: ${color}; margin: 0;` }, state.testResult.message)
+        ]));
+      }
+      
+      // Buttons
+      const btns = el("div", { style: "display: flex; gap: 12px;" });
+      btns.append(el("button", { style: "flex: 1; padding: 12px; font-size: 14px; background: #e5e7eb; color: #374151; cursor: pointer;", onclick: () => { state.step = 1; render(); } }, "← Back"));
+      const canContinue = state.testResult?.ok;
+      btns.append(el("button", { style: `flex: 1; padding: 12px; font-size: 14px; font-weight: 600; color: white; background: ${canContinue ? "#6b4c5c" : "#d1d5db"}; cursor: ${canContinue ? "pointer" : "not-allowed"};`, disabled: !canContinue, onclick: () => { if (canContinue) { state.step = 3; render(); } } }, "Continue →"));
+      content.append(btns);
+      
+    } else {
+      // Step 3: Confirmation
+      content.append(el("p", { style: "font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #0891b2; margin: "0 0 8px";" }, "Step 3 of 3 — Confirmation"));
+      content.append(el("h2", { style: "font-size: 18px; font-weight: 700; margin: "0 0 4px";" }, "Ready to connect!"));
+      
+      content.append(el("div", { style: "padding: 20px; background: #f0f9ff; margin: "16px 0";" }, [
+        row("Instance", state.instanceType === "online" ? "Odoo Online" : state.instanceType === "sh" ? "Odoo.sh" : "Self-hosted"),
+        row("Edition", state.edition.charAt(0).toUpperCase() + state.edition.slice(1)),
+        row("URL", state.url),
+        row("Database", state.db),
+        row("User", state.user)
+      ]));
+      
+      content.append(el("div", { style: "padding: 12px; background: #f3f4f6; font-size: 12px; color: #6b7280; margin-bottom: 16px;" }, "🔒 Your credentials are stored only in this browser session."));
+      
+      content.append(el("button", { 
+        style: "width: 100%; padding: 16px; margin-bottom: 12px; font-size: 16px; font-weight: 600; color: white; background: #6b4c5c; cursor: pointer;",
+        onclick: () => onConnect({ url: state.url, database: state.db, username: state.user, password: state.pass, edition: state.edition, instanceType: state.instanceType })
+      }, "Start Implementation"));
+      
+      content.append(el("div", { style: "display: flex; gap: 12px;" }, [
+        el("button", { style: "flex: 1; padding: 12px; font-size: 14px; background: #e5e7eb; color: #374151; cursor: pointer;", onclick: () => { state.step = 2; render(); } }, "← Back"),
+        el("button", { style: "flex: 1; padding: 12px; font-size: 14px; color: #6b7280; background: "transparent"; textDecoration: "underline"; cursor: "pointer"; border: "none";", onclick: onSkip }, "Skip for now")
+      ]));
+    }
+    
+    card.append(content);
+    container.append(card);
+    return container;
+  }
+  
+  function row(label, value) {
+    return el("div", { style: "display: flex; justify-content: space-between; padding: "8px 0"; border-bottom: "1px solid #e5e7eb";" }, [
+      el("span", { style: "font-size: 12px; color: #6b7280; font-weight: 500;" }, label),
+      el("span", { style: "font-size: 14px; font-weight: 600; color: #374151;" }, value || "—")
+    ]);
+  }
+  
+  return render();
+}

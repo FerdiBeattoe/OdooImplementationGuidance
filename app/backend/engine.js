@@ -80,6 +80,9 @@ export async function connectProject(project, payload, fetchImpl = fetch) {
       'Connection timed out. The Odoo server did not respond within 15 seconds.'
     );
   } catch (authError) {
+    // Log full error details for debugging
+    console.error('[CONNECTION ERROR]', authError.message, authError.code, authError.cause);
+    
     // Categorize authentication errors
     console.error('Connection error details:', authError.message, authError.cause, authError.code);
     const errorMsg = authError.message.toLowerCase();

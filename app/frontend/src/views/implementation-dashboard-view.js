@@ -124,7 +124,7 @@ export function renderImplementationDashboardView({ onNavigate, onOpenRoadmap })
         el("div", {}, [
           el("p", {
             style: "font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.7); margin-bottom: 4px;"
-          }, "READY TO CONTINUE?"),
+          }, "CONTINUE YOUR JOURNEY"),
           el("h3", {
             style: "font-family: var(--ee-font-headline); font-size: 22px; font-weight: 700; color: white; letter-spacing: -0.02em;"
           }, "Jump Back In")

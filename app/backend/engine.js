@@ -1,3 +1,6 @@
+import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { createAuditEntry } from "../shared/audit-log.js";
 import {
   createInitialConnectionState,
@@ -10,7 +13,43 @@ import { generateDomainPreview } from "../shared/preview-engine.js";
 import { ODOO_VERSION } from "../shared/constants.js";
 import { OdooClient, OdooRpcError, detectInstalledModules, detectVersion } from "./odoo-client.js";
 
+const __filename_engine = fileURLToPath(import.meta.url);
+const __dirname_engine = path.dirname(__filename_engine);
+const connectionRegistryPath = path.resolve(__dirname_engine, "data", "connections.json");
+
 const connectionRegistry = new Map();
+
+// ── Connection registry persistence ─────────────────────────────
+async function loadConnectionRegistry() {
+  try {
+    const raw = await readFile(connectionRegistryPath, "utf8");
+    const data = JSON.parse(raw);
+    const now = Date.now();
+    for (const [key, value] of Object.entries(data.connections || {})) {
+      // Only restore connections that haven't exceeded TTL
+      if (now - (value.timestamp || 0) <= CONNECTION_TTL_MS) {
+        connectionRegistry.set(key, value);
+      }
+    }
+  } catch {
+    // No saved connections — start fresh
+  }
+}
+
+async function saveConnectionRegistry() {
+  try {
+    const data = {
+      connections: Object.fromEntries(connectionRegistry),
+      savedAt: new Date().toISOString()
+    };
+    await writeFile(connectionRegistryPath, JSON.stringify(data, null, 2));
+  } catch {
+    // Best-effort persistence — don't crash on write failure
+  }
+}
+
+// Load persisted connections on module init
+await loadConnectionRegistry();
 
 const CONNECTION_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
@@ -85,7 +124,7 @@ export async function connectProject(project, payload, fetchImpl = fetch) {
     detectedDeployment = detectedDeployment || 'On-Premise';
   }
 
-  // Store connection in registry
+  // Store connection in registry and persist to disk
   const projectId = project?.projectIdentity?.projectId;
   connectionRegistry.set(projectId, {
     baseUrl: client.baseUrl,
@@ -94,6 +133,7 @@ export async function connectProject(project, payload, fetchImpl = fetch) {
     uid: client.uid,
     timestamp: Date.now()
   });
+  await saveConnectionRegistry();
 
   return normalizeConnectionState(
     {
@@ -131,8 +171,9 @@ export async function connectProject(project, payload, fetchImpl = fetch) {
   );
 }
 
-export function disconnectProject(project) {
+export async function disconnectProject(project) {
   connectionRegistry.delete(project?.projectIdentity?.projectId);
+  await saveConnectionRegistry();
   return normalizeConnectionState(createInitialConnectionState(), project?.projectIdentity);
 }
 
@@ -212,6 +253,41 @@ export async function inspectDomain(project, domainId, fetchImpl = fetch) {
       addDuplicateNameSignal(inspection, "partnerCategories", "Partner classification");
       addDuplicateNameSignal(inspection, "productCategories", "Product category");
       addDuplicateNameSignal(inspection, "uomCategories", "Unit category");
+      break;
+    case "users-roles-security":
+      inspection.records = { users: [], groups: [] };
+      inspection.modelStatus["res.users"] = await getModelReadStatus(client, "res.users");
+      inspection.modelStatus["res.groups"] = await getModelReadStatus(client, "res.groups");
+      if (inspection.modelStatus["res.users"] === "readable") {
+        inspection.recordCounts.users = await client.searchCount("res.users", []);
+      }
+      if (inspection.modelStatus["res.groups"] === "readable") {
+        try {
+          inspection.records.groups = await client.searchRead("res.groups", [], ["id", "name", "category_id"], { limit: 200 });
+          inspection.recordCounts.groups = inspection.records.groups.length;
+        } catch { inspection.recordCounts.groups = 0; }
+      }
+      break;
+    case "hr":
+      inspection.records = { departments: [], jobs: [], employees: [] };
+      inspection.modelStatus["hr.department"] = await getModelReadStatus(client, "hr.department");
+      inspection.modelStatus["hr.job"] = await getModelReadStatus(client, "hr.job");
+      inspection.modelStatus["hr.employee"] = await getModelReadStatus(client, "hr.employee");
+      if (inspection.modelStatus["hr.department"] === "readable") {
+        try {
+          inspection.records.departments = await client.searchRead("hr.department", [], ["id", "name", "manager_id", "parent_id"], { limit: 200 });
+          inspection.recordCounts.departments = inspection.records.departments.length;
+        } catch { inspection.recordCounts.departments = 0; }
+      }
+      if (inspection.modelStatus["hr.job"] === "readable") {
+        try {
+          inspection.records.jobs = await client.searchRead("hr.job", [], ["id", "name", "department_id"], { limit: 200 });
+          inspection.recordCounts.jobs = inspection.records.jobs.length;
+        } catch { inspection.recordCounts.jobs = 0; }
+      }
+      if (inspection.modelStatus["hr.employee"] === "readable") {
+        inspection.recordCounts.employees = await client.searchCount("hr.employee", []);
+      }
       break;
     case "inventory":
       inspection.records = {
@@ -358,6 +434,47 @@ export async function executePreview(project, preview, options = {}, fetchImpl =
     await client.create("pos.payment.method", {
       name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
     });
+  } else if (latestPreview.domainId === "hr" && latestPreview.targetModel === "hr.department") {
+    // SAFE: hr.department is a low-risk reference/config model (organizational label)
+    const vals = {
+      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
+    };
+    const parentId = Number(latestPreview.intendedChanges.find((item) => item.field === "parent_id")?.to || 0);
+    if (parentId > 0) vals.parent_id = parentId;
+    await client.create("hr.department", vals);
+  } else if (latestPreview.domainId === "hr" && latestPreview.targetModel === "hr.job") {
+    // SAFE: hr.job is a low-risk reference/config model (job position label)
+    await client.create("hr.job", {
+      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
+    });
+  } else if (latestPreview.domainId === "hr" && latestPreview.targetModel === "hr.employee") {
+    // GUARDED: hr.employee is linked to res.users, payroll, leave — block automated execution
+    throw new OdooRpcError(
+      "hr.employee creation is guarded (preview-only). Employee records are linked to user accounts, " +
+      "payroll, and leave allocations. Create employees via Odoo HR module > Employees."
+    );
+  } else if (latestPreview.domainId === "accounting" && latestPreview.targetModel === "account.journal") {
+    // SAFE: account.journal is a configuration record (bank journal, sales journal, etc.)
+    const vals = {
+      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier,
+      type: latestPreview.intendedChanges.find((item) => item.field === "type")?.to || "general",
+      code: latestPreview.intendedChanges.find((item) => item.field === "code")?.to || ""
+    };
+    await client.create("account.journal", vals);
+  } else if (latestPreview.domainId === "accounting" && latestPreview.targetModel === "account.tax") {
+    // SAFE: account.tax is a configuration record
+    const vals = {
+      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier,
+      amount: parseFloat(latestPreview.intendedChanges.find((item) => item.field === "amount")?.to || "0"),
+      type_tax_use: latestPreview.intendedChanges.find((item) => item.field === "type_tax_use")?.to || "sale"
+    };
+    await client.create("account.tax", vals);
+  } else if (latestPreview.domainId === "accounting" && latestPreview.targetModel === "account.account") {
+    // GUARDED: chart of accounts structure is localization-sensitive
+    throw new OdooRpcError(
+      "account.account creation is guarded (preview-only). Chart of accounts structure is " +
+      "localization-sensitive and tied to fiscal reporting. Use Odoo Accounting > Configuration > Chart of Accounts."
+    );
   } else {
     throw new OdooRpcError("Preview execution is not supported for this action.");
   }
@@ -369,6 +486,49 @@ export async function executePreview(project, preview, options = {}, fetchImpl =
     prerequisiteStatus: "validated",
     completedAt: new Date().toISOString()
   });
+}
+
+/**
+ * Validate that a stored connection's session is still alive.
+ * Returns { valid: true } or { valid: false, reason: "..." }.
+ * If invalid, removes the stale entry from the registry.
+ */
+export async function validateConnection(project, fetchImpl = fetch) {
+  const projectId = project?.projectIdentity?.projectId;
+  const stored = connectionRegistry.get(projectId);
+
+  if (!stored) {
+    return { valid: false, reason: "No stored connection for this project." };
+  }
+
+  // Check TTL
+  if (Date.now() - (stored.timestamp || 0) > CONNECTION_TTL_MS) {
+    connectionRegistry.delete(projectId);
+    await saveConnectionRegistry();
+    return { valid: false, reason: "Connection expired (TTL exceeded)." };
+  }
+
+  // Probe the session with a lightweight read
+  const client = new OdooClient({
+    baseUrl: stored.baseUrl,
+    database: stored.database,
+    sessionId: stored.sessionId,
+    uid: stored.uid,
+    fetchImpl
+  });
+
+  try {
+    await client.searchCount("res.company", []);
+    // Refresh timestamp on successful validation
+    stored.timestamp = Date.now();
+    await saveConnectionRegistry();
+    return { valid: true };
+  } catch {
+    // Session is dead — clean up
+    connectionRegistry.delete(projectId);
+    await saveConnectionRegistry();
+    return { valid: false, reason: "Odoo session expired or server unreachable. Please reconnect." };
+  }
 }
 
 export function buildConnectionAuditEntry(project, action, summary, reason = "") {
@@ -451,13 +611,41 @@ function addDuplicateNameSignal(inspection, recordKey, label) {
   }
 }
 
+// ── Bulk record creation for grid import ─────────────────────────
+function getAnyConnectedClient(fetchImpl) {
+  if (connectionRegistry.size === 0) {
+    throw new OdooRpcError("No live Odoo connection is active. Connect to Odoo before importing data.");
+  }
+  let latest = null;
+  for (const entry of connectionRegistry.values()) {
+    if (!latest || (entry.timestamp || 0) > (latest.timestamp || 0)) {
+      latest = entry;
+    }
+  }
+  return new OdooClient({
+    baseUrl: latest.baseUrl,
+    database: latest.database,
+    sessionId: latest.sessionId,
+    uid: latest.uid,
+    fetchImpl
+  });
+}
+
+export async function createRecord(project, model, values, fetchImpl = fetch) {
+  const client = project ? getConnectedClient(project, fetchImpl) : getAnyConnectedClient(fetchImpl);
+  return await client.create(model, values);
+}
+
 function cleanupStaleConnections() {
   const now = Date.now();
+  let changed = false;
   for (const [projectId, entry] of connectionRegistry.entries()) {
     if (now - (entry.timestamp || 0) > CONNECTION_TTL_MS) {
       connectionRegistry.delete(projectId);
+      changed = true;
     }
   }
+  if (changed) saveConnectionRegistry();
 }
 
 const _cleanupTimer = setInterval(cleanupStaleConnections, CLEANUP_INTERVAL_MS);

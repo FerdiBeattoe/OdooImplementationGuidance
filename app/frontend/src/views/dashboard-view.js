@@ -11,7 +11,15 @@ import { renderGuidanceBlock } from "../components/guidance-block.js";
 import { renderStatusBadge } from "../components/status-badge.js";
 import { renderProjectEntryView } from "./project-entry-view.js";
 import { DASHBOARD_SECTIONS, getConnectionWorkspaceModel, getDashboardSection } from "./dashboard-model.js";
-import { getState, getConnectionAttempt, clearConnectionAttempt } from "../state/app-store.js";
+import {
+  getState,
+  getConnectionAttempt,
+  clearConnectionAttempt,
+  getModuleCompletionStatus,
+  getGovernedRoadmapSteps,
+  getCompletedWizards
+} from "../state/app-store.js";
+import { getActivityLog } from "../state/implementationStore.js";
 
 export function renderDashboardView({
   project,
@@ -142,7 +150,22 @@ function renderDashboardSection({
 }
 
 function renderOverviewSection({ project, summary, checkpointSummary, primaryCheckpoint, guidanceBlock, connection, onNavigate }) {
-  const score = "98.4";
+  // Compute real values from governed state
+  const moduleStatus = getModuleCompletionStatus();
+  const roadmapSteps = getGovernedRoadmapSteps();
+  const completedSteps = Object.values(roadmapSteps).filter(s => s === "complete").length;
+  const totalSteps = 30;
+  const checkpoints = project.checkpoints || [];
+  const passCount = checkpoints.filter(c => c.status === "Pass").length;
+  const totalCheckpoints = checkpoints.length || 1;
+  const integrityScore = totalCheckpoints > 0 ? ((passCount / totalCheckpoints) * 100).toFixed(1) : "0.0";
+
+  const wizardPct = moduleStatus.total > 0 ? Math.round((moduleStatus.completed / moduleStatus.total) * 100) : 0;
+  const stepsPct = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+
+  // Real activity log entries
+  const activityLogEntries = getActivityLog().slice(0, 4);
+
   return el("div", { className: "max-w-7xl mx-auto space-y-8" }, [
     el("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6" }, [
       el("div", { className: "lg:col-span-1 bg-surface-container-lowest p-8 relative overflow-hidden group border-b-2 border-secondary" }, [
@@ -150,78 +173,93 @@ function renderOverviewSection({ project, summary, checkpointSummary, primaryChe
           el("span", { className: "material-symbols-outlined text-8xl text-secondary", text: "verified_user" })
         ]),
         el("div", { className: "relative z-10" }, [
-          el("p", { className: "text-xs font-bold tracking-widest text-secondary uppercase mb-2", text: "System Integrity Score" }),
+          el("p", { className: "text-xs font-bold tracking-widest text-secondary uppercase mb-2", text: "Checkpoint Pass Rate" }),
           el("h3", { className: "text-6xl font-extrabold text-on-surface tracking-tighter mb-4" }, [
-            el("span", { text: score }),
+            el("span", { text: integrityScore }),
             el("span", { className: "text-2xl text-secondary/60", text: "%" })
           ]),
           el("div", { className: "flex items-center gap-2 text-sm font-medium text-secondary" }, [
-            el("span", { className: "material-symbols-outlined text-sm", text: "trending_up" }),
-            el("span", { text: "+0.2% from last validation cycle" })
+            el("span", { className: "material-symbols-outlined text-sm", text: "verified" }),
+            el("span", { text: `${passCount} of ${totalCheckpoints} checkpoints passing` })
           ])
         ]),
         el("div", { className: "absolute bottom-0 left-0 w-full h-1 bg-secondary/10" }, [
-          el("div", { className: "h-full bg-secondary w-[98.4%]" })
+          el("div", { className: "h-full bg-secondary", style: `width: ${integrityScore}%` })
         ])
       ]),
       el("div", { className: "lg:col-span-2 bg-surface-container-low p-8 grid grid-cols-1 md:grid-cols-3 gap-8 border-b-2 border-primary" }, [
-        progressCol("Core Engine", "85%", "Database schemas and base ORM extensions validated."),
-        progressCol("Module Dev", "42%", "Accounting and Inventory modules in UAT phase."),
-        progressCol("Data Migration", "12%", "Legacy data mapping for historical records in progress.")
+        progressCol("Module Setup", `${wizardPct}%`, `${moduleStatus.completed} of ${moduleStatus.total} wizards completed.`),
+        progressCol("Roadmap Steps", `${stepsPct}%`, `${completedSteps} of ${totalSteps} implementation steps done.`),
+        progressCol("Connection", connection.status === "Connected — Execute" ? "100%" : "0%", connection.status === "Connected — Execute" ? "Live Odoo connection active." : "No live connection. Offline capture mode.")
       ])
     ]),
     el("div", { className: "grid grid-cols-1 xl:grid-cols-3 gap-8" }, [
       el("div", { className: "xl:col-span-2 space-y-4" }, [
-        el("div", { className: "flex items-center justify-between" }, [
-          el("h4", { className: "text-xl font-bold text-on-surface", text: "Architectural Blueprint" }),
-          el("div", { className: "flex gap-2" }, [
-            el("button", { className: "text-xs font-semibold px-3 py-1 bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors", text: "v1.4.2 Current" }),
-            el("button", { className: "text-xs font-semibold px-3 py-1 text-secondary hover:underline", text: "View Legend" })
-          ])
-        ]),
-        el("div", { className: "aspect-video bg-surface-container relative group cursor-crosshair overflow-hidden" }, [
-          el("img", { src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCtJGxbS2aYCProgJ3WD8iiO9NitQMv_-NWbBIe_qQynySDtobj__ghCBqHLg1dD45xxNXhk6yYrBR9sxJ-sfNJ_xmKgwVaTz72oWriZJwscJe4WuLOIdB5VyBP2xlcmw8x8K4utkMDUEP4Spr6Ffuh-e6sMXfY28OMbYZ7tzLJn_r-p4ONppFIAtUYid8wPC_e0z4-7eiBSIBZwRRg4vu6GcFmYkAOqTtTcFHSul1PGtTRpXc6O0DEL9LMHoxGW6O9J3QEtQOcfXQ", className: "w-full h-full object-cover opacity-40 grayscale group-hover:scale-105 transition-transform duration-700" }),
-          el("div", { className: "absolute inset-0 bg-gradient-to-tr from-secondary/10 to-transparent" }),
-          el("div", { className: "absolute top-1/4 left-1/4 p-4 bg-white/90 border border-secondary shadow-xl max-w-xs" }, [
-            el("p", { className: "text-[10px] font-black text-secondary uppercase tracking-widest mb-1", text: "Active Cluster" }),
-            el("p", { className: "text-xs font-bold text-on-surface", text: "PostgreSQL Cluster Node-01" }),
-            el("div", { className: "mt-2 flex items-center gap-1" }, [
-              el("span", { className: "w-1.5 h-1.5 bg-green-500" }),
-              el("span", { className: "text-[9px] text-slate-500", text: "Uptime: 142 days" })
+        el("h4", { className: "text-xl font-bold text-on-surface", text: "Implementation Status" }),
+        el("div", { className: "bg-surface-container p-6 space-y-4" },
+          moduleStatus.modules.map(m =>
+            el("div", { className: "flex justify-between items-center py-2 border-b border-surface-container-low last:border-0" }, [
+              el("span", { className: "text-sm font-medium text-on-surface", text: m.id.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()) }),
+              el("span", {
+                className: `text-xs font-bold uppercase px-3 py-1 ${m.status === "complete" ? "bg-green-100 text-green-800" : "bg-surface-container-high text-on-surface-variant"}`,
+                text: m.status === "complete" ? "Complete" : "Pending"
+              })
             ])
-          ])
-        ])
+          )
+        )
       ]),
       el("div", { className: "space-y-6" }, [
-        el("h4", { className: "text-xl font-bold text-on-surface", text: "Milestones" }),
+        el("h4", { className: "text-xl font-bold text-on-surface", text: "Quick Actions" }),
         el("div", { className: "space-y-4" }, [
-          milestoneItem("Project Phase 02", "OCT 24", "Staging Environment Lock", "Final code freeze before enterprise-wide UAT begins.", "border-secondary", "opacity-100"),
-          milestoneItem("Project Phase 03", "NOV 12", "Legacy Data Cutover", "Migration of 500k+ customer records from SAP environment.", "border-surface-variant", "opacity-60"),
-          milestoneItem("Go-Live", "JAN 01", "Mainframe Decommission", "Final transition of commercial operations.", "border-surface-variant", "opacity-60")
-        ]),
-        el("button", { className: "w-full py-3 bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest hover:bg-surface-container-highest transition-colors", text: "View Full Timeline" })
+          el("button", {
+            className: "w-full py-3 bg-primary text-on-primary text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity",
+            onclick: () => onNavigate("implementation-roadmap"),
+            text: "Open Roadmap"
+          }),
+          el("button", {
+            className: "w-full py-3 bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest hover:bg-surface-container-highest transition-colors",
+            onclick: () => onNavigate("module-setup"),
+            text: "Configure Modules"
+          }),
+          el("button", {
+            className: "w-full py-3 bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest hover:bg-surface-container-highest transition-colors",
+            onclick: () => onNavigate("analytics"),
+            text: "View Analytics"
+          })
+        ])
       ])
     ]),
     el("div", { className: "grid grid-cols-1 lg:grid-cols-4 gap-8" }, [
       el("div", { className: "lg:col-span-3 bg-surface-container-lowest overflow-hidden flex flex-col" }, [
         el("div", { className: "px-6 py-4 border-b border-surface-container-low flex justify-between items-center" }, [
-          el("h4", { className: "text-sm font-bold uppercase tracking-widest text-on-surface", text: "System Activity Log" }),
+          el("h4", { className: "text-sm font-bold uppercase tracking-widest text-on-surface", text: "Recent Activity" }),
           el("div", { className: "flex items-center gap-4" }, [
             el("span", { className: "material-symbols-outlined text-sm text-slate-400", text: "filter_list" })
           ])
         ]),
-        el("div", { className: "divide-y divide-surface-container-low" }, [
-          activityLogItem("14:02:41", "Automated CI/CD: Deployment successful", "Validated by GitHub Actions in 4m 12s."),
-          activityLogItem("13:58:12", "Architectural Alert: Primary key collision", "Auto-resolved via deduplication protocol #22.")
-        ])
+        el("div", { className: "divide-y divide-surface-container-low" },
+          activityLogEntries.length > 0
+            ? activityLogEntries.map(entry =>
+                activityLogItem(
+                  entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : "--:--",
+                  entry.action || entry.module || "Activity",
+                  entry.status || ""
+                )
+              )
+            : [el("div", { className: "px-6 py-4 text-sm text-on-surface-variant" }, [el("span", { text: "No activity recorded yet. Complete a wizard to see entries here." })])]
+        )
       ]),
       el("div", { className: "bg-tertiary text-on-tertiary-container p-6 flex flex-col justify-between" }, [
         el("div", {}, [
           el("span", { className: "material-symbols-outlined text-tertiary-fixed mb-4", text: "lightbulb" }),
-          el("h4", { className: "text-lg font-bold text-white mb-2 leading-tight", text: "Implementation Recommendation" }),
-          el("p", { className: "text-xs text-on-tertiary-container/80 leading-relaxed mb-6", text: "Current performance metrics suggest the server-side caching for the Accounting module is under-optimized." })
+          el("h4", { className: "text-lg font-bold text-white mb-2 leading-tight", text: "Next Step" }),
+          el("p", { className: "text-xs text-on-tertiary-container/80 leading-relaxed mb-6", text: moduleStatus.completed < moduleStatus.total ? `Complete the remaining ${moduleStatus.total - moduleStatus.completed} module wizard(s) to progress your implementation.` : "All modules configured. Review the roadmap for final go-live steps." })
         ]),
-        el("button", { className: "w-full py-3 bg-white text-tertiary text-xs font-bold uppercase tracking-widest hover:bg-tertiary-fixed transition-colors", text: "Apply Configuration" })
+        el("button", {
+          className: "w-full py-3 bg-white text-tertiary text-xs font-bold uppercase tracking-widest hover:bg-tertiary-fixed transition-colors",
+          onclick: () => onNavigate("module-setup"),
+          text: "Open Module Setup"
+        })
       ])
     ])
   ]);

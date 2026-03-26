@@ -15,6 +15,7 @@ import {
   getSalesTeamOptions, getAccountOptions, getDepartmentOptions, getJobPositionOptions,
   getWarehouseOptions
 } from "../state/implementationStore.js";
+import { getCompletedWizards } from "../state/app-store.js";
 
 // ─────────────────────────────────────────────────────────────
 // WIZARD 1 — Company Setup
@@ -1428,7 +1429,8 @@ function renderWizardLauncher(onNavigate) {
     ]),
     el("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" },
       WIZARD_CARDS.map(w => {
-        const done = !!getWizardData(toCamelKey(w.id));
+        const completedWizards = getCompletedWizards();
+        const done = !!getWizardData(toCamelKey(w.id)) || completedWizards.includes(w.id);
         return el("button", {
           className: `text-left bg-surface-container-lowest rounded-xl border ${done ? "border-secondary/30" : "border-outline-variant/10"} shadow-sm p-5 hover:shadow-md hover:border-primary/20 transition-all active:scale-[0.98]`,
           onclick: () => onNavigate("wizard-" + w.id)

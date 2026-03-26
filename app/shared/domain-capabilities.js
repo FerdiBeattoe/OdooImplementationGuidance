@@ -17,7 +17,17 @@ const DOMAIN_SUPPORT = {
     previewSupport: true,
     executeSupport: false,
     moduleNames: ["base"],
-    summary: "Role and group inspection with preview-only governance."
+    summary: "User/group inspection (preview-only). res.users writes are guarded: user creation triggers security group assignment, password policies, and two-factor enrollment that require admin UI confirmation. res.groups writes can cascade access rule changes across the instance.",
+    // Model-by-model risk classification:
+    // res.users  — GUARDED (preview-only): creating/writing users triggers security group
+    //              membership, password policy enforcement, MFA enrollment, and email
+    //              invitation workflows. A bad write can lock out the admin or grant
+    //              unintended access. Genuinely high-risk for automated execution.
+    // res.groups — GUARDED (preview-only): writing group membership or implied_ids
+    //              cascades access rule changes (ir.rule, ir.model.access) across the
+    //              instance. Not safely automatable without full ACL audit.
+    executeSafeModels: [],
+    executeGuardedModels: ["res.users", "res.groups"]
   },
   "master-data": {
     targetLevel: 3,
@@ -76,12 +86,14 @@ const DOMAIN_SUPPORT = {
     summary: "PLM inspection with activation/setup preview only."
   },
   accounting: {
-    targetLevel: 2,
+    targetLevel: 3,
     inspectModels: ["account.journal", "account.tax", "account.account"],
     previewSupport: true,
-    executeSupport: false,
+    executeSupport: true,
     moduleNames: ["account"],
-    summary: "Accounting inspection with preview-only configuration intent."
+    summary: "Accounting inspection with bounded journal/tax scaffolding. account.account writes are guarded (chart of accounts structure is localization-sensitive).",
+    executeSafeModels: ["account.journal", "account.tax"],
+    executeGuardedModels: ["account.account"]
   },
   pos: {
     targetLevel: 4,
@@ -108,12 +120,27 @@ const DOMAIN_SUPPORT = {
     summary: "Projects inspection with module/setup preview only."
   },
   hr: {
-    targetLevel: 2,
-    inspectModels: ["hr.employee", "hr.department"],
+    targetLevel: 3,
+    inspectModels: ["hr.employee", "hr.department", "hr.job"],
     previewSupport: true,
-    executeSupport: false,
+    executeSupport: true,
     moduleNames: ["hr"],
-    summary: "HR inspection with module/setup preview only."
+    summary: "HR inspection with bounded department/job scaffolding. hr.employee writes are guarded (linked to user accounts, payroll, and leave allocations).",
+    // Model-by-model risk classification:
+    // hr.department — SAFE (live-executable): reference/config model. Creating a
+    //                 department is a low-risk organizational label. No cascading
+    //                 security, financial, or payroll side-effects.
+    // hr.job        — SAFE (live-executable): reference/config model. Job positions
+    //                 are labels used for recruitment and org charts. No cascading
+    //                 side-effects.
+    // hr.employee   — GUARDED (preview-only): employee records are linked to
+    //                 res.users (login access), payroll (hr.payslip), leave
+    //                 allocations (hr.leave.allocation), and contract terms
+    //                 (hr.contract). Creating an employee can auto-create a
+    //                 res.partner and optionally a res.users. Incorrect writes
+    //                 can affect payroll calculations and leave balances.
+    executeSafeModels: ["hr.department", "hr.job"],
+    executeGuardedModels: ["hr.employee"]
   },
   quality: {
     targetLevel: 2,

@@ -23,10 +23,12 @@ import { normalizeInspectionState } from "../shared/inspection-model.js";
 import {
   buildConnectionAuditEntry,
   connectProject,
+  createRecord,
   disconnectProject,
   executePreview,
   inspectDomain,
-  previewDomain
+  previewDomain,
+  validateConnection
 } from "./engine.js";
 
 // Rate limiting configuration
@@ -144,6 +146,10 @@ export function createAppServer() {
         return await handleConnectionDisconnect(req, res);
       }
 
+      if (pathname === "/api/connection/validate" && req.method === "POST") {
+        return await handleConnectionValidate(req, res);
+      }
+
       if (pathname === "/api/domain/inspect" && req.method === "POST") {
         return await handleDomainInspect(req, res);
       }
@@ -154,6 +160,10 @@ export function createAppServer() {
 
       if (pathname === "/api/domain/execute" && req.method === "POST") {
         return await handleDomainExecute(req, res);
+      }
+
+      if (pathname === "/api/odoo/create" && req.method === "POST") {
+        return await handleOdooCreate(req, res);
       }
 
       if (pathname.startsWith("/shared/") && req.method === "GET") {
@@ -236,7 +246,7 @@ async function handleConnectionConnect(req, res) {
 async function handleConnectionDisconnect(req, res) {
   const payload = await readJsonBody(req);
   const project = normalizeProjectState(payload.project);
-  const connectionState = disconnectProject(project);
+  const connectionState = await disconnectProject(project);
   const nextProject = normalizeProjectState({
     ...project,
     connectionState,
@@ -246,6 +256,34 @@ async function handleConnectionDisconnect(req, res) {
     ])
   });
   return sendJson(res, 200, { project: nextProject });
+}
+
+async function handleConnectionValidate(req, res) {
+  const payload = await readJsonBody(req);
+  const project = normalizeProjectState(payload.project);
+
+  try {
+    const result = await validateConnection(project);
+    if (result.valid) {
+      return sendJson(res, 200, { valid: true, project });
+    } else {
+      // Connection is stale — return disconnected state
+      const nextProject = normalizeProjectState({
+        ...project,
+        connectionState: {
+          ...project.connectionState,
+          status: "not_connected",
+          capabilityLevel: "manual-only",
+          lastError: result.reason,
+          lastErrorAt: new Date().toISOString(),
+          availableFeatures: { inspect: false, preview: false, execute: false }
+        }
+      });
+      return sendJson(res, 200, { valid: false, reason: result.reason, project: nextProject });
+    }
+  } catch (error) {
+    return sendJson(res, 400, { error: error instanceof Error ? error.message : "Validation failed." });
+  }
 }
 
 async function handleDomainInspect(req, res) {
@@ -301,6 +339,22 @@ async function handleDomainPreview(req, res) {
     });
   } catch (error) {
     return sendJson(res, 400, { error: error instanceof Error ? error.message : "Preview failed." });
+  }
+}
+
+async function handleOdooCreate(req, res) {
+  const payload = await readJsonBody(req);
+  const { model, values } = payload;
+
+  if (!model || !values) {
+    return sendJson(res, 400, { error: "model and values are required." });
+  }
+
+  try {
+    const id = await createRecord(null, model, values);
+    return sendJson(res, 200, { id });
+  } catch (error) {
+    return sendJson(res, 400, { error: error instanceof Error ? error.message : "Record creation failed." });
   }
 }
 

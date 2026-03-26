@@ -1,5 +1,10 @@
 import { el } from "../lib/dom.js";
-import { getRoadmapStepStatus, setRoadmapStepStatus } from "../state/implementationStore.js";
+import {
+  getGovernedRoadmapStep,
+  setGovernedRoadmapStep,
+  getCompletedWizards,
+  persistActiveProject
+} from "../state/app-store.js";
 
 const PHASES = [
   {
@@ -76,30 +81,52 @@ const PHASES = [
   }
 ];
 
+/**
+ * Derive initial step status from completed wizards.
+ * If a step's wizard has been completed, auto-promote the step to "complete"
+ * unless the user has manually set a different status.
+ */
+function deriveStepStatus(stepId, wizardId, completedWizards) {
+  const governedStatus = getGovernedRoadmapStep(`step-${stepId}`);
+  // If already explicitly set in governed state, use that
+  if (governedStatus !== "todo") {
+    return governedStatus;
+  }
+  // Auto-derive from wizard completion
+  if (completedWizards.includes(wizardId)) {
+    return "complete";
+  }
+  return "todo";
+}
+
 export function renderRoadmapView({ onNavigate }) {
-  // Build a flat lookup of all steps
   const allSteps = PHASES.flatMap(p => p.steps);
+  const completedWizards = getCompletedWizards();
   const stepStatusMap = {};
-  allSteps.forEach(s => { stepStatusMap[s.id] = getRoadmapStepStatus(`step-${s.id}`); });
+  allSteps.forEach(s => {
+    stepStatusMap[s.id] = deriveStepStatus(s.id, s.wizardId, completedWizards);
+  });
 
   const container = el("div", { style: "max-width: 800px; margin: 0 auto; padding: 32px;" });
 
   function rerender() {
-    // Clear and rebuild
     while (container.firstChild) container.removeChild(container.firstChild);
 
     container.append(
       el("div", { style: "margin-bottom: 32px;" }, [
         el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin-bottom: 4px;", text: "ODOO 19 SETUP" }),
         el("h2", { style: "font-family: var(--font-headline); font-size: 28px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug); margin-bottom: 8px;", text: "Implementation Roadmap" }),
-        el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface-variant); margin-top: 4px;", text: "Follow these phases in order for the best results. Steps with unmet dependencies are locked." })
+        el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface-variant); margin-top: 4px;", text: "Follow these phases in order for the best results. Steps with unmet dependencies are locked. Progress is saved in governed project state." })
       ])
     );
 
     PHASES.forEach(phase => {
       const phaseEl = buildPhase(phase, stepStatusMap, onNavigate, (stepId, status) => {
         stepStatusMap[stepId] = status;
-        setRoadmapStepStatus(`step-${stepId}`, status);
+        // Persist to governed state (not localStorage)
+        setGovernedRoadmapStep(`step-${stepId}`, status);
+        // Persist to backend
+        persistActiveProject();
         rerender();
       });
       container.append(phaseEl);
@@ -116,8 +143,8 @@ function buildPhase(phase, stepStatusMap, onNavigate, onStatusChange) {
   return el("div", { style: "margin-bottom: 32px;" }, [
     // Phase header
     el("div", { style: "display: flex; align-items: center; gap: 16px; margin-bottom: 16px;" }, [
-      el("div", { 
-        style: "width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: var(--color-primary); color: var(--color-on-primary); font-family: var(--font-label); font-size: 12px; font-weight: 700; flex-shrink: 0;" 
+      el("div", {
+        style: "width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: var(--color-primary); color: var(--color-on-primary); font-family: var(--font-label); font-size: 12px; font-weight: 700; flex-shrink: 0;"
       }, [
         el("span", { text: String(PHASES.findIndex(p => p.id === phase.id) + 1) })
       ]),
@@ -148,7 +175,7 @@ function buildStep(step, status, locked, onNavigate, onStatusChange) {
   const cfg = statusConfig[status] || statusConfig.todo;
 
   const card = el("div", {
-    style: `position: relative; background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 16px 20px; display: flex; align-items: center; gap: 16px; transition: all 150ms ease; ${locked ? "opacity: 0.4; cursor: not-allowed;" : "cursor: pointer;"} ${!locked ? "&:hover { box-shadow: var(--shadow-md); background: var(--color-surface-container-low); }" : ""}`,
+    style: `position: relative; background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 16px 20px; display: flex; align-items: center; gap: 16px; transition: all 150ms ease; ${locked ? "opacity: 0.4; cursor: not-allowed;" : "cursor: pointer;"}`,
     onclick: () => { if (!locked) onNavigate("wizard-" + step.wizardId); }
   }, [
     // Dot on timeline

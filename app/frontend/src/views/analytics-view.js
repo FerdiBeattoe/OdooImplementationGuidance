@@ -1,20 +1,21 @@
 import { el } from "../lib/dom.js";
 import { getImplementationState, getActivityLog, getSyncHistory } from "../state/implementationStore.js";
+import { getModuleCompletionStatus, getGovernedRoadmapSteps, getCompletedWizards } from "../state/app-store.js";
 
 export function renderAnalyticsView({ project }) {
   const implState = getImplementationState();
   const activityLog = getActivityLog();
   const syncHistory = getSyncHistory();
 
-  // ── Compute metrics ───────────────────────────────────────
-  const wizardData = implState.wizardData || {};
-  const roadmapSteps = implState.roadmapSteps || {};
+  // ── Compute metrics from governed state ─────────────────────
+  const moduleStatus = getModuleCompletionStatus();
+  const governedRoadmap = getGovernedRoadmapSteps();
   const importedData = implState.importedData || {};
 
-  const completedWizards = Object.values(wizardData).filter(Boolean).length;
-  const totalWizards = 12;
-  const completedSteps = Object.values(roadmapSteps).filter(s => s === "complete").length;
-  const inProgressSteps = Object.values(roadmapSteps).filter(s => s === "in-progress").length;
+  const completedWizards = moduleStatus.completed;
+  const totalWizards = moduleStatus.total;
+  const completedSteps = Object.values(governedRoadmap).filter(s => s === "complete").length;
+  const inProgressSteps = Object.values(governedRoadmap).filter(s => s === "in-progress").length;
   const notStartedSteps = 30 - completedSteps - inProgressSteps;
 
   const importedCounts = {
@@ -28,7 +29,7 @@ export function renderAnalyticsView({ project }) {
     "Sales Orders": (importedData.salesOrders || []).length
   };
 
-  const isConnected = project?.connectionState?.status === "connected";
+  const isConnected = project?.connectionState?.status?.startsWith("connected");
   const lastSync = syncHistory[0]?.timestamp || null;
   const apiErrors = activityLog.filter(e => e.type === "error").length;
 
@@ -75,19 +76,20 @@ export function renderAnalyticsView({ project }) {
     const barCanvas = container.querySelector("#chart-modules");
     if (barCanvas) {
       const WIZARD_KEYS = [
-        { label: "Company", key: "companySetup" },
-        { label: "Users", key: "usersAccess" },
-        { label: "Accounts", key: "chartOfAccounts" },
-        { label: "Sales", key: "salesConfig" },
-        { label: "CRM", key: "crmConfig" },
-        { label: "Inventory", key: "inventoryConfig" },
-        { label: "Accounting", key: "accountingConfig" },
-        { label: "Purchase", key: "purchaseConfig" },
-        { label: "Mfg", key: "manufacturingConfig" },
-        { label: "HR", key: "hrPayrollConfig" },
-        { label: "Website", key: "websiteEcommerce" },
-        { label: "POS", key: "posConfig" }
+        { label: "Company", id: "company-setup" },
+        { label: "Users", id: "users-access" },
+        { label: "Accounts", id: "chart-of-accounts" },
+        { label: "Sales", id: "sales-setup" },
+        { label: "CRM", id: "crm-setup" },
+        { label: "Inventory", id: "inventory-setup" },
+        { label: "Accounting", id: "accounting-setup" },
+        { label: "Purchase", id: "purchase-setup" },
+        { label: "Mfg", id: "manufacturing-setup" },
+        { label: "HR", id: "hr-setup" },
+        { label: "Website", id: "website-setup" },
+        { label: "POS", id: "pos-setup" }
       ];
+      const completedWizardsList = getCompletedWizards();
       try {
         new Chart(barCanvas, {
           type: "bar",
@@ -95,7 +97,7 @@ export function renderAnalyticsView({ project }) {
             labels: WIZARD_KEYS.map(w => w.label),
             datasets: [{
               label: "Complete",
-              data: WIZARD_KEYS.map(w => wizardData[w.key] ? 100 : 0),
+              data: WIZARD_KEYS.map(w => completedWizardsList.includes(w.id) ? 100 : 0),
               backgroundColor: "#13677b",
               borderRadius: 0
             }]

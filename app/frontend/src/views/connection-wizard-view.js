@@ -1,4 +1,5 @@
 import { el } from "../lib/dom.js";
+import { getState } from "../state/app-store.js";
 
 export function renderConnectionWizardView({ onConnect, onSkip }) {
   const state = {
@@ -258,8 +259,10 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
             return;
           }
 
+          // Use active project ID so the test connection is reusable by Step 3
+          const activeProjectId = getState().activeProject?.projectIdentity?.projectId || "test-connection";
           const payload = {
-            project: { projectIdentity: { projectId: "test-connection" } },
+            project: { projectIdentity: { projectId: activeProjectId } },
             credentials: {
               url: canonicalUrl,
               database: db,

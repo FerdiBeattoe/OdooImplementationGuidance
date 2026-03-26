@@ -4,6 +4,7 @@ import {
   getProductOptions, getCustomerOptions, getAccountOptions,
   getDepartmentOptions, getJobPositionOptions, getPaymentTermOptions, getPricelistOptions
 } from "../state/implementationStore.js";
+import { setGovernedImportedData, persistActiveProject } from "../state/app-store.js";
 import { GRID_PUSH_MAP } from "./grid-push.js";
 
 // ── Grid definition registry ──────────────────────────────────
@@ -427,6 +428,9 @@ function buildGrid(gridDef, onBack) {
         return clean;
       });
       setImportedData(gridDef.id, cleanRows);
+      // Persist to governed project state for refresh survival
+      setGovernedImportedData(gridDef.id, cleanRows);
+      persistActiveProject();
       addActivityLog({ action: `Imported ${cleanRows.length} ${gridDef.label}`, module: "Data Import" });
       importBtn.disabled = false;
       importBtn.style.opacity = "1";

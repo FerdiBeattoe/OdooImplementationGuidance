@@ -88,6 +88,21 @@ export async function previewDomain(project, domainId) {
   return payload.project;
 }
 
+export async function validateConnection(project) {
+  const response = await fetch(`${CONNECTION_ROOT}/validate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ project })
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Failed to validate connection.");
+  }
+
+  return payload;
+}
+
 export async function executePreview(project, preview, options = {}) {
   const response = await fetch(`${DOMAIN_ROOT}/execute`, {
     method: "POST",

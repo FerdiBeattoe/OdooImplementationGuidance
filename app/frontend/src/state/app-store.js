@@ -71,7 +71,8 @@ import {
   inspectDomain as inspectDomainRequest,
   loadProjectStore,
   previewDomain as previewDomainRequest,
-  saveProjectStore
+  saveProjectStore,
+  validateConnection as validateConnectionRequest
 } from "./persistence.js";
 
 const listeners = new Set();
@@ -242,7 +243,44 @@ export async function executePreview(preview) {
 export async function bootstrapStore() {
   try {
     state.projectStore = normalizeProjectStorePayload(await loadProjectStore());
+
+    // Auto-resume the most recently saved project to survive refresh
+    const projects = state.projectStore.projects || [];
+    if (projects.length > 0 && !state.activeProject.projectIdentity?.projectId) {
+      const mostRecent = projects[0]; // projects are ordered newest first
+      state.activeProject = normalizeProjectState(mostRecent);
+      // Sync governed captures to implementationStore for cross-wizard dropdowns
+      syncGovernedToImplementationStore();
+    }
+
     notify();
+
+    // Validate connection health after restore — don't block bootstrap on this
+    const connStatus = state.activeProject?.connectionState?.status || "not_connected";
+    if (connStatus.startsWith("connected")) {
+      try {
+        const validation = await validateConnectionRequest(state.activeProject);
+        if (!validation.valid) {
+          // Connection is stale — update state truthfully
+          state.activeProject = normalizeProjectState({
+            ...state.activeProject,
+            connectionState: {
+              ...state.activeProject.connectionState,
+              status: "not_connected",
+              capabilityLevel: "manual-only",
+              lastError: validation.reason || "Connection expired.",
+              lastErrorAt: new Date().toISOString(),
+              availableFeatures: { inspect: false, preview: false, execute: false }
+            }
+          });
+          pushNotification("Previous Odoo connection expired. Please reconnect.", "warning");
+          notify();
+        }
+      } catch {
+        // Validation endpoint unreachable — degrade gracefully
+        // Don't clear connection state since backend may just be starting up
+      }
+    }
   } catch (error) {
     pushNotification(error.message, "error");
   }
@@ -533,8 +571,57 @@ export function resumeProject(projectId) {
   }
 
   state.activeProject = normalizeProjectState(project);
+  // Sync governed wizard captures to implementationStore for cross-wizard dropdowns
+  syncGovernedToImplementationStore();
   pushNotification("Saved project resumed.", "success");
   notify();
+}
+
+/**
+ * Sync governed wizard capture data back to implementationStore.
+ * This ensures cross-wizard dropdown options (users, accounts, warehouses, etc.)
+ * are available after a project resume or page refresh.
+ */
+function syncGovernedToImplementationStore() {
+  try {
+    const captures = state.activeProject.workflowState?.wizardCaptures || {};
+    // Lazy-import to avoid circular dependency
+    const implStore = window.__implStoreBridge;
+    if (!implStore) return;
+
+    // Map governed captures to implementationStore wizard data keys
+    const keyMap = {
+      "company-setup": "companySetup",
+      "users-access": "usersAccess",
+      "chart-of-accounts": "chartOfAccounts",
+      "sales-setup": "salesConfig",
+      "crm-setup": "crmConfig",
+      "inventory-setup": "inventoryConfig",
+      "accounting-setup": "accountingConfig",
+      "purchase-setup": "purchaseConfig",
+      "manufacturing-setup": "manufacturingConfig",
+      "hr-setup": "hrPayrollConfig",
+      "website-setup": "websiteEcommerce",
+      "pos-setup": "posConfig"
+    };
+
+    for (const [wizardId, data] of Object.entries(captures)) {
+      const storeKey = keyMap[wizardId];
+      if (storeKey && data) {
+        implStore.setWizardData(storeKey, data);
+      }
+    }
+
+    // Sync governed imported data to implementationStore for grid display
+    const importedData = state.activeProject.workflowState?.importedData || {};
+    for (const [entity, rows] of Object.entries(importedData)) {
+      if (Array.isArray(rows) && rows.length > 0 && implStore.setImportedData) {
+        implStore.setImportedData(entity, rows);
+      }
+    }
+  } catch {
+    // Best-effort sync — don't break project resume on sync failure
+  }
 }
 
 export function getProjectSummary() {
@@ -549,12 +636,93 @@ export function addCompletedWizard(wizardId) {
   if (!state.activeProject.workflowState.completedWizards) {
     state.activeProject.workflowState.completedWizards = [];
   }
-  
+
   if (!state.activeProject.workflowState.completedWizards.includes(wizardId)) {
     state.activeProject.workflowState.completedWizards.push(wizardId);
     pushNotification(`Wizard "${wizardId}" marked as complete.`, "success");
     notify();
   }
+}
+
+export function getCompletedWizards() {
+  return state.activeProject.workflowState.completedWizards || [];
+}
+
+// ── Governed Roadmap Steps ────────────────────────────────────
+// Stores roadmap step status in governed project state (not localStorage)
+export function setGovernedRoadmapStep(stepId, status) {
+  if (!state.activeProject.workflowState.roadmapSteps) {
+    state.activeProject.workflowState.roadmapSteps = {};
+  }
+  state.activeProject.workflowState.roadmapSteps[stepId] = status;
+  notify();
+}
+
+export function getGovernedRoadmapStep(stepId) {
+  return state.activeProject.workflowState.roadmapSteps?.[stepId] || "todo";
+}
+
+export function getGovernedRoadmapSteps() {
+  return state.activeProject.workflowState.roadmapSteps || {};
+}
+
+// ── Wizard Capture Data (governed persistence) ────────────────
+// Stores wizard output data in governed project state for modules
+// that lack dedicated domain configuration functions
+export function setWizardCapture(wizardId, data) {
+  if (!state.activeProject.workflowState.wizardCaptures) {
+    state.activeProject.workflowState.wizardCaptures = {};
+  }
+  state.activeProject.workflowState.wizardCaptures[wizardId] = {
+    ...data,
+    capturedAt: new Date().toISOString()
+  };
+  notify();
+}
+
+export function getWizardCapture(wizardId) {
+  return state.activeProject.workflowState.wizardCaptures?.[wizardId] || null;
+}
+
+export function getAllWizardCaptures() {
+  return state.activeProject.workflowState.wizardCaptures || {};
+}
+
+// ── Governed Imported Data (grid imports) ─────────────────────
+// Persists grid import data in governed project state so it survives refresh
+export function setGovernedImportedData(entity, rows) {
+  if (!state.activeProject.workflowState.importedData) {
+    state.activeProject.workflowState.importedData = {};
+  }
+  state.activeProject.workflowState.importedData[entity] = rows;
+  notify();
+}
+
+export function getGovernedImportedData(entity) {
+  return state.activeProject.workflowState.importedData?.[entity] || [];
+}
+
+export function getAllGovernedImportedData() {
+  return state.activeProject.workflowState.importedData || {};
+}
+
+// ── Module Completion Status ──────────────────────────────────
+export function getModuleCompletionStatus() {
+  const completed = state.activeProject.workflowState.completedWizards || [];
+  const allModules = [
+    "company-setup", "users-access", "chart-of-accounts",
+    "sales-setup", "crm-setup", "inventory-setup",
+    "accounting-setup", "purchase-setup", "manufacturing-setup",
+    "hr-setup", "website-setup", "pos-setup"
+  ];
+  return {
+    completed: completed.length,
+    total: allModules.length,
+    modules: allModules.map(id => ({
+      id,
+      status: completed.includes(id) ? "complete" : "not_started"
+    }))
+  };
 }
 
 export function getInventoryCheckpointGroups() {

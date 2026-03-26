@@ -44,6 +44,14 @@ const DEFAULT_STATE = {
 let _state = loadFromStorage();
 const _listeners = new Set();
 
+// Expose bridge for governed state → implementationStore sync (avoids circular imports)
+if (typeof window !== "undefined") {
+  window.__implStoreBridge = {
+    setWizardData: (key, data) => setWizardData(key, data),
+    setImportedData: (entity, rows) => setImportedData(entity, rows)
+  };
+}
+
 function loadFromStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);

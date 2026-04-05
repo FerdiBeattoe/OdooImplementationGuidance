@@ -7,8 +7,6 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        generateValue: false
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY

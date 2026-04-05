@@ -14,7 +14,9 @@
     "watch:css": "node_modules/.bin/tailwindcss --input app/frontend/styles/tw-input.css --output app/frontend/styles/tailwind.css --watch"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.101.1",
     "@tailwindcss/cli": "^4.2.2",
+    "dotenv": "^17.4.0",
     "stripe": "^22.0.0",
     "xlsx": "^0.18.5"
   },

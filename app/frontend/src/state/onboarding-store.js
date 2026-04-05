@@ -188,6 +188,8 @@ function createDefaultState() {
     error: null,
     confirmed: false,
     deferred_acknowledged: false,
+    sessionToken: null,
+    user: null,
   };
 }
 
@@ -431,6 +433,15 @@ export function createOnboardingStore({ persist = false } = {}) {
     notify();
   }
 
+  function setAuth(sessionToken, user, projectId) {
+    state.sessionToken = sessionToken || null;
+    state.user = user || null;
+    if (projectId && !state.connection.project_id) {
+      state.connection = { ...state.connection, project_id: projectId };
+    }
+    notify();
+  }
+
   // ── setPendingIrreversible ────────────────────────────────────────────────
 
   function setPendingIrreversible(questionId, selectedAnswer) {
@@ -651,6 +662,7 @@ export function createOnboardingStore({ persist = false } = {}) {
     prevQuestion,
     goToQuestion,
     resumeAtQuestions,
+    setAuth,
     setPendingIrreversible,
     clearPendingIrreversible,
     setDeferredAcknowledged,

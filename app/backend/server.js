@@ -53,6 +53,7 @@ import { assembleSubscriptionsOperationDefinitions } from "../shared/subscriptio
 import { assembleRentalOperationDefinitions } from "../shared/rental-operation-definitions.js";
 import { assembleFieldServiceOperationDefinitions } from "../shared/field-service-operation-definitions.js";
 import { applyGoverned } from "./governed-odoo-apply-service.js";
+import * as authService from "./auth-service.js";
 import {
   loadRuntimeState,
   resumeRuntimeState,
@@ -108,6 +109,25 @@ function checkRateLimit(clientId, maxRequests = RATE_LIMIT_MAX_REQUESTS) {
   // Log this request
   requestLog.set(`${clientId}:${now}`, now);
   return { allowed: true };
+}
+
+async function jwtMiddleware(req, res) {
+  // Skip auth enforcement when Supabase is not configured (dev / test mode)
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { id: 'dev', email: 'dev@local' };
+  }
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) {
+    sendJson(res, 401, { error: 'Missing or invalid Authorization header' });
+    return null;
+  }
+  const { user, error } = await authService.verifyToken(token);
+  if (error || !user) {
+    sendJson(res, 401, { error: 'Invalid or expired token' });
+    return null;
+  }
+  return user;
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -206,14 +226,20 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
       }
 
       if (pathname === "/api/pipeline/run" && req.method === "POST") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         return await handlePipelineRun(req, res);
       }
 
       if (pathname === "/api/pipeline/apply" && req.method === "POST") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         return await handlePipelineApply(req, res);
       }
 
       if (pathname === "/api/pipeline/state/load" && req.method === "POST") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         return await handlePipelineStateLoad(req, res);
       }
 
@@ -222,6 +248,8 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
       }
 
       if (pathname === "/api/pipeline/state/save" && req.method === "POST") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         return await handlePipelineStateSave(req, res);
       }
 
@@ -230,6 +258,8 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
       }
 
       if (pathname === "/api/pipeline/checkpoint/confirm" && req.method === "POST") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         return await handleCheckpointConfirm(req, res);
       }
 
@@ -259,6 +289,18 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
 
       if (pathname === "/api/odoo/detect-databases" && req.method === "POST") {
         return await handleDetectDatabases(req, res);
+      }
+
+      if (pathname === "/api/auth/signup" && req.method === "POST") {
+        return await handleAuthSignup(req, res);
+      }
+
+      if (pathname === "/api/auth/signin" && req.method === "POST") {
+        return await handleAuthSignin(req, res);
+      }
+
+      if (pathname === "/api/auth/verify" && req.method === "POST") {
+        return await handleAuthVerify(req, res);
       }
 
       if (pathname.startsWith("/shared/") && req.method === "GET") {
@@ -1233,6 +1275,87 @@ async function handleDetectDatabases(req, res) {
       error: isTimeout ? "Detection timed out — instance may be unreachable." : (err.message || "Unknown error"),
     });
   }
+}
+
+function generateProjectId() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let id = 'proj_';
+  for (let i = 0; i < 8; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return id;
+}
+
+async function handleAuthSignup(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { error: parseError instanceof Error ? parseError.message : 'Invalid request payload.' });
+  }
+
+  const { fullName, email, password, companyName } = payload || {};
+  if (!fullName || !email || !password || !companyName) {
+    return sendJson(res, 400, { error: 'fullName, email, password, and companyName are required.' });
+  }
+
+  const { user, session, error } = await authService.createAccount(fullName, email, password, companyName);
+  if (error) {
+    return sendJson(res, 400, { error });
+  }
+
+  const projectId = generateProjectId();
+  await authService.createProject(user.id, projectId, null, null);
+
+  return sendJson(res, 200, {
+    user: { id: user.id, email: user.email, fullName, companyName },
+    session,
+    projectId,
+  });
+}
+
+async function handleAuthSignin(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { error: parseError instanceof Error ? parseError.message : 'Invalid request payload.' });
+  }
+
+  const { email, password } = payload || {};
+  if (!email || !password) {
+    return sendJson(res, 400, { error: 'email and password are required.' });
+  }
+
+  const { user, session, error } = await authService.signIn(email, password);
+  if (error) {
+    return sendJson(res, 401, { error });
+  }
+
+  const { projects } = await authService.getAccountProjects(user.id);
+
+  return sendJson(res, 200, { user, session, projects: projects || [] });
+}
+
+async function handleAuthVerify(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { error: parseError instanceof Error ? parseError.message : 'Invalid request payload.' });
+  }
+
+  const { token } = payload || {};
+  if (!token) {
+    return sendJson(res, 400, { error: 'token is required.' });
+  }
+
+  const { user, error } = await authService.verifyToken(token);
+  if (error || !user) {
+    return sendJson(res, 200, { valid: false, user: null });
+  }
+
+  return sendJson(res, 200, { valid: true, user });
 }
 
 async function ensureDataStore() {

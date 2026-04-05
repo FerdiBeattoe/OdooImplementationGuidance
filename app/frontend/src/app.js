@@ -94,6 +94,7 @@ import { renderKnowledgeBaseView } from "./views/knowledge-base-view.js";
 import { renderAnalyticsView } from "./views/analytics-view.js";
 import { renderConnectionWizardView } from "./views/connection-wizard-view.js";
 import { renderOnboardingWizard } from "./views/onboarding-wizard.js";
+import { renderAuthScreen } from "./views/auth-screen.js";
 import { onboardingStore } from "./state/onboarding-store.js";
 
 // ── Legacy views (keep for backward compatibility) ────────────
@@ -175,7 +176,7 @@ export function renderApp(root) {
             // no-session path, preventing the wizard from stacking under the page.
             clearSession();
             forceLandingOnColdLoad = false;
-            setCurrentView("onboarding");
+            setCurrentView("auth");
           },
           onContinue: (projectId) => {
             forceLandingOnColdLoad = false;
@@ -191,6 +192,20 @@ export function renderApp(root) {
               setCurrentView("onboarding");
             }
           }
+        })
+      );
+      restoreRenderFocus(root, focusSnapshot);
+      return;
+    }
+
+    // ── Auth screen: render without layout shell ──────────────────────────
+    if (rawView === "auth") {
+      root.append(
+        renderAuthScreen({
+          onBack: () => {
+            forceLandingOnColdLoad = true;
+            setCurrentView("landing");
+          },
         })
       );
       restoreRenderFocus(root, focusSnapshot);
@@ -295,7 +310,7 @@ function renderCurrentView(project, projectStore) {
       return renderLandingPage({
         onStart: () => {
           clearSession();
-          setCurrentView("onboarding");
+          setCurrentView("auth");
         },
         onContinue: (projectId) => {
           if (projectId) {

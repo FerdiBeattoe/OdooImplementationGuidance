@@ -95,6 +95,12 @@ import { renderAnalyticsView } from "./views/analytics-view.js";
 import { renderConnectionWizardView } from "./views/connection-wizard-view.js";
 import { renderOnboardingWizard } from "./views/onboarding-wizard.js";
 import { renderAuthScreen } from "./views/auth-screen.js";
+import { renderHomePage } from "./views/pages/home-page.js";
+import { renderHowItWorksPage } from "./views/pages/how-it-works-page.js";
+import { renderPricingPage } from "./views/pages/pricing-page.js";
+import { renderAboutPage } from "./views/pages/about-page.js";
+import { renderTermsPage } from "./views/pages/terms-page.js";
+import { renderPrivacyPage } from "./views/pages/privacy-page.js";
 import { onboardingStore } from "./state/onboarding-store.js";
 
 // ── Legacy views (keep for backward compatibility) ────────────
@@ -135,7 +141,8 @@ export function handleAppNavigation(view) {
 export function renderApp(root) {
   // Bootstrap from localStorage before first render
   bootstrapSessionFromStorage();
-  let forceLandingOnColdLoad = true;
+  let forceHomeOnColdLoad = true;
+  const marketingViews = new Set(["home", "how-it-works", "pricing", "about", "terms", "privacy"]);
 
   const render = () => {
     // Guard: if a text or numeric input currently has focus inside the root,
@@ -152,34 +159,71 @@ export function renderApp(root) {
     const { activeProject, notifications, projectStore } = getState();
     clearNode(root);
 
+    const session = resolveSession();
     const requestedView = activeProject.workflowState?.currentView || "dashboard";
-    const rawView = forceLandingOnColdLoad ? "landing" : requestedView;
+    const rawView = forceHomeOnColdLoad
+      ? (session ? resolveLastActiveView() : "home")
+      : requestedView;
 
     // ── Persist project_id to localStorage whenever a session becomes available
-    const _currentSession = resolveSession();
-    if (_currentSession) {
-      writeStoredProjectId(_currentSession);
+    function setMarketingView(view) {
+      forceHomeOnColdLoad = false;
+      setCurrentView(view);
+    }
+
+    if (session) {
+      writeStoredProjectId(session);
     }
 
     // ── Landing page: render without layout shell ─────────────────────────
+    if (marketingViews.has(rawView)) {
+      const marketingProps = { setCurrentView: setMarketingView };
+
+      switch (rawView) {
+        case "home":
+          root.append(renderHomePage(marketingProps));
+          restoreRenderFocus(root, focusSnapshot);
+          return;
+        case "how-it-works":
+          root.append(renderHowItWorksPage(marketingProps));
+          restoreRenderFocus(root, focusSnapshot);
+          return;
+        case "pricing":
+          root.append(renderPricingPage(marketingProps));
+          restoreRenderFocus(root, focusSnapshot);
+          return;
+        case "about":
+          root.append(renderAboutPage(marketingProps));
+          restoreRenderFocus(root, focusSnapshot);
+          return;
+        case "terms":
+          root.append(renderTermsPage(marketingProps));
+          restoreRenderFocus(root, focusSnapshot);
+          return;
+        case "privacy":
+          root.append(renderPrivacyPage(marketingProps));
+          restoreRenderFocus(root, focusSnapshot);
+          return;
+      }
+    }
+
     if (rawView === "landing") {
-      const session = resolveSession();
       // Write session to localStorage whenever we have one
       if (session) writeStoredProjectId(session);
       root.append(
         renderLandingPage({
           noSessionMessage: null,
           onStart: () => {
-            // clearSession before setting forceLandingOnColdLoad=false so the
+            // clearSession before setting forceHomeOnColdLoad=false so the
             // intermediate render from pipelineStore.reset() sees rawView="landing"
             // and re-renders the landing page rather than taking the protected-route
             // no-session path, preventing the wizard from stacking under the page.
             clearSession();
-            forceLandingOnColdLoad = false;
+            forceHomeOnColdLoad = false;
             setCurrentView("auth");
           },
           onContinue: (projectId) => {
-            forceLandingOnColdLoad = false;
+            forceHomeOnColdLoad = false;
             if (projectId) {
               writeStoredProjectId(projectId);
               const lastView = resolveLastActiveView();
@@ -203,8 +247,8 @@ export function renderApp(root) {
       root.append(
         renderAuthScreen({
           onBack: () => {
-            forceLandingOnColdLoad = true;
-            setCurrentView("landing");
+            forceHomeOnColdLoad = false;
+            setCurrentView("home");
           },
         })
       );
@@ -233,23 +277,12 @@ export function renderApp(root) {
 
     // ── Protected route guard: pipeline/dashboard require a session ───────
     if (rawView === "pipeline" || rawView === "pipeline-dashboard" || rawView === "dashboard") {
-      const session = resolveSession();
       if (session) {
         writeStoredProjectId(session);
       } else {
         root.append(
-          renderLandingPage({
-            noSessionMessage: "Start your implementation to access the dashboard",
-            onStart: () => {
-              clearSession();
-              forceLandingOnColdLoad = false;
-              setCurrentView("onboarding");
-            },
-            onContinue: () => {
-              forceLandingOnColdLoad = false;
-              onboardingStore.resumeAtQuestions();
-              setCurrentView("onboarding");
-            }
+          renderHomePage({
+            setCurrentView: setMarketingView,
           })
         );
         restoreRenderFocus(root, focusSnapshot);

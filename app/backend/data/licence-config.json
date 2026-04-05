@@ -1,0 +1,28 @@
+{
+  "earlyAdopter": {
+    "maxCompanies": 20,
+    "price": 249.5,
+    "description": "Early adopter  6 months"
+  },
+  "plans": {
+    "monthly": {
+      "price": 149,
+      "interval": "month",
+      "label": "Monthly"
+    },
+    "sixMonth": {
+      "price": 499,
+      "interval": "6-month",
+      "label": "6 months",
+      "saving": "Save $395"
+    },
+    "annual": {
+      "price": 799,
+      "interval": "year",
+      "label": "Annual",
+      "saving": "Save $989"
+    }
+  },
+  "currency": "USD",
+  "foundationFree": true
+}

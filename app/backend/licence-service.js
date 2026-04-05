@@ -81,14 +81,39 @@ function normalizeConfig(config) {
     ? config
     : {};
 
+  const earlyAdopterConfig =
+    candidate.earlyAdopter && typeof candidate.earlyAdopter === "object" && !Array.isArray(candidate.earlyAdopter)
+      ? candidate.earlyAdopter
+      : {};
+  const plansConfig =
+    candidate.plans && typeof candidate.plans === "object" && !Array.isArray(candidate.plans)
+      ? candidate.plans
+      : {};
+  const sixMonthPlan =
+    plansConfig.sixMonth && typeof plansConfig.sixMonth === "object" && !Array.isArray(plansConfig.sixMonth)
+      ? plansConfig.sixMonth
+      : {};
+
   return {
     currency: typeof candidate.currency === "string" && candidate.currency.trim() !== ""
       ? candidate.currency.trim().toUpperCase()
       : DEFAULT_CONFIG.currency,
-    duration_days: normalizeNumber(candidate.duration_days, DEFAULT_CONFIG.duration_days),
-    early_adopter_price: normalizeNumber(candidate.early_adopter_price, DEFAULT_CONFIG.early_adopter_price),
-    standard_price: normalizeNumber(candidate.standard_price, DEFAULT_CONFIG.standard_price),
-    early_adopter_limit: Math.max(0, Math.trunc(normalizeNumber(candidate.early_adopter_limit, DEFAULT_CONFIG.early_adopter_limit))),
+    duration_days: normalizeNumber(
+      candidate.duration_days,
+      normalizeNumber(earlyAdopterConfig.duration_days, DEFAULT_CONFIG.duration_days)
+    ),
+    early_adopter_price: normalizeNumber(
+      candidate.early_adopter_price,
+      normalizeNumber(earlyAdopterConfig.price, DEFAULT_CONFIG.early_adopter_price)
+    ),
+    standard_price: normalizeNumber(
+      candidate.standard_price,
+      normalizeNumber(sixMonthPlan.price, DEFAULT_CONFIG.standard_price)
+    ),
+    early_adopter_limit: Math.max(0, Math.trunc(normalizeNumber(
+      candidate.early_adopter_limit,
+      normalizeNumber(earlyAdopterConfig.maxCompanies, DEFAULT_CONFIG.early_adopter_limit)
+    ))),
     early_adopter_count: Math.max(0, Math.trunc(normalizeNumber(candidate.early_adopter_count, DEFAULT_CONFIG.early_adopter_count))),
   };
 }

@@ -54,6 +54,7 @@ import { assembleRentalOperationDefinitions } from "../shared/rental-operation-d
 import { assembleFieldServiceOperationDefinitions } from "../shared/field-service-operation-definitions.js";
 import { applyGoverned } from "./governed-odoo-apply-service.js";
 import * as authService from "./auth-service.js";
+import supabase from "./supabase-client.js";
 import {
   loadRuntimeState,
   resumeRuntimeState,
@@ -269,6 +270,10 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
 
       if (pathname === "/api/licence/pricing" && req.method === "GET") {
         return await handleLicencePricing(req, res);
+      }
+
+      if (pathname === "/api/licence/early-adopter-status" && req.method === "GET") {
+        return await handleEarlyAdopterStatus(req, res);
       }
 
       if (pathname.startsWith("/api/licence/status/") && req.method === "GET") {
@@ -1101,6 +1106,36 @@ async function handleLicencePricing(req, res) {
     remaining_slots: await getRemainingEarlyAdopterSlots(),
     currency: config.currency,
     duration_days: config.duration_days,
+  });
+}
+
+async function handleEarlyAdopterStatus(req, res) {
+  void req;
+
+  let claimed = 0;
+
+  if (supabase) {
+    const { count, error } = await supabase
+      .from("licences")
+      .select("id", { count: "exact", head: true })
+      .eq("plan", "paid");
+
+    if (error) {
+      return sendJson(res, 500, { error: error.message || "Unable to load early adopter status." });
+    }
+
+    claimed = Number.isFinite(count) ? count : 0;
+  }
+
+  const total = 20;
+  const remaining = Math.max(0, total - claimed);
+  const earlyAdopterActive = claimed < total;
+
+  return sendJson(res, 200, {
+    claimed,
+    remaining,
+    total,
+    earlyAdopterActive,
   });
 }
 

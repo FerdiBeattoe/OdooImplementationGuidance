@@ -1,0 +1,889 @@
+/* =============================================================
+   Pipeline Dashboard — Odoo 19 Implementation Control Platform
+   "Measured Advisor" aesthetic
+
+   All existing .pd-* class names preserved.
+   Visual system lifted: warm surfaces, amber-accented progress,
+   trustworthy action buttons, confident domain status cards.
+   ============================================================= */
+
+@import './design-system.css';
+
+/* ── Dashboard layout ─────────────────────────────────────── */
+
+.pd-root {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 32px 20px 48px;
+  max-width: 980px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  animation: impl-fade-in var(--impl-dur-mid) ease both;
+}
+
+/* ── Section headers ──────────────────────────────────────── */
+
+.pd-section-header {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--impl-text-subtle);
+  margin-bottom: 14px;
+}
+
+/* ── Implementation header card (Section 1) ───────────────── */
+
+.pd-header-card {
+  background: var(--impl-navy);
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  box-shadow: var(--impl-shadow-raise);
+  animation: impl-fade-up var(--impl-dur-slow) var(--impl-ease-out) 0.05s both;
+}
+
+.pd-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+/* Subtle grid texture */
+.pd-header-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.015) 0px,
+      rgba(255,255,255,0.015) 1px,
+      transparent 1px,
+      transparent 64px
+    );
+  pointer-events: none;
+}
+
+/* Amber top accent bar */
+.pd-header-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: var(--impl-amber);
+}
+
+.pd-header-title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--impl-navy-text);
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.25;
+  position: relative;
+  z-index: 1;
+}
+
+.pd-header-review-link {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--impl-navy-text);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background var(--impl-dur-fast) ease,
+    border-color var(--impl-dur-fast) ease,
+    transform var(--impl-dur-fast) ease;
+  position: relative;
+  z-index: 1;
+}
+
+.pd-header-review-link:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.24);
+  transform: translateY(-1px);
+}
+
+.pd-header-meta {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  color: var(--impl-navy-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.pd-header-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pd-header-meta-label {
+  font-weight: 700;
+  color: rgba(232, 237, 242, 0.80);
+  font-family: var(--font-display);
+}
+
+/* ── Overall progress bar ─────────────────────────────────── */
+
+.pd-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.pd-progress-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.pd-progress-bar-fill {
+  height: 100%;
+  background: var(--impl-progress-fill);
+  border-radius: 999px;
+  animation: impl-progress-in var(--impl-dur-slow) var(--impl-ease-out) 0.3s both;
+  transition: width var(--impl-dur-slow) var(--impl-ease-out);
+  min-width: 0;
+}
+
+.pd-progress-label {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--impl-amber);
+  white-space: nowrap;
+  min-width: 52px;
+  text-align: right;
+  letter-spacing: -0.02em;
+}
+
+.pd-last-activity {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  color: var(--impl-navy-muted);
+  letter-spacing: 0.01em;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Deferred questions banner (Section 5) ────────────────── */
+
+.pd-deferred-banner {
+  background: var(--impl-warn-bg);
+  border: 1px solid var(--impl-warn-border);
+  border-left: 3px solid #D4950A;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-radius: var(--radius-md);
+  animation: impl-fade-up var(--impl-dur-mid) ease 0.1s both;
+}
+
+.pd-deferred-banner-text {
+  font-family: var(--font-reading);
+  font-size: 0.87rem;
+  color: var(--impl-warn);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.pd-deferred-banner-link {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  color: var(--impl-warn);
+  font-weight: 700;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  letter-spacing: 0.01em;
+  transition: color var(--impl-dur-fast) ease;
+}
+
+.pd-deferred-banner-link:hover {
+  color: #6B4400;
+}
+
+/* ── Domain cards grid (Section 2) ────────────────────────── */
+
+.pd-domain-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 640px) {
+  .pd-domain-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.pd-domain-card {
+  background: #ffffff;
+  border: 1px solid var(--impl-cream-border);
+  border-top: 3px solid var(--impl-cream-dark);
+  overflow: hidden;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  box-shadow: var(--impl-shadow-card);
+  transition:
+    border-top-color var(--impl-dur-mid) ease,
+    box-shadow var(--impl-dur-mid) ease,
+    transform var(--impl-dur-fast) var(--impl-ease-out);
+  animation: impl-fade-up var(--impl-dur-slow) var(--impl-ease-out) both;
+}
+
+/* Staggered domain card entrance */
+.pd-domain-card:nth-child(1) { animation-delay: 0.08s; }
+.pd-domain-card:nth-child(2) { animation-delay: 0.13s; }
+.pd-domain-card:nth-child(3) { animation-delay: 0.18s; }
+.pd-domain-card:nth-child(4) { animation-delay: 0.23s; }
+.pd-domain-card:nth-child(5) { animation-delay: 0.28s; }
+.pd-domain-card:nth-child(6) { animation-delay: 0.33s; }
+
+.pd-domain-card:hover {
+  border-top-color: var(--impl-amber);
+  box-shadow: var(--impl-shadow-raise);
+  transform: translateY(-2px);
+}
+
+.pd-domain-card-header {
+  padding: 16px 18px 10px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pd-domain-name {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--impl-text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+/* ── Domain status badges ──────────────────────────────────── */
+
+.pd-domain-status-badge {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 5px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: #ffffff;
+}
+
+.pd-domain-status-badge--not-started {
+  background: #8E867A;
+}
+
+.pd-domain-status-badge--in-progress {
+  background: var(--impl-amber);
+}
+
+.pd-domain-status-badge--complete {
+  background: var(--impl-success);
+}
+
+.pd-domain-status-badge--blocked {
+  background: var(--impl-danger);
+}
+
+/* ── Domain progress bar ──────────────────────────────────── */
+
+.pd-domain-card-progress {
+  padding: 0 18px 10px;
+}
+
+.pd-domain-progress-bar-wrap {
+  height: 3px;
+  background: var(--impl-cream-mid);
+  overflow: hidden;
+  margin-bottom: 6px;
+  border-radius: 999px;
+}
+
+.pd-domain-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--impl-amber) 0%, var(--impl-amber-bright) 100%);
+  border-radius: 999px;
+  transition: width var(--impl-dur-slow) var(--impl-ease-out);
+}
+
+.pd-domain-progress-bar-fill--complete {
+  background: var(--impl-progress-complete);
+}
+
+.pd-domain-progress-bar-fill--blocked {
+  background: var(--impl-danger);
+}
+
+.pd-domain-progress-count {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--impl-text-subtle);
+  letter-spacing: 0.02em;
+}
+
+.pd-domain-next-action {
+  padding: 0 18px 12px;
+  font-family: var(--font-reading);
+  font-size: 0.8rem;
+  color: var(--impl-text-muted);
+  line-height: 1.55;
+  font-style: italic;
+}
+
+.pd-domain-expand-hint {
+  padding: 8px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--impl-text-subtle);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-top: 1px solid var(--impl-cream-mid);
+  text-align: center;
+  transition: color var(--impl-dur-fast) ease, background var(--impl-dur-fast) ease;
+}
+
+.pd-domain-expand-hint::before {
+  content: '';
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--impl-amber);
+  background: transparent;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.pd-domain-card:hover .pd-domain-expand-hint {
+  color: var(--impl-amber);
+  background: var(--impl-amber-subtle);
+}
+
+/* ── Checkpoint detail (expanded state) ───────────────────── */
+
+.pd-checkpoint-list {
+  border-top: 1px solid var(--impl-cream-mid);
+  display: none;
+  background: var(--impl-warm-white);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.pd-domain-card--expanded .pd-checkpoint-list {
+  display: block;
+}
+
+.pd-domain-card--expanded .pd-domain-expand-hint {
+  display: none;
+}
+
+.pd-checkpoint-row {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--impl-cream-mid);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: background var(--impl-dur-fast) ease;
+}
+
+.pd-checkpoint-row:last-child {
+  border-bottom: none;
+}
+
+.pd-checkpoint-row:hover {
+  background: var(--impl-cream);
+}
+
+/* ── Checkpoint status icons ──────────────────────────────── */
+
+.pd-checkpoint-status-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 800;
+  margin-top: 1px;
+  border-radius: 50%;
+  border: 2px solid var(--impl-amber);
+  color: var(--impl-amber);
+  box-sizing: border-box;
+}
+
+.pd-checkpoint-status-icon--complete {
+  background: var(--impl-success);
+  border-color: var(--impl-success);
+  color: #ffffff;
+}
+
+.pd-checkpoint-status-icon--not-started {
+  background: transparent;
+}
+
+.pd-checkpoint-status-icon--blocked {
+  background: var(--impl-danger);
+  color: #ffffff;
+  border-color: var(--impl-danger);
+}
+
+/* ── Checkpoint body ──────────────────────────────────────── */
+
+.pd-checkpoint-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pd-checkpoint-id {
+  font-family: var(--font-display);
+  font-size: 0.67rem;
+  font-weight: 700;
+  color: var(--impl-text-subtle);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+
+.pd-checkpoint-name {
+  font-family: var(--font-display);
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--impl-text-primary);
+  margin-bottom: 6px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.pd-checkpoint-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+/* ── Checkpoint tags ──────────────────────────────────────── */
+
+.pd-checkpoint-tag {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  background: var(--impl-cream-mid);
+  color: var(--impl-text-muted);
+  border-radius: var(--radius-sm);
+}
+
+.pd-checkpoint-tag--safe {
+  background: var(--impl-success-bg);
+  color: var(--impl-success);
+  border: 1px solid var(--impl-success-border);
+}
+
+.pd-checkpoint-tag--conditional {
+  background: var(--impl-warn-bg);
+  color: var(--impl-warn);
+  border: 1px solid var(--impl-warn-border);
+}
+
+.pd-checkpoint-tag--executable {
+  background: var(--impl-info-bg);
+  color: var(--impl-info);
+  border: 1px solid var(--impl-info-border);
+}
+
+.pd-checkpoint-blocker {
+  font-family: var(--font-reading);
+  font-size: 0.78rem;
+  color: var(--impl-danger);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.pd-checkpoint-inline-error {
+  font-family: var(--font-reading);
+  font-size: 0.78rem;
+  color: var(--impl-danger);
+  margin-top: 4px;
+  padding: 5px 10px;
+  background: var(--impl-danger-bg);
+  border-left: 2px solid var(--impl-danger);
+  border-radius: var(--radius-md);
+}
+
+.pd-checkpoint-action {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+/* ── Action buttons ────────────────────────────────────────── */
+
+.pd-btn {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 6px 16px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background var(--impl-dur-fast) ease,
+    box-shadow var(--impl-dur-mid) ease,
+    transform var(--impl-dur-fast) ease,
+    opacity var(--impl-dur-fast) ease;
+}
+
+.pd-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+/* Execute / apply — amber primary */
+.pd-btn--primary {
+  background: var(--impl-amber);
+  color: var(--impl-amber-on);
+  box-shadow: 0 1px 6px rgba(245, 158, 11, 0.22);
+}
+
+.pd-btn--primary:hover:not(:disabled) {
+  background: var(--impl-amber-hover);
+  box-shadow: 0 3px 12px rgba(245, 158, 11, 0.32);
+  transform: translateY(-1px);
+}
+
+.pd-btn--primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Quiet action */
+.pd-btn--secondary {
+  background: var(--impl-cream);
+  color: var(--impl-text-body);
+  box-shadow: inset 0 0 0 1px var(--impl-cream-border);
+}
+
+.pd-btn--secondary:hover:not(:disabled) {
+  background: var(--impl-cream-mid);
+  box-shadow: inset 0 0 0 1px var(--impl-cream-dark);
+}
+
+/* Confirm — amber pill, consistent with landing CTAs */
+.pd-btn--confirm {
+  background: var(--impl-amber);
+  color: var(--impl-amber-on);
+  box-shadow: var(--impl-shadow-amber);
+  animation: impl-pulse-confirm 3.5s ease infinite;
+}
+
+.pd-btn--confirm:hover:not(:disabled) {
+  background: var(--impl-amber-hover);
+  box-shadow: 0 3px 14px rgba(245, 158, 11, 0.35);
+  transform: translateY(-1px);
+  animation-play-state: paused;
+}
+
+/* Refresh state */
+.pd-btn--refresh {
+  background: var(--impl-navy);
+  color: var(--impl-navy-text);
+  padding: 8px 20px;
+  font-size: 0.82rem;
+}
+
+.pd-btn--refresh:hover:not(:disabled) {
+  background: var(--impl-navy-mid);
+  box-shadow: var(--impl-shadow-card);
+}
+
+/* ── Inline confirm panel ──────────────────────────────────── */
+
+.pd-confirm-panel {
+  margin-top: 8px;
+  padding: 12px 14px;
+  background: var(--impl-cream);
+  border: 1px solid var(--impl-cream-border);
+  border-left: 3px solid var(--impl-amber);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: var(--radius-md);
+}
+
+.pd-confirm-panel textarea {
+  width: 100%;
+  padding: 7px 10px;
+  font-family: var(--font-reading);
+  font-size: 0.83rem;
+  border: none;
+  box-shadow: inset 0 0 0 1.5px var(--impl-cream-border);
+  background: #ffffff;
+  color: var(--impl-text-primary);
+  resize: vertical;
+  min-height: 60px;
+  box-sizing: border-box;
+  outline: none;
+  border-radius: var(--radius-md);
+  transition: box-shadow var(--impl-dur-fast) ease;
+}
+
+.pd-confirm-panel textarea:focus {
+  box-shadow:
+    inset 0 0 0 2px var(--impl-amber),
+    0 0 0 2px var(--impl-amber-ring);
+}
+
+.pd-confirm-panel input[type="text"] {
+  width: 100%;
+  padding: 6px 10px;
+  font-family: var(--font-reading);
+  font-size: 0.83rem;
+  border: none;
+  box-shadow: inset 0 0 0 1.5px var(--impl-cream-border);
+  background: #ffffff;
+  color: var(--impl-text-primary);
+  box-sizing: border-box;
+  outline: none;
+  height: 36px;
+  border-radius: var(--radius-md);
+  transition: box-shadow var(--impl-dur-fast) ease;
+}
+
+.pd-confirm-panel input[type="text"]:focus {
+  box-shadow:
+    inset 0 0 0 2px var(--impl-amber),
+    0 0 0 2px var(--impl-amber-ring);
+}
+
+.pd-confirm-panel-label {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--impl-text-muted);
+  margin-bottom: 3px;
+}
+
+/* ── What's left summary (Section 4) ──────────────────────── */
+
+.pd-summary-card {
+  background: var(--impl-navy);
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border-radius: var(--radius-md);
+  animation: impl-fade-up var(--impl-dur-slow) var(--impl-ease-out) 0.12s both;
+  position: relative;
+  overflow: hidden;
+}
+
+.pd-summary-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201,107,16,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.pd-summary-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (min-width: 480px) {
+  .pd-summary-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.pd-summary-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.pd-summary-stat-value {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--impl-navy-text);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.pd-summary-stat-label {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--impl-navy-muted);
+}
+
+/* ── Next action block ─────────────────────────────────────── */
+
+.pd-next-action-block {
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--impl-navy-border);
+  border-left: 3px solid var(--impl-amber);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+  border-radius: var(--radius-md);
+}
+
+.pd-next-action-label {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--impl-amber-bright);
+  margin-bottom: 3px;
+}
+
+.pd-next-action-text {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--impl-navy-text);
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+.pd-summary-footer {
+  display: flex;
+  justify-content: flex-end;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Loading / error states ────────────────────────────────── */
+
+.pd-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 24px;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--impl-text-subtle);
+  letter-spacing: 0.02em;
+  gap: 10px;
+}
+
+.pd-error-banner {
+  background: var(--impl-danger-bg);
+  border: 1px solid var(--impl-danger-border);
+  border-left: 3px solid var(--impl-danger);
+  padding: 14px 18px;
+  font-family: var(--font-reading);
+  font-size: 0.87rem;
+  color: var(--impl-danger);
+  line-height: 1.55;
+  border-radius: var(--radius-md);
+}
+
+/* ── Responsive tweaks ─────────────────────────────────────── */
+
+@media (max-width: 400px) {
+  .pd-root {
+    padding: 16px 12px 32px;
+    gap: 20px;
+  }
+
+  .pd-header-card {
+    padding: 20px 16px;
+  }
+
+  .pd-header-title {
+    font-size: 1.1rem;
+  }
+
+  .pd-summary-card {
+    padding: 18px 16px;
+  }
+
+  .pd-summary-stat-value {
+    font-size: 1.3rem;
+  }
+
+  .pd-btn {
+    font-size: 0.72rem;
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pd-checkpoint-action {
+    align-items: flex-start;
+  }
+}

@@ -54,6 +54,25 @@ When execution is allowed, LLM agents must:
 - preserve audit traceability
 - stop on unsupported or ambiguous target conditions
 
+## Implementation Completeness Rule
+
+A wizard, domain, or implementation surface is not considered complete until it can:
+
+1. produce a truthful preview of intended actions
+2. require and obtain governed approval
+3. perform a real Odoo application-layer write through bounded execution
+4. record a truthful execution result with audit traceability
+
+If a surface cannot yet write, it must be explicitly classified as one of:
+
+- WRITABLE_NOW — governed write path is proven
+- BLOCKED_BY_MISSING_BACKEND_PATH — backend write path not yet implemented
+- BLOCKED_BY_MISSING_WIZARD_SURFACE — UI surface does not yet exist
+- BLOCKED_BY_MISSING_GOVERNANCE_MAPPING — governance contract not yet defined
+- OUT_OF_SCOPE_UNDER_CURRENT_CONSTITUTION — explicitly excluded with documented reason
+
+Claiming a surface is "done" while it stops at preview, approval, or recording only is a drift condition.
+
 ## Domain Expansion Rule
 
 - LLM-driven execution may be enabled per domain only after that domain has an explicit governance-approved execution contract.

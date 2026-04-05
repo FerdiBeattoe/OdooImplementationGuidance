@@ -14,7 +14,9 @@
 - distinguish clearly between fresh implementation, forward-safe expansion, and guided setup of unused features
 - keep rules operational, explicit, and testable
 - prefer structured constraints over broad narrative prose
-- ensure any workflow, state model, or UI proposal maps back to checkpoints, validation, and downstream impact
+- ensure any workflow, state model, or UI proposal maps back to checkpoints, validation, downstream impact, and governed execution capability
+- do not claim a wizard or domain is complete until it can truthfully write through governed execution or is explicitly marked manual/out-of-scope
+- frontend and UI work is subordinate to implementation write capability — it exists to expose governed execution, not as an end in itself
 - run a consistency review after significant documentation changes
 
 ## Product Direction Rule

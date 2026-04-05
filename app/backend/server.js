@@ -18,18 +18,65 @@ import { normalizeProjectStorePayload } from "../shared/project-store.js";
 import { normalizeProjectState } from "../shared/project-state.js";
 import { normalizeAuditLog } from "../shared/audit-log.js";
 import { normalizePreviewState } from "../shared/preview-engine.js";
-import { normalizeExecutionState } from "../shared/execution-engine.js";
 import { normalizeInspectionState } from "../shared/inspection-model.js";
 import {
   buildConnectionAuditEntry,
   connectProject,
-  createRecord,
   disconnectProject,
-  executePreview,
   inspectDomain,
   previewDomain,
-  validateConnection
+  validateConnection,
+  registerPipelineConnection,
 } from "./engine.js";
+import { runPipelineService } from "./pipeline-service.js";
+import { assembleFoundationOperationDefinitions } from "../shared/foundation-operation-definitions.js";
+import { assembleUsersRolesOperationDefinitions } from "../shared/users-roles-operation-definitions.js";
+import { assembleAccountingOperationDefinitions } from "../shared/accounting-operation-definitions.js";
+import { assembleMasterDataOperationDefinitions } from "../shared/master-data-operation-definitions.js";
+import { assembleCrmOperationDefinitions } from "../shared/crm-operation-definitions.js";
+import { assembleSalesOperationDefinitions } from "../shared/sales-operation-definitions.js";
+import { assemblePurchaseOperationDefinitions } from "../shared/purchase-operation-definitions.js";
+import { assembleInventoryOperationDefinitions } from "../shared/inventory-operation-definitions.js";
+import { assembleManufacturingOperationDefinitions } from "../shared/manufacturing-operation-definitions.js";
+import { assemblePlmOperationDefinitions } from "../shared/plm-operation-definitions.js";
+import { assemblePosOperationDefinitions } from "../shared/pos-operation-definitions.js";
+import { assembleWebsiteEcommerceOperationDefinitions } from "../shared/website-ecommerce-operation-definitions.js";
+import { assembleProjectsOperationDefinitions } from "../shared/projects-operation-definitions.js";
+import { assembleHrOperationDefinitions } from "../shared/hr-operation-definitions.js";
+import { assembleQualityOperationDefinitions } from "../shared/quality-operation-definitions.js";
+import { assembleMaintenanceOperationDefinitions } from "../shared/maintenance-operation-definitions.js";
+import { assembleRepairsOperationDefinitions } from "../shared/repairs-operation-definitions.js";
+import { assembleDocumentsOperationDefinitions } from "../shared/documents-operation-definitions.js";
+import { assembleSignOperationDefinitions } from "../shared/sign-operation-definitions.js";
+import { assembleApprovalsOperationDefinitions } from "../shared/approvals-operation-definitions.js";
+import { assembleSubscriptionsOperationDefinitions } from "../shared/subscriptions-operation-definitions.js";
+import { assembleRentalOperationDefinitions } from "../shared/rental-operation-definitions.js";
+import { assembleFieldServiceOperationDefinitions } from "../shared/field-service-operation-definitions.js";
+import { applyGoverned } from "./governed-odoo-apply-service.js";
+import {
+  loadRuntimeState,
+  resumeRuntimeState,
+  saveRuntimeState,
+} from "./runtime-state-persistence-service.js";
+import {
+  FOUNDATION_DOMAINS,
+  getDomainIdFromCheckpointId,
+  getLicenceConfig,
+  getLicenceStatus,
+  getPrice,
+  getRemainingEarlyAdopterSlots,
+  isDomainUnlocked,
+  isEarlyAdopter,
+} from "./licence-service.js";
+import {
+  createPaymentIntent,
+  handleWebhook as handleStripeWebhook,
+} from "./stripe-service.js";
+import {
+  getIndustryDomainHints,
+  computeActivatedDomains,
+} from "../shared/domain-activation-engine.js";
+import { getIndustryTemplate } from "../shared/industry-templates.js";
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
@@ -38,7 +85,7 @@ const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB limit
 const requestLog = new Map();
 const REQUEST_LOG_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
-function checkRateLimit(clientId) {
+function checkRateLimit(clientId, maxRequests = RATE_LIMIT_MAX_REQUESTS) {
   const now = Date.now();
   const windowStart = now - RATE_LIMIT_WINDOW_MS;
   
@@ -54,7 +101,7 @@ function checkRateLimit(clientId) {
     .filter(([key, timestamp]) => key.startsWith(`${clientId}:`) && timestamp >= windowStart)
     .length;
   
-  if (clientRequests >= RATE_LIMIT_MAX_REQUESTS) {
+  if (clientRequests >= maxRequests) {
     return { allowed: false, retryAfter: Math.ceil((RATE_LIMIT_WINDOW_MS - (now - windowStart)) / 1000) };
   }
   
@@ -91,7 +138,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   });
 }
 
-export function createAppServer() {
+export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS } = {}) {
   return createServer(async (req, res) => {
     try {
       const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
@@ -102,7 +149,7 @@ export function createAppServer() {
         res.writeHead(200, {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, Stripe-Signature",
           "Access-Control-Max-Age": "86400"
         });
         res.end();
@@ -112,7 +159,7 @@ export function createAppServer() {
       // Rate limiting — only apply to API routes
       if (pathname.startsWith("/api/")) {
         const clientId = req.socket.remoteAddress || 'unknown';
-        const rateCheck = checkRateLimit(clientId);
+        const rateCheck = checkRateLimit(clientId, rateLimitMaxRequests);
 
         if (!rateCheck.allowed) {
           res.writeHead(429, {
@@ -158,12 +205,60 @@ export function createAppServer() {
         return await handleDomainPreview(req, res);
       }
 
-      if (pathname === "/api/domain/execute" && req.method === "POST") {
-        return await handleDomainExecute(req, res);
+      if (pathname === "/api/pipeline/run" && req.method === "POST") {
+        return await handlePipelineRun(req, res);
       }
 
-      if (pathname === "/api/odoo/create" && req.method === "POST") {
-        return await handleOdooCreate(req, res);
+      if (pathname === "/api/pipeline/apply" && req.method === "POST") {
+        return await handlePipelineApply(req, res);
+      }
+
+      if (pathname === "/api/pipeline/state/load" && req.method === "POST") {
+        return await handlePipelineStateLoad(req, res);
+      }
+
+      if (pathname === "/api/pipeline/state/resume" && req.method === "POST") {
+        return await handlePipelineStateResume(req, res);
+      }
+
+      if (pathname === "/api/pipeline/state/save" && req.method === "POST") {
+        return await handlePipelineStateSave(req, res);
+      }
+
+      if (pathname === "/api/pipeline/connection/register" && req.method === "POST") {
+        return await handlePipelineConnectionRegister(req, res);
+      }
+
+      if (pathname === "/api/pipeline/checkpoint/confirm" && req.method === "POST") {
+        return await handleCheckpointConfirm(req, res);
+      }
+
+      if (pathname === "/api/pipeline/industry/select" && req.method === "POST") {
+        return await handleIndustrySelect(req, res);
+      }
+
+      if (pathname === "/api/licence/pricing" && req.method === "GET") {
+        return await handleLicencePricing(req, res);
+      }
+
+      if (pathname.startsWith("/api/licence/status/") && req.method === "GET") {
+        return await handleLicenceStatus(req, res, pathname);
+      }
+
+      if (pathname === "/api/licence/create-payment-intent" && req.method === "POST") {
+        return await handleLicenceCreatePaymentIntent(req, res);
+      }
+
+      if (pathname === "/api/licence/webhook" && req.method === "POST") {
+        return await handleLicenceWebhook(req, res);
+      }
+
+      if (pathname.startsWith("/api/licence/check-domain/") && req.method === "GET") {
+        return await handleLicenceCheckDomain(req, res, pathname);
+      }
+
+      if (pathname === "/api/odoo/detect-databases" && req.method === "POST") {
+        return await handleDetectDatabases(req, res);
       }
 
       if (pathname.startsWith("/shared/") && req.method === "GET") {
@@ -186,11 +281,15 @@ export function createAppServer() {
         return serveStatic(res, path.resolve(frontendRoot, "index.html"), frontendRoot);
       }
 
+      if ((pathname === "/landing" || pathname === "/landing.html") && req.method === "GET") {
+        return serveStatic(res, path.resolve(frontendRoot, "landing.html"), frontendRoot);
+      }
+
       return sendJson(res, 404, { error: "Not found" });
     } catch (error) {
+      console.error("Unhandled route error:", error);
       return sendJson(res, 500, {
-        error: "Server error",
-        detail: error instanceof Error ? error.message : "Unknown error"
+        error: "Internal server error"
       });
     }
   });
@@ -201,7 +300,7 @@ async function handleConnectionConnect(req, res) {
   let payload, project;
   try {
     payload = await readJsonBody(req);
-    console.log('[CONNECT] Payload received:', { url: payload.credentials?.url, database: payload.credentials?.database, username: payload.credentials?.username });
+    console.log('[CONNECT] Payload received');
     project = normalizeProjectState(payload.project);
   } catch (parseError) {
     return sendJson(res, 400, { error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
@@ -244,7 +343,12 @@ async function handleConnectionConnect(req, res) {
 }
 
 async function handleConnectionDisconnect(req, res) {
-  const payload = await readJsonBody(req);
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
+  }
   const project = normalizeProjectState(payload.project);
   const connectionState = await disconnectProject(project);
   const nextProject = normalizeProjectState({
@@ -259,7 +363,12 @@ async function handleConnectionDisconnect(req, res) {
 }
 
 async function handleConnectionValidate(req, res) {
-  const payload = await readJsonBody(req);
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
+  }
   const project = normalizeProjectState(payload.project);
 
   try {
@@ -287,7 +396,12 @@ async function handleConnectionValidate(req, res) {
 }
 
 async function handleDomainInspect(req, res) {
-  const payload = await readJsonBody(req);
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
+  }
   const project = normalizeProjectState(payload.project);
 
   try {
@@ -313,7 +427,12 @@ async function handleDomainInspect(req, res) {
 }
 
 async function handleDomainPreview(req, res) {
-  const payload = await readJsonBody(req);
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
+  }
   const project = normalizeProjectState(payload.project);
 
   try {
@@ -342,42 +461,777 @@ async function handleDomainPreview(req, res) {
   }
 }
 
-async function handleOdooCreate(req, res) {
-  const payload = await readJsonBody(req);
-  const { model, values } = payload;
+async function handlePipelineRun(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { ok: false, error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
+  }
 
-  if (!model || !values) {
-    return sendJson(res, 400, { error: "model and values are required." });
+  // Fallback: if discovery_answers is absent from the payload (not present as a key),
+  // attempt to load it from persisted runtime state for the project_id.
+  // If neither source has discovery_answers, return 400.
+  if (
+    payload !== null &&
+    typeof payload === "object" &&
+    !Array.isArray(payload) &&
+    !Object.prototype.hasOwnProperty.call(payload, "discovery_answers")
+  ) {
+    const projectId =
+      payload.project_id ??
+      payload.project_identity?.project_id ??
+      null;
+    if (projectId) {
+      const persistedResult = await loadRuntimeState(projectId);
+      if (
+        persistedResult.ok &&
+        persistedResult.runtime_state &&
+        persistedResult.runtime_state.discovery_answers !== undefined
+      ) {
+        payload = { ...payload, discovery_answers: persistedResult.runtime_state.discovery_answers };
+      }
+    }
+    // If still no discovery_answers after fallback attempt, return 400.
+    if (!Object.prototype.hasOwnProperty.call(payload, "discovery_answers")) {
+      return sendJson(res, 400, {
+        ok: false,
+        error: "discovery_answers required: not in payload and not in persisted state",
+      });
+    }
+  }
+
+  // Inject all domain operation definitions when not caller-supplied.
+  // Unblocks Gate 6 in governed-preview-engine for all Executable checkpoints
+  // across all governed domain assemblers currently registered on the server.
+  // Caller-supplied operation_definitions (non-null) are passed through unchanged.
+  if (payload && typeof payload === "object" && !Array.isArray(payload) && !payload.operation_definitions) {
+    const tc = payload.target_context ?? null;
+    const da = payload.discovery_answers ?? null;
+    payload = {
+      ...payload,
+      operation_definitions: {
+        ...assembleFoundationOperationDefinitions(tc, da),
+        ...assembleUsersRolesOperationDefinitions(tc, da),
+        ...assembleAccountingOperationDefinitions(tc, da),
+        ...assembleMasterDataOperationDefinitions(tc, da),
+        ...assembleCrmOperationDefinitions(tc, da),
+        ...assembleSalesOperationDefinitions(tc, da),
+        ...assemblePurchaseOperationDefinitions(tc, da),
+        ...assembleInventoryOperationDefinitions(tc, da),
+        ...assembleManufacturingOperationDefinitions(tc, da),
+        ...assemblePlmOperationDefinitions(tc, da),
+        ...assemblePosOperationDefinitions(tc, da),
+        ...assembleWebsiteEcommerceOperationDefinitions(tc, da),
+        ...assembleProjectsOperationDefinitions(tc, da),
+        ...assembleHrOperationDefinitions(tc, da),
+        ...assembleQualityOperationDefinitions(tc, da),
+        ...assembleMaintenanceOperationDefinitions(tc, da),
+        ...assembleRepairsOperationDefinitions(tc, da),
+        ...assembleDocumentsOperationDefinitions(tc, da),
+        ...assembleSignOperationDefinitions(tc, da),
+        ...assembleApprovalsOperationDefinitions(tc, da),
+        ...assembleSubscriptionsOperationDefinitions(tc, da),
+        ...assembleRentalOperationDefinitions(tc, da),
+        ...assembleFieldServiceOperationDefinitions(tc, da),
+      },
+    };
+  }
+
+  const result = runPipelineService(payload);
+  return sendJson(res, result.ok ? 200 : 400, result);
+}
+
+async function handlePipelineStateLoad(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { ok: false, error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
+  }
+
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+    return sendJson(res, 400, { ok: false, error: "Request body must be a non-null object." });
+  }
+
+  if (typeof payload.project_id !== "string" || payload.project_id.trim() === "") {
+    return sendJson(res, 400, { ok: false, error: "project_id must be a non-empty string." });
+  }
+
+  const result = await loadRuntimeState(payload.project_id);
+
+  if (result.ok) {
+    return sendJson(res, 200, { ok: true, runtime_state: result.runtime_state, saved_at: result.saved_at });
+  }
+
+  if (result.not_found) {
+    return sendJson(res, 404, { ok: false, error: result.error, not_found: true });
+  }
+
+  return sendJson(res, 400, { ok: false, error: result.error });
+}
+
+async function handlePipelineStateResume(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { ok: false, error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
+  }
+
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+    return sendJson(res, 400, { ok: false, error: "Request body must be a non-null object." });
+  }
+
+  if (typeof payload.project_id !== "string" || payload.project_id.trim() === "") {
+    return sendJson(res, 400, { ok: false, error: "project_id must be a non-empty string." });
+  }
+
+  const result = await resumeRuntimeState(payload.project_id);
+
+  if (result.ok) {
+    return sendJson(res, 200, { ok: true, runtime_state: result.runtime_state, saved_at: result.saved_at });
+  }
+
+  if (result.not_found) {
+    return sendJson(res, 404, { ok: false, error: result.error, not_found: true });
+  }
+
+  return sendJson(res, 400, { ok: false, error: result.error });
+}
+
+async function handlePipelineStateSave(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { ok: false, error: parseError instanceof Error ? parseError.message : 'Invalid request payload.' });
+  }
+
+  if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) {
+    return sendJson(res, 400, { ok: false, error: 'Request body must be a non-null plain object.' });
+  }
+
+  const result = await saveRuntimeState(payload);
+  return sendJson(res, result.ok ? 200 : 400, result);
+}
+
+async function handlePipelineConnectionRegister(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { ok: false, error: parseError instanceof Error ? parseError.message : 'Invalid request payload.' });
+  }
+
+  const projectId   = typeof payload.project_id === 'string' ? payload.project_id.trim() : null;
+  const credentials = payload.credentials;
+
+  if (!projectId) {
+    return sendJson(res, 400, { ok: false, error: 'project_id must be a non-empty string.' });
+  }
+  if (!credentials || typeof credentials !== 'object' || Array.isArray(credentials)) {
+    return sendJson(res, 400, { ok: false, error: 'credentials must be a non-null plain object.' });
   }
 
   try {
-    const id = await createRecord(null, model, values);
-    return sendJson(res, 200, { id });
+    const result = await registerPipelineConnection(projectId, credentials);
+    return sendJson(res, 200, result);
   } catch (error) {
-    return sendJson(res, 400, { error: error instanceof Error ? error.message : "Record creation failed." });
+    return sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : 'Pipeline connection registration failed.' });
   }
 }
 
-async function handleDomainExecute(req, res) {
-  const payload = await readJsonBody(req);
-  const project = normalizeProjectState(payload.project);
+async function handleCheckpointConfirm(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { ok: false, error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
+  }
+
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+    return sendJson(res, 400, { ok: false, error: "Request body must be a non-null object." });
+  }
+
+  // ── Input validation ────────────────────────────────────────────────────────
+  const project_id   = typeof payload.project_id   === "string" ? payload.project_id.trim()   : null;
+  const checkpoint_id = typeof payload.checkpoint_id === "string" ? payload.checkpoint_id.trim() : null;
+  const status        = payload.status;
+  const evidence      = payload.evidence;
+  const actor         = payload.actor;
+
+  if (!project_id) {
+    return sendJson(res, 400, { ok: false, error: "project_id is required." });
+  }
+  if (!checkpoint_id) {
+    return sendJson(res, 400, { ok: false, error: "checkpoint_id is required." });
+  }
+  if (status !== "Complete") {
+    return sendJson(res, 400, { ok: false, error: "status must equal \"Complete\"." });
+  }
+  if (typeof evidence !== "string" || evidence.trim() === "") {
+    return sendJson(res, 400, { ok: false, error: "evidence must be a non-empty string." });
+  }
+  if (typeof actor !== "string" || actor.trim() === "") {
+    return sendJson(res, 400, { ok: false, error: "actor must be a non-empty string." });
+  }
+
+  // ── Load persisted runtime state ────────────────────────────────────────────
+  const loadResult = await loadRuntimeState(project_id);
+  if (!loadResult.ok) {
+    if (loadResult.not_found) {
+      return sendJson(res, 404, { ok: false, error: loadResult.error, not_found: true });
+    }
+    return sendJson(res, 400, { ok: false, error: loadResult.error });
+  }
+
+  const runtime_state = loadResult.runtime_state;
+
+  // ── Locate checkpoint record ────────────────────────────────────────────────
+  // Search in checkpoints.records (persisted container) then fall back to the
+  // top-level checkpoints array if the state was stored with a flat shape.
+  let checkpointRecord = null;
+
+  const checkpointsContainer = runtime_state.checkpoints;
+  if (checkpointsContainer !== null && typeof checkpointsContainer === "object" && !Array.isArray(checkpointsContainer)) {
+    // Standard shape: { records: [...], engine_version, generated_at }
+    const records = Array.isArray(checkpointsContainer.records) ? checkpointsContainer.records : [];
+    checkpointRecord = records.find((r) => r && r.checkpoint_id === checkpoint_id) ?? null;
+  } else if (Array.isArray(checkpointsContainer)) {
+    // Flat array shape (legacy / direct save)
+    checkpointRecord = checkpointsContainer.find((r) => r && r.checkpoint_id === checkpoint_id) ?? null;
+  }
+
+  if (!checkpointRecord) {
+    return sendJson(res, 400, { ok: false, error: `checkpoint_id "${checkpoint_id}" not found in project state.` });
+  }
+
+  const licenceRequiredResponse = await maybeBuildLicenceRequiredResponse(
+    project_id,
+    checkpoint_id,
+    checkpointRecord.domain
+  );
+  if (licenceRequiredResponse) {
+    return sendJson(res, 402, licenceRequiredResponse);
+  }
+
+  // ── Governance gate — only User_Confirmed checkpoints ──────────────────────
+  if (checkpointRecord.validation_source !== "User_Confirmed") {
+    return sendJson(res, 400, {
+      ok: false,
+      error: `checkpoint "${checkpoint_id}" has validation_source "${checkpointRecord.validation_source}". Only User_Confirmed checkpoints may use this route.`,
+    });
+  }
+
+  // ── Mutate checkpoint_statuses (carry-over map) ─────────────────────────────
+  if (runtime_state.checkpoint_statuses === null || typeof runtime_state.checkpoint_statuses !== "object" || Array.isArray(runtime_state.checkpoint_statuses)) {
+    runtime_state.checkpoint_statuses = {};
+  }
+  runtime_state.checkpoint_statuses[checkpoint_id] = "Complete";
+
+  // ── Record confirmation metadata (smallest safe addition) ──────────────────
+  if (runtime_state.checkpoint_confirmations === null || typeof runtime_state.checkpoint_confirmations !== "object" || Array.isArray(runtime_state.checkpoint_confirmations)) {
+    runtime_state.checkpoint_confirmations = {};
+  }
+  runtime_state.checkpoint_confirmations[checkpoint_id] = {
+    evidence:     evidence.trim(),
+    actor:        actor.trim(),
+    confirmed_at: new Date().toISOString(),
+  };
+
+  // ── Persist updated state ───────────────────────────────────────────────────
+  const saveResult = await saveRuntimeState(runtime_state);
+  if (!saveResult.ok) {
+    return sendJson(res, 400, { ok: false, error: saveResult.error });
+  }
+
+  return sendJson(res, 200, { ok: true, runtime_state });
+}
+
+// ---------------------------------------------------------------------------
+// Industry selection pre-population mapping
+//
+// Maps each industry's recommendedDomains to the discovery question IDs and
+// values that activate those domains via the domain-activation-engine rules.
+// Only question IDs from the discovery framework are used.
+// Source: "industry_default" — distinguishes from user-provided answers.
+// ---------------------------------------------------------------------------
+
+const VALID_INDUSTRY_IDS = ["manufacturing", "retail", "distribution", "services"];
+
+/**
+ * Returns discovery answers that activate the domains recommended for the
+ * given industry template.
+ *
+ * Mapping rationale (domain → gate question → value):
+ *   manufacturing: MF-01=Yes, BM-01=Physical, PI-01=Yes, OP-01=Yes,
+ *                  RM-01=[One-time product sales], FC-01=Full accounting,
+ *                  MF-06=[In-process quality checks]
+ *   retail:        OP-03=Yes, OP-01=Yes, OP-04=Yes, SC-01=Yes,
+ *                  RM-01=[One-time product sales], FC-01=Full accounting,
+ *                  BM-01=Physical products only
+ *   distribution:  PI-01=Yes, OP-01=Yes, SC-01=Yes,
+ *                  RM-01=[One-time product sales], FC-01=Full accounting,
+ *                  BM-01=Physical products only
+ *   services:      RM-02=Yes, SC-01=Yes,
+ *                  RM-01=[One-time service delivery], FC-01=Full accounting,
+ *                  BM-01=Services only, BM-05=15
+ *
+ * Returns: { answers: { [questionId]: value, ... }, sources: { [questionId]: "industry_default" } }
+ */
+function buildIndustryDiscoveryAnswers(industryId) {
+  const base = {};
+
+  if (industryId === "manufacturing") {
+    // Business model — physical production
+    base["BM-01"] = "Physical products only";
+    // Manufacturing gate (R6 — sole gate)
+    base["MF-01"] = "Yes";
+    // Purchase (PI-01=Yes)
+    base["PI-01"] = "Yes";
+    // Inventory (OP-01=Yes)
+    base["OP-01"] = "Yes";
+    // Sales (RM-01 includes One-time product sales)
+    base["RM-01"] = ["One-time product sales"];
+    // Accounting
+    base["FC-01"] = "Full accounting";
+    // Quality (MF-06 has non-None value — manufacturing-specific)
+    base["MF-06"] = ["In-process quality checks"];
+  } else if (industryId === "retail") {
+    // Business model — physical products
+    base["BM-01"] = "Physical products only";
+    // POS
+    base["OP-03"] = "Yes";
+    // Inventory
+    base["OP-01"] = "Yes";
+    // Website/ecommerce
+    base["OP-04"] = "Yes";
+    // CRM
+    base["SC-01"] = "Yes";
+    // Sales
+    base["RM-01"] = ["One-time product sales"];
+    // Accounting
+    base["FC-01"] = "Full accounting";
+  } else if (industryId === "distribution") {
+    // Business model — physical products, no manufacturing
+    base["BM-01"] = "Physical products only";
+    // Purchase
+    base["PI-01"] = "Yes";
+    // Inventory
+    base["OP-01"] = "Yes";
+    // CRM
+    base["SC-01"] = "Yes";
+    // Sales
+    base["RM-01"] = ["One-time product sales"];
+    // Accounting
+    base["FC-01"] = "Full accounting";
+  } else if (industryId === "services") {
+    // Business model — services
+    base["BM-01"] = "Services only";
+    // Projects (RM-02=Yes is the primary projects gate)
+    base["RM-02"] = "Yes";
+    // CRM
+    base["SC-01"] = "Yes";
+    // Sales (service delivery)
+    base["RM-01"] = ["One-time service delivery"];
+    // Accounting
+    base["FC-01"] = "Full accounting";
+    // HR (BM-05 > 10)
+    base["BM-05"] = 15;
+  }
+
+  // Build sources map — every pre-populated answer is tagged industry_default
+  const sources = {};
+  for (const key of Object.keys(base)) {
+    sources[key] = "industry_default";
+  }
+
+  return { answers: base, sources };
+}
+
+/**
+ * Returns the list of question IDs that are not covered by the industry
+ * pre-population mapping but have domain-activation consequences.
+ *
+ * These are questions that remain unanswered after industry pre-population
+ * and for which the engine would return "missing_required_input".
+ * The deferred answer rule: activate more not less — callers who need a
+ * fully-resolved activation surface must supply these answers or accept
+ * the missing_required_input result for those domains.
+ *
+ * Returns: string[]
+ */
+function buildDeferredQuestions(industryId, populatedAnswers) {
+  // Full question set used by the engine (all gate questions from domain-activation-engine.js)
+  const ALL_GATE_QUESTIONS = [
+    "BM-01", "BM-05",
+    "RM-01", "RM-02", "RM-03", "RM-04",
+    "SC-01", "SC-02", "SC-04",
+    "PI-01", "PI-02", "PI-03", "PI-05",
+    "OP-01", "OP-03", "OP-04", "OP-05",
+    "MF-01", "MF-03", "MF-04", "MF-05", "MF-06", "MF-07",
+    "FC-01",
+    "TA-01", "TA-03",
+  ];
+
+  return ALL_GATE_QUESTIONS.filter((q) => !(q in populatedAnswers));
+}
+
+async function handleIndustrySelect(req, res) {
+  // ── Parse request body ─────────────────────────────────────────────────────
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, {
+      ok: false,
+      error: parseError instanceof Error ? parseError.message : "Invalid request payload.",
+    });
+  }
+
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+    return sendJson(res, 400, { ok: false, error: "Request body must be a non-null object." });
+  }
+
+  // ── Validate project_id ────────────────────────────────────────────────────
+  const project_id = typeof payload.project_id === "string" ? payload.project_id.trim() : null;
+  if (!project_id) {
+    return sendJson(res, 400, { ok: false, error: "project_id is required and must be a non-empty string." });
+  }
+
+  // ── Validate industry_id ───────────────────────────────────────────────────
+  const industry_id = typeof payload.industry_id === "string" ? payload.industry_id.trim() : null;
+  if (!industry_id) {
+    return sendJson(res, 400, { ok: false, error: "industry_id is required and must be a non-empty string." });
+  }
+  if (!VALID_INDUSTRY_IDS.includes(industry_id)) {
+    return sendJson(res, 400, {
+      ok: false,
+      error: `industry_id "${industry_id}" is not valid. Must be one of: ${VALID_INDUSTRY_IDS.join(", ")}.`,
+    });
+  }
+
+  // ── Retrieve industry hints and template ───────────────────────────────────
+  const hints = getIndustryDomainHints(industry_id);
+  const template = getIndustryTemplate(industry_id);
+  const industry_name = hints.industryName;
+
+  // ── Build pre-populated answers ────────────────────────────────────────────
+  const { answers: industryAnswers, sources: industrySources } = buildIndustryDiscoveryAnswers(industry_id);
+  const deferred_questions = buildDeferredQuestions(industry_id, industryAnswers);
+
+  // ── Load existing runtime state (if any) ──────────────────────────────────
+  const loadResult = await loadRuntimeState(project_id);
+
+  let runtime_state;
+
+  if (loadResult.ok) {
+    // Merge: industry answers do NOT overwrite existing user answers
+    runtime_state = loadResult.runtime_state;
+
+    const existingAnswers =
+      runtime_state.discovery_answers &&
+      typeof runtime_state.discovery_answers === "object" &&
+      !Array.isArray(runtime_state.discovery_answers) &&
+      runtime_state.discovery_answers.answers &&
+      typeof runtime_state.discovery_answers.answers === "object" &&
+      !Array.isArray(runtime_state.discovery_answers.answers)
+        ? runtime_state.discovery_answers.answers
+        : {};
+
+    const existingSources =
+      runtime_state.discovery_answers &&
+      typeof runtime_state.discovery_answers.sources === "object" &&
+      !Array.isArray(runtime_state.discovery_answers.sources) &&
+      runtime_state.discovery_answers.sources !== null
+        ? runtime_state.discovery_answers.sources
+        : {};
+
+    // Industry defaults fill gaps only — user answers (non-industry_default source) win
+    const mergedAnswers = { ...industryAnswers };
+    for (const [qid, val] of Object.entries(existingAnswers)) {
+      mergedAnswers[qid] = val;
+    }
+    const mergedSources = { ...industrySources };
+    for (const [qid, src] of Object.entries(existingSources)) {
+      mergedSources[qid] = src;
+    }
+
+    runtime_state = {
+      ...runtime_state,
+      discovery_answers: {
+        ...(runtime_state.discovery_answers || {}),
+        answers: mergedAnswers,
+        sources: mergedSources,
+      },
+      industry_selection: {
+        industry_id,
+        industry_name,
+        selected_at: new Date().toISOString(),
+      },
+    };
+  } else {
+    // No existing state — create minimal valid runtime state
+    runtime_state = {
+      project_identity: { project_id },
+      discovery_answers: {
+        answers: industryAnswers,
+        sources: industrySources,
+      },
+      industry_selection: {
+        industry_id,
+        industry_name,
+        selected_at: new Date().toISOString(),
+      },
+    };
+  }
+
+  // ── Persist updated runtime state ──────────────────────────────────────────
+  const saveResult = await saveRuntimeState(runtime_state);
+  if (!saveResult.ok) {
+    return sendJson(res, 400, { ok: false, error: saveResult.error });
+  }
+
+  // ── Compute activated_domains_preview ─────────────────────────────────────
+  const finalAnswers = runtime_state.discovery_answers;
+  const activatedDomainsResult = computeActivatedDomains(finalAnswers);
+  const activated_domains_preview = activatedDomainsResult.domains
+    .filter((d) => d.activated === true)
+    .map((d) => d.domain_id);
+
+  // ── Return response ────────────────────────────────────────────────────────
+  return sendJson(res, 200, {
+    ok: true,
+    industry_id,
+    industry_name,
+    pre_populated_answers: industryAnswers,
+    deferred_questions,
+    activated_domains_preview,
+    next_step: "wizard",
+  });
+}
+
+async function handlePipelineApply(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, {
+      ok: false,
+      error: parseError instanceof Error ? parseError.message : "Invalid request payload.",
+    });
+  }
+
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+    return sendJson(res, 400, { ok: false, error: "Request body must be a non-null object." });
+  }
+
+  const approvalCheckpointId = resolveApprovalCheckpointId(
+    payload.runtime_state ?? null,
+    payload.approval_id ?? null
+  );
+  const licenceRequiredResponse = await maybeBuildLicenceRequiredResponse(
+    payload.connection_context?.project_id ?? null,
+    approvalCheckpointId
+  );
+  if (licenceRequiredResponse) {
+    return sendJson(res, 402, licenceRequiredResponse);
+  }
+
+  const result = await applyGoverned({
+    approval_id: payload.approval_id,
+    runtime_state: payload.runtime_state,
+    operation: payload.operation,
+    connection_context: payload.connection_context,
+  });
+
+  return sendJson(res, result.ok ? 200 : 400, result);
+}
+
+async function handleLicencePricing(req, res) {
+  void req;
+  const config = await getLicenceConfig();
+  return sendJson(res, 200, {
+    price: await getPrice(),
+    early_adopter_price: config.early_adopter_price,
+    is_early_adopter: await isEarlyAdopter(),
+    remaining_slots: await getRemainingEarlyAdopterSlots(),
+    currency: config.currency,
+    duration_days: config.duration_days,
+  });
+}
+
+async function handleLicenceStatus(req, res, pathname) {
+  void req;
+  const match = pathname.match(/^\/api\/licence\/status\/([^/]+)$/);
+  if (!match) {
+    return sendJson(res, 404, { error: "Not found" });
+  }
+
+  return sendJson(res, 200, await getLicenceStatus(decodeURIComponent(match[1])));
+}
+
+async function handleLicenceCreatePaymentIntent(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { ok: false, error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
+  }
+
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+    return sendJson(res, 400, { ok: false, error: "Request body must be a non-null object." });
+  }
+
+  const projectId = typeof payload.project_id === "string" ? payload.project_id.trim() : "";
+  if (projectId === "") {
+    return sendJson(res, 400, { ok: false, error: "project_id is required." });
+  }
+
+  const result = await createPaymentIntent(projectId);
+  return sendJson(res, 200, {
+    client_secret: result.client_secret,
+    price: result.price,
+    early_adopter: result.early_adopter,
+    remaining_slots: result.remaining_slots,
+  });
+}
+
+async function handleLicenceWebhook(req, res) {
+  let rawBody;
+  try {
+    rawBody = await readRequestBodyBuffer(req);
+  } catch (parseError) {
+    return sendJson(res, 400, {
+      ok: false,
+      error: parseError instanceof Error ? parseError.message : "Invalid request payload.",
+    });
+  }
 
   try {
-    const outcome = await executePreview(project, payload.preview, payload.options || {});
-    const nextProject = normalizeProjectState({
-      ...project,
-      executionState: normalizeExecutionState({
-        executions: [...(project.executionState?.executions || []), outcome.execution]
-      }),
-      auditLog: normalizeAuditLog([...(project.auditLog || []), outcome.auditEntry])
+    const signatureHeader = req.headers["stripe-signature"];
+    const signature = Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader;
+    const result = await handleStripeWebhook(rawBody, signature);
+    return sendJson(res, 200, result);
+  } catch (error) {
+    return sendJson(res, 400, {
+      ok: false,
+      error: error instanceof Error ? error.message : "Webhook processing failed.",
+    });
+  }
+}
+
+async function handleLicenceCheckDomain(req, res, pathname) {
+  void req;
+  const match = pathname.match(/^\/api\/licence\/check-domain\/([^/]+)\/([^/]+)$/);
+  if (!match) {
+    return sendJson(res, 404, { error: "Not found" });
+  }
+
+  const projectId = decodeURIComponent(match[1]);
+  const domainId = decodeURIComponent(match[2]);
+  const normalizedDomainId = normalizeDomainId(domainId);
+  const unlocked = await isDomainUnlocked(projectId, normalizedDomainId);
+
+  let reason = "Paid licence active.";
+  if (!normalizedDomainId) {
+    reason = "Unknown domain.";
+  } else if (FOUNDATION_DOMAINS.includes(normalizedDomainId)) {
+    reason = "Foundation domains are always free.";
+  } else if (!unlocked) {
+    reason = "This domain requires a paid licence.";
+  }
+
+  return sendJson(res, 200, { unlocked, reason });
+}
+
+// ---------------------------------------------------------------------------
+// handleDetectDatabases
+//
+// POST /api/odoo/detect-databases
+// Body: { "url": "https://mycompany.odoo.com" }
+//
+// Calls the Odoo public database list endpoint with a 5000ms hard timeout.
+// Never throws — always returns a response.
+// No credentials are passed — this is a public endpoint.
+// ---------------------------------------------------------------------------
+
+async function handleDetectDatabases(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 200, { ok: false, databases: [], error: "Invalid request payload." });
+  }
+
+  const url = typeof payload.url === "string" ? payload.url.trim() : "";
+  if (!url) {
+    return sendJson(res, 200, { ok: false, databases: [], error: "url is required." });
+  }
+
+  // Validate URL shape before making a network call
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return sendJson(res, 200, { ok: false, databases: [], error: "Invalid URL format." });
+  }
+
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    return sendJson(res, 200, { ok: false, databases: [], error: "URL must use http or https protocol." });
+  }
+
+  const targetUrl = `${parsed.protocol}//${parsed.host}/web/database/list`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+  try {
+    const response = await fetch(targetUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+      signal: controller.signal,
     });
 
-    return sendJson(res, outcome.execution.status === "succeeded" ? 200 : 400, {
-      project: nextProject,
-      execution: outcome.execution
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return sendJson(res, 200, {
+        ok: false,
+        databases: [],
+        error: `Odoo responded with HTTP ${response.status}`,
+      });
+    }
+
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      return sendJson(res, 200, { ok: false, databases: [], error: "Invalid JSON from Odoo instance." });
+    }
+
+    // Odoo returns { result: [...] } or a plain array depending on version/endpoint
+    let databases = [];
+    if (Array.isArray(data)) {
+      databases = data;
+    } else if (data && Array.isArray(data.result)) {
+      databases = data.result;
+    }
+
+    // Filter to strings only
+    databases = databases.filter((d) => typeof d === "string");
+
+    return sendJson(res, 200, { ok: true, databases });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    const isTimeout = err && (err.name === "AbortError" || err.code === "ABORT_ERR");
+    return sendJson(res, 200, {
+      ok: false,
+      databases: [],
+      error: isTimeout ? "Detection timed out — instance may be unreachable." : (err.message || "Unknown error"),
     });
-  } catch (error) {
-    return sendJson(res, 400, { error: error instanceof Error ? error.message : "Execution failed." });
   }
 }
 
@@ -405,7 +1259,7 @@ async function writeProjectStore(payload) {
   return normalized;
 }
 
-async function readJsonBody(req) {
+async function readRequestBodyBuffer(req) {
   const chunks = [];
   let totalSize = 0;
 
@@ -417,12 +1271,18 @@ async function readJsonBody(req) {
     chunks.push(Buffer.from(chunk));
   }
 
-  if (!chunks.length) {
+  return Buffer.concat(chunks);
+}
+
+async function readJsonBody(req) {
+  const body = await readRequestBodyBuffer(req);
+
+  if (!body.length) {
     return {};
   }
 
   try {
-    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    return JSON.parse(body.toString("utf8"));
   } catch (e) {
     throw new Error("Invalid JSON in request body");
   }
@@ -459,9 +1319,77 @@ function sendJson(res, status, payload) {
     "Content-Security-Policy": "default-src 'self'; script-src 'self'",
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization"
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, Stripe-Signature"
   });
   res.end(JSON.stringify(payload, null, 2));
+}
+
+function normalizeDomainId(domainId) {
+  if (typeof domainId !== "string") {
+    return null;
+  }
+
+  const normalized = domainId.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return normalized === "" ? null : normalized;
+}
+
+function resolveApprovalCheckpointId(runtimeState, approvalId) {
+  if (typeof approvalId !== "string" || approvalId.trim() === "") {
+    return null;
+  }
+
+  const approvals = runtimeState?._engine_outputs?.execution_approvals?.execution_approvals;
+  if (!Array.isArray(approvals)) {
+    return null;
+  }
+
+  const approval = approvals.find((candidate) => candidate?.approval_id === approvalId);
+  return typeof approval?.checkpoint_id === "string" ? approval.checkpoint_id : null;
+}
+
+function resolveCheckpointDomainId(checkpointId, explicitDomainId = null) {
+  return normalizeDomainId(explicitDomainId) ?? getDomainIdFromCheckpointId(checkpointId);
+}
+
+async function maybeBuildLicenceRequiredResponse(projectId, checkpointId, explicitDomainId = null) {
+  if (typeof projectId !== "string" || projectId.trim() === "") {
+    return null;
+  }
+
+  const domainId = resolveCheckpointDomainId(checkpointId, explicitDomainId);
+  if (!domainId) {
+    return null;
+  }
+
+  const unlocked = await isDomainUnlocked(projectId.trim(), domainId);
+  if (unlocked) {
+    return null;
+  }
+
+  return buildLicenceRequiredResponse();
+}
+
+async function buildLicenceRequiredResponse() {
+  return {
+    ok: false,
+    error: "licence_required",
+    message: "This domain requires a paid licence.",
+    upgrade_url: "/upgrade",
+    current_price: await getPrice(),
+    early_adopter: await isEarlyAdopter(),
+    remaining_slots: await getRemainingEarlyAdopterSlots(),
+  };
+}
+
+function buildApplyFailureResponse(error) {
+  return {
+    ok: false,
+    result_status: "failure",
+    odoo_result: null,
+    error,
+    executed_at: new Date().toISOString(),
+    execution_source_inputs: null,
+  };
 }
 
 function cleanupStaleRequestLogEntries() {

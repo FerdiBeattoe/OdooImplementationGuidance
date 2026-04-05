@@ -16,6 +16,10 @@
 - missing checkpoint enforcement
 - loss of distinction between configuration completion and operational readiness
 - absence of branch-aware handling for relevant Odoo.sh Enterprise changes
+- progress that prioritizes shell, UI, or dashboard work over implementation write capability
+- wizard or domain work claimed complete while stopped at preview, approval, or recording only
+- framing the product as a guide-only planner or control-plane that does not need real Odoo writes
+- treating preview/approval/execution recording as the end product rather than means to usable implementation
 
 ## When To Escalate Ambiguity
 

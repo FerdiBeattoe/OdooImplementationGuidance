@@ -1,12 +1,15 @@
 services:
   - type: web
     name: odoo-implementation-platform
-    runtime: node
-    plan: starter
+    env: node
     buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 3000
+        generateValue: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false

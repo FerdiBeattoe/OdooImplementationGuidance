@@ -4,7 +4,7 @@
 
 The product is an Odoo 19 Implementation Control Platform with bounded implementation-engine capability.
 
-It is a structured control and execution layer for planning, validating, sequencing, previewing, and safely applying bounded implementation changes across Community and Enterprise editions and across Odoo Online, Odoo.sh, and On-Premise deployments.
+It is a guided implementation platform that takes a business from scoped setup through a truthful, usable Odoo 19 implementation by gathering user answers, determining required configuration, previewing intended actions, requiring approval, safely applying real Odoo application-layer writes, and recording truthful results — across Community and Enterprise editions and across Odoo Online, Odoo.sh, and On-Premise deployments.
 
 ## Target Users
 
@@ -25,7 +25,7 @@ Secondary users:
 
 ## Core Promise
 
-The platform will guide a project through correct Odoo 19 setup in the right order, require confirmation at critical checkpoints, explain downstream impact before decisions are locked in, connect to supported environments where implemented, preview intended implementation actions before execution, and support only forward-safe bounded implementation activity.
+The platform will guide a project through correct Odoo 19 setup in the right order, require confirmation at critical checkpoints, explain downstream impact before decisions are locked in, connect to supported environments, preview intended implementation actions before execution, require approval before execution, safely apply real Odoo application-layer writes through governed bounded execution, record truthful execution results, and support enough domain coverage and data setup to reach a usable implementation state. It supports only forward-safe bounded implementation activity.
 
 ## Product Principles
 
@@ -69,13 +69,16 @@ A configured system is not automatically ready for go-live. Readiness requires c
 
 The product is:
 
-- an implementation control platform
+- a guided implementation platform that reaches usable Odoo implementation outcomes through governed execution
+- an answer-driven discovery and configuration determination system
 - a checkpoint and validation framework
-- a guided decision support layer for Odoo 19 implementation work
-- a documentation and workflow foundation for structured setup sequencing
+- a preview-before-execution and approval-before-execution enforcement layer
+- a bounded application-layer execution surface for real Odoo writes
+- an audit-traceable execution recording system
 - a governed connection and inspection surface for supported Odoo environments
-- a preview-and-execute surface for bounded safe implementation actions
 - a mechanism to support fresh implementations and forward-safe expansion only
+
+The product is NOT a shell-first dashboard, a guide-only planner, or a control-plane that stops before real apply. Frontend and UI work exist to expose governed execution, not as ends in themselves.
 
 ## What The Product Is Not
 
@@ -88,6 +91,9 @@ The product is not:
 - a transactional correction engine
 - an unrestricted configuration automation tool
 - a generic Odoo admin console
+- a raw database writer
+- a shell-first dashboard project that does not need to reach real Odoo writes
+- a guide-only planner that stops at advice without governed execution
 - a substitute for business ownership of key implementation decisions
 
 ## Hard Boundary Rule
@@ -104,7 +110,37 @@ The product is successful when it enables teams to:
 - understand downstream impact before making consequential configuration decisions
 - inspect supported live Odoo environments without drifting into unrestricted diagnostics
 - preview intended implementation actions with explicit safety class before execution
-- execute only approved safe implementation actions with audit traceability
+- require and obtain approval before any governed execution
+- execute real Odoo application-layer writes through governed bounded execution with audit traceability
+- record truthful success/failure execution results
+- reach a usable implementation state with enough domain coverage, data setup, and workflow completion for the project scope
 - separate required, go-live, recommended, and optional work clearly
 - resume in-progress work with accurate project state, decision history, and execution history
 - maintain clean scope boundaries without drifting into remediation, diagnostics, or unrestricted administration
+
+A wizard or domain surface is not "done" until it can produce a truthful preview, require approval, perform a real governed Odoo application-layer write, and record a truthful result — or is explicitly marked manual/out-of-scope with documented justification.
+
+## Onboarding Wizard Governing Rules
+
+### Rule 1 — Irreversible Decision Warning Pattern
+
+Questions flagged as irreversible in the discovery framework (currently BM-03 and MF-01) must surface a warning screen before the user confirms their answer. The warning must:
+
+- Name every domain that will be activated or excluded as a result of the answer
+- Explain what that activation or exclusion means for the implementation sequence (which domains are unblocked, which are blocked, and which become go-live priority)
+- Require explicit user acknowledgement before proceeding
+- Never proceed silently on an irreversible answer
+
+Silence on an irreversible answer is a platform integrity failure. This rule cannot be waived, deferred, or bypassed under any framing.
+
+### Rule 2 — Deferred Answer Pattern
+
+If a user skips or defers any discovery question:
+
+- The wizard treats the unanswered question as "activate all domains this question could have triggered"
+- The implementation surface will be larger than necessary but never smaller than necessary
+- A warning is shown at the summary screen listing every domain activated by default due to unanswered questions
+- The user must explicitly acknowledge the defaulted activations before the pipeline run is triggered
+- Deferred questions are recorded in the runtime state as `deferred: true` so they can be revisited in a later session
+
+The principle underlying this rule is conservative scope expansion: an implementation that includes unnecessary domains can have those domains deactivated through a scope change; an implementation that omits required domains cannot be corrected without a governed rebuild.

@@ -1,0 +1,281 @@
+/* =============================================================
+   Onboarding Wizard — Odoo 19 Implementation Control Platform
+   "Measured Advisor" aesthetic
+
+   The wizard uses almost entirely inline styles referencing
+   --ee-* CSS variables. This file:
+     1. Overrides --ee-primary → amber across the entire app
+        (intentional global design direction: amber replaces plum)
+     2. Polishes .ee-btn and .ee-input classes referenced by JS
+     3. Upgrades typography via font variable overrides
+   ============================================================= */
+
+@import './design-system.css';
+
+/* ── Global: accent colour direction ──────────────────────── */
+/*
+   Replacing Enterprise Plum (#714B67) with Amber (#C96B10).
+   This intentionally updates the entire platform's accent:
+   sidebar active states, focus rings, inline-styled selections
+   in the wizard, and button fills all receive the amber system.
+   Amber on the dark navy sidebar reads as confident and warm.
+*/
+
+:root {
+  --ee-primary:            var(--impl-amber);
+  --ee-primary-hover:      var(--impl-amber-hover);
+  --ee-primary-subtle:     var(--impl-amber-subtle);
+
+  /* Typography: Sora + Lora throughout */
+  --ee-font-headline:      var(--font-display);
+  --ee-font-body:          var(--font-reading);
+
+  /* Shadows: warmer, more depth */
+  --ee-shadow-lg:          var(--impl-shadow-raise);
+  --ee-shadow-md:          var(--impl-shadow-card);
+}
+
+/* ── Button system ────────────────────────────────────────── */
+
+.ee-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 42px;
+  padding: 0 1.5rem;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    background var(--impl-dur-fast) ease,
+    box-shadow var(--impl-dur-mid) ease,
+    transform var(--impl-dur-fast) ease,
+    opacity var(--impl-dur-fast) ease;
+  white-space: nowrap;
+}
+
+/* Primary — amber pill, action-forward */
+.ee-btn--primary {
+  background: var(--impl-amber);
+  color: var(--impl-amber-on);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.22);
+  animation: impl-pulse-ring 3.2s ease infinite;
+}
+
+.ee-btn--primary:hover:not(:disabled) {
+  background: var(--impl-amber-hover);
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.32);
+  transform: translateY(-1px);
+  animation-play-state: paused;
+}
+
+.ee-btn--primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.22);
+}
+
+.ee-btn--primary:disabled {
+  background: #e0dbd4;
+  color: #9a9188;
+  box-shadow: none;
+  cursor: not-allowed;
+  animation: none;
+}
+
+/* Secondary — calm, retreat, pill shape */
+.ee-btn--secondary {
+  background: transparent;
+  color: var(--impl-text-body);
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1.5px var(--impl-cream-border);
+}
+
+.ee-btn--secondary:hover:not(:disabled) {
+  background: var(--impl-cream);
+  box-shadow: inset 0 0 0 1.5px var(--impl-cream-dark), var(--impl-shadow-card);
+}
+
+.ee-btn--secondary:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+/* ── Input system ─────────────────────────────────────────── */
+
+.ee-input {
+  display: block;
+  width: 100%;
+  height: 44px;
+  padding: 0 var(--sp-4);
+  background: #ffffff;
+  color: var(--impl-text-primary);
+  font-family: var(--font-reading);
+  font-size: 0.97rem;
+  border: none;
+  box-shadow: inset 0 0 0 1.5px var(--impl-cream-border);
+  outline: none;
+  transition:
+    box-shadow var(--impl-dur-fast) ease,
+    background var(--impl-dur-fast) ease;
+}
+
+.ee-input:focus {
+  background: #FFFEF9;
+  box-shadow:
+    inset 0 0 0 2px var(--impl-amber),
+    0 0 0 3px var(--impl-amber-ring);
+}
+
+.ee-input::placeholder {
+  color: var(--impl-text-subtle);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.ee-btn {
+  border-radius: var(--radius-sm);
+}
+
+.ee-input,
+.ow-root select,
+.ow-root textarea {
+  border-radius: var(--radius-md);
+}
+
+.ow-header-mark,
+.ow-choice-card,
+.ow-card,
+.ow-banner,
+.ow-panel,
+.ow-prepop-badge,
+.ow-warning-card,
+.ow-defaulted-row,
+.ow-toggle-card,
+.ow-chip {
+  border-radius: var(--radius-md);
+}
+
+.ow-chip,
+.ow-prepop-badge {
+  border-radius: var(--radius-sm);
+}
+
+.ow-progress-track,
+.ow-progress-fill {
+  border-radius: 999px;
+}
+
+.ow-choice-card,
+.ow-card,
+.ow-warning-card,
+.ow-defaulted-row,
+.ow-toggle-card {
+  overflow: hidden;
+}
+
+.ow-option {
+  border-radius: var(--radius-md) !important;
+  border-left: none !important;
+  box-shadow: inset 0 0 0 1.5px var(--impl-cream-border);
+  transition:
+    box-shadow var(--impl-dur-fast) ease,
+    transform var(--impl-dur-fast) ease,
+    background var(--impl-dur-fast) ease;
+}
+
+.ow-option:hover {
+  box-shadow: inset 0 0 0 1.5px var(--impl-amber), var(--impl-shadow-card);
+  transform: translateY(-1px);
+}
+
+.ow-option--selected {
+  box-shadow: inset 0 0 0 2px var(--impl-amber), var(--impl-shadow-card);
+}
+
+.ow-option-indicator,
+.ow-toggle-indicator {
+  width: 22px !important;
+  height: 22px !important;
+  flex-shrink: 0;
+  border-radius: 50% !important;
+  border: 2px solid var(--impl-amber) !important;
+  background: transparent !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.ow-option-indicator--selected,
+.ow-toggle-indicator--active {
+  background: var(--impl-amber) !important;
+  border-color: var(--impl-amber) !important;
+}
+
+.ow-option-indicator-dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+}
+
+.ow-option-indicator .material-symbols-outlined,
+.ow-toggle-indicator .material-symbols-outlined {
+  font-size: 14px !important;
+  color: #ffffff !important;
+}
+
+.ow-option-label--selected {
+  font-weight: 600;
+}
+
+/* ── Focus ring: amber for all interactive elements ───────── */
+
+.ee-btn:focus-visible,
+.ee-input:focus-visible {
+  outline: 2px solid var(--impl-amber);
+  outline-offset: 2px;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+
+@media (max-width: 400px) {
+  .ee-btn {
+    width: 100%;
+    height: 46px;
+    font-size: 0.92rem;
+  }
+
+  .ee-input {
+    font-size: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ee-btn--primary {
+    animation: none;
+  }
+}
+
+/* ── Warning card: amber tint (not red) ───────────────────── */
+
+.ow-warning-card {
+  background: var(--impl-amber-subtle);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-left: 3px solid var(--impl-amber);
+  color: var(--impl-text-body);
+}
+
+/* ── Irreversible decision banner: deep navy, amber accent ── */
+
+.ow-banner {
+  background: var(--impl-navy);
+  border: 1px solid var(--impl-navy-border);
+  border-left: 3px solid var(--impl-amber);
+  color: var(--impl-navy-text);
+}

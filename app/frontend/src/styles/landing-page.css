@@ -1,0 +1,391 @@
+/* =============================================================
+   Landing Page — Odoo 19 Implementation Control Platform
+   "Measured Advisor" aesthetic — Sora + Lora, navy hero, amber CTA
+
+   All class names preserved — only presentation changed.
+   ============================================================= */
+
+@import './design-system.css';
+
+/* ── Page wrapper ─────────────────────────────────────────── */
+
+.lp-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--impl-warm-white);
+  color: var(--impl-text-primary);
+  font-family: var(--font-reading);
+}
+
+/* ── Shared inner container ───────────────────────────────── */
+
+.lp-hero__inner,
+.lp-how__inner,
+.lp-returning__inner {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 var(--sp-6);
+  width: 100%;
+}
+
+/* ── SECTION 1: Hero ──────────────────────────────────────── */
+
+.lp-hero {
+  background: var(--impl-navy);
+  padding: 5rem 0 4.5rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle geometric texture overlay */
+.lp-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.018) 0px,
+      rgba(255,255,255,0.018) 1px,
+      transparent 1px,
+      transparent 80px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0.018) 0px,
+      rgba(255,255,255,0.018) 1px,
+      transparent 1px,
+      transparent 80px
+    );
+  pointer-events: none;
+}
+
+/* Amber accent bar at top */
+.lp-hero::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--impl-amber) 0%, var(--impl-amber-bright) 60%, transparent 100%);
+}
+
+.lp-hero__inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Badge ────────────────────────────────────────────────── */
+
+.lp-badge {
+  display: inline-block;
+  background: rgba(245, 158, 11, 0.14);
+  color: var(--impl-amber-bright);
+  border-radius: var(--radius-pill);
+  padding: 0.3rem 0.9rem;
+  font-size: 0.72rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: var(--sp-5);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  animation: impl-fade-in var(--impl-dur-mid) ease both;
+}
+
+/* ── Hero heading ─────────────────────────────────────────── */
+
+.lp-hero__heading {
+  margin: 0 0 var(--sp-5);
+  font-family: var(--font-display);
+  font-size: clamp(1.95rem, 5vw, 2.95rem);
+  font-weight: 700;
+  line-height: 1.18;
+  color: var(--impl-navy-text);
+  letter-spacing: -0.03em;
+  animation: impl-fade-up var(--impl-dur-slow) var(--impl-ease-out) 0.08s both;
+}
+
+/* Amber highlight on key phrase — targets the last word cluster */
+.lp-hero__heading em {
+  font-style: normal;
+  color: var(--impl-amber);
+}
+
+/* ── Hero subheading ──────────────────────────────────────── */
+
+.lp-hero__sub {
+  margin: 0 auto var(--sp-8);
+  max-width: 520px;
+  font-family: var(--font-reading);
+  font-size: 1.05rem;
+  font-weight: 400;
+  line-height: 1.72;
+  color: var(--impl-navy-muted);
+  animation: impl-fade-up var(--impl-dur-slow) var(--impl-ease-out) 0.15s both;
+}
+
+/* ── Notice banner ────────────────────────────────────────── */
+
+.lp-notice {
+  margin: 0 auto var(--sp-4);
+  max-width: 480px;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--impl-amber-subtle);
+  color: var(--impl-amber-hover);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  border-left: 3px solid var(--impl-amber);
+  border-radius: var(--radius-md);
+}
+
+/* ── Primary CTA button ───────────────────────────────────── */
+
+.lp-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.95rem 2.4rem;
+  border-radius: var(--radius-pill);
+  background: var(--impl-amber);
+  color: var(--impl-amber-on);
+  border: none;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    background var(--impl-dur-fast) ease,
+    box-shadow var(--impl-dur-mid) ease,
+    transform var(--impl-dur-fast) ease;
+  box-shadow: var(--impl-shadow-amber);
+  position: relative;
+  animation: impl-fade-up var(--impl-dur-slow) var(--impl-ease-out) 0.22s both;
+}
+
+.lp-cta-btn::after {
+  content: '→';
+  font-family: var(--font-display);
+  font-weight: 400;
+  transition: transform var(--impl-dur-fast) ease;
+}
+
+.lp-cta-btn:hover {
+  background: var(--impl-amber-hover);
+  box-shadow: 0 6px 28px rgba(201, 107, 16, 0.32);
+  transform: translateY(-1px);
+}
+
+.lp-cta-btn:hover::after {
+  transform: translateX(4px);
+}
+
+.lp-cta-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--impl-shadow-amber);
+}
+
+/* ── SECTION 2: How it works ──────────────────────────────── */
+
+.lp-how {
+  padding: 4rem 0;
+  background: var(--impl-warm-white);
+  border-top: 1px solid var(--impl-cream-dark);
+  border-bottom: 1px solid var(--impl-cream-dark);
+}
+
+.lp-section-heading {
+  margin: 0 0 2.5rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--impl-text-muted);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* Steps grid */
+
+.lp-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-5);
+}
+
+.lp-step {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  padding: var(--sp-6) var(--sp-5);
+  background: var(--impl-cream);
+  border-radius: var(--radius-md);
+  border-top: 3px solid transparent;
+  transition:
+    border-color var(--impl-dur-mid) ease,
+    box-shadow var(--impl-dur-mid) ease,
+    transform var(--impl-dur-mid) var(--impl-ease-out);
+  animation: impl-fade-up var(--impl-dur-slow) var(--impl-ease-out) both;
+}
+
+.lp-step:nth-child(1) { animation-delay: 0.06s; }
+.lp-step:nth-child(2) { animation-delay: 0.14s; }
+.lp-step:nth-child(3) { animation-delay: 0.22s; }
+
+.lp-step:hover {
+  border-top-color: var(--impl-amber);
+  box-shadow: var(--impl-shadow-raise);
+  transform: translateY(-3px);
+}
+
+/* Step number */
+
+.lp-step__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--impl-navy);
+  color: var(--impl-amber-bright);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  letter-spacing: -0.01em;
+}
+
+.lp-step__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.lp-step__title {
+  font-family: var(--font-display);
+  font-size: 0.97rem;
+  font-weight: 700;
+  color: var(--impl-text-primary);
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.lp-step__desc {
+  margin: 0;
+  font-family: var(--font-reading);
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--impl-text-muted);
+}
+
+/* ── SECTION 3: Returning user ────────────────────────────── */
+
+.lp-returning {
+  padding: 3rem 0 2.5rem;
+  background: var(--impl-cream);
+  text-align: center;
+  border-top: 1px solid var(--impl-cream-dark);
+}
+
+.lp-returning__label {
+  margin: 0 0 var(--sp-2);
+  font-family: var(--font-reading);
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--impl-text-muted);
+  letter-spacing: 0.01em;
+}
+
+.lp-continue-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0.2rem 0;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--impl-amber);
+  cursor: pointer;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition:
+    color var(--impl-dur-fast) ease,
+    border-color var(--impl-dur-fast) ease;
+  letter-spacing: 0.01em;
+}
+
+.lp-continue-link:hover {
+  color: var(--impl-amber-hover);
+  border-bottom-color: var(--impl-amber-hover);
+}
+
+/* ── SECTION 4: Footer ────────────────────────────────────── */
+
+.lp-footer {
+  margin-top: auto;
+  padding: var(--sp-5) 0;
+  background: var(--impl-navy);
+  text-align: center;
+  border-top: 1px solid var(--impl-navy-border);
+}
+
+.lp-footer__line {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--impl-navy-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+
+/* 375px — small phones */
+@media (max-width: 400px) {
+  .lp-hero {
+    padding: 3rem 0 2.5rem;
+  }
+
+  .lp-hero__heading {
+    font-size: 1.65rem;
+  }
+
+  .lp-hero__sub {
+    font-size: 0.97rem;
+  }
+
+  .lp-cta-btn {
+    width: 100%;
+    padding: 1rem 1.5rem;
+  }
+
+  .lp-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 768px — tablets */
+@media (max-width: 860px) and (min-width: 401px) {
+  .lp-steps {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .lp-steps li:last-child {
+    grid-column: span 2;
+  }
+}
+
+/* 1280px — wide desktop — no changes needed, max-width constrains layout */

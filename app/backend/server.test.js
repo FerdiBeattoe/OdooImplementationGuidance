@@ -108,36 +108,4 @@ test("connection connect endpoint returns normalized project when fetch is stubb
     server.close();
   }
 });
-
-test("execute endpoint refuses non-executable previews", async () => {
-  const server = createAppServer();
-  await new Promise((resolve) => server.listen(0, resolve));
-  const address = server.address();
-
-  try {
-    const response = await requestJson(address.port, "/api/domain/execute", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        project: createInitialProjectState(),
-        preview: {
-          id: "preview-1",
-          domainId: "documents",
-          title: "Install documents",
-          targetModel: "ir.module.module",
-          targetIdentifier: "documents",
-          operation: "install_module",
-          safetyClass: "blocked",
-          executable: false,
-          blockedReason: "Module activation execution is not enabled in this build."
-        },
-        options: { confirmed: true }
-      })
-    });
-
-    assert.equal(response.statusCode, 400);
-    assert.match(response.body.execution.failureReason, /not enabled|not executable/i);
-  } finally {
-    server.close();
-  }
-});
+

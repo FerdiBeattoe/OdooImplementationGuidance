@@ -434,7 +434,13 @@ function buildGrid(gridDef, onBack) {
       addActivityLog({ action: `Imported ${cleanRows.length} ${gridDef.label}`, module: "Data Import" });
       importBtn.disabled = false;
       importBtn.style.opacity = "1";
-      importBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px;">check</span><span>✓ ${cleanRows.length} Records Imported</span>`;
+      const successCount = rows.filter(r => r._status === "success").length;
+      const errorCount = rows.filter(r => r._status === "error").length;
+      if (errorCount > 0) {
+        importBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px;">warning</span><span>${successCount} Written, ${errorCount} Refused</span>`;
+      } else {
+        importBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px;">check</span><span>✓ ${successCount} Records Written</span>`;
+      }
     }
   }, [
     el("span", { className: "material-symbols-outlined", style: "font-size: 18px;", text: "cloud_upload" }),

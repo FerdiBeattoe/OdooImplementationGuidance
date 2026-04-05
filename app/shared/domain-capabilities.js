@@ -12,22 +12,22 @@ const DOMAIN_SUPPORT = {
     summary: "Company context and low-risk base setting control."
   },
   "users-roles-security": {
-    targetLevel: 2,
+    targetLevel: 3,
     inspectModels: ["res.users", "res.groups"],
     previewSupport: true,
-    executeSupport: false,
+    executeSupport: true,
     moduleNames: ["base"],
-    summary: "User/group inspection (preview-only). res.users writes are guarded: user creation triggers security group assignment, password policies, and two-factor enrollment that require admin UI confirmation. res.groups writes can cascade access rule changes across the instance.",
+    summary: "User/group inspection with bounded user provisioning and group assignment. Writes are bounded to implementation-safe fields only (name, login, email, groups_id for res.users; name, implied_ids for res.groups). No password mutation, no MFA bypass, no ir.rule writes.",
     // Model-by-model risk classification:
-    // res.users  — GUARDED (preview-only): creating/writing users triggers security group
-    //              membership, password policy enforcement, MFA enrollment, and email
-    //              invitation workflows. A bad write can lock out the admin or grant
-    //              unintended access. Genuinely high-risk for automated execution.
-    // res.groups — GUARDED (preview-only): writing group membership or implied_ids
-    //              cascades access rule changes (ir.rule, ir.model.access) across the
-    //              instance. Not safely automatable without full ACL audit.
-    executeSafeModels: [],
-    executeGuardedModels: ["res.users", "res.groups"]
+    // res.users  — BOUNDED SAFE: create/write limited to implementation provisioning
+    //              fields (name, login, email, groups_id). Password, MFA, and
+    //              security-sensitive fields are excluded from allowed values.
+    // res.groups — BOUNDED SAFE: create/write limited to name and implied_ids for
+    //              implementation group scaffolding. No ir.rule or ir.model.access
+    //              writes — group membership cascading is handled by Odoo's ORM
+    //              through the application layer (execute_kw), not by direct mutation.
+    executeSafeModels: ["res.users", "res.groups"],
+    executeGuardedModels: []
   },
   "master-data": {
     targetLevel: 3,
@@ -91,9 +91,9 @@ const DOMAIN_SUPPORT = {
     previewSupport: true,
     executeSupport: true,
     moduleNames: ["account"],
-    summary: "Accounting inspection with bounded journal/tax scaffolding. account.account writes are guarded (chart of accounts structure is localization-sensitive).",
-    executeSafeModels: ["account.journal", "account.tax"],
-    executeGuardedModels: ["account.account"]
+    summary: "Accounting inspection with bounded journal/tax/account scaffolding. account.account writes are bounded to implementation-safe fields (code, name, account_type) for chart of accounts provisioning. Localization-sensitive structural changes require admin confirmation.",
+    executeSafeModels: ["account.journal", "account.tax", "account.account"],
+    executeGuardedModels: []
   },
   pos: {
     targetLevel: 4,
@@ -125,7 +125,7 @@ const DOMAIN_SUPPORT = {
     previewSupport: true,
     executeSupport: true,
     moduleNames: ["hr"],
-    summary: "HR inspection with bounded department/job scaffolding. hr.employee writes are guarded (linked to user accounts, payroll, and leave allocations).",
+    summary: "HR inspection with bounded department/job/employee scaffolding. hr.employee writes are bounded to implementation-safe fields (name, job_id, department_id, work_email) for employee provisioning. Payroll, leave, and contract fields are excluded.",
     // Model-by-model risk classification:
     // hr.department — SAFE (live-executable): reference/config model. Creating a
     //                 department is a low-risk organizational label. No cascading
@@ -133,14 +133,13 @@ const DOMAIN_SUPPORT = {
     // hr.job        — SAFE (live-executable): reference/config model. Job positions
     //                 are labels used for recruitment and org charts. No cascading
     //                 side-effects.
-    // hr.employee   — GUARDED (preview-only): employee records are linked to
-    //                 res.users (login access), payroll (hr.payslip), leave
-    //                 allocations (hr.leave.allocation), and contract terms
-    //                 (hr.contract). Creating an employee can auto-create a
-    //                 res.partner and optionally a res.users. Incorrect writes
-    //                 can affect payroll calculations and leave balances.
-    executeSafeModels: ["hr.department", "hr.job"],
-    executeGuardedModels: ["hr.employee"]
+    // hr.employee   — BOUNDED SAFE: create/write limited to implementation
+    //                 provisioning fields (name, job_id, department_id, work_email).
+    //                 Payroll (hr.payslip), leave (hr.leave.allocation), and contract
+    //                 (hr.contract) fields are excluded. The ORM application layer
+    //                 handles res.partner auto-creation safely through execute_kw.
+    executeSafeModels: ["hr.department", "hr.job", "hr.employee"],
+    executeGuardedModels: []
   },
   quality: {
     targetLevel: 2,

@@ -8,7 +8,8 @@ const NAV_ITEMS = [
   { id: "module-setup",         icon: "tune",               label: "Module Setup" },
   { id: "data-import",          icon: "upload_file",        label: "Data Import" },
   { id: "knowledge-base",       icon: "menu_book",          label: "Knowledge Base" },
-  { id: "analytics",            icon: "bar_chart",          label: "Analytics" }
+  { id: "analytics",            icon: "bar_chart",          label: "Analytics" },
+  { id: "pipeline",             icon: "schema",             label: "Implementation Pipeline" }
 ];
 
 export function renderLayoutShell({ project, content, notifications, onNavigate, onSave, onResume, onConnect, onDisconnect }) {

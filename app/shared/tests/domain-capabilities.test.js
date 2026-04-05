@@ -12,7 +12,7 @@ test("all in-scope domains expose an explicit target capability level", () => {
   assert.ok(capabilities.some((item) => item.domainId === "inventory" && item.targetLabel === "Bounded executable"));
   assert.ok(capabilities.some((item) => item.domainId === "crm" && item.targetLabel === "Bounded executable"));
   assert.ok(capabilities.some((item) => item.domainId === "master-data" && item.targetLabel === "Partially executable"));
-  assert.ok(capabilities.some((item) => item.domainId === "accounting" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "accounting" && item.targetLabel === "Partially executable"));
 });
 
 test("CRM and inventory only reach level 4 after truthful executable inspection support exists", () => {

@@ -1,4 +1,19 @@
 {
-  "connections": {},
-  "savedAt": "2026-03-26T05:37:50.395Z"
+  "connections": {
+    "proj-1775380686102": {
+      "baseUrl": "https://example.odoo.test",
+      "database": "demo",
+      "sessionId": "session-123",
+      "uid": 5,
+      "timestamp": 1775380686125
+    },
+    "proj-1775381004320": {
+      "baseUrl": "https://example.odoo.test",
+      "database": "demo",
+      "sessionId": "session-123",
+      "uid": 5,
+      "timestamp": 1775381004351
+    }
+  },
+  "savedAt": "2026-04-05T09:23:24.351Z"
 }

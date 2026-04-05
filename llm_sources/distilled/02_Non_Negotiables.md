@@ -5,7 +5,7 @@
 - Odoo version scope is Odoo 19 only
 - supported editions are Community and Enterprise only
 - supported deployments are Odoo Online, Odoo.sh for Enterprise only, and On-Premise
-- the platform is for implementation control, validation, guidance, and controlled setup sequencing
+- the platform is for guided implementation through answer-driven discovery, validation, checkpoint enforcement, preview, approval, and bounded application-layer execution that reaches usable implementation outcomes
 - the platform must not introduce historical correction logic
 - the platform must not perform transactional data surgery
 - the platform must not generate best-guess business logic on behalf of users
@@ -24,6 +24,9 @@
 - do not silently expand supported versions, editions, deployments, or project modes
 - do not infer business decisions that require explicit user or project-owner confirmation
 - do not collapse the distinction between implementation completion and operational readiness
+- do not prioritize shell, UI, or dashboard work over implementation write capability
+- do not claim a wizard or domain is complete while it stops at preview, approval, or recording only
+- do not frame the product as a guide-only planner or control-plane that does not need real Odoo writes
 
 ## Out Of Scope
 

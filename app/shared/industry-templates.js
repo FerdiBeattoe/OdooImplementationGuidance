@@ -8,13 +8,13 @@ export const INDUSTRY_TEMPLATES = {
     description: "For businesses that make products: composites, components, assemblies",
     icon: "factory",
     applicableTo: ["Allied Fibreglass", "panel manufacturers", "component fabricators"],
-    recommendedModules: ["mrp", "purchase", "inventory", "sales", "accounting", "quality"],
+    recommendedModules: ["manufacturing", "purchase", "inventory", "sales", "accounting", "quality"],
     stageOrder: [
       "foundation",
-      "master-data", 
+      "master_data",
       "inventory",
       "purchase",
-      "manufacturing-mrp",
+      "manufacturing",
       "sales",
       "accounting",
       "quality"
@@ -81,16 +81,16 @@ export const INDUSTRY_TEMPLATES = {
     description: "For shops with physical stores and online sales",
     icon: "shopping-bag",
     applicableTo: ["retail stores", "showrooms", "trade counters"],
-    recommendedModules: ["pos", "inventory", "sales", "website", "accounting", "crm"],
+    recommendedModules: ["pos", "inventory", "sales", "website_ecommerce", "accounting", "crm"],
     stageOrder: [
       "foundation",
-      "master-data",
+      "master_data",
       "inventory",
       "pos",
       "sales",
       "crm",
       "accounting",
-      "website"
+      "website_ecommerce"
     ]
   },
 
@@ -103,7 +103,7 @@ export const INDUSTRY_TEMPLATES = {
     recommendedModules: ["purchase", "sales", "inventory", "accounting", "crm"],
     stageOrder: [
       "foundation",
-      "master-data",
+      "master_data",
       "inventory",
       "purchase",
       "sales",
@@ -118,10 +118,10 @@ export const INDUSTRY_TEMPLATES = {
     description: "For businesses selling time and expertise",
     icon: "users",
     applicableTo: ["consultancies", "installers", "maintenance services"],
-    recommendedModules: ["project", "sales", "accounting", "hr", "crm"],
+    recommendedModules: ["projects", "sales", "accounting", "hr", "crm"],
     stageOrder: [
       "foundation",
-      "master-data",
+      "master_data",
       "crm",
       "sales",
       "project",

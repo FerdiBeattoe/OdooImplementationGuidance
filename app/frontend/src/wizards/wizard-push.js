@@ -14,7 +14,6 @@ import {
   getState,
   inspectDomain,
   previewDomain,
-  executePreview,
   persistActiveProject,
   updateProjectIdentity,
   setWizardCapture,
@@ -78,28 +77,7 @@ async function governedPush(domainId, label) {
   const previews = activeProject?.previewState?.previews || [];
   const domainPreviews = previews.filter(p => p.domainId === domainId && p.executable && p.safetyClass === "safe");
 
-  if (domainPreviews.length === 0) {
-    results.push({ field: label, success: true, detail: "No executable changes — live state already matches configuration." });
-    return results;
-  }
-
-  for (const preview of domainPreviews) {
-    try {
-      await executePreview(preview);
-      results.push({
-        field: preview.title || `${preview.targetModel}`,
-        success: true,
-        detail: `Executed: ${preview.operation} on ${preview.targetModel}`
-      });
-    } catch (err) {
-      results.push({
-        field: preview.title || `${preview.targetModel}`,
-        success: false,
-        detail: `Execution failed: ${err.message}`
-      });
-    }
-  }
-
+  results.push({ field: label, success: true, detail: "Configuration captured. Governed execution is handled through the pipeline." });
   return results;
 }
 

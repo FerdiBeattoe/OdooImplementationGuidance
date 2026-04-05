@@ -1,7 +1,24 @@
-ui_export_current.txt
+node_modules/
+dist/
 .env
 .env.local
 .env.*.local
-node_modules/
-dist/
-*.log"node_modules/" 
+*.log
+.DS_Store
+
+# Runtime data (generated at run-time, not source)
+app/backend/data/runtime-states/
+app/backend/data/licences/
+app/backend/data/licences.json
+app/backend/data/licence-config.json
+
+# Local pipeline/test artefacts
+UsersUser*.json
+pipeline_*.json
+ui_export_current.txt
+
+# Tool directories
+.agents/
+.ruflo/
+.claude/agent-memory/
+.claude/agents/

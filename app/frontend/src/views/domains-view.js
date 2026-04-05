@@ -117,8 +117,7 @@ export function renderDomainsView({
   onUpdateInventoryEvidence,
   onSelectDomain,
   onInspectDomain,
-  onPreviewDomain,
-  onExecutePreview
+  onPreviewDomain
 }) {
   const selectedDomain = DOMAINS.find((domain) => domain.id === project.workflowState.currentDomainId) || DOMAINS[0];
   const capabilityMap = new Map(getAllDomainCapabilities(project).map((item) => [item.domainId, item]));
@@ -378,9 +377,7 @@ function renderCapabilityPanel(project, domainId, capability, onInspectDomain, o
               preview.downstreamImpact
                 ? el("p", { className: "checkpoint-panel__dependency", text: `Impact: ${preview.downstreamImpact}` })
                 : null,
-              canExecutePreview(preview, capability)
-                ? heroButton("Apply this change", () => onExecutePreview(preview))
-                : el("p", { className: "checkpoint-panel__dependency", text: getPreviewExecutionConstraint(preview, capability) })
+              el("p", { className: "checkpoint-panel__dependency", text: getPreviewExecutionConstraint(preview, capability) })
             ])
           )
         )
@@ -2369,10 +2366,6 @@ function renderCapabilityBoundaryNote(capability) {
     className: "checkpoint-panel__dependency",
     text: "Execution is bounded. Only previews classified safe and executable can run, and every attempt is logged."
   });
-}
-
-function canExecutePreview(preview, capability) {
-  return capability.supportsExecution && preview.executable && preview.safetyClass === "safe";
 }
 
 function getPreviewExecutionConstraint(preview, capability) {

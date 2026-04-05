@@ -67,7 +67,6 @@ import {
 import {
   connectProject as connectProjectRequest,
   disconnectProject as disconnectProjectRequest,
-  executePreview as executePreviewRequest,
   inspectDomain as inspectDomainRequest,
   loadProjectStore,
   previewDomain as previewDomainRequest,
@@ -222,18 +221,6 @@ export async function previewDomain(domainId) {
   try {
     state.activeProject = normalizeProjectState(await previewDomainRequest(state.activeProject, domainId));
     pushNotification(`Preview generated for ${domainId}.`, "success");
-  } catch (error) {
-    pushNotification(error.message, "error");
-  }
-  notify();
-}
-
-export async function executePreview(preview) {
-  try {
-    state.activeProject = normalizeProjectState(
-      await executePreviewRequest(state.activeProject, preview, { confirmed: true })
-    );
-    pushNotification("Bounded execution completed.", "success");
   } catch (error) {
     pushNotification(error.message, "error");
   }

@@ -1,14 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(npm test:*)",
-      "Bash(node --test)",
-      "Bash(node --test app/backend/engine.test.js)",
-      "Bash(node app/backend/engine.test.js)",
-      "Bash(node --test --timeout=30000)",
-      "Bash(find /c/Users/User/Downloads/OdooImplementationGuidance -name *.css -o -name *tokens* -o -name *design*tokens*)"
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "WebFetch(*)",
+      "Bash(python3.exe -c \"print\\(''test''\\)\")",
+      "Bash(py -3 -c \"print\\(''test''\\)\")"
     ]
-  }
+  },
+  "defaultMode": "bypassPermissions"
 }

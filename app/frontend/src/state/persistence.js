@@ -103,17 +103,3 @@ export async function validateConnection(project) {
   return payload;
 }
 
-export async function executePreview(project, preview, options = {}) {
-  const response = await fetch(`${DOMAIN_ROOT}/execute`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ project, preview, options })
-  });
-
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.error || payload.execution?.failureReason || "Failed to execute preview.");
-  }
-
-  return payload.project;
-}

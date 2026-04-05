@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { connectProject, disconnectProject, executePreview, inspectDomain, previewDomain } from "./engine.js";
+import { connectProject, disconnectProject, inspectDomain, previewDomain } from "./engine.js";
 import { createInitialProjectState } from "../shared/project-state.js";
 
 function createFakeOdooFetch() {
@@ -205,34 +205,6 @@ test("CRM inspection and preview include live team scaffolding support", async (
   disconnectProject(project);
 });
 
-test("executePreview refuses a stale CRM team preview after live inspection drift", async () => {
-  const { state, fetchImpl } = createFakeOdooFetch();
-  const project = createInitialProjectState();
-  project.crmConfiguration.activityDisciplineCapture = [
-    {
-      key: "team-1",
-      salesTeamLabel: "North Team",
-      ownerRoleNote: "Sales lead",
-      activityTypeNotes: "",
-      inScope: true
-    }
-  ];
-
-  project.connectionState = await connectProject(project, {
-    url: "https://example.odoo.test",
-    database: "demo",
-    username: "admin",
-    password: "secret"
-  }, fetchImpl);
-
-  const preview = (await previewDomain(project, "crm", fetchImpl)).previews.find((item) => item.targetModel === "crm.team");
-  state.teams.push({ id: 200, name: "North Team" });
-
-  const outcome = await executePreview(project, preview, { confirmed: true }, fetchImpl);
-  assert.equal(outcome.execution.status, "failed");
-  assert.match(outcome.execution.failureReason, /stale|no longer matches/i);
-  disconnectProject(project);
-});
 
 test("inventory operation type preview stays conditional until linked warehouse exists live", async () => {
   const { fetchImpl } = createFakeOdooFetch();
@@ -277,49 +249,6 @@ test("inventory operation type preview stays conditional until linked warehouse 
   disconnectProject(project);
 });
 
-test("executePreview applies a safe inventory operation type after warehouse exists live", async () => {
-  const { fetchImpl } = createFakeOdooFetch();
-  const project = createInitialProjectState();
-  project.inventoryConfiguration.warehouses = [
-    {
-      key: "wh-1",
-      warehouseName: "Main Warehouse",
-      code: "MAIN",
-      companyScope: "",
-      purposeNotes: "",
-      inScope: true
-    }
-  ];
-  project.inventoryConfiguration.operationTypes = [
-    {
-      key: "op-1",
-      linkedWarehouseKey: "wh-1",
-      operationTypeName: "Main Receipts",
-      operationTypeKey: "IN",
-      flowCategory: "Inbound",
-      sequenceOrder: "",
-      notes: "",
-      inScope: true
-    }
-  ];
-
-  project.connectionState = await connectProject(project, {
-    url: "https://example.odoo.test",
-    database: "demo",
-    username: "admin",
-    password: "secret"
-  }, fetchImpl);
-
-  const preview = (await previewDomain(project, "inventory", fetchImpl)).previews.find(
-    (item) => item.targetModel === "stock.picking.type"
-  );
-  const outcome = await executePreview(project, preview, { confirmed: true }, fetchImpl);
-
-  assert.equal(outcome.execution.status, "succeeded");
-  assert.equal(outcome.auditEntry.targetModel, "stock.picking.type");
-  assert.equal(outcome.auditEntry.prerequisiteStatus, "validated");
-  disconnectProject(project);
-});
 
 test("master-data inspection captures record-level shared classification state", async () => {
   const { fetchImpl } = createFakeOdooFetch();
@@ -370,64 +299,3 @@ test("master-data preview includes safe and blocked create-first classification 
   disconnectProject(project);
 });
 
-test("master-data executePreview applies safe category creation and refuses stale preview", async () => {
-  const { state, fetchImpl } = createFakeOdooFetch();
-  const project = createInitialProjectState();
-  project.masterDataConfiguration.partnerCategoryCapture = [
-    { key: "p-1", categoryName: "Regional Customer", stewardshipNote: "", inScope: true }
-  ];
-  project.connectionState = await connectProject(project, {
-    url: "https://example.odoo.test",
-    database: "demo",
-    username: "admin",
-    password: "secret"
-  }, fetchImpl);
-
-  const preview = (await previewDomain(project, "master-data", fetchImpl)).previews.find(
-    (item) => item.targetModel === "res.partner.category" && item.executable
-  );
-
-  const outcome = await executePreview(project, preview, { confirmed: true }, fetchImpl);
-  assert.equal(outcome.execution.status, "succeeded");
-  assert.equal(outcome.auditEntry.targetModel, "res.partner.category");
-
-  const stalePreview = structuredClone(preview);
-  state.partnerCategories.push({ id: 999, name: "Regional Customer" });
-  const staleOutcome = await executePreview(project, stalePreview, { confirmed: true }, fetchImpl);
-  assert.equal(staleOutcome.execution.status, "failed");
-  assert.match(staleOutcome.execution.failureReason, /stale|no longer matches/i);
-  assert.equal(staleOutcome.auditEntry.status, "failed");
-  assert.match(staleOutcome.auditEntry.reason, /stale|no longer matches/i);
-  disconnectProject(project);
-});
-
-test("master-data executePreview refuses forged cross-domain model writes", async () => {
-  const { state, fetchImpl } = createFakeOdooFetch();
-  const project = createInitialProjectState();
-  project.connectionState = await connectProject(project, {
-    url: "https://example.odoo.test",
-    database: "demo",
-    username: "admin",
-    password: "secret"
-  }, fetchImpl);
-
-  const initialWarehouseCount = state.warehouses.length;
-  const forgedPreview = {
-    id: "preview-forged-master-data-warehouse",
-    domainId: "master-data",
-    title: "Forged cross-domain write",
-    targetModel: "stock.warehouse",
-    targetIdentifier: "Should Not Execute",
-    operation: "create",
-    safetyClass: "safe",
-    executable: true,
-    prerequisites: []
-  };
-
-  const outcome = await executePreview(project, forgedPreview, { confirmed: true }, fetchImpl);
-  assert.equal(outcome.execution.status, "failed");
-  assert.match(outcome.execution.failureReason, /stale|unknown preview action|unsupported/i);
-  assert.equal(outcome.auditEntry.status, "failed");
-  assert.equal(state.warehouses.length, initialWarehouseCount);
-  disconnectProject(project);
-});

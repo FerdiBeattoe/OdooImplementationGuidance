@@ -48,10 +48,10 @@ async function saveConnectionRegistry() {
   }
 }
 
+const CONNECTION_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
 // Load persisted connections on module init
 await loadConnectionRegistry();
-
-const CONNECTION_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const CONNECT_TIMEOUT_MS = 15000; // 15 seconds for connection
 
@@ -333,164 +333,6 @@ export async function previewDomain(project, domainId, fetchImpl = fetch) {
   return { inspection, previews, auditEntries };
 }
 
-export async function executePreview(project, preview, options = {}, fetchImpl = fetch) {
-  if (!preview?.executable || preview?.safetyClass !== "safe") {
-    const { execution, auditEntry } = createExecutionOutcome(preview, {
-      actor: "ui-user",
-      status: "failed",
-      resultSummary: "Execution refused.",
-      failureReason: preview?.blockedReason || "Preview is not executable.",
-      completedAt: new Date().toISOString()
-    });
-    return { execution, auditEntry };
-  }
-
-  if (!options.confirmed) {
-    const { execution, auditEntry } = createExecutionOutcome(preview, {
-      actor: "ui-user",
-      status: "failed",
-      resultSummary: "Execution refused.",
-      failureReason: "Explicit operator confirmation is required.",
-      completedAt: new Date().toISOString()
-    });
-    return { execution, auditEntry };
-  }
-
-  const client = getConnectedClient(project, fetchImpl);
-  const inspection = await inspectDomain(project, preview.domainId, fetchImpl);
-  const latestPreview = findMatchingExecutablePreview(generateDomainPreview(project, preview.domainId, inspection).previews, preview);
-
-  if (!latestPreview) {
-    const { execution, auditEntry } = createExecutionOutcome(preview, {
-      actor: "ui-user",
-      status: "failed",
-      resultSummary: "Execution refused.",
-      failureReason: "Preview is stale, blocked, or no longer matches live inspection.",
-      prerequisiteStatus: "failed",
-      completedAt: new Date().toISOString()
-    });
-    return { execution, auditEntry };
-  }
-
-  if (latestPreview.domainId === "foundation-company-localization" && latestPreview.targetModel === "res.company") {
-    await client.write("res.company", [Number(latestPreview.targetIdentifier)], {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || ""
-    });
-  } else if (latestPreview.domainId === "inventory" && latestPreview.targetModel === "stock.warehouse") {
-    await client.create("stock.warehouse", {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || "",
-      code: latestPreview.intendedChanges.find((item) => item.field === "code")?.to || ""
-    });
-  } else if (latestPreview.domainId === "inventory" && latestPreview.targetModel === "stock.picking.type") {
-    await client.create("stock.picking.type", {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier,
-      code: latestPreview.intendedChanges.find((item) => item.field === "code")?.to || "",
-      warehouse_id: Number(latestPreview.intendedChanges.find((item) => item.field === "warehouse_id")?.to || 0)
-    });
-  } else if (latestPreview.domainId === "crm" && latestPreview.targetModel === "crm.stage") {
-    await client.create("crm.stage", {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
-    });
-  } else if (latestPreview.domainId === "crm" && latestPreview.targetModel === "crm.team") {
-    await client.create("crm.team", {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier,
-      alias_name: latestPreview.intendedChanges.find((item) => item.field === "alias_name")?.to || ""
-    });
-  } else if (latestPreview.domainId === "master-data" && latestPreview.targetModel === "res.partner.category") {
-    await client.create("res.partner.category", {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
-    });
-  } else if (latestPreview.domainId === "master-data" && latestPreview.targetModel === "product.category") {
-    const payload = {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
-    };
-    const parentId = Number(latestPreview.intendedChanges.find((item) => item.field === "parent_id")?.to || 0);
-    if (parentId > 0) {
-      payload.parent_id = parentId;
-    }
-    await client.create("product.category", payload);
-  } else if (latestPreview.domainId === "master-data" && latestPreview.targetModel === "uom.category") {
-    await client.create("uom.category", {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
-    });
-  } else if (latestPreview.domainId === "sales" && latestPreview.targetModel === "crm.team") {
-    await client.create("crm.team", {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
-    });
-  } else if (latestPreview.domainId === "sales" && latestPreview.targetModel === "product.pricelist") {
-    await client.create("product.pricelist", {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
-    });
-  } else if (latestPreview.domainId === "purchase" && latestPreview.targetModel === "res.partner.category") {
-    await client.create("res.partner.category", {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
-    });
-  } else if (latestPreview.domainId === "manufacturing-mrp" && latestPreview.targetModel === "mrp.workcenter") {
-    await client.create("mrp.workcenter", {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
-    });
-  } else if (latestPreview.domainId === "website-ecommerce" && latestPreview.targetModel === "delivery.carrier") {
-    await client.create("delivery.carrier", {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
-    });
-  } else if (latestPreview.domainId === "pos" && latestPreview.targetModel === "pos.payment.method") {
-    await client.create("pos.payment.method", {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
-    });
-  } else if (latestPreview.domainId === "hr" && latestPreview.targetModel === "hr.department") {
-    // SAFE: hr.department is a low-risk reference/config model (organizational label)
-    const vals = {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
-    };
-    const parentId = Number(latestPreview.intendedChanges.find((item) => item.field === "parent_id")?.to || 0);
-    if (parentId > 0) vals.parent_id = parentId;
-    await client.create("hr.department", vals);
-  } else if (latestPreview.domainId === "hr" && latestPreview.targetModel === "hr.job") {
-    // SAFE: hr.job is a low-risk reference/config model (job position label)
-    await client.create("hr.job", {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier
-    });
-  } else if (latestPreview.domainId === "hr" && latestPreview.targetModel === "hr.employee") {
-    // GUARDED: hr.employee is linked to res.users, payroll, leave — block automated execution
-    throw new OdooRpcError(
-      "hr.employee creation is guarded (preview-only). Employee records are linked to user accounts, " +
-      "payroll, and leave allocations. Create employees via Odoo HR module > Employees."
-    );
-  } else if (latestPreview.domainId === "accounting" && latestPreview.targetModel === "account.journal") {
-    // SAFE: account.journal is a configuration record (bank journal, sales journal, etc.)
-    const vals = {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier,
-      type: latestPreview.intendedChanges.find((item) => item.field === "type")?.to || "general",
-      code: latestPreview.intendedChanges.find((item) => item.field === "code")?.to || ""
-    };
-    await client.create("account.journal", vals);
-  } else if (latestPreview.domainId === "accounting" && latestPreview.targetModel === "account.tax") {
-    // SAFE: account.tax is a configuration record
-    const vals = {
-      name: latestPreview.intendedChanges.find((item) => item.field === "name")?.to || latestPreview.targetIdentifier,
-      amount: parseFloat(latestPreview.intendedChanges.find((item) => item.field === "amount")?.to || "0"),
-      type_tax_use: latestPreview.intendedChanges.find((item) => item.field === "type_tax_use")?.to || "sale"
-    };
-    await client.create("account.tax", vals);
-  } else if (latestPreview.domainId === "accounting" && latestPreview.targetModel === "account.account") {
-    // GUARDED: chart of accounts structure is localization-sensitive
-    throw new OdooRpcError(
-      "account.account creation is guarded (preview-only). Chart of accounts structure is " +
-      "localization-sensitive and tied to fiscal reporting. Use Odoo Accounting > Configuration > Chart of Accounts."
-    );
-  } else {
-    throw new OdooRpcError("Preview execution is not supported for this action.");
-  }
-
-  return createExecutionOutcome(latestPreview, {
-    actor: "ui-user",
-    status: "succeeded",
-    resultSummary: `${latestPreview.title} applied.`,
-    prerequisiteStatus: "validated",
-    completedAt: new Date().toISOString()
-  });
-}
-
 /**
  * Validate that a stored connection's session is still alive.
  * Returns { valid: true } or { valid: false, reason: "..." }.
@@ -562,6 +404,94 @@ function getConnectedClient(project, fetchImpl) {
     uid: stored.uid,
     fetchImpl
   });
+}
+
+/**
+ * Returns an OdooClient for the given projectId from the connection registry.
+ * Used by governed-odoo-apply-service for pipeline-path writes.
+ * Throws OdooRpcError if no connection is registered for the projectId.
+ *
+ * @param {string} projectId
+ * @param {Function} [fetchImpl]
+ * @returns {OdooClient}
+ */
+export function getClientForProject(projectId, fetchImpl = fetch) {
+  const stored = connectionRegistry.get(projectId.trim());
+  if (!stored) {
+    throw new OdooRpcError("No live Odoo connection is active for this project.");
+  }
+  return new OdooClient({
+    baseUrl: stored.baseUrl,
+    database: stored.database,
+    sessionId: stored.sessionId,
+    uid: stored.uid,
+    fetchImpl
+  });
+}
+
+/**
+ * Registers a pipeline-path Odoo connection under a given pipeline project_id.
+ * Reuses the same OdooClient auth + connectionRegistry pattern as connectProject.
+ * Does not update legacy project state — only registers in connectionRegistry.
+ * The registered key matches connection_context.project_id sent by the pipeline apply path.
+ *
+ * @param {string} projectId    — pipeline project_id (matches connection_context.project_id)
+ * @param {object} credentials  — { url, database, username, password }
+ * @param {Function} [fetchImpl]
+ * @returns {Promise<{ ok: true, registered_at: string }>}
+ * @throws OdooRpcError on auth, version, or validation failure
+ */
+export async function registerPipelineConnection(projectId, credentials, fetchImpl = fetch) {
+  if (typeof projectId !== 'string' || !projectId.trim()) {
+    throw new OdooRpcError('project_id must be a non-empty string.', 'INVALID_INPUT');
+  }
+
+  const client = new OdooClient({
+    baseUrl: credentials.url,
+    database: credentials.database,
+    fetchImpl
+  });
+
+  try {
+    await withTimeout(
+      client.authenticate(credentials.username, credentials.password),
+      CONNECT_TIMEOUT_MS,
+      'Connection timed out. The Odoo server did not respond within 15 seconds.'
+    );
+  } catch (authError) {
+    throw new OdooRpcError(
+      `Pipeline connection failed: ${authError.message}`,
+      authError.code || 'CONNECTION_FAILED'
+    );
+  }
+
+  let version;
+  try {
+    version = await detectVersion(client);
+  } catch {
+    throw new OdooRpcError('Unable to retrieve Odoo version information.', 'VERSION_DETECTION_FAILED');
+  }
+
+  const versionString = String(version.serverSerie || '');
+  const majorVersionMatch = versionString.match(/(\d+)/);
+  const majorVersion = majorVersionMatch ? majorVersionMatch[1] : '';
+  if (majorVersion !== ODOO_VERSION) {
+    throw new OdooRpcError(
+      `Unsupported Odoo version. Found ${versionString}, expected Odoo ${ODOO_VERSION}. This guide only supports Odoo 19.`,
+      'UNSUPPORTED_VERSION'
+    );
+  }
+
+  connectionRegistry.set(projectId.trim(), {
+    baseUrl: client.baseUrl,
+    database: client.database,
+    sessionId: client.sessionId,
+    uid: client.uid,
+    timestamp: Date.now()
+  });
+  await saveConnectionRegistry();
+
+  return { ok: true, registered_at: new Date().toISOString() };
 }
 
 function safeOrigin(value) {

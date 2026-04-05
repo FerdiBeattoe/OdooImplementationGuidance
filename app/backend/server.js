@@ -324,6 +324,10 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
         return serveStatic(res, path.resolve(frontendRoot, `.${pathname}`), frontendRoot);
       }
 
+      if (pathname.startsWith("/assets/") && req.method === "GET") {
+        return serveStatic(res, path.resolve(frontendRoot, `./src/assets${pathname.replace("/assets", "")}`), frontendRoot);
+      }
+
       if ((pathname === "/" || pathname === "/index.html") && req.method === "GET") {
         return serveStatic(res, path.resolve(frontendRoot, "index.html"), frontendRoot);
       }

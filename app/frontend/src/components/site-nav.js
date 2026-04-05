@@ -24,11 +24,13 @@ export function renderSiteNav({ setCurrentView }) {
     setCurrentView(view);
   }
 
-  const brand = el("button", {
-    className: "site-nav__brand",
-    type: "button",
+  const brand = el("img", {
+    src: "/assets/logo-project-erp.png",
+    alt: "Project ERP",
+    className: "site-nav__logo",
     onclick: () => navigate("home"),
-  }, "Project ERP");
+    style: "cursor:pointer;",
+  });
 
   const links = el("div", { className: "site-nav__links" }, [
     renderNavLink("How it works", "how-it-works", navigate),

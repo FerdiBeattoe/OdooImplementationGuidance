@@ -71,8 +71,26 @@
 }
 
 .site-nav__logo {
+  height: 44px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+  cursor: pointer;
+}
+
+.site-footer__logo {
   height: 32px;
   width: auto;
+  display: block;
+  object-fit: contain;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+  .site-nav__logo {
+    height: 32px;
+  }
 }
 
 .site-nav__back-link {

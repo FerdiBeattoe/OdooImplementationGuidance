@@ -12,7 +12,7 @@ export function renderSiteFooter({ setCurrentView }) {
   return el("footer", { className: "site-footer" }, [
     el("div", { className: "site-footer__inner" }, [
       el("div", { className: "site-footer__column" }, [
-        el("p", { className: "site-footer__brand" }, "Project ERP"),
+        el("img", { src: "/assets/logo-project-erp.png", alt: "Project ERP", className: "site-footer__logo" }),
         el("p", { className: "site-footer__meta" }, "Project ERP (PTY) LTD  Registration pending"),
       ]),
       el("div", { className: "site-footer__links" }, [

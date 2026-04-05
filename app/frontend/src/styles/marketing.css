@@ -70,6 +70,24 @@
   cursor: pointer;
 }
 
+.site-nav__logo {
+  height: 32px;
+  width: auto;
+}
+
+.site-nav__back-link {
+  font-family: var(--font-reading);
+  font-size: 13px;
+  color: var(--impl-navy-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.site-nav__back-link:hover {
+  color: var(--impl-amber);
+}
+
 .site-nav__panel {
   display: flex;
   align-items: center;

@@ -9,6 +9,7 @@
 import { el } from "../lib/dom.js";
 import { onboardingStore } from "../state/onboarding-store.js";
 import { setCurrentView } from "../state/app-store.js";
+import { renderAppNav } from "../components/app-nav.js";
 
 // ---------------------------------------------------------------------------
 // renderAuthScreen
@@ -182,15 +183,9 @@ export function renderAuthScreen({ onBack } = {}) {
       el("p", { className: "auth-toggle" }, [toggleText, toggleLink]),
     ]);
 
-    const backLink = el("button", {
-      className: "auth-back-link",
-      type: "button",
-      onclick: () => onBack && onBack(),
-    }, "\u2190 Back to home");
-
     container.append(
+      renderAppNav({ setCurrentView: (view) => { if (onBack) onBack(); else setCurrentView(view); } }),
       el("div", { className: "auth-page__inner" }, [
-        backLink,
         card,
       ])
     );

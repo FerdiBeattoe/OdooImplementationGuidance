@@ -788,6 +788,13 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     style: "min-height: 100vh; background: var(--ee-surface-container-low); display: flex; flex-direction: column; align-items: center; padding: 32px 16px;",
   });
 
+  // Tracks whether container has ever been appended to the document.
+  // The first render() call is synchronous — before the caller does
+  // root.append(container) — so document.contains(container) is false
+  // at that point. Without this flag the stale-instance guard would fire
+  // on first render, unsubscribe the store, and produce a blank screen.
+  let _everMounted = false;
+
   attachPopstateGuard();
 
   // Subscribe to store changes and re-render.
@@ -801,7 +808,11 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
   function render(force = false) {
     // Guard: if this wizard container is no longer in the document, clean up
     // the stale subscription and stop rendering into a detached node.
-    if (!document.contains(container)) {
+    // Skip on first call — container isn't in the DOM until after
+    // renderOnboardingWizard() returns and the caller appends it.
+    if (document.contains(container)) {
+      _everMounted = true;
+    } else if (_everMounted) {
       unsubscribeStore();
       detachPopstateGuard();
       return;

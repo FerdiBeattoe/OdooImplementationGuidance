@@ -7,6 +7,7 @@ dist/
 .DS_Store
 
 # Runtime data (generated at run-time, not source)
+app/backend/data/connections.json
 app/backend/data/runtime-states/
 app/backend/data/licences/
 app/backend/data/licences.json

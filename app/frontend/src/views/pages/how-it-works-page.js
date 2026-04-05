@@ -35,7 +35,7 @@ export function renderHowItWorksPage({ setCurrentView }) {
       el("div", { className: "mkt-shell mkt-hero__content" }, [
         el("span", { className: "mkt-hero__eyebrow" }, "12-step implementation pipeline"),
         el("h1", { className: "mkt-heading mkt-heading--hero" }, "How Project Odoo works"),
-        el("p", { className: "mkt-subheading" }, "A 12-step governed pipeline that takes you from first question to go-live readiness."),
+        el("p", { className: "mkt-subheading" }, "From your first discovery answer to verified go-live readiness — every step governed, every write audited, every decision traceable."),
       ]),
     ]),
 
@@ -44,21 +44,21 @@ export function renderHowItWorksPage({ setCurrentView }) {
         renderLayer(
           "01",
           "34 business questions",
-          "The onboarding wizard asks what your business actually does  revenue model, operations, procurement, manufacturing, finance, and team structure. Your answers drive everything downstream.",
-          "Domain activation engine deterministically activates or deactivates each of the 23 Odoo domains based on your answers. No guesswork. No over-configuration."
+          "Before any module is configured, Project Odoo captures how your business actually operates — revenue model, operations, procurement, manufacturing, finance, and team structure. Configuration without this context is how implementations fail.",
+          "Your answers activate or deactivate each of the 23 Odoo domains. Businesses that skip discovery and activate everything pay for it in complexity, broken dependencies, and months of cleanup."
         ),
         renderLayer(
           "02",
           "168 checkpoints across 23 domains",
-          "The pipeline orchestrator runs a 12-step process on every run. Each checkpoint is classified by safety class, validation source, and execution relevance.",
-          "You see exactly what will be written before anything touches your Odoo instance. Every change requires explicit approval.",
+          "Every checkpoint is classified in plain terms: will it change data or just confirm a state? Is it safe to run or does it need conditions met first? Does it need your approval or is it informational? You always know what you are approving.",
+          "You review the exact records that will be created or modified — not a summary, but the actual write operation. Nothing executes without your explicit approval.",
           true
         ),
         renderLayer(
           "03",
           "Real writes. Full audit trail.",
-          "Approved checkpoints execute real Odoo writes through the Odoo application layer  never direct database access. Every execution is recorded with result status, timestamp, and execution ID.",
-          "The distinction between configuration complete and operationally ready is enforced by the go-live readiness engine."
+          "Approved changes execute through Odoo's own application layer — the same path as manual configuration. Business rules, validations, and access controls fire on every write. Direct database access bypasses all of that, which is how data integrity breaks silently.",
+          "Finishing configuration does not mean your system is ready for production. The readiness engine validates that your implementation is operationally sound — not just technically complete."
         ),
       ]),
     ]),
@@ -82,7 +82,7 @@ export function renderHowItWorksPage({ setCurrentView }) {
 
     el("section", { className: "mkt-section" }, [
       el("div", { className: "mkt-shell mkt-stack mkt-center" }, [
-        el("h2", { className: "mkt-heading mkt-heading--section" }, "Ready to start your implementation?"),
+        el("h2", { className: "mkt-heading mkt-heading--section" }, "Connect your Odoo instance and start discovery"),
         el("div", { className: "mkt-button-row", style: "justify-content:center;" }, [
           el("button", {
             className: "mkt-pill-btn",

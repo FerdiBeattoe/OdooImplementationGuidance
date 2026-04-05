@@ -24,7 +24,7 @@ export function renderAboutPage({ setCurrentView }) {
 
     el("section", { className: "mkt-hero mkt-hero--dark" }, [
       el("div", { className: "mkt-shell mkt-hero__content" }, [
-        el("h1", { className: "mkt-heading mkt-heading--hero" }, "Built for the businesses Odoo was built for"),
+        el("h1", { className: "mkt-heading mkt-heading--hero" }, "Odoo was built for growing businesses. So is this."),
         el("p", { className: "mkt-subheading" }, "Project Odoo is a governed implementation engine  not a consultant, not a wizard, not a remediation tool."),
       ]),
     ]),
@@ -32,7 +32,7 @@ export function renderAboutPage({ setCurrentView }) {
     el("section", { className: "mkt-section" }, [
       el("div", { className: "mkt-shell mkt-stack" }, [
         el("h2", { className: "mkt-heading mkt-heading--section" }, "Odoo is powerful. Implementation is hard."),
-        el("p", { className: "mkt-subheading" }, "A fresh Odoo installation gives you a blank system and hundreds of configuration options. The order in which you configure them matters  and most businesses discover this after they have already configured things in the wrong sequence. Consultants are expensive. Configuring blindly is costly. Project Odoo is the third option."),
+        el("p", { className: "mkt-subheading" }, "A fresh Odoo installation gives you a blank system and hundreds of configuration options. Configure Accounting before master data is set and every journal entry, tax calculation, and payment term inherits incorrect defaults — defaults you will spend weeks correcting after they cascade through Sales, Purchase, and Inventory. Consultants are expensive. Configuring blindly is costly. Project Odoo is the third option."),
       ]),
     ]),
 
@@ -40,9 +40,9 @@ export function renderAboutPage({ setCurrentView }) {
       el("div", { className: "mkt-shell mkt-stack" }, [
         el("h2", { className: "mkt-heading mkt-heading--section" }, "A governed implementation engine"),
         el("div", { className: "mkt-grid mkt-grid--three" }, [
-          renderPrincipleCard("Real writes", "Every governed write executes through the Odoo application layer. No direct database access."),
-          renderPrincipleCard("Full audit trail", "Every action recorded with execution ID, timestamp, and result status."),
-          renderPrincipleCard("Approval gated", "Nothing writes to your Odoo instance without explicit preview and approval."),
+          renderPrincipleCard("Real writes", "Every governed write goes through Odoo's application layer — the same path as manual configuration. Business rules, validations, and computed fields all fire correctly. Direct database access bypasses these safeguards."),
+          renderPrincipleCard("Full audit trail", "Six months from now, when a setting needs to change, you can trace the original configuration back to the exact approval, the person who authorized it, and the reasoning behind it."),
+          renderPrincipleCard("Approval gated", "You see exactly what will be written before it executes. Every configuration change is an informed decision, not a hope that the defaults are correct."),
         ]),
       ]),
     ]),
@@ -50,7 +50,7 @@ export function renderAboutPage({ setCurrentView }) {
     el("section", { className: "mkt-section" }, [
       el("div", { className: "mkt-shell mkt-stack" }, [
         el("h2", { className: "mkt-heading mkt-heading--section" }, "Project Odoo is just the beginning"),
-        el("p", { className: "mkt-subheading" }, "Project Odoo is the first vertical of Project ERP  a governed implementation engine being built for every major ERP system. The same pipeline, the same governance, the same audit trail  across Odoo, NetSuite, SAP, Sage, and Xero."),
+        el("p", { className: "mkt-subheading" }, "Every ERP implementation faces the same problem: hundreds of settings, invisible dependencies, and no governed way to configure them in the right order. Project Odoo proves the model for Odoo 19. Project ERP extends it to NetSuite, SAP, Sage, and Xero — the same discovery-driven pipeline, the same approval governance, the same audit trail."),
         el("ul", { className: "mkt-roadmap-pills" }, [
           el("li", { className: "mkt-roadmap-pill mkt-roadmap-pill--active" }, "Project Odoo"),
           el("li", { className: "mkt-roadmap-pill" }, "Project NetSuite"),
@@ -63,14 +63,14 @@ export function renderAboutPage({ setCurrentView }) {
 
     el("section", { className: "mkt-section mkt-section--alt" }, [
       el("div", { className: "mkt-shell mkt-stack mkt-center" }, [
-        el("h2", { className: "mkt-heading mkt-heading--section" }, "124 checkpoints  23 domains  2,834 tests passing"),
-        el("p", { className: "mkt-subheading" }, "Verified against a live Odoo 19 instance."),
+        el("h2", { className: "mkt-heading mkt-heading--section" }, "124 checkpoints across 23 domains, backed by 2,834 passing tests"),
+        el("p", { className: "mkt-subheading" }, "Every checkpoint verified against a live Odoo 19 instance — not documentation, not assumptions."),
       ]),
     ]),
 
     el("section", { className: "mkt-section" }, [
       el("div", { className: "mkt-shell mkt-stack mkt-center" }, [
-        el("h2", { className: "mkt-heading mkt-heading--section" }, "Ready to start?"),
+        el("h2", { className: "mkt-heading mkt-heading--section" }, "Connect your Odoo instance"),
         el("div", { className: "mkt-button-row", style: "justify-content:center;" }, [
           el("button", {
             className: "mkt-pill-btn",

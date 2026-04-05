@@ -124,7 +124,7 @@ export function renderPricingPage({ setCurrentView }) {
       el("div", { className: "mkt-shell" }, [
         el("div", { className: "mkt-note" }, [
           el("h2", { className: "mkt-heading mkt-heading--section" }, "Foundation domain always free"),
-          el("p", { className: "mkt-subheading" }, "Connect your Odoo instance and complete the Foundation checkpoints at no cost. No credit card required."),
+          el("p", { className: "mkt-subheading" }, "Connect your Odoo instance and configure company details, currency, localization, and base access controls — the foundation every other domain depends on. No credit card. No time limit."),
         ]),
       ]),
     ]),
@@ -134,10 +134,10 @@ export function renderPricingPage({ setCurrentView }) {
         el("h2", { className: "mkt-heading mkt-heading--section" }, "FAQ"),
         el("div", { className: "mkt-qna" }, [
           renderFaqItem("What counts as a company?", "One Odoo database / instance. Each instance requires its own licence."),
-          renderFaqItem("What happens when my licence expires?", "Your implementation data and audit trail are preserved. You cannot run new governed writes until you renew."),
-          renderFaqItem("Is this a replacement for an Odoo consultant?", "No. Project Odoo governs configuration. Business decisions, customisations, integrations, and training remain your responsibility  or your consultant's."),
+          renderFaqItem("What happens when my licence expires?", "Everything you have built is preserved — checkpoint history, approval records, and full audit trail remain intact and accessible. Governed writes are paused until you renew."),
+          renderFaqItem("Is this a replacement for an Odoo consultant?", "It is a complement, not a replacement. Project Odoo handles the governed configuration sequence — the part most implementations get wrong. Business process design, custom development, integrations, and training are where consultants add the most value. Many consultants use Project Odoo to deliver faster, more reliable implementations for their clients."),
           renderFaqItem("Which Odoo versions are supported?", "Odoo 19. Additional versions are planned."),
-          renderFaqItem("Where is my data stored?", "Implementation state is stored in Supabase (EU region), encrypted at rest. See our Privacy Policy."),
+          renderFaqItem("Where is my data stored?", "Discovery answers, checkpoint statuses, approval records, and audit trail are stored in Supabase (EU region), encrypted at rest. Project Odoo never stores your Odoo credentials or business data. See our Privacy Policy."),
         ]),
       ]),
     ]),

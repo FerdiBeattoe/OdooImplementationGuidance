@@ -80,12 +80,12 @@ export function renderHomePage({ setCurrentView }) {
     el("section", { className: "mkt-hero" }, [
       el("div", { className: "mkt-shell mkt-hero__grid" }, [
         el("div", { className: "mkt-hero__content" }, [
-          el("span", { className: "mkt-hero__eyebrow" }, "Governed Odoo 19 implementation"),
+          el("span", { className: "mkt-hero__eyebrow" }, "34 questions before the first write"),
           el("h1", { className: "mkt-heading mkt-heading--hero" }, [
             el("span", { className: "mkt-heading__line" }, "Implement Odoo"),
             el("span", { className: "mkt-heading__line mkt-heading__line--accent" }, "the way your business works"),
           ]),
-          el("p", { className: "mkt-subheading" }, "A fresh installation presents hundreds of configuration options, and the order in which you set things up matters  get the sequence wrong and downstream modules inherit incorrect data, tax settings, or access rules that are costly to unpick."),
+          el("p", { className: "mkt-subheading" }, "Odoo has hundreds of configuration options, and the order you set them matters. Get the sequence wrong and tax settings, access rules, and master data errors cascade into every downstream module."),
           el("div", { className: "mkt-button-row" }, [
             el("button", {
               className: "mkt-pill-btn",
@@ -102,12 +102,12 @@ export function renderHomePage({ setCurrentView }) {
         ]),
         el("aside", { className: "mkt-card mkt-card--featured" }, [
           el("span", { className: "mkt-card__eyebrow" }, "Why this matters"),
-          el("h2", { className: "mkt-card__title" }, "Sequence drives every downstream decision"),
-          el("p", { className: "mkt-card__body" }, "Project Odoo asks the business questions first, activates only the required domains, previews every governed write, and records the result with a truthful audit trail."),
+          el("h2", { className: "mkt-card__title" }, "Business questions first. Configuration second."),
+          el("p", { className: "mkt-card__body" }, "Stop configuring modules you do not need and discovering broken dependencies weeks later. Project Odoo maps your business first, then activates only the domains that match — with every write previewed before it executes."),
           el("ul", { className: "mkt-feature-list" }, [
-            el("li", {}, "34 business questions before configuration"),
-            el("li", {}, "23 Odoo domains activated deterministically"),
-            el("li", {}, "Preview, approval, and governed write path"),
+            el("li", {}, "34 questions map your business before any setting is touched"),
+            el("li", {}, "Only the domains you need — activated from your answers, not guesswork"),
+            el("li", {}, "Every change previewed and approved before it touches your instance"),
           ]),
         ]),
       ]),
@@ -117,9 +117,9 @@ export function renderHomePage({ setCurrentView }) {
       el("div", { className: "mkt-shell mkt-stack" }, [
         el("h2", { className: "mkt-heading mkt-heading--section" }, "Most Odoo implementations fail in the first 90 days"),
         el("div", { className: "mkt-grid mkt-grid--three" }, [
-          renderProblemCard("Wrong sequence", "Configuring modules before master data is set corrupts downstream records. Tax codes, payment terms, and access rules all inherit from settings that should have been configured first."),
-          renderProblemCard("No audit trail", "You cannot prove what was configured, when, or why. When something breaks six months later, there is no record to trace it back to."),
-          renderProblemCard("Hidden dependencies", "A setting in Accounting affects Sales, Manufacturing, and HR in ways that are not obvious. Most implementations discover this the hard way."),
+          renderProblemCard("Wrong sequence", "You set up Sales before Accounting is configured. Every invoice inherits the wrong tax code. Fixing it means undoing weeks of configuration — or starting over."),
+          renderProblemCard("No audit trail", "Your CFO asks why revenue recognition changed. Nobody can say which setting was modified, by whom, or when. You are debugging a black box."),
+          renderProblemCard("Hidden dependencies", "You change a fiscal position in Accounting. Three weeks later, eCommerce tax calculations break, purchase orders show wrong payment terms, and expense reports use the wrong currency. One setting. Four broken modules."),
         ]),
       ]),
     ]),
@@ -128,10 +128,10 @@ export function renderHomePage({ setCurrentView }) {
       el("div", { className: "mkt-shell mkt-stack" }, [
         el("h2", { className: "mkt-heading mkt-heading--section" }, "A governed implementation, not a guess"),
         el("div", { className: "mkt-grid mkt-grid--four" }, [
-          renderStep(1, "Answer 34 business questions", "Discovery captures the business model before any configuration path is chosen."),
-          renderStep(2, "Pipeline activates your 23 domains", "Domain activation follows your answers deterministically, not consultant intuition."),
-          renderStep(3, "Preview every change before it writes", "You see the exact intended action, safety class, and downstream impact first."),
-          renderStep(4, "Confirm. Audit trail complete.", "Nothing writes until you approve it, and every execution is recorded."),
+          renderStep(1, "Answer 34 business questions", "Revenue model, operations, procurement, and team structure are captured upfront. The right questions prevent the wrong configuration."),
+          renderStep(2, "Pipeline activates your 23 domains", "No consultant decides which modules to enable. Your answers determine activation — the same inputs always produce the same result."),
+          renderStep(3, "Preview every change before it writes", "Before anything writes, you see what will change, which records are affected, and whether the action is safe, conditional, or blocked by dependencies."),
+          renderStep(4, "Confirm. Audit trail complete.", "Every write is recorded with a unique execution ID, timestamp, and result. Six months from now, you can trace any setting back to the approval that authorized it."),
         ]),
         el("button", {
           className: "mkt-link-button",
@@ -143,7 +143,7 @@ export function renderHomePage({ setCurrentView }) {
 
     el("section", { className: "mkt-section mkt-section--alt" }, [
       el("div", { className: "mkt-shell mkt-stack" }, [
-        el("h2", { className: "mkt-heading mkt-heading--section" }, "Built on real Odoo 19 data"),
+        el("h2", { className: "mkt-heading mkt-heading--section" }, "Proven against a live Odoo 19 instance"),
         el("div", { className: "mkt-grid mkt-grid--three" }, [
           renderStat("124", "checkpoints"),
           renderStat("23", "domains"),
@@ -158,9 +158,9 @@ export function renderHomePage({ setCurrentView }) {
         el("h2", { className: "mkt-heading mkt-heading--section" }, "Simple pricing"),
         earlyAdopterBanner,
         el("div", { className: "mkt-grid mkt-grid--three" }, [
-          renderPlanCard("Monthly", "$149", "One Odoo instance, governed pipeline included.", setCurrentView),
-          renderPlanCard("6 months", "$499", "The core implementation window for most teams.", setCurrentView),
-          renderPlanCard("Annual", "$799", "Best value for multi-phase rollout and expansion.", setCurrentView),
+          renderPlanCard("Monthly", "$149", "Start immediately. Full governed pipeline, cancel anytime.", setCurrentView),
+          renderPlanCard("6 months", "$499", "The standard implementation window — discovery through go-live.", setCurrentView),
+          renderPlanCard("Annual", "$799", "For multi-phase rollouts, seasonal expansion, or ongoing governance.", setCurrentView),
         ]),
         el("button", {
           className: "mkt-link-button",

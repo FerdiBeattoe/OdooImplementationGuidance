@@ -9,7 +9,9 @@ services:
         value: production
       - key: PORT
         generateValue: false
-      - key: STRIPE_SECRET_KEY
+      - key: SUPABASE_URL
         sync: false
-      - key: STRIPE_WEBHOOK_SECRET
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false

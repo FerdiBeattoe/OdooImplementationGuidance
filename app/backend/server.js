@@ -134,7 +134,7 @@ await ensureDataStore();
 if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   const server = createAppServer();
   server.listen(port, host, () => {
-    console.log(`Odoo Implementation Platform running at http://${host}:${port}`);
+    console.log(`Project Odoo running at http://${host}:${port}`);
   });
 }
 

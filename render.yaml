@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: odoo-implementation-platform
+    name: project-odoo
     env: node
     buildCommand: npm install
     startCommand: npm start

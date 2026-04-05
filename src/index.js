@@ -1,5 +1,5 @@
 /**
- * Odoo Implementation Platform - Phase 9-12: UX & Safety Systems
+ * Project Odoo - Phase 9-12: UX & Safety Systems
  * 
  * This module exports all the visual progress tracking, rollback safety,
  * auto-detection, and PDF export functionality.

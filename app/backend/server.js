@@ -309,6 +309,10 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
         return await handleAuthResetPassword(req, res);
       }
 
+      if (pathname === "/api/auth/update-password" && req.method === "POST") {
+        return await handleAuthUpdatePassword(req, res);
+      }
+
       if (pathname === "/api/auth/verify" && req.method === "POST") {
         return await handleAuthVerify(req, res);
       }
@@ -334,6 +338,10 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
       }
 
       if ((pathname === "/" || pathname === "/index.html") && req.method === "GET") {
+        return serveStatic(res, path.resolve(frontendRoot, "index.html"), frontendRoot);
+      }
+
+      if (pathname === "/reset-password" && req.method === "GET") {
         return serveStatic(res, path.resolve(frontendRoot, "index.html"), frontendRoot);
       }
 
@@ -1428,6 +1436,55 @@ async function handleAuthResetPassword(req, res) {
   }
 
   return sendJson(res, 200, { ok: true, message: 'Reset email sent if account exists.' });
+}
+
+async function handleAuthUpdatePassword(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
+  }
+
+  const { password, accessToken } = payload || {};
+  if (typeof password !== "string" || password.length < 8) {
+    return sendJson(res, 400, { error: "Password must be at least 8 characters." });
+  }
+
+  if (typeof accessToken !== "string" || accessToken.trim() === "") {
+    return sendJson(res, 400, { error: "Reset link expired or invalid. Please request a new one." });
+  }
+
+  if (!supabase) {
+    return sendJson(res, 503, { error: "Password reset is unavailable in this environment." });
+  }
+
+  // Use the access token to get a user session
+  const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
+
+  if (userError || !user) {
+    return sendJson(res, 401, {
+      error: "Reset link expired or invalid. Please request a new one."
+    });
+  }
+
+  // Update the password using admin
+  const { error: updateError } = await supabase.auth.admin.updateUserById(
+    user.id,
+    { password }
+  );
+
+  if (updateError) {
+    return sendJson(res, 400, {
+      error: updateError.message
+    });
+  }
+
+  // Clear the reset token from Supabase
+  return sendJson(res, 200, {
+    ok: true,
+    message: "Password updated successfully."
+  });
 }
 
 async function handleAuthVerify(req, res) {

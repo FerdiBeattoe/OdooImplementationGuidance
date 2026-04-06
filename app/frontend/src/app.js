@@ -95,6 +95,7 @@ import { renderAnalyticsView } from "./views/analytics-view.js";
 import { renderConnectionWizardView } from "./views/connection-wizard-view.js";
 import { renderOnboardingWizard } from "./views/onboarding-wizard.js";
 import { renderAuthScreen } from "./views/auth-screen.js";
+import { renderResetPasswordScreen } from "./views/reset-password-screen.js";
 import { renderHomePage } from "./views/pages/home-page.js";
 import { renderHowItWorksPage } from "./views/pages/how-it-works-page.js";
 import { renderPricingPage } from "./views/pages/pricing-page.js";
@@ -141,6 +142,29 @@ export function handleAppNavigation(view) {
 
 export function renderApp(root) {
   let forceHomeOnColdLoad = true;
+  let routedStandaloneView = null;
+
+  if (window.location.pathname === "/reset-password") {
+    forceHomeOnColdLoad = false;
+    routedStandaloneView = "reset-password";
+
+    // Check if this is a password reset redirect
+    const hash = window.location.hash;
+    if (window.location.pathname === "/reset-password" && hash.includes("access_token")) {
+      // Extract the token
+      const params = new URLSearchParams(hash.replace("#", ""));
+      const accessToken = params.get("access_token");
+      if (accessToken) {
+        // Store token and show reset form
+        sessionStorage.setItem("reset_access_token", accessToken);
+        window.history.replaceState(null, "", "/reset-password");
+        setCurrentView("reset-password");
+      }
+    } else {
+      setCurrentView("reset-password");
+    }
+  }
+
   const marketingViews = new Set(["home", "how-it-works", "pricing", "about", "blog", "terms", "privacy"]);
 
   const render = () => {
@@ -159,11 +183,20 @@ export function renderApp(root) {
     clearNode(root);
 
     const session = resolveSession();
-    const requestedView = activeProject.workflowState?.currentView || "dashboard";
+    const requestedView = routedStandaloneView || activeProject.workflowState?.currentView || "dashboard";
     const rawView = forceHomeOnColdLoad ? "home" : requestedView;
 
     // ── Persist project_id to localStorage whenever a session becomes available
     function setMarketingView(view) {
+      forceHomeOnColdLoad = false;
+      setCurrentView(view);
+    }
+
+    function setStandaloneView(view) {
+      if (view !== "reset-password" && window.location.pathname === "/reset-password") {
+        window.history.replaceState(null, "", "/");
+      }
+      routedStandaloneView = null;
       forceHomeOnColdLoad = false;
       setCurrentView(view);
     }
@@ -251,6 +284,17 @@ export function renderApp(root) {
             forceHomeOnColdLoad = false;
             setCurrentView("home");
           },
+        })
+      );
+      restoreRenderFocus(root, focusSnapshot);
+      return;
+    }
+
+    // ── Reset password screen: render without layout shell ────────────────
+    if (rawView === "reset-password") {
+      root.append(
+        renderResetPasswordScreen({
+          setCurrentView: setStandaloneView,
         })
       );
       restoreRenderFocus(root, focusSnapshot);

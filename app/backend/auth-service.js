@@ -25,7 +25,13 @@ export async function createAccount(fullName, email, password, companyName) {
 
   const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
   if (signInError) {
-    return { user: null, session: null, error: signInError.message }
+    return {
+      user: authData.user,
+      session: null,
+      error: null,
+      accountCreated: true,
+      signInFailed: true,
+    }
   }
 
   return { user: signInData.user, session: signInData.session, error: null }

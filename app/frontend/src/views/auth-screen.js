@@ -107,10 +107,30 @@ export function renderAuthScreen({ onBack } = {}) {
             body: JSON.stringify({ fullName, email, password, companyName, inviteCode }),
             signal: controller.signal,
           });
-          const data = await response.json();
+
+          let data;
+          try {
+            data = await response.json();
+          } catch {
+            showError(
+              response.ok
+                ? "Unexpected server response. Please try again."
+                : `Server error (${response.status}). Please try again.`
+            );
+            return;
+          }
 
           if (!response.ok) {
             showError(data.error || "Account creation failed.");
+            return;
+          }
+
+          if (data.signInFailed) {
+            showError("Account created successfully. Please sign in to continue.");
+            mode = "signin";
+            render();
+            const emailInput = container.querySelector('input[type="email"]');
+            if (emailInput) emailInput.value = email;
             return;
           }
 
@@ -150,7 +170,18 @@ export function renderAuthScreen({ onBack } = {}) {
           body: JSON.stringify({ email, password }),
           signal: controller.signal,
         });
-        const data = await response.json();
+
+        let data;
+        try {
+          data = await response.json();
+        } catch {
+          showError(
+            response.ok
+              ? "Unexpected server response. Please try again."
+              : `Server error (${response.status}). Please try again.`
+          );
+          return;
+        }
 
         if (!response.ok) {
           showError(data.error || "Sign in failed.");

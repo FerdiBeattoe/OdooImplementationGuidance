@@ -215,7 +215,10 @@ export function renderAuthScreen({ onBack } = {}) {
 
     const rightPanel = el("aside", { className: "auth-right" }, [
       el("section", { className: "auth-panel" }, [
-        el("span", { className: "auth-panel__tag" }, "LATEST FROM THE BLOG"),
+        el("span", {
+          className: "auth-panel__tag",
+          style: "display:inline-block; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25); border-radius:6px; padding:3px 10px;",
+        }, "IMPLEMENTATION GUIDE"),
         el("div", { className: "auth-media-placeholder" }, [
           /* Replace this div with:
              el("img", { src: "/assets/blog-hero.jpg",
@@ -224,15 +227,19 @@ export function renderAuthScreen({ onBack } = {}) {
           el("span", {}, "Image coming soon"),
         ]),
         el("h3", { className: "auth-panel__heading" }, "The right order to configure Odoo 19 \u2014 and why sequence matters"),
-        el("p", { className: "auth-panel__copy", style: "flex:1;" }, "Most implementations configure modules before master data is set. Here is the sequence that prevents downstream data corruption."),
+        el("p", { className: "auth-panel__copy", style: "flex:1;" }, "Most Odoo implementations configure modules in the wrong order. Here is the sequence that prevents downstream data corruption."),
         el("button", {
           className: "auth-panel__link",
           type: "button",
+          style: "display:inline-block; font-size:12px; font-weight:600; color:#92400e; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25); border-radius:6px; padding:6px 14px;",
           onclick: () => setCurrentView("blog"),
-        }, "Read article \u2192"),
+        }, "Read more \u2192"),
       ]),
       el("section", { className: "auth-panel" }, [
-        el("span", { className: "auth-panel__tag" }, "BUILT ON REAL DATA"),
+        el("span", {
+          className: "auth-panel__tag",
+          style: "display:inline-block; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25); border-radius:6px; padding:3px 10px;",
+        }, "PRODUCT"),
         el("div", { className: "auth-stats-row" }, [
           renderStat("124", "checkpoints"),
           renderStat("23", "domains"),

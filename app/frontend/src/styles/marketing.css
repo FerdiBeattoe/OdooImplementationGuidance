@@ -71,25 +71,24 @@
 }
 
 .site-nav__logo {
-  height: 48px;
-  max-width: 200px;
+  height: 56px;
+  width: auto;
   display: block;
   object-fit: contain;
   cursor: pointer;
 }
 
 .site-footer__logo {
-  height: 128px;
+  height: 80px;
   width: auto;
   display: block;
   object-fit: contain;
-  opacity: 0.9;
   margin-bottom: 8px;
 }
 
 @media (max-width: 768px) {
   .site-nav__logo {
-    height: 64px;
+    height: 40px;
   }
 }
 
@@ -886,12 +885,14 @@
 }
 
 .auth-logo {
-  height: 64px;
-  width: auto;
-  max-width: 240px;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
   object-fit: contain;
   display: block;
-  margin-bottom: 32px;
+  margin-bottom: 40px;
+  padding: 0 16px;
+  box-sizing: border-box;
   cursor: pointer;
 }
 

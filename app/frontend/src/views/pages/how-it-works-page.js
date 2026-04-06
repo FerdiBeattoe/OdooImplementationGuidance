@@ -31,8 +31,12 @@ export function renderHowItWorksPage({ setCurrentView }) {
   return el("div", { className: "mkt-page" }, [
     renderSiteNav({ setCurrentView }),
 
-    el("section", { className: "mkt-hero mkt-hero--dark" }, [
-      el("div", { className: "mkt-shell mkt-hero__content" }, [
+    el("section", {
+      className: "mkt-hero mkt-hero--dark",
+      style: "background:#0c1a30 url('/assets/auth-bg.png') center/cover no-repeat; position:relative;",
+    }, [
+      el("div", { style: "position:absolute; inset:0; background:rgba(12,26,48,0.75); z-index:0;" }),
+      el("div", { className: "mkt-shell mkt-hero__content", style: "position:relative; z-index:1;" }, [
         el("span", { className: "mkt-hero__eyebrow" }, "12-step implementation pipeline"),
         el("h1", { className: "mkt-heading mkt-heading--hero" }, "How Project Odoo works"),
         el("p", { className: "mkt-subheading" }, "From your first discovery answer to verified go-live readiness — every step governed, every write audited, every decision traceable."),

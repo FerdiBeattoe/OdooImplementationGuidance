@@ -17,13 +17,6 @@ function renderField({ id, label, type, name, placeholder, autocomplete }) {
   ]);
 }
 
-function renderStat(value, label) {
-  return el("div", { className: "auth-stat" }, [
-    el("strong", { className: "auth-stat__value" }, value),
-    el("span", { className: "auth-stat__label" }, label),
-  ]);
-}
-
 export function renderAuthScreen({ onBack } = {}) {
   let mode = "signin";
   const container = el("div", { className: "auth-page" });
@@ -221,39 +214,42 @@ export function renderAuthScreen({ onBack } = {}) {
       }, "\u2190 Back to home"),
     ]);
 
-    const rightPanel = el("aside", { className: "auth-right" }, [
-      el("section", { className: "auth-panel" }, [
-        el("span", {
-          className: "auth-panel__tag",
-          style: "display:inline-block; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25); border-radius:6px; padding:3px 10px;",
-        }, "IMPLEMENTATION GUIDE"),
-        el("div", { className: "auth-media-placeholder" }, [
-          /* Replace this div with:
-             el("img", { src: "/assets/blog-hero.jpg",
-             style: "width:100%;height:140px;object-fit:cover;border-radius:6px;" })
-          */
-          el("span", {}, "Image coming soon"),
+    const cardStyle = "background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:28px; flex:1; display:flex; flex-direction:column;";
+    const tagStyle = "display:inline-block; font-size:10px; letter-spacing:0.1em; font-weight:600; text-transform:uppercase; color:#92400e; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:6px; padding:3px 10px; margin-bottom:16px; align-self:flex-start;";
+    const imgSlotStyle = "width:100%; height:120px; background:#f8fafc; border:1px dashed #e2e8f0; border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:16px; flex-shrink:0;";
+    const headingStyle = "font-size:15px; font-weight:600; color:#0c1a30; line-height:1.4; margin:0 0 8px;";
+    const bodyStyle = "font-size:13px; color:#64748b; line-height:1.6; margin:0 0 16px; flex:1;";
+    const btnStyle = "align-self:flex-start; font-size:12px; font-weight:600; color:#92400e; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:6px; padding:6px 14px; cursor:pointer;";
+
+    const rightPanel = el("aside", {
+      className: "auth-right",
+      style: "width:58%; background:rgba(12,26,48,0.7); backdrop-filter:blur(4px); border-radius:0 12px 12px 0; padding:32px; display:flex; flex-direction:column; gap:20px;",
+    }, [
+      el("div", { style: cardStyle }, [
+        el("span", { style: tagStyle }, "IMPLEMENTATION GUIDE"),
+        el("div", { style: imgSlotStyle }, [
+          el("span", { style: "color:#cbd5e1; font-size:11px;" }, "Image coming soon"),
         ]),
-        el("h3", { className: "auth-panel__heading" }, "The right order to configure Odoo 19 \u2014 and why sequence matters"),
-        el("p", { className: "auth-panel__copy", style: "flex:1;" }, "Most Odoo implementations configure modules in the wrong order. Here is the sequence that prevents downstream data corruption."),
+        el("h3", { style: headingStyle }, "The right order to configure Odoo 19 \u2014 and why sequence matters"),
+        el("p", { style: bodyStyle }, "Most Odoo implementations configure modules in the wrong order. Here is the sequence that prevents downstream data corruption."),
         el("button", {
-          className: "auth-panel__link",
           type: "button",
-          style: "display:inline-block; font-size:12px; font-weight:600; color:#92400e; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25); border-radius:6px; padding:6px 14px;",
+          style: btnStyle,
           onclick: () => setCurrentView("blog"),
         }, "Read more \u2192"),
       ]),
-      el("section", { className: "auth-panel" }, [
-        el("span", {
-          className: "auth-panel__tag",
-          style: "display:inline-block; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25); border-radius:6px; padding:3px 10px;",
-        }, "PRODUCT"),
-        el("div", { className: "auth-stats-row" }, [
-          renderStat("124", "checkpoints"),
-          renderStat("23", "domains"),
-          renderStat("2,834", "tests passing"),
+      el("div", { style: cardStyle }, [
+        el("span", { style: tagStyle }, "PRODUCT"),
+        el("div", { style: imgSlotStyle }, [
+          el("span", { style: "color:#cbd5e1; font-size:11px;" }, "Image coming soon"),
         ]),
-        el("p", { className: "auth-panel__copy auth-panel__copy--bottom" }, "Every checkpoint verified against a live Odoo 19 instance."),
+        el("h3", { style: headingStyle }, "What 124 checkpoints taught us about Odoo configuration dependencies"),
+        el("p", { style: bodyStyle }, "After verifying 124 checkpoints against a live Odoo 19 instance, patterns emerged about which settings break the most downstream modules."),
+        el("button", {
+          type: "button",
+          style: btnStyle,
+          onclick: () => setCurrentView("blog"),
+        }, "Read more \u2192"),
       ]),
     ]);
 

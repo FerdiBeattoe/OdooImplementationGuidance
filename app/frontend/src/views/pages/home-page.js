@@ -31,6 +31,26 @@ function renderStat(value, label) {
   ]);
 }
 
+function renderTrustBar() {
+  const items = [
+    "Verified against live Odoo 19",
+    "124 checkpoints",
+    "23 domains",
+    "2,834 tests passing",
+  ];
+
+  return el("p", { className: "mkt-trust-bar" }, items.flatMap((item, index) => {
+    if (index === 0) {
+      return [el("span", {}, item)];
+    }
+
+    return [
+      el("span", { className: "mkt-trust-bar__sep", "aria-hidden": "true" }, "|"),
+      el("span", {}, item),
+    ];
+  }));
+}
+
 function renderPlanCard(label, price, note, setCurrentView) {
   return el("article", { className: "mkt-card" }, [
     el("span", { className: "mkt-card__eyebrow" }, label),
@@ -97,7 +117,7 @@ export function renderHomePage({ setCurrentView }) {
               onclick: () => setCurrentView("how-it-works"),
             }, "See how it works"),
           ]),
-          el("p", { className: "mkt-trust-bar" }, "Verified against live Odoo 19 | 124 checkpoints | 23 domains | 2,834 tests passing"),
+          renderTrustBar(),
         ]),
         el("aside", { className: "mkt-card mkt-card--featured" }, [
           el("span", { className: "mkt-card__eyebrow" }, "Why this matters"),

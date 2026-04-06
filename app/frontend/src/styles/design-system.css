@@ -31,11 +31,6 @@
   --impl-amber-ring:    rgba(245, 158, 11, 0.22);
   --impl-amber-on:      #0c1a30;   /* navy text on amber — landing.html btn--amber pattern */
 
-  --impl-purple:        #8B5CF6;
-  --impl-purple-dark:   #6D28D9;
-  --impl-purple-light:  #A78BFA;
-  --impl-purple-subtle: rgba(139, 92, 246, 0.1);
-
   /* Slate surface system — from landing.html slate scale */
   --impl-warm-white:    #f7f9fc;
   --impl-cream:         #f1f5f9;
@@ -45,8 +40,8 @@
 
   /* Text */
   --impl-text-primary:  #1e293b;
-  --impl-text-body:     #334155;
-  --impl-text-muted:    #475569;
+  --impl-text-body:     #1e293b;
+  --impl-text-muted:    #64748b;
   --impl-text-subtle:   #64748b;
   --impl-text-inverse:  #f7f9fc;
 
@@ -83,10 +78,10 @@
   --sp-28:  7rem;
 
   /* Border radius — canonical from landing.html */
-  --radius-sm:   8px;
-  --radius-md:   14px;
-  --radius-lg:   20px;
-  --radius-pill: 100px;
+  --radius-sm:   6px;
+  --radius-md:   6px;
+  --radius-lg:   6px;
+  --radius-pill: 6px;
 
   /* ── Shadows — navy-tinted, matching landing.html depth ─── */
   --impl-shadow-card:  0 2px 4px rgba(12, 26, 48, 0.04), 0 1px 3px rgba(12, 26, 48, 0.03);

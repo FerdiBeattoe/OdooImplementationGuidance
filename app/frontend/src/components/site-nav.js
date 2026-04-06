@@ -25,8 +25,8 @@ export function renderSiteNav({ setCurrentView }) {
   }
 
   const brand = el("img", {
-    src: "/assets/logo-project-erp.png",
-    alt: "Project ERP",
+    src: "/assets/logo-project-odoo.png",
+    alt: "Project Odoo",
     className: "site-nav__logo",
     onclick: () => navigate("home"),
     style: "cursor:pointer;",

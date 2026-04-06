@@ -1,15 +1,6 @@
-// ---------------------------------------------------------------------------
-// Auth Screen — Odoo 19 Implementation Control Platform
-// ---------------------------------------------------------------------------
-//
-// Two-mode screen: "Create account" and "Sign in"
-// Redesigned as a split-screen workspace while preserving auth behavior.
-// ---------------------------------------------------------------------------
-
 import { el } from "../lib/dom.js";
 import { onboardingStore } from "../state/onboarding-store.js";
 import { setCurrentView } from "../state/app-store.js";
-import { renderAppNav } from "../components/app-nav.js";
 
 function renderField({ id, label, type, name, placeholder, autocomplete }) {
   return el("div", { className: "auth-field" }, [
@@ -26,16 +17,15 @@ function renderField({ id, label, type, name, placeholder, autocomplete }) {
   ]);
 }
 
-function renderProofStat(value, label) {
-  return el("div", { className: "auth-proof-stat" }, [
-    el("strong", { className: "auth-proof-stat__value" }, value),
-    el("span", { className: "auth-proof-stat__label" }, label),
+function renderStat(value, label) {
+  return el("div", { className: "auth-stat" }, [
+    el("strong", { className: "auth-stat__value" }, value),
+    el("span", { className: "auth-stat__label" }, label),
   ]);
 }
 
 export function renderAuthScreen({ onBack } = {}) {
   let mode = "signin";
-
   const container = el("div", { className: "auth-page" });
 
   function navigateHome() {
@@ -49,21 +39,22 @@ export function renderAuthScreen({ onBack } = {}) {
   function render() {
     container.innerHTML = "";
 
-    const isSignup = mode === "signup";
-
+    const isCreateMode = mode === "create";
     let errorEl = null;
 
-    function showError(msg) {
-      if (errorEl) {
-        errorEl.textContent = msg;
-        errorEl.style.display = msg ? "block" : "none";
+    function showError(message) {
+      if (!errorEl) {
+        return;
       }
+
+      errorEl.textContent = message;
+      errorEl.style.display = message ? "block" : "none";
     }
 
-    async function handleSubmit(e) {
-      e.preventDefault();
+    async function handleSubmit(event) {
+      event.preventDefault();
 
-      const form = e.target;
+      const form = event.target;
       const email = (form.elements.email?.value || "").trim();
       const password = form.elements.password?.value || "";
 
@@ -71,76 +62,91 @@ export function renderAuthScreen({ onBack } = {}) {
         showError("Please enter a valid email address.");
         return;
       }
+
       if (password.length < 8) {
         showError("Password must be at least 8 characters.");
         return;
       }
 
-      if (isSignup) {
+      if (isCreateMode) {
         const fullName = (form.elements.fullName?.value || "").trim();
         const companyName = (form.elements.companyName?.value || "").trim();
-        if (!fullName) { showError("Full name is required."); return; }
-        if (!companyName) { showError("Company name is required."); return; }
 
-        const btn = form.querySelector("button[type=submit]");
-        btn.disabled = true;
-        btn.textContent = "Creating account…";
+        if (!fullName) {
+          showError("Full name is required.");
+          return;
+        }
+
+        if (!companyName) {
+          showError("Company name is required.");
+          return;
+        }
+
+        const submitButton = form.querySelector("button[type=submit]");
+        submitButton.disabled = true;
+        submitButton.textContent = "Creating account...";
 
         try {
-          const res = await fetch("/api/auth/signup", {
+          const response = await fetch("/api/auth/signup", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ fullName, email, password, companyName }),
           });
-          const data = await res.json();
-          if (!res.ok) {
+          const data = await response.json();
+
+          if (!response.ok) {
             showError(data.error || "Account creation failed.");
-            btn.disabled = false;
-            btn.textContent = "Create account →";
+            submitButton.disabled = false;
+            submitButton.textContent = "Create account →";
             return;
           }
+
           onboardingStore.setAuth(data.session?.access_token, data.user, data.projectId);
           setCurrentView("onboarding");
         } catch {
-          showError("Network error — please try again.");
-          btn.disabled = false;
-          btn.textContent = "Create account →";
+          showError("Network error - please try again.");
+          submitButton.disabled = false;
+          submitButton.textContent = "Create account →";
         }
-      } else {
-        const btn = form.querySelector("button[type=submit]");
-        btn.disabled = true;
-        btn.textContent = "Signing in…";
 
-        try {
-          const res = await fetch("/api/auth/signin", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-          });
-          const data = await res.json();
-          if (!res.ok) {
-            showError(data.error || "Sign in failed.");
-            btn.disabled = false;
-            btn.textContent = "Sign in →";
-            return;
-          }
-          const projectId = data.projects && data.projects.length > 0
-            ? data.projects[0].id
-            : null;
-          onboardingStore.setAuth(data.session?.access_token, data.user, projectId);
-          setCurrentView("onboarding");
-        } catch {
-          showError("Network error — please try again.");
-          btn.disabled = false;
-          btn.textContent = "Sign in →";
+        return;
+      }
+
+      const submitButton = form.querySelector("button[type=submit]");
+      submitButton.disabled = true;
+      submitButton.textContent = "Signing in...";
+
+      try {
+        const response = await fetch("/api/auth/signin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          showError(data.error || "Sign in failed.");
+          submitButton.disabled = false;
+          submitButton.textContent = "Sign in →";
+          return;
         }
+
+        const projectId = data.projects && data.projects.length > 0
+          ? data.projects[0].id
+          : null;
+        onboardingStore.setAuth(data.session?.access_token, data.user, projectId);
+        setCurrentView("onboarding");
+      } catch {
+        showError("Network error - please try again.");
+        submitButton.disabled = false;
+        submitButton.textContent = "Sign in →";
       }
     }
 
-    const fields = isSignup
+    const fields = isCreateMode
       ? [
           renderField({
-            id: "auth-fullName",
+            id: "auth-full-name",
             label: "Full name",
             type: "text",
             name: "fullName",
@@ -156,7 +162,7 @@ export function renderAuthScreen({ onBack } = {}) {
             autocomplete: "email",
           }),
           renderField({
-            id: "auth-companyName",
+            id: "auth-company-name",
             label: "Company name",
             type: "text",
             name: "companyName",
@@ -195,104 +201,99 @@ export function renderAuthScreen({ onBack } = {}) {
 
     const form = el("form", { className: "auth-form", onsubmit: handleSubmit }, [
       ...fields,
+      el("button", { className: "auth-submit-btn", type: "submit" }, isCreateMode ? "Create account →" : "Sign in →"),
       errorEl,
-      el("button", { className: "auth-submit-btn", type: "submit" },
-        isSignup ? "Create account →" : "Sign in →"
-      ),
     ]);
 
-    const togglePrompt = isSignup
+    const togglePrompt = isCreateMode
       ? "Already have an account? "
       : "No account yet? ";
+
     const toggleLink = el("button", {
       className: "auth-toggle-link",
       type: "button",
       onclick: () => {
-        mode = isSignup ? "signin" : "signup";
+        mode = isCreateMode ? "signin" : "create";
         render();
       },
-    }, isSignup ? "Sign in" : "Create account");
+    }, isCreateMode ? "Sign in" : "Create account");
+
+    const leftColumn = el("section", { className: "auth-left" }, [
+      el("img", {
+        src: "/assets/logo-project-odoo.png",
+        alt: "Project Odoo",
+        className: "auth-logo",
+        onclick: () => navigateHome(),
+        style: "height:72px; width:auto; display:block; margin-bottom:48px; cursor:pointer;",
+      }),
+      el("div", { className: "auth-main" }, [
+        el("div", { className: "auth-form-shell" }, [
+          el("div", { className: "auth-tabs", role: "tablist", "aria-label": "Authentication mode" }, [
+            el("button", {
+              className: isCreateMode ? "auth-tab" : "auth-tab auth-tab--active",
+              type: "button",
+              role: "tab",
+              "aria-selected": String(!isCreateMode),
+              onclick: () => {
+                if (mode !== "signin") {
+                  mode = "signin";
+                  render();
+                }
+              },
+            }, "Sign in"),
+            el("button", {
+              className: isCreateMode ? "auth-tab auth-tab--active" : "auth-tab",
+              type: "button",
+              role: "tab",
+              "aria-selected": String(isCreateMode),
+              onclick: () => {
+                if (mode !== "create") {
+                  mode = "create";
+                  render();
+                }
+              },
+            }, "Create account"),
+          ]),
+          el("h2", { className: "auth-heading" }, isCreateMode ? "Start your implementation" : "Welcome back"),
+          el("p", { className: "auth-sub" }, isCreateMode ? "Create your Project Odoo account." : "Sign in to continue your implementation."),
+          form,
+          el("p", { className: "auth-toggle" }, [togglePrompt, toggleLink]),
+        ]),
+      ]),
+      el("button", {
+        className: "auth-back-link",
+        type: "button",
+        onclick: () => navigateHome(),
+      }, "← Back to projecterp.com"),
+    ]);
+
+    const rightColumn = el("aside", { className: "auth-right" }, [
+      el("section", { className: "auth-panel" }, [
+        el("span", { className: "auth-panel__tag" }, "LATEST FROM THE BLOG"),
+        el("div", { className: "auth-media-placeholder" }, "Image coming soon"),
+        el("h2", { className: "auth-panel__heading" }, "The right order to configure Odoo 19 — and why sequence matters"),
+        el("p", { className: "auth-panel__copy" }, "Most implementations configure modules before master data is set. Here is the sequence that prevents downstream data corruption."),
+        el("button", {
+          className: "auth-panel__link",
+          type: "button",
+          onclick: () => setCurrentView("blog"),
+        }, "Read article →"),
+      ]),
+      el("section", { className: "auth-panel" }, [
+        el("span", { className: "auth-panel__tag" }, "BUILT ON REAL DATA"),
+        el("div", { className: "auth-stats-row" }, [
+          renderStat("124", "checkpoints"),
+          renderStat("23", "domains"),
+          renderStat("2,834", "tests passing"),
+        ]),
+        el("p", { className: "auth-panel__copy" }, "Every checkpoint verified against a live Odoo 19 instance."),
+      ]),
+    ]);
 
     container.append(
-      el("div", { className: "auth-shell" }, [
-        el("section", { className: "auth-shell__left" }, [
-          el("div", { className: "auth-shell__nav" }, [
-            renderAppNav({
-              setCurrentView: () => navigateHome(),
-              showBackLink: false,
-            }),
-          ]),
-          el("div", { className: "auth-shell__left-main" }, [
-            el("div", { className: "auth-card" }, [
-              el("div", { className: "auth-mode-toggle", role: "tablist", "aria-label": "Authentication mode" }, [
-                el("button", {
-                  className: isSignup ? "auth-mode-tab" : "auth-mode-tab auth-mode-tab--active",
-                  type: "button",
-                  role: "tab",
-                  "aria-selected": String(!isSignup),
-                  onclick: () => {
-                    if (mode !== "signin") {
-                      mode = "signin";
-                      render();
-                    }
-                  },
-                }, "Sign in"),
-                el("button", {
-                  className: isSignup ? "auth-mode-tab auth-mode-tab--active" : "auth-mode-tab",
-                  type: "button",
-                  role: "tab",
-                  "aria-selected": String(isSignup),
-                  onclick: () => {
-                    if (mode !== "signup") {
-                      mode = "signup";
-                      render();
-                    }
-                  },
-                }, "Create account"),
-              ]),
-              el("div", { className: "auth-card__intro" }, [
-                el("h1", { className: "auth-heading" },
-                  isSignup ? "Start your implementation" : "Welcome back"
-                ),
-                el("p", { className: "auth-sub" },
-                  isSignup
-                    ? "Create your Project Odoo account."
-                    : "Sign in to continue your implementation."
-                ),
-              ]),
-              form,
-              el("p", { className: "auth-toggle" }, [togglePrompt, toggleLink]),
-            ]),
-          ]),
-          el("div", { className: "auth-shell__footer" }, [
-            el("button", {
-              className: "auth-back-link",
-              type: "button",
-              onclick: () => navigateHome(),
-            }, "← Back to projecterp.com"),
-          ]),
-        ]),
-        el("aside", { className: "auth-shell__right" }, [
-          el("section", { className: "auth-panel" }, [
-            el("p", { className: "auth-panel__tag" }, "Latest from the blog"),
-            el("h2", { className: "auth-panel__heading" }, "The right order to configure Odoo 19 — and why sequence matters"),
-            el("p", { className: "auth-panel__copy" }, "Most implementations configure modules before master data is set. Here is the sequence that prevents downstream data corruption."),
-            el("button", {
-              className: "auth-panel__link",
-              type: "button",
-              onclick: () => setCurrentView("blog"),
-            }, "Read article →"),
-          ]),
-          el("section", { className: "auth-panel" }, [
-            el("p", { className: "auth-panel__tag" }, "Built on real data"),
-            el("div", { className: "auth-proof-stats" }, [
-              renderProofStat("124", "checkpoints"),
-              renderProofStat("23", "domains"),
-              renderProofStat("2,834", "tests passing"),
-            ]),
-            el("p", { className: "auth-panel__copy" }, "Every checkpoint verified against a live Odoo 19 instance."),
-          ]),
-        ]),
+      el("div", { className: "auth-layout" }, [
+        leftColumn,
+        rightColumn,
       ])
     );
   }

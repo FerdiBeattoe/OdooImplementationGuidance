@@ -854,8 +854,7 @@
 .auth-page {
   position: relative;
   min-height: 100vh;
-  /* BACKGROUND: replace background with url('/assets/auth-bg.jpg') center/cover no-repeat when image is ready */
-  background: #0c1a30;
+  background: url('/assets/auth-bg.png') center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;

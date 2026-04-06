@@ -6,6 +6,21 @@
 :root {
   color-scheme: light;
 
+  /* ── PROJECT ODOO — App Design Tokens ───────────────────────── */
+  --app-navy: #0c1a30;
+  --app-amber: #f59e0b;
+  --app-amber-subtle: rgba(245,158,11,0.08);
+  --app-amber-border: rgba(245,158,11,0.2);
+  --app-amber-text: #92400e;
+  --app-text-primary: #1e293b;
+  --app-text-muted: #64748b;
+  --app-bg-light: #f8fafc;
+  --app-bg-white: #ffffff;
+  --app-border: #e2e8f0;
+  --app-radius-btn: 6px;
+  --app-radius-card: 10px;
+  --app-radius-tag: 6px;
+
   /* ── COLOR PALETTE ─────────────────────────────────────────── */
 
   /* Primary — Enterprise Plum */
@@ -137,10 +152,10 @@
   --sp-24: 6rem;
 
   /* ── BORDER RADIUS — Editorial Engineer: 0px sharp geometry ── */
-  --radius-sm:   0px;
-  --radius-md:   0px;
-  --radius-lg:   0px;
-  --radius-xl:   0px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
   --radius-full: 9999px;
 
   /* ── SHADOWS — ultra-diffused, ambient light ─────────────────── */

@@ -219,7 +219,8 @@ function renderActions({ onRun, onLoad, onResume, onApply, onSave, onConnect, mo
     ]),
 
     el("button", {
-      className: "px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold disabled:opacity-50",
+      className: "px-4 py-2 bg-primary text-on-primary text-sm font-semibold disabled:opacity-50",
+      style: "border-radius: 6px;",
       disabled,
       dataset: { testid: "run-button" },
       onClick: () => {

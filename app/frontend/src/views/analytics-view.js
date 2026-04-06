@@ -60,7 +60,7 @@ export function renderAnalyticsView({ project }) {
             labels: ["Complete", "In Progress", "Not Started"],
             datasets: [{
               data: [completedSteps, inProgressSteps, notStartedSteps],
-              backgroundColor: ["#13677b", "#57344f", "#e0e3e5"],
+              backgroundColor: ["#f59e0b", "#0c1a30", "#e2e8f0"],
               borderWidth: 0
             }]
           },
@@ -98,7 +98,7 @@ export function renderAnalyticsView({ project }) {
             datasets: [{
               label: "Complete",
               data: WIZARD_KEYS.map(w => completedWizardsList.includes(w.id) ? 100 : 0),
-              backgroundColor: "#13677b",
+              backgroundColor: "#0c1a30",
               borderRadius: 0
             }]
           },
@@ -121,7 +121,7 @@ export function renderAnalyticsView({ project }) {
             datasets: [{
               label: "Imported",
               data: Object.values(importedCounts),
-              backgroundColor: "#57344f",
+              backgroundColor: "#f59e0b",
               borderRadius: 0
             }]
           },
@@ -150,8 +150,8 @@ export function renderAnalyticsView({ project }) {
             datasets: [{
               label: "Cumulative Steps Complete",
               data: last7.map((_, i) => Math.min(completedSteps, i * Math.floor(completedSteps / 6))),
-              borderColor: "#13677b",
-              backgroundColor: "rgba(19, 103, 123, 0.1)",
+              borderColor: "#0c1a30",
+              backgroundColor: "rgba(12,26,48,0.08)",
               fill: true,
               tension: 0.3,
               pointRadius: 4
@@ -181,7 +181,7 @@ export function renderAnalyticsView({ project }) {
         el("div", { style: "position: relative; height: 200px; display: flex; align-items: center; justify-content: center;" }, [
           el("canvas", { id: "chart-donut", style: "max-height: 180px;" }),
           el("div", { style: "position: absolute; display: flex; flex-direction: column; align-items: center;" }, [
-            el("span", { style: "font-family: var(--font-headline); font-size: 32px; font-weight: 700; color: var(--color-on-surface);", text: `${completedSteps}` }),
+            el("span", { style: "font-family: var(--font-headline); font-size: 36px; font-weight: 700; color: #0c1a30;", text: `${completedSteps}` }),
             el("span", { style: "font-family: var(--font-label); font-size: 11px; color: var(--color-on-surface-variant); text-transform: uppercase; letter-spacing: var(--ls-wide);", text: "of 30 steps" })
           ])
         ])

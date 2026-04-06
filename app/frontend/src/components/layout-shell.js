@@ -62,30 +62,31 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
       })
     ]),
     el("div", { className: "flex items-center gap-3" }, [
-      el("div", { 
+      el("div", {
         className: "hidden sm:flex items-center gap-2 px-3 py-1.5",
-        style: "background: var(--ee-surface-container); border: 1px solid var(--ee-outline-variant);"
+        style: `background: ${isConnected ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)"}; border: 1px solid ${isConnected ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}; border-radius: 6px;`
       }, [
         el("span", {
           className: "w-2 h-2",
-          style: `background: ${isConnected ? "var(--ee-success)" : "var(--ee-error)"};`
+          style: `background: ${isConnected ? "#059669" : "#dc2626"}; border-radius: 50%;`
         }),
         el("span", {
-          className: "text-xs font-medium",
-          style: `color: ${isConnected ? "var(--ee-success)" : "var(--ee-error)"};`,
+          style: `font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: ${isConnected ? "#065f46" : "#dc2626"};`,
           text: isConnected ? (instanceUrl || "Connected") : "Not connected"
         })
       ]),
       isConnected
         ? el("button", {
-            className: "ee-btn ee-btn--primary",
+            className: "ee-btn",
+            style: "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 13px; padding: 8px 16px; cursor: pointer;",
             onclick: onSave
           }, [
             el("span", { className: "material-symbols-outlined text-[18px]", text: "sync" }),
             el("span", { className: "hidden sm:inline", text: "Sync to Odoo" })
           ])
         : el("button", {
-            className: "ee-btn ee-btn--primary",
+            className: "ee-btn",
+            style: "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 13px; padding: 8px 16px; cursor: pointer;",
             onclick: () => onNavigate("connection-wizard")
           }, [
             el("span", { className: "material-symbols-outlined text-[18px]", text: "link" }),
@@ -177,17 +178,19 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
   }, [
     // Logo / Brand
     el("div", { className: "ee-sidebar__brand" }, [
-      el("div", { className: "ee-sidebar__logo" }, [
-        el("span", { className: "material-symbols-outlined ee-sidebar__logo-icon", text: "hub" })
-      ]),
-      el("span", { className: "ee-sidebar__title", text: "ProjectOdoo" })
+      el("img", {
+        src: "/assets/logo-project-odoo.png",
+        alt: "Project Odoo",
+        style: "height: 36px; width: auto; object-fit: contain; display: block;"
+      }),
+      el("span", { className: "ee-sidebar__title", text: "Project Odoo" })
     ]),
-    el("p", { className: "ee-sidebar__subtitle", text: "Odoo made easy" }),
+    el("p", { className: "ee-sidebar__subtitle", text: "Governed Odoo 19" }),
     
     // Project name
     el("div", { style: "margin: 16px 8px;" }, [
       el("div", {
-        style: "display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(113, 75, 103, 0.06);"
+        style: "display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(12,26,48,0.06);"
       }, [
         el("span", { className: "material-symbols-outlined", style: "font-size: 16px; color: var(--ee-outline);", text: "folder" }),
         el("span", {
@@ -224,14 +227,14 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
         : null,
       // Connection status footer
       el("div", {
-        style: `display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: ${isConnected ? "var(--ee-success-soft)" : "var(--ee-error-soft)"}; border-left: 3px solid ${isConnected ? "var(--ee-success)" : "var(--ee-error)"};`
+        style: `display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: ${isConnected ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)"}; border-left: 3px solid ${isConnected ? "#059669" : "#dc2626"}; border-radius: 6px;`
       }, [
         el("span", {
           className: "w-2 h-2",
-          style: `background: ${isConnected ? "var(--ee-success)" : "var(--ee-error)"};`
+          style: `background: ${isConnected ? "#059669" : "#dc2626"};`
         }),
         el("span", {
-          style: `font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: ${isConnected ? "var(--ee-success)" : "var(--ee-error)"};`,
+          style: `font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: ${isConnected ? "#065f46" : "#dc2626"};`,
           text: isConnected ? (instanceUrl || "Connected") : "Not connected"
         })
       ])

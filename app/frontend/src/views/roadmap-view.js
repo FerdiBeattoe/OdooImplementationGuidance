@@ -114,9 +114,9 @@ export function renderRoadmapView({ onNavigate }) {
 
     container.append(
       el("div", { style: "margin-bottom: 32px;" }, [
-        el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin-bottom: 4px;", text: "PROJECTODOO" }),
+        el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin-bottom: 4px;", text: "PROJECT ODOO" }),
         el("h2", { style: "font-family: var(--font-headline); font-size: 28px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug); margin-bottom: 8px;", text: "Your Odoo Journey" }),
-        el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface-variant); margin-top: 4px;", text: "Follow these phases in order. Progress saves automatically. ProjectOdoo guides you every step of the way." })
+        el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface-variant); margin-top: 4px;", text: "Follow these phases in order. Progress saves automatically. Project Odoo governs every step." })
       ])
     );
 
@@ -144,7 +144,7 @@ function buildPhase(phase, stepStatusMap, onNavigate, onStatusChange) {
     // Phase header
     el("div", { style: "display: flex; align-items: center; gap: 16px; margin-bottom: 16px;" }, [
       el("div", {
-        style: "width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: var(--color-primary); color: var(--color-on-primary); font-family: var(--font-label); font-size: 12px; font-weight: 700; flex-shrink: 0;"
+        style: "width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: #0c1a30; color: #ffffff; border-radius: 50%; font-family: var(--font-label); font-size: 12px; font-weight: 700; flex-shrink: 0;"
       }, [
         el("span", { text: String(PHASES.findIndex(p => p.id === phase.id) + 1) })
       ]),
@@ -187,7 +187,7 @@ function buildStep(step, status, locked, onNavigate, onStatusChange) {
     el("div", { style: "flex: 1; min-width: 0;" }, [
       el("div", { style: "display: flex; align-items: center; gap: 8px; margin-bottom: 4px;" }, [
         el("span", { style: "font-family: var(--font-label); font-size: 10px; font-weight: 700; color: var(--color-on-surface-variant); text-transform: uppercase; letter-spacing: var(--ls-wide);", text: `Step ${step.id}` }),
-        locked ? el("span", { style: "font-size: 10px; padding: 2px 6px; background: var(--color-surface-container-high); color: var(--color-on-surface-variant); font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide);", text: "Locked" }) : null
+        locked ? el("span", { style: "font-size: 10px; padding: 2px 6px; background: rgba(12,26,48,0.06); color: #94a3b8; border-radius: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide);", text: "Locked" }) : null
       ]),
       el("p", { style: "font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--color-on-surface); margin-bottom: 2px;", text: step.title }),
       el("div", { style: "display: flex; align-items: center; gap: 12px; margin-top: 4px;" }, [
@@ -215,7 +215,7 @@ function buildStep(step, status, locked, onNavigate, onStatusChange) {
 
 function statusDropdown(stepId, currentStatus, locked, onStatusChange) {
   const sel = el("select", {
-    style: "font-family: var(--font-label); font-size: 11px; font-weight: 600; border: 1px solid var(--color-outline-variant); padding: 4px 8px; background: var(--color-surface-container-low); color: var(--color-on-surface); cursor: pointer;",
+    style: "font-family: var(--font-label); font-size: 11px; font-weight: 600; border: 1px solid var(--color-outline-variant); border-radius: 6px; padding: 4px 8px; background: var(--color-surface-container-low); color: var(--color-on-surface); cursor: pointer;",
     disabled: locked ? "disabled" : null,
     onchange: (e) => onStatusChange(stepId, e.target.value)
   }, [

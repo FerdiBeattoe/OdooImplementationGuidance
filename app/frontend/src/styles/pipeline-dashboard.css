@@ -106,7 +106,7 @@
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.16);
   padding: 8px 16px;
-  border-radius: 999px;
+  border-radius: 6px;
   cursor: pointer;
   transition:
     background var(--impl-dur-fast) ease,
@@ -305,26 +305,33 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 5px 10px;
-  border-radius: 999px;
+  border-radius: 6px;
   white-space: nowrap;
   flex-shrink: 0;
-  color: #ffffff;
 }
 
 .pd-domain-status-badge--not-started {
-  background: #8E867A;
+  background: rgba(12,26,48,0.06);
+  color: #64748b;
+  border: 1px solid rgba(12,26,48,0.12);
 }
 
 .pd-domain-status-badge--in-progress {
-  background: var(--impl-amber);
+  background: rgba(245,158,11,0.08);
+  color: #92400e;
+  border: 1px solid rgba(245,158,11,0.2);
 }
 
 .pd-domain-status-badge--complete {
-  background: var(--impl-success);
+  background: rgba(16,185,129,0.08);
+  color: #065f46;
+  border: 1px solid rgba(16,185,129,0.2);
 }
 
 .pd-domain-status-badge--blocked {
-  background: var(--impl-danger);
+  background: rgba(239,68,68,0.08);
+  color: #dc2626;
+  border: 1px solid rgba(239,68,68,0.2);
 }
 
 /* ── Domain progress bar ──────────────────────────────────── */
@@ -578,7 +585,7 @@
   letter-spacing: 0.02em;
   padding: 6px 16px;
   border: none;
-  border-radius: 999px;
+  border-radius: 6px;
   cursor: pointer;
   transition:
     background var(--impl-dur-fast) ease,

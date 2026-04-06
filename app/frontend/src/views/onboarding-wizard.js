@@ -946,7 +946,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
         ]),
         el("div", {}, [
           el("h1", { style: "font-family: var(--ee-font-headline); font-size: 18px; font-weight: 700; color: var(--ee-on-surface); margin: 0;" }, "Business Assessment"),
-          el("p", { style: "font-size: 12px; color: var(--ee-on-surface-variant); margin: 0;" }, "ProjectOdoo — Odoo 19 Implementation"),
+          el("p", { style: "font-size: 12px; color: var(--ee-on-surface-variant); margin: 0;" }, "Project Odoo — Governed Odoo 19 Implementation"),
         ]),
       ]),
       el("button", {

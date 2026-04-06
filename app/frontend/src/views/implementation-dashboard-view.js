@@ -119,7 +119,7 @@ export function renderImplementationDashboardView({ onNavigate, onOpenRoadmap })
       // Jump Back In Card
       el("div", {
         className: "ee-card ee-card--accent",
-        style: "padding: 24px; display: flex; flex-direction: column; gap: 16px; background: linear-gradient(135deg, #714B67 0%, #57344f 100%);"
+        style: "padding: 24px; display: flex; flex-direction: column; gap: 16px; background: #0c1a30; border-radius: 10px;"
       }, [
         el("div", {}, [
           el("p", {
@@ -131,7 +131,7 @@ export function renderImplementationDashboardView({ onNavigate, onOpenRoadmap })
         ]),
         el("button", {
           className: "ee-btn ee-btn--lg",
-          style: "background: white; color: #714B67; font-weight: 600;",
+          style: "background: white; color: #0c1a30; font-weight: 600; border-radius: 6px;",
           onclick: () => onNavigate("implementation-roadmap")
         }, "Open Roadmap")
       ]),
@@ -219,12 +219,12 @@ function renderModuleItem(module, onClick, completedWizards) {
   const isComplete = completedWizards.includes(module.id);
   const statusLabel = isComplete ? "COMPLETE" : "NOT STARTED";
   const statusStyle = isComplete
-    ? "font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 4px 10px; background: #059669; color: white; border: none;"
-    : "font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 4px 10px; background: var(--ee-surface-container-high); color: var(--ee-outline); border: 1px solid var(--ee-outline-variant);";
+    ? "font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 10px; background: rgba(16,185,129,0.08); color: #065f46; border: 1px solid rgba(16,185,129,0.2); border-radius: 6px;"
+    : "font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 10px; background: rgba(12,26,48,0.06); color: #64748b; border: 1px solid rgba(12,26,48,0.12); border-radius: 6px;";
 
   return el("div", {
     className: "ee-module-item",
-    style: `padding: 16px; display: flex; align-items: center; justify-content: space-between; background: var(--ee-surface-container); cursor: pointer; transition: all 150ms ease; border-left: 3px solid ${isComplete ? "#059669" : "transparent"};`,
+    style: `padding: 16px; display: flex; align-items: center; justify-content: space-between; background: var(--ee-surface-container); cursor: pointer; transition: all 150ms ease; border-left: 3px solid ${isComplete ? "#059669" : "transparent"}; border-radius: 6px;`,
     onmouseenter: (e) => {
       e.currentTarget.style.background = "var(--ee-surface-container-high)";
       if (!isComplete) e.currentTarget.style.borderLeftColor = "var(--ee-primary)";
@@ -237,11 +237,11 @@ function renderModuleItem(module, onClick, completedWizards) {
   }, [
     el("div", { style: "display: flex; align-items: center; gap: 12px;" }, [
       el("div", {
-        style: `width: 36px; height: 36px; ${isComplete ? "background: #059669;" : "background: var(--ee-primary-subtle);"} display: flex; align-items: center; justify-content: center;`
+        style: `width: 36px; height: 36px; ${isComplete ? "background: rgba(16,185,129,0.12);" : "background: var(--ee-primary-subtle);"} display: flex; align-items: center; justify-content: center; border-radius: 6px;`
       }, [
         el("span", {
           className: "material-symbols-outlined",
-          style: `font-size: 18px; ${isComplete ? "color: white;" : "color: var(--ee-primary);"}`,
+          style: `font-size: 18px; ${isComplete ? "color: #065f46;" : "color: var(--ee-primary);"}`,
           text: isComplete ? "check" : module.icon
         })
       ]),

@@ -40,7 +40,7 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
           el("span", { className: "material-symbols-outlined", style: "color: white; font-size: 24px;", text: "hub" })
         ]),
         el("h1", { style: "font-family: var(--ee-font-headline); font-size: 22px; font-weight: 700; color: var(--ee-on-surface);" }, "Connect to Odoo"),
-        el("p", { style: "font-size: 14px; color: var(--ee-on-surface-variant); margin-top: 8px;" }, "ProjectOdoo — Odoo made easy")
+        el("p", { style: "font-size: 14px; color: var(--ee-on-surface-variant); margin-top: 8px;" }, "Project Odoo — Governed Odoo 19")
       ]),
 
       // Step indicator

@@ -34,13 +34,13 @@ const ARTICLES = [
 const CATEGORIES = ["All", "Sales", "CRM", "Inventory", "Accounting", "HR", "Manufacturing", "Technical"];
 
 const CATEGORY_COLORS = {
-  "Sales": { bg: "var(--color-primary-subtle)", color: "var(--color-primary)" },
-  "CRM": { bg: "var(--color-secondary-container)", color: "var(--color-on-secondary-container)" },
-  "Inventory": { bg: "rgba(16, 185, 129, 0.1)", color: "#059669" },
-  "Accounting": { bg: "var(--color-tertiary-fixed)", color: "var(--color-on-tertiary-fixed)" },
-  "HR": { bg: "var(--color-primary-fixed)", color: "var(--color-on-primary-fixed)" },
-  "Manufacturing": { bg: "rgba(154, 106, 19, 0.1)", color: "#9a6a13" },
-  "Technical": { bg: "var(--color-surface-container-high)", color: "var(--color-on-surface-variant)" }
+  "Sales": { bg: "rgba(245,158,11,0.08)", color: "#92400e" },
+  "CRM": { bg: "rgba(245,158,11,0.08)", color: "#92400e" },
+  "Inventory": { bg: "rgba(245,158,11,0.08)", color: "#92400e" },
+  "Accounting": { bg: "rgba(245,158,11,0.08)", color: "#92400e" },
+  "HR": { bg: "rgba(245,158,11,0.08)", color: "#92400e" },
+  "Manufacturing": { bg: "rgba(245,158,11,0.08)", color: "#92400e" },
+  "Technical": { bg: "rgba(12,26,48,0.06)", color: "#0c1a30" }
 };
 
 export function renderKnowledgeBaseView() {
@@ -86,7 +86,7 @@ export function renderKnowledgeBaseView() {
         el("span", { className: "material-symbols-outlined", style: "position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 20px; color: var(--color-on-surface-variant);", text: "search" }),
         el("input", {
           type: "search",
-          style: "width: 100%; height: 44px; padding: 0 16px 0 44px; font-family: var(--font-body); font-size: 14px; background: var(--color-surface); box-shadow: var(--shadow-sm); border: none;",
+          style: "width: 100%; height: 44px; padding: 0 16px 0 44px; font-family: var(--font-body); font-size: 14px; background: var(--color-surface); border: 1px solid #e2e8f0; border-radius: 6px;",
           placeholder: "Search articles...",
           value: searchQuery,
           onInput: (e) => { searchQuery = e.target.value; render(); }
@@ -98,7 +98,7 @@ export function renderKnowledgeBaseView() {
         CATEGORIES.map(cat => {
           const isActive = cat === activeCategory;
           return el("button", {
-            style: `flex-shrink: 0; padding: 8px 16px; font-family: var(--font-label); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 150ms ease; border: none; border-bottom: 2px solid ${isActive ? "var(--color-primary)" : "transparent"}; color: ${isActive ? "var(--color-primary)" : "var(--color-on-surface-variant)"}; background: ${isActive ? "transparent" : "transparent"};`,
+            style: `flex-shrink: 0; padding: 8px 16px; font-family: var(--font-label); font-size: 13px; cursor: pointer; transition: all 150ms ease; border: none; border-bottom: 2px solid ${isActive ? "#f59e0b" : "transparent"}; color: ${isActive ? "#0c1a30" : "#64748b"}; font-weight: ${isActive ? "600" : "500"}; background: ${isActive ? "transparent" : "transparent"};`,
             onmouseenter: (e) => { if (!isActive) e.target.style.background = "var(--color-surface-container-low)"; },
             onmouseleave: (e) => { if (!isActive) e.target.style.background = "transparent"; },
             onclick: () => { activeCategory = cat; render(); }
@@ -122,15 +122,15 @@ export function renderKnowledgeBaseView() {
     const colors = CATEGORY_COLORS[article.cat] || CATEGORY_COLORS["Technical"];
     
     return el("div", {
-      style: "background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 20px; cursor: pointer; transition: all 150ms ease; display: flex; flex-direction: column;",
-      onmouseenter: (e) => { e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.background = "var(--color-surface-container-low)"; },
-      onmouseleave: (e) => { e.currentTarget.style.boxShadow = "var(--shadow-sm)"; e.currentTarget.style.background = "var(--color-surface)"; },
+      style: "background: var(--color-surface); border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; cursor: pointer; transition: all 150ms ease; display: flex; flex-direction: column;",
+      onmouseenter: (e) => { e.currentTarget.style.borderColor = "#f59e0b"; e.currentTarget.style.background = "var(--color-surface-container-low)"; },
+      onmouseleave: (e) => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.background = "var(--color-surface)"; },
       onclick: onRead
     }, [
       // Category badge
       el("span", { 
-        style: `display: inline-block; font-family: var(--font-label); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide); padding: 2px 8px; margin-bottom: 12px; background: ${colors.bg}; color: ${colors.color};`,
-        text: article.cat 
+        style: `display: inline-block; font-family: var(--font-label); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide); padding: 2px 8px; margin-bottom: 12px; background: ${colors.bg}; color: ${colors.color}; border: 1px solid rgba(245,158,11,0.2); border-radius: 6px;`,
+        text: article.cat
       }),
       // Title
       el("h4", { style: "font-family: var(--font-headline); font-size: 15px; font-weight: 600; color: var(--color-on-surface); margin-bottom: 8px; flex: 1;", text: article.title }),
@@ -138,7 +138,7 @@ export function renderKnowledgeBaseView() {
       el("p", { style: "font-family: var(--font-body); font-size: 13px; color: var(--color-on-surface-variant); margin-bottom: 16px; line-height: 1.5;", text: article.desc }),
       // Read link
       el("button", {
-        style: "align-self: flex-start; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--color-primary); background: none; border: none; cursor: pointer; padding: 0; text-decoration: none;",
+        style: "align-self: flex-start; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: #92400e; background: none; border: none; cursor: pointer; padding: 0; text-decoration: none;",
         onmouseenter: (e) => e.target.style.textDecoration = "underline",
         onmouseleave: (e) => e.target.style.textDecoration = "none",
         onclick: (e) => { e.stopPropagation(); onRead(); }

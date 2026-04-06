@@ -47,7 +47,7 @@ export function renderDashboardView({
     ),
     el("section", { className: "hero-panel" }, [
       el("div", { className: "hero-panel__content" }, [
-        el("p", { className: "hero-panel__eyebrow", text: "ProjectOdoo" }),
+        el("p", { className: "hero-panel__eyebrow", text: "Project Odoo" }),
         el("h3", { text: "Odoo made easy — Guided setup, live inspection, preview changes, and execute safely." }),
         el("p", {
           text: "Step-by-step guidance stays primary. Optional live link to Odoo is application-layer only, preview stays mandatory before execution, and blocked actions remain visible and non-executable."

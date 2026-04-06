@@ -42,7 +42,8 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
   const sectionTitle = currentNavItem?.label || "Dashboard";
 
   const topHeader = el("header", {
-    className: "ee-header"
+    className: "ee-header",
+    style: "background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 0 24px; height: 56px;"
   }, [
     el("div", { className: "flex items-center gap-4" }, [
       el("button", {
@@ -58,20 +59,21 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
       ]),
       el("h1", {
         className: "ee-header__title",
+        style: "font-size: 18px; font-weight: 600; color: #0c1a30; font-family: Inter, sans-serif;",
         text: sectionTitle
       })
     ]),
     el("div", { className: "flex items-center gap-3" }, [
       el("div", {
-        className: "hidden sm:flex items-center gap-2 px-3 py-1.5",
-        style: `background: ${isConnected ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)"}; border: 1px solid ${isConnected ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}; border-radius: 6px;`
+        className: "hidden sm:flex items-center gap-2",
+        style: `background: ${isConnected ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)"}; border: 1px solid ${isConnected ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}; color: ${isConnected ? "#065f46" : "#dc2626"}; border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; padding: 3px 10px;`
       }, [
         el("span", {
           className: "w-2 h-2",
           style: `background: ${isConnected ? "#059669" : "#dc2626"}; border-radius: 50%;`
         }),
         el("span", {
-          style: `font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: ${isConnected ? "#065f46" : "#dc2626"};`,
+          style: `text-transform: uppercase; color: ${isConnected ? "#065f46" : "#dc2626"};`,
           text: isConnected ? (instanceUrl || "Connected") : "Not connected"
         })
       ]),
@@ -152,20 +154,33 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
       (item.id === "module-setup" && currentView.startsWith("wizard-")) ||
       (item.id === "dashboard" && (currentView === "dashboard" || currentView === "overview"));
 
-    return el("button", {
+    const navBaseStyle = "border-radius: 6px; padding: 10px 12px; font-size: 14px; font-family: Inter, sans-serif; display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; cursor: pointer; border: none; outline: none;";
+    const navStyle = isActive
+      ? `${navBaseStyle} background: rgba(245,158,11,0.08); border-left: 2px solid #f59e0b; color: #0c1a30; font-weight: 600;`
+      : `${navBaseStyle} background: transparent; border-left: 2px solid transparent; color: #64748b; font-weight: 400;`;
+
+    const btn = el("button", {
       className: `ee-nav__item ${isActive ? "ee-nav__item--active" : ""}`,
+      style: navStyle,
       onclick: () => {
         onNavigate(item.id);
         if (onClose) onClose();
       }
     }, [
       el("span", {
-        className: `material-symbols-outlined ee-nav__icon`,
-        style: isActive ? "color: var(--ee-primary);" : "",
+        className: "material-symbols-outlined ee-nav__icon",
+        style: `font-size: 20px; color: ${isActive ? "#f59e0b" : "#64748b"};`,
         text: item.icon
       }),
       el("span", { text: item.label })
     ]);
+
+    if (!isActive) {
+      btn.onmouseenter = () => { btn.style.background = "rgba(12,26,48,0.04)"; btn.style.color = "#0c1a30"; };
+      btn.onmouseleave = () => { btn.style.background = "transparent"; btn.style.color = "#64748b"; };
+    }
+
+    return btn;
   });
 
   const resumeOptions = [el("option", { value: "", text: "Resume saved project..." })];
@@ -181,20 +196,18 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
       el("img", {
         src: "/assets/logo-project-odoo.png",
         alt: "Project Odoo",
-        style: "height: 36px; width: auto; object-fit: contain; display: block;"
-      }),
-      el("span", { className: "ee-sidebar__title", text: "Project Odoo" })
+        style: "height: 36px; width: auto; object-fit: contain; display: block; margin-bottom: 4px;"
+      })
     ]),
-    el("p", { className: "ee-sidebar__subtitle", text: "Governed Odoo 19" }),
     
     // Project name
     el("div", { style: "margin: 16px 8px;" }, [
       el("div", {
-        style: "display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(12,26,48,0.06);"
+        style: "display: flex; align-items: center; gap: 8px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;"
       }, [
-        el("span", { className: "material-symbols-outlined", style: "font-size: 16px; color: var(--ee-outline);", text: "folder" }),
+        el("span", { className: "material-symbols-outlined", style: "font-size: 16px; color: #0c1a30;", text: "folder" }),
         el("span", {
-          style: "font-size: 12px; font-weight: 600; color: var(--ee-on-surface); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;",
+          style: "font-size: 13px; font-weight: 500; color: #0c1a30; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;",
           text: projectName
         })
       ])
@@ -207,7 +220,7 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
     el("div", { style: "padding: 16px; display: flex; flex-direction: column; gap: 12px;" }, [
       el("button", {
         className: "ee-btn ee-btn--primary ee-btn--full",
-        style: "height: 44px;",
+        style: "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 13px; padding: 8px 14px; width: 100%; cursor: pointer;",
         onclick: onSave
       }, [
         el("span", { className: "material-symbols-outlined", style: "font-size: 18px;", text: "save" }),

@@ -140,8 +140,6 @@ export function handleAppNavigation(view) {
 }
 
 export function renderApp(root) {
-  // Bootstrap from localStorage before first render
-  bootstrapSessionFromStorage();
   let forceHomeOnColdLoad = true;
   const marketingViews = new Set(["home", "how-it-works", "pricing", "about", "blog", "terms", "privacy"]);
 
@@ -162,9 +160,7 @@ export function renderApp(root) {
 
     const session = resolveSession();
     const requestedView = activeProject.workflowState?.currentView || "dashboard";
-    const rawView = forceHomeOnColdLoad
-      ? (session ? resolveLastActiveView() : "home")
-      : requestedView;
+    const rawView = forceHomeOnColdLoad ? "home" : requestedView;
 
     // ── Persist project_id to localStorage whenever a session becomes available
     function setMarketingView(view) {

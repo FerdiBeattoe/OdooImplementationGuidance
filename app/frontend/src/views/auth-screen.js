@@ -39,7 +39,6 @@ export function renderAuthScreen({ onBack } = {}) {
     if (container._cleanupPopstate) {
       window.removeEventListener("popstate", container._cleanupPopstate);
     }
-    window.history.pushState({ view: "auth" }, "", window.location.href);
     const handlePopstate = () => setCurrentView("home");
     window.addEventListener("popstate", handlePopstate);
     container._cleanupPopstate = handlePopstate;

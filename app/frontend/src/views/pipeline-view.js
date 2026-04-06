@@ -219,8 +219,8 @@ function renderActions({ onRun, onLoad, onResume, onApply, onSave, onConnect, mo
     ]),
 
     el("button", {
-      className: "px-4 py-2 bg-primary text-on-primary text-sm font-semibold disabled:opacity-50",
-      style: "border-radius: 6px;",
+      className: "text-sm font-semibold disabled:opacity-50",
+      style: "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; padding: 8px 20px; cursor: pointer;",
       disabled,
       dataset: { testid: "run-button" },
       onClick: () => {
@@ -248,7 +248,8 @@ function renderActions({ onRun, onLoad, onResume, onApply, onSave, onConnect, mo
     }, [el("span", { text: "Run Pipeline" })]),
 
     el("button", {
-      className: "px-4 py-2 rounded-lg bg-surface-container-highest text-on-surface text-sm font-semibold disabled:opacity-50",
+      className: "text-sm font-semibold disabled:opacity-50",
+      style: "background: rgba(12,26,48,0.06); border: 1px solid rgba(12,26,48,0.15); color: #0c1a30; border-radius: 6px; padding: 8px 20px; cursor: pointer;",
       disabled,
       dataset: { testid: "load-button" },
       onClick: () => {
@@ -258,7 +259,8 @@ function renderActions({ onRun, onLoad, onResume, onApply, onSave, onConnect, mo
     }, [el("span", { text: "Load State" })]),
 
     el("button", {
-      className: "px-4 py-2 rounded-lg bg-surface-container-highest text-on-surface text-sm font-semibold disabled:opacity-50",
+      className: "text-sm font-semibold disabled:opacity-50",
+      style: "background: rgba(12,26,48,0.06); border: 1px solid rgba(12,26,48,0.15); color: #0c1a30; border-radius: 6px; padding: 8px 20px; cursor: pointer;",
       disabled,
       dataset: { testid: "resume-button" },
       onClick: () => {

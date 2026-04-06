@@ -93,10 +93,10 @@ function renderWizardCategory(category, completedWizards, onLaunchWizard) {
             el("span", { className: "material-symbols-outlined", style: "font-size: 16px; color: #ffffff;", text: "check" })
           ]) : null,
           // Icon
-          el("div", { 
-            style: "width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: var(--color-primary-subtle); margin-bottom: 16px;" 
+          el("div", {
+            style: "width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); border-radius: 50%; margin-bottom: 16px;"
           }, [
-            el("span", { className: "material-symbols-outlined", style: "font-size: 20px; color: var(--color-primary);", text: wizard.icon })
+            el("span", { className: "material-symbols-outlined", style: "font-size: 20px; color: #92400e;", text: wizard.icon })
           ]),
           // Content
           el("h4", { style: "font-family: var(--font-headline); font-size: 16px; font-weight: 600; color: var(--color-on-surface); margin-bottom: 4px;", text: wizard.label }),

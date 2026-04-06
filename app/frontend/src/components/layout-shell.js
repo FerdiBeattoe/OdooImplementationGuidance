@@ -196,7 +196,7 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
       el("img", {
         src: "/assets/logo-project-odoo.png",
         alt: "Project Odoo",
-        style: "height: 36px; width: auto; object-fit: contain; display: block; margin-bottom: 4px;"
+        style: "height: 48px; width: auto; max-width: 160px; object-fit: contain; display: block;"
       })
     ]),
     

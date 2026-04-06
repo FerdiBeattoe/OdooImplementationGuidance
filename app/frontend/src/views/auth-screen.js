@@ -39,14 +39,17 @@ export function renderAuthScreen({ onBack } = {}) {
   function render() {
     container.innerHTML = "";
 
+    // Browser back support
+    window.history.pushState({ view: "auth" }, "", window.location.href);
+    const handlePopstate = () => setCurrentView("home");
+    window.addEventListener("popstate", handlePopstate);
+    container._cleanupPopstate = handlePopstate;
+
     const isCreateMode = mode === "create";
     let errorEl = null;
 
     function showError(message) {
-      if (!errorEl) {
-        return;
-      }
-
+      if (!errorEl) return;
       errorEl.textContent = message;
       errorEl.style.display = message ? "block" : "none";
     }
@@ -97,7 +100,7 @@ export function renderAuthScreen({ onBack } = {}) {
           if (!response.ok) {
             showError(data.error || "Account creation failed.");
             submitButton.disabled = false;
-            submitButton.textContent = "Create account →";
+            submitButton.textContent = "Create account \u2192";
             return;
           }
 
@@ -106,7 +109,7 @@ export function renderAuthScreen({ onBack } = {}) {
         } catch {
           showError("Network error - please try again.");
           submitButton.disabled = false;
-          submitButton.textContent = "Create account →";
+          submitButton.textContent = "Create account \u2192";
         }
 
         return;
@@ -127,7 +130,7 @@ export function renderAuthScreen({ onBack } = {}) {
         if (!response.ok) {
           showError(data.error || "Sign in failed.");
           submitButton.disabled = false;
-          submitButton.textContent = "Sign in →";
+          submitButton.textContent = "Sign in \u2192";
           return;
         }
 
@@ -139,92 +142,45 @@ export function renderAuthScreen({ onBack } = {}) {
       } catch {
         showError("Network error - please try again.");
         submitButton.disabled = false;
-        submitButton.textContent = "Sign in →";
+        submitButton.textContent = "Sign in \u2192";
       }
     }
 
     const fields = isCreateMode
       ? [
-          renderField({
-            id: "auth-full-name",
-            label: "Full name",
-            type: "text",
-            name: "fullName",
-            placeholder: "Jane Smith",
-            autocomplete: "name",
-          }),
-          renderField({
-            id: "auth-email",
-            label: "Email",
-            type: "email",
-            name: "email",
-            placeholder: "you@company.com",
-            autocomplete: "email",
-          }),
-          renderField({
-            id: "auth-company-name",
-            label: "Company name",
-            type: "text",
-            name: "companyName",
-            placeholder: "Acme Ltd",
-            autocomplete: "organization",
-          }),
-          renderField({
-            id: "auth-password",
-            label: "Password",
-            type: "password",
-            name: "password",
-            placeholder: "Min 8 characters",
-            autocomplete: "new-password",
-          }),
+          renderField({ id: "auth-full-name", label: "Full name", type: "text", name: "fullName", placeholder: "Jane Smith", autocomplete: "name" }),
+          renderField({ id: "auth-email", label: "Email", type: "email", name: "email", placeholder: "you@company.com", autocomplete: "email" }),
+          renderField({ id: "auth-company-name", label: "Company name", type: "text", name: "companyName", placeholder: "Acme Ltd", autocomplete: "organization" }),
+          renderField({ id: "auth-password", label: "Password", type: "password", name: "password", placeholder: "Min 8 characters", autocomplete: "new-password" }),
         ]
       : [
-          renderField({
-            id: "auth-email",
-            label: "Email",
-            type: "email",
-            name: "email",
-            placeholder: "you@company.com",
-            autocomplete: "email",
-          }),
-          renderField({
-            id: "auth-password",
-            label: "Password",
-            type: "password",
-            name: "password",
-            placeholder: "Your password",
-            autocomplete: "current-password",
-          }),
+          renderField({ id: "auth-email", label: "Email", type: "email", name: "email", placeholder: "you@company.com", autocomplete: "email" }),
+          renderField({ id: "auth-password", label: "Password", type: "password", name: "password", placeholder: "Your password", autocomplete: "current-password" }),
         ];
 
-    errorEl = el("p", { className: "auth-error", style: "display:none" }, "");
+    errorEl = el("div", { className: "auth-error", style: "display:none" }, "");
 
     const form = el("form", { className: "auth-form", onsubmit: handleSubmit }, [
       ...fields,
-      el("button", { className: "auth-submit-btn", type: "submit" }, isCreateMode ? "Create account →" : "Sign in →"),
+      el("button", { className: "auth-submit-btn", type: "submit" }, isCreateMode ? "Create account \u2192" : "Sign in \u2192"),
       errorEl,
     ]);
 
-    const togglePrompt = isCreateMode
-      ? "Already have an account? "
-      : "No account yet? ";
-
-    const toggleLink = el("button", {
-      className: "auth-toggle-link",
-      type: "button",
+    const togglePrompt = isCreateMode ? "Already have an account? " : "No account yet? ";
+    const toggleLink = el("span", {
+      style: "color:#f59e0b; cursor:pointer; font-weight:500;",
       onclick: () => {
         mode = isCreateMode ? "signin" : "create";
         render();
       },
     }, isCreateMode ? "Sign in" : "Create account");
 
-    const leftColumn = el("section", { className: "auth-left" }, [
+    const leftPanel = el("section", { className: "auth-left" }, [
       el("img", {
         src: "/assets/logo-project-odoo.png",
         alt: "Project Odoo",
         className: "auth-logo",
         onclick: () => navigateHome(),
-        style: "height:72px; width:auto; display:block; margin-bottom:48px; cursor:pointer;",
       }),
       el("div", { className: "auth-main" }, [
         el("div", { className: "auth-form-shell" }, [
@@ -234,24 +190,14 @@ export function renderAuthScreen({ onBack } = {}) {
               type: "button",
               role: "tab",
               "aria-selected": String(!isCreateMode),
-              onclick: () => {
-                if (mode !== "signin") {
-                  mode = "signin";
-                  render();
-                }
-              },
+              onclick: () => { if (mode !== "signin") { mode = "signin"; render(); } },
             }, "Sign in"),
             el("button", {
               className: isCreateMode ? "auth-tab auth-tab--active" : "auth-tab",
               type: "button",
               role: "tab",
               "aria-selected": String(isCreateMode),
-              onclick: () => {
-                if (mode !== "create") {
-                  mode = "create";
-                  render();
-                }
-              },
+              onclick: () => { if (mode !== "create") { mode = "create"; render(); } },
             }, "Create account"),
           ]),
           el("h2", { className: "auth-heading" }, isCreateMode ? "Start your implementation" : "Welcome back"),
@@ -264,20 +210,26 @@ export function renderAuthScreen({ onBack } = {}) {
         className: "auth-back-link",
         type: "button",
         onclick: () => navigateHome(),
-      }, "← Back to projecterp.com"),
+      }, "\u2190 Back to home"),
     ]);
 
-    const rightColumn = el("aside", { className: "auth-right" }, [
+    const rightPanel = el("aside", { className: "auth-right" }, [
       el("section", { className: "auth-panel" }, [
         el("span", { className: "auth-panel__tag" }, "LATEST FROM THE BLOG"),
-        el("div", { className: "auth-media-placeholder" }, "Image coming soon"),
-        el("h2", { className: "auth-panel__heading" }, "The right order to configure Odoo 19 — and why sequence matters"),
-        el("p", { className: "auth-panel__copy" }, "Most implementations configure modules before master data is set. Here is the sequence that prevents downstream data corruption."),
+        el("div", { className: "auth-media-placeholder" }, [
+          /* Replace this div with:
+             el("img", { src: "/assets/blog-hero.jpg",
+             style: "width:100%;height:140px;object-fit:cover;border-radius:6px;" })
+          */
+          el("span", {}, "Image coming soon"),
+        ]),
+        el("h3", { className: "auth-panel__heading" }, "The right order to configure Odoo 19 \u2014 and why sequence matters"),
+        el("p", { className: "auth-panel__copy", style: "flex:1;" }, "Most implementations configure modules before master data is set. Here is the sequence that prevents downstream data corruption."),
         el("button", {
           className: "auth-panel__link",
           type: "button",
           onclick: () => setCurrentView("blog"),
-        }, "Read article →"),
+        }, "Read article \u2192"),
       ]),
       el("section", { className: "auth-panel" }, [
         el("span", { className: "auth-panel__tag" }, "BUILT ON REAL DATA"),
@@ -286,18 +238,28 @@ export function renderAuthScreen({ onBack } = {}) {
           renderStat("23", "domains"),
           renderStat("2,834", "tests passing"),
         ]),
-        el("p", { className: "auth-panel__copy" }, "Every checkpoint verified against a live Odoo 19 instance."),
+        el("p", { className: "auth-panel__copy auth-panel__copy--bottom" }, "Every checkpoint verified against a live Odoo 19 instance."),
       ]),
     ]);
 
     container.append(
       el("div", { className: "auth-layout" }, [
-        leftColumn,
-        rightColumn,
+        leftPanel,
+        rightPanel,
       ])
     );
   }
 
   render();
+
+  // Cleanup reference for popstate listener removal
+  const originalRemove = container.remove;
+  container.remove = function () {
+    if (container._cleanupPopstate) {
+      window.removeEventListener("popstate", container._cleanupPopstate);
+    }
+    return originalRemove.call(this);
+  };
+
   return container;
 }

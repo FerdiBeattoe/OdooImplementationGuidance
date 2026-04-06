@@ -69,9 +69,12 @@ export function renderPricingPage({ setCurrentView }) {
 
       earlyAdopterBanner.innerHTML = "";
       earlyAdopterBanner.append(
-        el("span", {}, `Early adopter offer  ${status.remaining} of ${status.total} spots remaining`),
-        el("strong", {}, "First 20 companies: 6 months for $249.50"),
-        el("span", {}, "After that, standard pricing applies.")
+        el("span", {
+          style: "flex:1; font-size:14px; color:#92400e; font-weight:500;",
+        }, `\u26A1 Early adopter \u2014 ${status.remaining} of ${status.total} spots remaining at $249.50 for 6 months`),
+        el("span", {
+          style: "font-size:13px; color:#b45309; font-style:italic; font-weight:400;",
+        }, "First 20 companies only. Standard pricing applies after.")
       );
       earlyAdopterBanner.style.display = "flex";
     } catch {

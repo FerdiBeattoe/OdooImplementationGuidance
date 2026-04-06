@@ -305,6 +305,10 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
         return await handleAuthSignin(req, res);
       }
 
+      if (pathname === "/api/auth/reset-password" && req.method === "POST") {
+        return await handleAuthResetPassword(req, res);
+      }
+
       if (pathname === "/api/auth/verify" && req.method === "POST") {
         return await handleAuthVerify(req, res);
       }
@@ -1396,6 +1400,34 @@ async function handleAuthSignin(req, res) {
   const { projects } = await authService.getAccountProjects(user.id);
 
   return sendJson(res, 200, { user, session, projects: projects || [] });
+}
+
+async function handleAuthResetPassword(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, { error: parseError instanceof Error ? parseError.message : 'Invalid request payload.' });
+  }
+
+  const { email } = payload || {};
+  if (!email) {
+    return sendJson(res, 400, { error: 'email is required.' });
+  }
+
+  if (!supabase) {
+    return sendJson(res, 200, { ok: true, message: 'Reset email sent if account exists.' });
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: (process.env.SITE_URL || '') + '/reset-password',
+  });
+
+  if (error) {
+    return sendJson(res, 400, { error: error.message });
+  }
+
+  return sendJson(res, 200, { ok: true, message: 'Reset email sent if account exists.' });
 }
 
 async function handleAuthVerify(req, res) {

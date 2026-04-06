@@ -205,7 +205,7 @@ export function renderAuthScreen({ onBack } = {}) {
         // Returning user with existing project → dashboard; new user → onboarding
         if (projectId) {
           writeStoredProjectId(projectId);
-          setCurrentView("pipeline-dashboard");
+          setCurrentView("dashboard");
         } else {
           setCurrentView("onboarding");
         }

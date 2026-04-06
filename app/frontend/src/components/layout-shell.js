@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { id: "data-import",          icon: "upload_file",        label: "Data Import" },
   { id: "knowledge-base",       icon: "menu_book",          label: "Knowledge Base" },
   { id: "analytics",            icon: "bar_chart",          label: "Analytics" },
-  { id: "pipeline",             icon: "schema",             label: "Implementation Pipeline" }
+  { id: "pipeline",             icon: "schema",             label: "Pipeline" }
 ];
 
 export function renderLayoutShell({ project, content, notifications, onNavigate, onSave, onResume, onConnect, onDisconnect }) {
@@ -172,7 +172,12 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
         style: `font-size: 20px; color: ${isActive ? "#f59e0b" : "#64748b"};`,
         text: item.icon
       }),
-      el("span", { text: item.label })
+      item.id === "pipeline"
+        ? el("span", { style: "display: flex; flex-direction: column;" }, [
+            el("span", { text: item.label }),
+            el("span", { style: "font-size: 11px; font-weight: 400; color: #94a3b8;", text: "Governed writes & checkpoints" })
+          ])
+        : el("span", { text: item.label })
     ]);
 
     if (!isActive) {

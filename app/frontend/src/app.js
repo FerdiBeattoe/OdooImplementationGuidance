@@ -311,7 +311,7 @@ export function renderApp(root) {
             } else if (projectId) {
               void pipelineStore.loadPipelineState(projectId);
             }
-            setCurrentView("pipeline-dashboard");
+            setCurrentView("dashboard");
           },
           onNavigate: (view) => handleAppNavigation(view),
         })

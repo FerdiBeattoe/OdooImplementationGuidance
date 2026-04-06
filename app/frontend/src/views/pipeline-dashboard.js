@@ -354,6 +354,7 @@ export function renderDashboardContent({ psState, obState, onNavigate, onRun, on
       onLoad,
       psState,
       obState,
+      onNavigate,
     })
   );
 
@@ -496,6 +497,7 @@ function renderDomainsSection({
   onLoad,
   psState,
   obState,
+  onNavigate,
 }) {
   // Build domain → checkpoint map from records
   const byDomain = {};
@@ -520,10 +522,16 @@ function renderDomainsSection({
       { className: "pd-domain-grid", dataset: { testid: "domain-grid" } },
       [
         el("div", {
-          style: "padding: 32px; text-align: center; color: var(--ee-outline); font-size: 14px;",
-          text: "No domains activated yet. Complete onboarding to activate your implementation domains.",
+          style: "padding: 32px; text-align: center; color: var(--ee-outline); font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 0;",
           dataset: { testid: "no-domains-message" },
-        }),
+        }, [
+          el("span", { text: "No domains activated yet. Complete onboarding to activate your implementation domains." }),
+          el("button", {
+            style: "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 14px; padding: 10px 24px; cursor: pointer; margin-top: 16px;",
+            onclick: () => { if (onNavigate) onNavigate("onboarding"); },
+            dataset: { testid: "empty-state-onboarding-cta" },
+          }, [el("span", { text: "Complete onboarding to get started \u2192" })]),
+        ]),
       ]
     );
   }

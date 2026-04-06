@@ -6,6 +6,7 @@ import {
   getCompletedWizards
 } from "../state/app-store.js";
 import { getImplementationState } from "../state/implementationStore.js";
+import { pipelineStore } from "../state/pipeline-store.js";
 
 const MODULES = [
   { id: "company-setup", name: "Company Setup", icon: "business", wizardId: "company-setup" },
@@ -91,9 +92,39 @@ export function renderImplementationDashboardView({ onNavigate, onOpenRoadmap })
     }
   };
 
+  // Determine if onboarding is incomplete
+  const psState = pipelineStore.getState();
+  const hasActivatedDomains = (psState.runtime_state?.activated_domains ?? []).length > 0;
+  const onboardingIncomplete = !hasActivatedDomains && completedWizards.length === 0;
+
   return el("div", {
-    style: "display: grid; grid-template-columns: 1fr 1fr 1fr 300px; gap: 24px;"
+    style: "display: flex; flex-direction: column; gap: 0;"
   }, [
+    // Onboarding banner (shown only when onboarding is incomplete)
+    onboardingIncomplete
+      ? el("div", {
+          style: "background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 10px; padding: 20px 24px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;",
+          dataset: { testid: "onboarding-banner" },
+        }, [
+          el("div", {}, [
+            el("h3", {
+              style: "font-size: 16px; font-weight: 600; color: #0c1a30; margin: 0 0 4px;",
+            }, "Complete your business assessment"),
+            el("p", {
+              style: "font-size: 13px; color: #64748b; margin: 0;",
+            }, "Answer 34 questions about your business to activate your Odoo implementation domains."),
+          ]),
+          el("button", {
+            style: "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 14px; padding: 10px 24px; cursor: pointer; white-space: nowrap; margin-left: 24px;",
+            onclick: () => { if (onNavigate) onNavigate("onboarding"); },
+            dataset: { testid: "onboarding-banner-cta" },
+          }, "Start assessment \u2192"),
+        ])
+      : null,
+
+    el("div", {
+      style: "display: grid; grid-template-columns: 1fr 1fr 1fr 300px; gap: 24px;"
+    }, [
     // Main content area (spans 3 columns)
     el("div", {
       style: "grid-column: span 3; display: flex; flex-direction: column; gap: 24px;"
@@ -156,6 +187,7 @@ export function renderImplementationDashboardView({ onNavigate, onOpenRoadmap })
         )
       ])
     ])
+  ]),
   ]);
 }
 

@@ -74,6 +74,7 @@ export function renderAuthScreen({ onBack } = {}) {
       if (isCreateMode) {
         const fullName = (form.elements.fullName?.value || "").trim();
         const companyName = (form.elements.companyName?.value || "").trim();
+        const inviteCode = (form.elements.inviteCode?.value || "").trim();
 
         if (!fullName) {
           showError("Full name is required.");
@@ -85,6 +86,11 @@ export function renderAuthScreen({ onBack } = {}) {
           return;
         }
 
+        if (!inviteCode || !inviteCode.toUpperCase().startsWith("BETA-")) {
+          showError("Please enter your invite code. Format: BETA-PROJ-XXXX");
+          return;
+        }
+
         const submitButton = form.querySelector("button[type=submit]");
         submitButton.disabled = true;
         submitButton.textContent = "Creating account...";
@@ -93,7 +99,7 @@ export function renderAuthScreen({ onBack } = {}) {
           const response = await fetch("/api/auth/signup", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ fullName, email, password, companyName }),
+            body: JSON.stringify({ fullName, email, password, companyName, inviteCode }),
           });
           const data = await response.json();
 
@@ -151,6 +157,8 @@ export function renderAuthScreen({ onBack } = {}) {
           renderField({ id: "auth-full-name", label: "Full name", type: "text", name: "fullName", placeholder: "Jane Smith", autocomplete: "name" }),
           renderField({ id: "auth-email", label: "Email", type: "email", name: "email", placeholder: "you@company.com", autocomplete: "email" }),
           renderField({ id: "auth-company-name", label: "Company name", type: "text", name: "companyName", placeholder: "Acme Ltd", autocomplete: "organization" }),
+          renderField({ id: "auth-invite-code", label: "Invite code", type: "text", name: "inviteCode", placeholder: "BETA-PROJ-XXXX", autocomplete: "off" }),
+          el("p", { style: "font-size:11px; color:#94a3b8; margin-top:-10px; margin-bottom:14px;" }, "Don\u2019t have a code? Email hello@projecterp.co.za"),
           renderField({ id: "auth-password", label: "Password", type: "password", name: "password", placeholder: "Min 8 characters", autocomplete: "new-password" }),
         ]
       : [

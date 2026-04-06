@@ -54,6 +54,7 @@ import { assembleRentalOperationDefinitions } from "../shared/rental-operation-d
 import { assembleFieldServiceOperationDefinitions } from "../shared/field-service-operation-definitions.js";
 import { applyGoverned } from "./governed-odoo-apply-service.js";
 import * as authService from "./auth-service.js";
+import { validateInviteCode, consumeInviteCode } from "./invite-service.js";
 import supabase from "./supabase-client.js";
 import {
   loadRuntimeState,
@@ -1333,14 +1334,30 @@ async function handleAuthSignup(req, res) {
     return sendJson(res, 400, { error: parseError instanceof Error ? parseError.message : 'Invalid request payload.' });
   }
 
-  const { fullName, email, password, companyName } = payload || {};
+  const { fullName, email, password, companyName, inviteCode } = payload || {};
   if (!fullName || !email || !password || !companyName) {
     return sendJson(res, 400, { error: 'fullName, email, password, and companyName are required.' });
+  }
+
+  // Invite code required during beta
+  if (!inviteCode) {
+    return sendJson(res, 403, { error: 'An invite code is required during beta. Contact us at hello@projecterp.co.za to request access.' });
+  }
+
+  const inviteResult = await validateInviteCode(inviteCode);
+  if (!inviteResult.valid) {
+    return sendJson(res, 403, { error: inviteResult.error });
   }
 
   const { user, session, error } = await authService.createAccount(fullName, email, password, companyName);
   if (error) {
     return sendJson(res, 400, { error });
+  }
+
+  // Consume invite code — log but don't fail signup if consume fails
+  const consumeResult = await consumeInviteCode(inviteCode, email);
+  if (!consumeResult.ok) {
+    console.warn('Failed to consume invite code:', consumeResult.error);
   }
 
   const projectId = generateProjectId();
@@ -1350,6 +1367,7 @@ async function handleAuthSignup(req, res) {
     user: { id: user.id, email: user.email, fullName, companyName },
     session,
     projectId,
+    plan: inviteResult.plan,
   });
 }
 

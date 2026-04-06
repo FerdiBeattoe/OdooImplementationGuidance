@@ -884,7 +884,9 @@
   background: #ffffff;
   border-radius: 12px 0 0 12px;
   padding: 32px 36px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
 }
 
 .auth-logo {
@@ -956,6 +958,7 @@
 .auth-form {
   display: flex;
   flex-direction: column;
+  padding-bottom: 24px;
 }
 
 .auth-field {

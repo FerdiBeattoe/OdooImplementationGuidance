@@ -3,13 +3,13 @@
    src/styles/design-system.css
 
    Canonical design system aligned to landing.html:
-   Fraunces + DM Sans typography, #0c1a30 navy authority,
+   Inter + DM Sans typography, #0c1a30 navy authority,
    #f59e0b amber precision. All --impl-* variables map to
    these landing-page canonical values exactly.
    ============================================================= */
 
-/* ── Google Fonts: Fraunces + DM Sans (canonical from landing.html) ── */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,400;1,9..144,600;1,9..144,700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+/* ── Google Fonts: Inter + DM Sans (canonical from landing.html) ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
 
 /* ── Design tokens ────────────────────────────────────────── */
 :root {
@@ -30,6 +30,11 @@
   --impl-amber-subtle:  rgba(245, 158, 11, 0.14);
   --impl-amber-ring:    rgba(245, 158, 11, 0.22);
   --impl-amber-on:      #0c1a30;   /* navy text on amber — landing.html btn--amber pattern */
+
+  --impl-purple:        #8B5CF6;
+  --impl-purple-dark:   #6D28D9;
+  --impl-purple-light:  #A78BFA;
+  --impl-purple-subtle: rgba(139, 92, 246, 0.1);
 
   /* Slate surface system — from landing.html slate scale */
   --impl-warm-white:    #f7f9fc;
@@ -59,8 +64,8 @@
   --impl-info-bg:       #EEF4FF;
   --impl-info-border:   #B0C8F0;
 
-  /* ── Typography: Fraunces + DM Sans — canonical from landing.html ─── */
-  --font-display:    'Fraunces', Georgia, serif;
+  /* ── Typography: Inter + DM Sans — canonical from landing.html ─── */
+  --font-display:    'Inter', -apple-system, sans-serif;
   --font-reading:    'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Override root variables so existing components pick up new fonts */

@@ -99,6 +99,7 @@ import { renderHomePage } from "./views/pages/home-page.js";
 import { renderHowItWorksPage } from "./views/pages/how-it-works-page.js";
 import { renderPricingPage } from "./views/pages/pricing-page.js";
 import { renderAboutPage } from "./views/pages/about-page.js";
+import { renderBlogPage } from "./views/pages/blog-page.js";
 import { renderTermsPage } from "./views/pages/terms-page.js";
 import { renderPrivacyPage } from "./views/pages/privacy-page.js";
 import { onboardingStore } from "./state/onboarding-store.js";
@@ -142,7 +143,7 @@ export function renderApp(root) {
   // Bootstrap from localStorage before first render
   bootstrapSessionFromStorage();
   let forceHomeOnColdLoad = true;
-  const marketingViews = new Set(["home", "how-it-works", "pricing", "about", "terms", "privacy"]);
+  const marketingViews = new Set(["home", "how-it-works", "pricing", "about", "blog", "terms", "privacy"]);
 
   const render = () => {
     // Guard: if a text or numeric input currently has focus inside the root,
@@ -194,6 +195,10 @@ export function renderApp(root) {
           return;
         case "about":
           root.append(renderAboutPage(marketingProps));
+          restoreRenderFocus(root, focusSnapshot);
+          return;
+        case "blog":
+          root.append(renderBlogPage(marketingProps));
           restoreRenderFocus(root, focusSnapshot);
           return;
         case "terms":

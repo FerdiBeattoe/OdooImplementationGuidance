@@ -1,6 +1,6 @@
 import { el } from "../lib/dom.js";
 
-export function renderAppNav({ setCurrentView }) {
+export function renderAppNav({ setCurrentView, showBackLink = true }) {
   return el("nav", { className: "site-nav" }, [
     el("div", { className: "site-nav__inner" }, [
       el("img", {
@@ -10,11 +10,11 @@ export function renderAppNav({ setCurrentView }) {
         onclick: () => setCurrentView("home"),
         style: "cursor:pointer;",
       }),
-      el("button", {
+      showBackLink ? el("button", {
         className: "site-nav__back-link",
         type: "button",
         onclick: () => setCurrentView("home"),
-      }, "\u2190 projecterp.com"),
+      }, "\u2190 projecterp.com") : null,
     ]),
   ]);
 }

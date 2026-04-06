@@ -80,7 +80,6 @@ export function renderHomePage({ setCurrentView }) {
     el("section", { className: "mkt-hero" }, [
       el("div", { className: "mkt-shell mkt-hero__grid" }, [
         el("div", { className: "mkt-hero__content" }, [
-          el("span", { className: "mkt-hero__eyebrow" }, "34 questions before the first write"),
           el("h1", { className: "mkt-heading mkt-heading--hero" }, [
             el("span", { className: "mkt-heading__line" }, "Implement Odoo"),
             el("span", { className: "mkt-heading__line mkt-heading__line--accent" }, "the way your business works"),
@@ -155,7 +154,7 @@ export function renderHomePage({ setCurrentView }) {
 
     el("section", { className: "mkt-section" }, [
       el("div", { className: "mkt-shell mkt-stack" }, [
-        el("h2", { className: "mkt-heading mkt-heading--section" }, "Simple pricing"),
+        el("h2", { className: "mkt-heading mkt-heading--section" }, "Your Odoo implementation, structured from day one"),
         earlyAdopterBanner,
         el("div", { className: "mkt-grid mkt-grid--three" }, [
           renderPlanCard("Monthly", "$149", "Start immediately. Full governed pipeline, cancel anytime.", setCurrentView),

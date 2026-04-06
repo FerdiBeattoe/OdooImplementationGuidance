@@ -86,7 +86,7 @@ export function renderPricingPage({ setCurrentView }) {
 
     el("section", { className: "mkt-hero" }, [
       el("div", { className: "mkt-shell mkt-hero__content" }, [
-        el("h1", { className: "mkt-heading mkt-heading--hero" }, "Simple, transparent pricing"),
+        el("h1", { className: "mkt-heading mkt-heading--hero" }, "Your Odoo implementation, structured from day one"),
         el("p", { className: "mkt-subheading" }, "One licence per Odoo instance. Everything included. No seat fees."),
       ]),
     ]),

@@ -36,6 +36,7 @@ export function renderSiteNav({ setCurrentView }) {
     renderNavLink("How it works", "how-it-works", navigate),
     renderNavLink("Pricing", "pricing", navigate),
     renderNavLink("About", "about", navigate),
+    renderNavLink("Blog", "blog", navigate),
   ]);
 
   const cta = el("button", {

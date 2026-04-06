@@ -1,6 +1,9 @@
 import { el } from "../lib/dom.js";
 import { onboardingStore } from "../state/onboarding-store.js";
 import { setCurrentView } from "../state/app-store.js";
+import { writeStoredProjectId } from "./landing-page.js";
+
+const AUTH_FETCH_TIMEOUT_MS = 15_000;
 
 function renderField({ id, label, type, name, placeholder, autocomplete }) {
   return el("div", { className: "auth-field" }, [
@@ -32,7 +35,10 @@ export function renderAuthScreen({ onBack } = {}) {
   function render() {
     container.innerHTML = "";
 
-    // Browser back support
+    // Browser back support — remove previous listener before adding new one
+    if (container._cleanupPopstate) {
+      window.removeEventListener("popstate", container._cleanupPopstate);
+    }
     window.history.pushState({ view: "auth" }, "", window.location.href);
     const handlePopstate = () => setCurrentView("home");
     window.addEventListener("popstate", handlePopstate);
@@ -64,6 +70,9 @@ export function renderAuthScreen({ onBack } = {}) {
         return;
       }
 
+      // Clear previous user state before any API call
+      onboardingStore.reset();
+
       if (isCreateMode) {
         const fullName = (form.elements.fullName?.value || "").trim();
         const companyName = (form.elements.companyName?.value || "").trim();
@@ -88,25 +97,38 @@ export function renderAuthScreen({ onBack } = {}) {
         submitButton.disabled = true;
         submitButton.textContent = "Creating account...";
 
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), AUTH_FETCH_TIMEOUT_MS);
+
         try {
           const response = await fetch("/api/auth/signup", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ fullName, email, password, companyName, inviteCode }),
+            signal: controller.signal,
           });
           const data = await response.json();
 
           if (!response.ok) {
             showError(data.error || "Account creation failed.");
-            submitButton.disabled = false;
-            submitButton.textContent = "Create account \u2192";
+            return;
+          }
+
+          if (!data.user || !data.session) {
+            showError("Unexpected response from server. Please try again.");
             return;
           }
 
           onboardingStore.setAuth(data.session?.access_token, data.user, data.projectId);
           setCurrentView("onboarding");
-        } catch {
-          showError("Network error - please try again.");
+        } catch (err) {
+          if (err.name === "AbortError") {
+            showError("Request timed out. Please check your connection and try again.");
+          } else {
+            showError("Network error \u2014 please try again.");
+          }
+        } finally {
+          clearTimeout(timer);
           submitButton.disabled = false;
           submitButton.textContent = "Create account \u2192";
         }
@@ -118,18 +140,25 @@ export function renderAuthScreen({ onBack } = {}) {
       submitButton.disabled = true;
       submitButton.textContent = "Signing in...";
 
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), AUTH_FETCH_TIMEOUT_MS);
+
       try {
         const response = await fetch("/api/auth/signin", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
+          signal: controller.signal,
         });
         const data = await response.json();
 
         if (!response.ok) {
           showError(data.error || "Sign in failed.");
-          submitButton.disabled = false;
-          submitButton.textContent = "Sign in \u2192";
+          return;
+        }
+
+        if (!data.user || !data.session) {
+          showError("Unexpected response from server. Please try again.");
           return;
         }
 
@@ -137,9 +166,22 @@ export function renderAuthScreen({ onBack } = {}) {
           ? data.projects[0].id
           : null;
         onboardingStore.setAuth(data.session?.access_token, data.user, projectId);
-        setCurrentView("onboarding");
-      } catch {
-        showError("Network error - please try again.");
+
+        // Returning user with existing project → dashboard; new user → onboarding
+        if (projectId) {
+          writeStoredProjectId(projectId);
+          setCurrentView("pipeline-dashboard");
+        } else {
+          setCurrentView("onboarding");
+        }
+      } catch (err) {
+        if (err.name === "AbortError") {
+          showError("Request timed out. Please check your connection and try again.");
+        } else {
+          showError("Network error \u2014 please try again.");
+        }
+      } finally {
+        clearTimeout(timer);
         submitButton.disabled = false;
         submitButton.textContent = "Sign in \u2192";
       }

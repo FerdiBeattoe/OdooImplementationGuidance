@@ -1339,6 +1339,10 @@ async function handleAuthSignup(req, res) {
     return sendJson(res, 400, { error: 'fullName, email, password, and companyName are required.' });
   }
 
+  if (typeof password !== 'string' || password.length < 8) {
+    return sendJson(res, 400, { error: 'Password must be at least 8 characters.' });
+  }
+
   // Invite code required during beta
   if (!inviteCode) {
     return sendJson(res, 403, { error: 'An invite code is required during beta. Contact us at hello@projecterp.co.za to request access.' });

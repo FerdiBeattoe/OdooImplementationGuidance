@@ -7,8 +7,13 @@
 // ---------------------------------------------------------------------------
 
 import { el } from "../lib/dom.js";
-import { getState } from "../state/app-store.js";
 import { onboardingStore, normaliseOdooUrl } from "../state/onboarding-store.js";
+import { setCurrentView } from "../state/app-store.js";
+
+function getProjectId() {
+  const state = onboardingStore.getState();
+  return state.connection?.project_id || null;
+}
 
 // ---------------------------------------------------------------------------
 // INDUSTRY DEFINITIONS
@@ -833,7 +838,8 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
 
     container.append(buildHeader());
 
-    // If project_id already registered, skip account screens
+    // If project_id already registered, skip account-check and connection screens
+    // and go straight to industry (the first real onboarding step)
     if (s.connection.project_id && (s.screen === "account-check" || s.screen === "create-account" || s.screen === "connect-account")) {
       onboardingStore.setScreen("industry");
       return;
@@ -841,7 +847,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
 
     switch (s.screen) {
       case "account-check":
-        container.append(buildAccountCheckScreen(s));
+        container.append(buildConnectAccountScreen(s));
         break;
       case "create-account":
         container.append(buildCreateAccountScreen(s));
@@ -901,11 +907,15 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     local.popstateHandler = null;
   }
 
+  function getExitTarget() {
+    return getProjectId() ? "pipeline-dashboard" : "home";
+  }
+
   function requestExitWarning() {
     const s = onboardingStore.getState();
     if (s.screen !== "questions") {
       detachPopstateGuard();
-      onNavigate("landing");
+      onNavigate(getExitTarget());
       return;
     }
     local.activeQuestionFlush();
@@ -922,7 +932,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     local.exitWarningVisible = false;
     local.activeQuestionFlush();
     detachPopstateGuard();
-    onNavigate("landing");
+    onNavigate(getExitTarget());
   }
 
   function buildHeader() {
@@ -1311,10 +1321,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
         }
 
         if (!normalisedUrl || !submittedDatabase || !submittedUsername || !submittedPassword) {
-          const st = onboardingStore.getState();
-          st.status = "failure";
-          st.error = "All fields are required.";
-          render();
+          onboardingStore.setConnectionError("All fields are required.");
           return;
         }
         formState.url = normalisedUrl;
@@ -1387,18 +1394,23 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     }
 
     const isLoading = s.status === "loading";
-    const projectId = getState().activeProject?.projectIdentity?.projectId || "default";
+    const projectId = getProjectId();
 
     wrap.append(el("div", { style: "display: flex; gap: 12px; justify-content: flex-end;" }, [
       el("button", {
         className: "ee-btn ee-btn--secondary",
-        onclick: () => onNavigate("landing"),
+        onclick: () => onNavigate(getExitTarget()),
       }, "Cancel"),
       el("button", {
         className: "ee-btn ee-btn--primary",
-        style: `min-width: 140px; ${(!local.selectedIndustry || isLoading) ? "opacity: 0.5; cursor: not-allowed;" : ""}`,
-        disabled: !local.selectedIndustry || isLoading,
+        style: `min-width: 140px; ${(!local.selectedIndustry || isLoading || !projectId) ? "opacity: 0.5; cursor: not-allowed;" : ""}`,
+        disabled: !local.selectedIndustry || isLoading || !projectId,
         onclick: () => {
+          if (!projectId) {
+            onboardingStore.setConnectionError("No project ID available. Please sign in again.");
+            setCurrentView("auth");
+            return;
+          }
           if (local.selectedIndustry && !isLoading) {
             void onboardingStore.selectIndustry(projectId, local.selectedIndustry);
           }
@@ -1923,8 +1935,20 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       ]));
     }
 
-    const projectId = getState().activeProject?.projectIdentity?.projectId || "default";
+    const projectId = getProjectId();
     const isLoading = s.status === "loading";
+    const noProject = !projectId;
+
+    if (noProject) {
+      wrap.append(el("div", { className: "ow-panel ow-panel--error", style: "padding: 12px 16px; background: var(--ee-error-soft); border-left: 3px solid var(--ee-error); margin-bottom: 16px;" }, [
+        el("p", { style: "font-size: 13px; font-weight: 600; color: var(--ee-error);" }, "No project ID available. Please sign in again."),
+        el("button", {
+          className: "ee-btn ee-btn--secondary",
+          style: "margin-top: 8px;",
+          onclick: () => setCurrentView("auth"),
+        }, "Go to Sign In"),
+      ]));
+    }
 
     wrap.append(el("div", { style: "display: flex; gap: 12px; margin-top: 8px; justify-content: space-between; align-items: center;" }, [
       el("button", {
@@ -1937,10 +1961,10 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
 
       el("button", {
         className: "ee-btn ee-btn--primary",
-        style: `min-width: 200px; ${(!canConfirm || isLoading) ? "opacity: 0.5; cursor: not-allowed;" : ""}`,
-        disabled: !canConfirm || isLoading,
+        style: `min-width: 200px; ${(!canConfirm || isLoading || noProject) ? "opacity: 0.5; cursor: not-allowed;" : ""}`,
+        disabled: !canConfirm || isLoading || noProject,
         onclick: async () => {
-          if (!canConfirm || isLoading) return;
+          if (!canConfirm || isLoading || !projectId) return;
           const result = await onboardingStore.confirmAndRun(projectId);
           if (result.ok) {
             onComplete({ projectId, runtimeState: result.runtime_state ?? null });

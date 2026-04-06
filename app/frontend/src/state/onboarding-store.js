@@ -626,6 +626,12 @@ export function createOnboardingStore({ persist = false } = {}) {
     notify();
   }
 
+  function setConnectionError(message) {
+    state.status = "failure";
+    state.error = message || "An error occurred.";
+    notify();
+  }
+
   // ── getDeferredCount ──────────────────────────────────────────────────────
 
   function getDeferredCount() {
@@ -654,6 +660,7 @@ export function createOnboardingStore({ persist = false } = {}) {
     setAccountStatus,
     registerConnection,
     clearSensitiveData,
+    setConnectionError,
     selectIndustry,
     setAnswer,
     deferAnswer,

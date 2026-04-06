@@ -149,41 +149,34 @@ export function renderImplementationDashboardView({ onNavigate, onOpenRoadmap })
     }, [
       // Jump Back In Card
       el("div", {
-        className: "ee-card ee-card--accent",
-        style: "padding: 24px; display: flex; flex-direction: column; gap: 16px; background: #0c1a30; border-radius: 10px;"
+        style: "background: #0c1a30; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 16px;"
       }, [
         el("div", {}, [
           el("p", {
-            style: "font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.7); margin-bottom: 4px;"
+            style: "font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(245,158,11,0.8); margin-bottom: 8px;"
           }, "CONTINUE YOUR JOURNEY"),
           el("h3", {
-            style: "font-family: var(--ee-font-headline); font-size: 22px; font-weight: 700; color: white; letter-spacing: -0.02em;"
+            style: "font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 16px;"
           }, "Jump Back In")
         ]),
         el("button", {
-          className: "ee-btn ee-btn--lg",
-          style: "background: white; color: #0c1a30; font-weight: 600; border-radius: 6px;",
+          style: "background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #f59e0b; border-radius: 6px; font-weight: 600; font-size: 13px; padding: 8px 16px; cursor: pointer; width: 100%;",
           onclick: () => onNavigate("implementation-roadmap")
         }, "Open Roadmap")
       ]),
 
       // Next Steps Section
       el("div", {
-        className: "ee-card",
-        style: "padding: 0;"
+        style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px;"
       }, [
+        el("h4", {
+          style: "font-size: 11px; letter-spacing: 0.1em; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 12px;"
+        }, "NEXT STEPS"),
         el("div", {
-          style: "padding: 16px 20px; border-bottom: 1px solid var(--ee-surface-container);"
-        }, [
-          el("h4", {
-            style: "font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ee-outline);"
-          }, "NEXT STEPS")
-        ]),
-        el("div", {
-          style: "padding: 16px; display: flex; flex-direction: column; gap: 12px;"
+          style: "display: flex; flex-direction: column; gap: 0;"
         }, nextSteps.length > 0
           ? nextSteps.map(step => renderNextStepItem(step, onNavigate))
-          : [el("p", { style: "font-size: 13px; color: var(--ee-outline); padding: 8px;" }, "All modules configured!")]
+          : [el("p", { style: "font-size: 13px; color: #64748b; padding: 8px;" }, "All modules configured!")]
         )
       ])
     ])
@@ -193,56 +186,54 @@ export function renderImplementationDashboardView({ onNavigate, onOpenRoadmap })
 
 function renderKpiCard(value, label, icon) {
   return el("div", {
-    className: "ee-card",
-    style: "padding: 24px; display: flex; flex-direction: column; gap: 8px; position: relative;"
+    style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; flex: 1; display: flex; flex-direction: column; gap: 8px; position: relative;"
   }, [
     el("div", {
-      style: "position: absolute; top: 20px; right: 20px; width: 36px; height: 36px; background: var(--ee-primary-subtle); display: flex; align-items: center; justify-content: center;"
+      style: "position: absolute; top: 20px; right: 20px;"
     }, [
       el("span", {
         className: "material-symbols-outlined",
-        style: "font-size: 20px; color: var(--ee-primary);",
+        style: "font-size: 20px; color: #f59e0b; opacity: 0.7;",
         text: icon
       })
     ]),
     el("div", {
-      style: "font-family: var(--ee-font-headline); font-size: 28px; font-weight: 700; color: var(--ee-on-surface); letter-spacing: -0.02em; line-height: 1;"
+      style: "font-family: Inter, sans-serif; font-size: 28px; font-weight: 700; color: #0c1a30; line-height: 1;"
     }, value),
     el("p", {
-      style: "font-size: 13px; font-weight: 500; color: var(--ee-on-surface-variant);"
+      style: "font-size: 12px; color: #64748b; margin-top: 4px;"
     }, label)
   ]);
 }
 
 function renderProgressSection(onModuleClick, completedWizards, overallProgress) {
   return el("div", {
-    className: "ee-card ee-card--solid",
-    style: "padding: 32px; display: flex; flex-direction: column; gap: 24px;"
+    style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 32px; display: flex; flex-direction: column; gap: 24px;"
   }, [
     // Header with Progress
     el("div", {
       style: "display: flex; align-items: baseline; gap: 12px;"
     }, [
       el("h2", {
-        style: "font-family: var(--ee-font-headline); font-size: 18px; font-weight: 700; color: var(--ee-on-surface); letter-spacing: -0.01em;"
+        style: "font-size: 16px; font-weight: 600; color: #0c1a30;"
       }, "Implementation Progress"),
       el("span", {
-        style: "font-size: 24px; font-weight: 700; color: var(--ee-primary);"
+        style: "font-size: 24px; font-weight: 700; color: #f59e0b;"
       }, `${overallProgress}%`)
     ]),
 
     // Progress Bar
     el("div", {
-      style: "height: 4px; background: var(--ee-surface-container); overflow: hidden;"
+      style: "height: 6px; background: #f1f5f9; border-radius: 4px; overflow: hidden;"
     }, [
       el("div", {
-        style: `height: 100%; width: ${overallProgress}%; background: var(--ee-primary); transition: width 300ms ease;`
+        style: `height: 100%; width: ${overallProgress}%; background: #f59e0b; border-radius: 4px; transition: width 300ms ease;`
       })
     ]),
 
     // Module List (2-column grid)
     el("div", {
-      style: "display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 8px;"
+      style: "display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 8px;"
     }, MODULES.map(module => renderModuleItem(module, onModuleClick, completedWizards)))
   ]);
 }
@@ -251,80 +242,49 @@ function renderModuleItem(module, onClick, completedWizards) {
   const isComplete = completedWizards.includes(module.id);
   const statusLabel = isComplete ? "COMPLETE" : "NOT STARTED";
   const statusStyle = isComplete
-    ? "font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 10px; background: rgba(16,185,129,0.08); color: #065f46; border: 1px solid rgba(16,185,129,0.2); border-radius: 6px;"
-    : "font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 10px; background: rgba(12,26,48,0.06); color: #64748b; border: 1px solid rgba(12,26,48,0.12); border-radius: 6px;";
+    ? "display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #065f46; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 6px; padding: 2px 8px; margin-left: auto; flex-shrink: 0;"
+    : "display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; background: rgba(12,26,48,0.06); border: 1px solid rgba(12,26,48,0.1); border-radius: 6px; padding: 2px 8px; margin-left: auto; flex-shrink: 0;";
 
-  return el("div", {
-    className: "ee-module-item",
-    style: `padding: 16px; display: flex; align-items: center; justify-content: space-between; background: var(--ee-surface-container); cursor: pointer; transition: all 150ms ease; border-left: 3px solid ${isComplete ? "#059669" : "transparent"}; border-radius: 6px;`,
-    onmouseenter: (e) => {
-      e.currentTarget.style.background = "var(--ee-surface-container-high)";
-      if (!isComplete) e.currentTarget.style.borderLeftColor = "var(--ee-primary)";
-    },
-    onmouseleave: (e) => {
-      e.currentTarget.style.background = "var(--ee-surface-container)";
-      if (!isComplete) e.currentTarget.style.borderLeftColor = "transparent";
-    },
+  const card = el("div", {
+    style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: border-color 0.15s;",
     onclick: () => onClick && onClick(module.wizardId)
   }, [
-    el("div", { style: "display: flex; align-items: center; gap: 12px;" }, [
-      el("div", {
-        style: `width: 36px; height: 36px; ${isComplete ? "background: rgba(16,185,129,0.12);" : "background: var(--ee-primary-subtle);"} display: flex; align-items: center; justify-content: center; border-radius: 6px;`
-      }, [
-        el("span", {
-          className: "material-symbols-outlined",
-          style: `font-size: 18px; ${isComplete ? "color: #065f46;" : "color: var(--ee-primary);"}`,
-          text: isComplete ? "check" : module.icon
-        })
-      ]),
+    el("div", {
+      style: "background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
+    }, [
       el("span", {
-        style: "font-size: 14px; font-weight: 500; color: var(--ee-on-surface);"
-      }, module.name)
+        className: "material-symbols-outlined",
+        style: `font-size: 20px; color: ${isComplete ? "#065f46" : "#92400e"};`,
+        text: isComplete ? "check" : module.icon
+      })
     ]),
     el("span", {
-      className: "ee-badge",
-      style: statusStyle
-    }, statusLabel)
+      style: "font-size: 15px; font-weight: 600; color: #0c1a30; font-family: Inter, sans-serif;"
+    }, module.name),
+    el("span", { style: statusStyle }, statusLabel)
   ]);
+
+  card.onmouseenter = () => { card.style.borderColor = "#f59e0b"; };
+  card.onmouseleave = () => { card.style.borderColor = "#e2e8f0"; };
+
+  return card;
 }
 
 function renderNextStepItem(step, onNavigate) {
   return el("div", {
-    style: "display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--ee-surface-container); cursor: pointer; transition: all 150ms ease; border-left: 3px solid transparent;",
-    onmouseenter: (e) => {
-      e.currentTarget.style.background = "var(--ee-surface-container-high)";
-      e.currentTarget.style.borderLeftColor = "var(--ee-primary)";
-    },
-    onmouseleave: (e) => {
-      e.currentTarget.style.background = "var(--ee-surface-container)";
-      e.currentTarget.style.borderLeftColor = "transparent";
-    },
+    style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;",
     onclick: () => onNavigate && onNavigate(`wizard-${step.wizardId}`)
   }, [
-    el("div", { style: "display: flex; align-items: center; gap: 12px;" }, [
-      el("div", {
-        style: "width: 32px; height: 32px; background: var(--ee-primary-subtle); display: flex; align-items: center; justify-content: center;"
-      }, [
-        el("span", {
-          className: "material-symbols-outlined",
-          style: "font-size: 16px; color: var(--ee-primary);",
-          text: step.icon
-        })
-      ]),
-      el("div", {}, [
-        el("p", {
-          style: "font-size: 14px; font-weight: 500; color: var(--ee-on-surface); margin-bottom: 2px;"
-        }, step.name),
-        el("p", {
-          style: "font-size: 12px; color: var(--ee-outline);"
-        }, step.time)
-      ])
+    el("div", {}, [
+      el("p", {
+        style: "font-size: 13px; font-weight: 500; color: #0c1a30; margin: 0 0 2px;"
+      }, step.name),
+      el("p", {
+        style: "font-size: 11px; color: #94a3b8; margin: 0;"
+      }, step.time)
     ]),
     el("button", {
-      style: "font-size: 13px; font-weight: 600; color: var(--ee-primary); display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer;"
-    }, [
-      "Start",
-      el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "arrow_forward" })
-    ])
+      style: "font-size: 12px; font-weight: 600; color: #92400e; cursor: pointer; background: none; border: none; padding: 0;"
+    }, "Start \u2192")
   ]);
 }

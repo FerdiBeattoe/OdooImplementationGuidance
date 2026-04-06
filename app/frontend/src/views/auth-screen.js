@@ -216,7 +216,6 @@ export function renderAuthScreen({ onBack } = {}) {
 
     const cardStyle = "background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:20px 24px; flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column;";
     const tagStyle = "display:inline-block; font-size:10px; letter-spacing:0.1em; font-weight:600; text-transform:uppercase; color:#92400e; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:6px; padding:3px 10px; margin-bottom:12px; align-self:flex-start; flex-shrink:0;";
-    const imgSlotStyle = "width:100%; height:80px; flex-shrink:0; background:#f8fafc; border:1px dashed #e2e8f0; border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:12px;";
     const headingStyle = "font-size:14px; font-weight:600; color:#0c1a30; line-height:1.3; margin:0 0 6px; flex-shrink:0;";
     const bodyStyle = "font-size:12px; color:#64748b; line-height:1.5; margin:0; flex:1; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;";
     const btnStyle = "flex-shrink:0; margin-top:10px; align-self:flex-start; font-size:12px; font-weight:600; color:#92400e; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:6px; padding:6px 14px; cursor:pointer;";
@@ -224,9 +223,6 @@ export function renderAuthScreen({ onBack } = {}) {
     const rightPanel = el("aside", { className: "auth-right" }, [
       el("div", { style: cardStyle }, [
         el("span", { style: tagStyle }, "IMPLEMENTATION GUIDE"),
-        el("div", { style: imgSlotStyle }, [
-          el("span", { style: "color:#cbd5e1; font-size:11px;" }, "Image coming soon"),
-        ]),
         el("h3", { style: headingStyle }, "The right order to configure Odoo 19 \u2014 and why sequence matters"),
         el("p", { style: bodyStyle }, "Most Odoo implementations configure modules in the wrong order. Here is the sequence that prevents downstream data corruption."),
         el("button", {
@@ -237,9 +233,6 @@ export function renderAuthScreen({ onBack } = {}) {
       ]),
       el("div", { style: cardStyle }, [
         el("span", { style: tagStyle }, "PRODUCT"),
-        el("div", { style: imgSlotStyle }, [
-          el("span", { style: "color:#cbd5e1; font-size:11px;" }, "Image coming soon"),
-        ]),
         el("h3", { style: headingStyle }, "What 124 checkpoints taught us about Odoo configuration dependencies"),
         el("p", { style: bodyStyle }, "After verifying 124 checkpoints against a live Odoo 19 instance, patterns emerged about which settings break the most downstream modules."),
         el("button", {

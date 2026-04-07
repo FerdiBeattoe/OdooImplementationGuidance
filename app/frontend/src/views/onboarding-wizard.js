@@ -1359,6 +1359,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       el("p", { style: "font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ee-secondary); margin-bottom: 6px;" }, "Step 2 of 4 — Industry"),
       el("h2", { style: "font-family: var(--ee-font-headline); font-size: 22px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 6px;" }, "Select your industry"),
       el("p", { style: "font-size: 14px; color: var(--ee-on-surface-variant);" }, "This pre-populates a baseline set of recommended domains for your implementation. You can refine everything in the questions that follow."),
+      el("p", { style: "font-size: 12px; color: #94a3b8; margin-top: -12px; margin-bottom: 24px;" }, "Project Odoo V1 is optimised for fresh Odoo 19 databases."),
     ]));
 
     // 2x2 grid

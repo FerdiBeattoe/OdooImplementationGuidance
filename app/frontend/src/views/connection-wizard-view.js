@@ -165,6 +165,21 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
       ])
     ]));
 
+    // Fresh-database notice
+    content.append(el("div", {
+      style: "background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.2); border-radius: 8px; padding: 14px 16px; margin-top: 16px; display: flex; gap: 12px; align-items: flex-start;"
+    }, [
+      lucideIcon("info", 16),
+      el("div", {}, [
+        el("p", {
+          style: "font-size: 13px; font-weight: 600; color: #92400e; margin-bottom: 4px;"
+        }, "Version 1 — Fresh databases only"),
+        el("p", {
+          style: "font-size: 12px; color: #64748b; line-height: 1.5;"
+        }, "Project Odoo V1 is designed for brand new Odoo 19 instances. If your database already has configuration, some checkpoints may not apply. Full existing-instance support is coming in V2.")
+      ])
+    ]));
+
     // Continue — read state.instanceUrl directly, never the closed-over canContinue
     const initialCanContinue = state.instanceUrl.length > 0;
     continueBtn = el("button", {

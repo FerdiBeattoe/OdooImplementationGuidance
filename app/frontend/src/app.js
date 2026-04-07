@@ -373,6 +373,10 @@ export function renderApp(root) {
     );
 
     restoreRenderFocus(root, focusSnapshot);
+
+    if (rawView === "dashboard") {
+      setTimeout(() => { if (shouldShowTour()) startTour(); }, 800);
+    }
   };
 
   subscribe(render);

@@ -1,6 +1,7 @@
 import { getProjectStoreRecordId, getProjectStoreRecordLabel, renderConnectionCapabilityLabel } from "/shared/index.js";
 import { el } from "../lib/dom.js";
 import { lucideIcon } from "../lib/icons.js";
+import { startTour, resetTour } from "../components/onboarding-tour.js";
 
 const NAV_ITEMS = [
   { id: "new-project",          icon: "plus-circle",        label: "New Project" },
@@ -224,6 +225,13 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
       }, [
         lucideIcon("save", 16),
         el("span", { text: "Save Progress" })
+      ]),
+      el("button", {
+        style: "background: none; border: none; color: #94a3b8; font-size: 12px; cursor: pointer; padding: 4px 0; text-align: left; width: 100%; font-family: Inter, sans-serif; display: flex; align-items: center; gap: 6px;",
+        onclick: () => { resetTour(); startTour(); }
+      }, [
+        lucideIcon("help-circle", 14),
+        el("span", {}, "Take the tour")
       ]),
       savedProjects.length
         ? el("select", {

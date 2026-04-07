@@ -90,6 +90,12 @@ export function shouldShowTour() {
   }
 }
 
+export function resetTour() {
+  try {
+    localStorage.removeItem(TOUR_STORAGE_KEY);
+  } catch { /* non-fatal */ }
+}
+
 export function startTour() {
   let currentStop = 0;
   let highlightedEl = null;

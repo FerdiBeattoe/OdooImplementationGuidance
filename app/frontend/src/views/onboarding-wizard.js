@@ -6,7 +6,7 @@
 // Follows connection-wizard-view.js conventions exactly.
 // ---------------------------------------------------------------------------
 
-import { el } from "../lib/dom.js";
+import { clearNode, el } from "../lib/dom.js";
 import { lucideIcon } from "../lib/icons.js";
 import { onboardingStore, normaliseOdooUrl } from "../state/onboarding-store.js";
 import { setCurrentView } from "../state/app-store.js";
@@ -833,7 +833,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       return;
     }
 
-    container.innerHTML = "";
+    clearNode(container);
     const s = onboardingStore.getState();
     local.activeQuestionFlush = () => {};
 

@@ -547,32 +547,46 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
       }
 
       if (pathname === "/api/projects" && req.method === "GET") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         return sendJson(res, 200, await readProjectStore());
       }
 
       if (pathname === "/api/projects" && req.method === "PUT") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         const payload = await readJsonBody(req);
         const normalized = await writeProjectStore(payload);
         return sendJson(res, 200, normalized);
       }
 
       if (pathname === "/api/connection/connect" && req.method === "POST") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         return await handleConnectionConnect(req, res);
       }
 
       if (pathname === "/api/connection/disconnect" && req.method === "POST") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         return await handleConnectionDisconnect(req, res);
       }
 
       if (pathname === "/api/connection/validate" && req.method === "POST") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         return await handleConnectionValidate(req, res);
       }
 
       if (pathname === "/api/domain/inspect" && req.method === "POST") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         return await handleDomainInspect(req, res);
       }
 
       if (pathname === "/api/domain/preview" && req.method === "POST") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         return await handleDomainPreview(req, res);
       }
 
@@ -595,6 +609,8 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
       }
 
       if (pathname === "/api/pipeline/state/resume" && req.method === "POST") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         return await handlePipelineStateResume(req, res);
       }
 
@@ -605,6 +621,8 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
       }
 
       if (pathname === "/api/pipeline/connection/register" && req.method === "POST") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         return await handlePipelineConnectionRegister(req, res);
       }
 
@@ -615,6 +633,8 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
       }
 
       if (pathname === "/api/pipeline/industry/select" && req.method === "POST") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
         return await handleIndustrySelect(req, res);
       }
 

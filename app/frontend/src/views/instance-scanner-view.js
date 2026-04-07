@@ -454,7 +454,7 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
       const payload = await requestJson("/api/odoo/scan", {
         method: "POST",
         headers: buildHeaders(token, true),
-        body: JSON.stringify({ url, database, username, password }),
+        body: JSON.stringify({ url, database, username, password, projectId: resolveProjectId(project) }),
       });
 
       state.scanning = false;

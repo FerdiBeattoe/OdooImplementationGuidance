@@ -1,4 +1,4 @@
-import { el } from "../lib/dom.js";
+import { clearNode, el } from "../lib/dom.js";
 import { lucideIcon } from "../lib/icons.js";
 
 /**
@@ -300,7 +300,7 @@ export function pushSummaryStep(label, data, onPush) {
       if (pushState === "loading") return;
       pushState = "loading";
       pushBtn.disabled = true;
-      pushBtn.innerHTML = "";
+      clearNode(pushBtn);
       const spinner = lucideIcon("loader-2", 18); spinner.classList.add("animate-spin");
       pushBtn.append(spinner, document.createTextNode(" Pushing to Odoo..."));
       statusEl.className = "text-center text-sm text-on-surface-variant py-2";
@@ -309,7 +309,7 @@ export function pushSummaryStep(label, data, onPush) {
       try {
         const result = await (onPush ? onPush(data) : Promise.resolve({ ok: true }));
         pushState = "success";
-        pushBtn.innerHTML = "";
+        clearNode(pushBtn);
         pushBtn.append(
           lucideIcon("check-circle", 18),
           document.createTextNode(" Pushed Successfully!")
@@ -320,8 +320,7 @@ export function pushSummaryStep(label, data, onPush) {
       } catch (err) {
         pushState = "error";
         pushBtn.disabled = false;
-        pushBtn.innerHTML = "Retry Push";
-        pushBtn.innerHTML = "";
+        clearNode(pushBtn);
         pushBtn.append(document.createTextNode("Retry Push"));
         statusEl.className = "text-center text-sm text-error py-2";
         statusEl.textContent = `Error: ${err?.message || "Unknown error"}`;

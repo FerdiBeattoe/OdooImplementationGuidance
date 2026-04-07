@@ -509,9 +509,13 @@ export function createOnboardingStore({ persist = false } = {}) {
     }
 
     try {
+      const token = state.sessionToken || "";
       const res = await fetch("/api/pipeline/run", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
         body: JSON.stringify({ discovery_answers, project_id: projectId }),
       });
 

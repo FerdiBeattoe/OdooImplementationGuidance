@@ -1983,9 +1983,52 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     ]));
 
     if (s.status === "failure" && s.error) {
-      wrap.append(el("div", { className: "ow-panel ow-panel--error", style: "padding: 12px 16px; background: var(--ee-error-soft); border-left: 3px solid var(--ee-error); margin-top: 12px;" }, [
-        el("p", { style: "font-size: 14px; font-weight: 600; color: var(--ee-error);" }, s.error),
-      ]));
+      const errStr = String(s.error);
+      let friendlyMsg = "Something went wrong running the pipeline. Please try again or contact support.";
+      let actionLabel = null;
+      let actionTarget = null;
+      let showRawError = true;
+
+      if (/authorization|expired.*token|session.*expired/i.test(errStr)) {
+        friendlyMsg = "Session expired. Please sign in again to continue.";
+        actionLabel = "Sign in \u2192";
+        actionTarget = "auth";
+        showRawError = false;
+      } else if (/not found|404/i.test(errStr)) {
+        friendlyMsg = "We couldn\u2019t reach your Odoo instance. Please check your connection and try again.";
+        actionLabel = "Check connection \u2192";
+        actionTarget = "connection-wizard";
+        showRawError = false;
+      } else if (/modules?.*not installed|not installed.*modules?/i.test(errStr)) {
+        friendlyMsg = "Some required Odoo modules aren\u2019t installed on your instance. Project Odoo can install them for you.";
+        actionLabel = "Install modules \u2192";
+        actionTarget = "module-installer";
+        showRawError = false;
+      }
+
+      const errorChildren = [
+        el("p", { style: "font-size: 14px; font-weight: 600; color: var(--ee-error); margin: 0;" }, friendlyMsg),
+      ];
+
+      if (actionLabel && actionTarget) {
+        errorChildren.push(el("button", {
+          className: "ee-btn ee-btn--secondary",
+          style: "margin-top: 8px; font-size: 13px;",
+          onclick: () => setCurrentView(actionTarget),
+        }, actionLabel));
+      }
+
+      if (showRawError) {
+        const details = el("details", { style: "margin-top: 8px;" });
+        details.append(el("summary", { style: "font-size: 12px; color: var(--ee-on-surface-variant); cursor: pointer;" }, "Error details"));
+        details.append(el("pre", { style: "font-size: 11px; white-space: pre-wrap; word-break: break-all; margin: 4px 0 0; color: var(--ee-on-surface-variant);" }, errStr));
+        errorChildren.push(details);
+      }
+
+      wrap.append(el("div", {
+        className: "ow-panel ow-panel--error",
+        style: "padding: 12px 16px; background: var(--ee-error-soft); border-left: 3px solid var(--ee-error); margin-top: 12px;",
+      }, errorChildren));
     }
 
     return wrap;

@@ -1,14 +1,19 @@
 import { el } from "../lib/dom.js";
 import { lucideIcon } from "../lib/icons.js";
 import { getState } from "../state/app-store.js";
+import { onboardingStore } from "../state/onboarding-store.js";
 
 export function renderConnectionWizardView({ onConnect, onSkip }) {
+  const stored = onboardingStore.getState();
+  const storedUrl = stored.connection?.url || "";
+  const storedDb = stored.connection?.database || "";
+
   const state = {
     step: 1,
     instanceType: "online",
     edition: "community",
-    instanceUrl: "",
-    database: "",
+    instanceUrl: storedUrl.replace(/^https?:\/\//, "").replace(/\/.*$/, ""),
+    database: storedDb,
     username: "",
     password: "",
     isNewDatabase: false,
@@ -35,10 +40,10 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
   function buildWizard() {
     return el("div", { style: "width: 100%; max-width: 520px;" }, [
       el("div", { style: "text-align: center; margin-bottom: 32px;" }, [
-        el("div", { 
-          style: "width: 48px; height: 48px; background: var(--ee-primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;"
+        el("div", {
+          style: "width: 48px; height: 48px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;"
         }, [
-          (() => { const ic = lucideIcon("network", 24); ic.style.color = "white"; return ic; })()
+          (() => { const ic = lucideIcon("network", 24); ic.style.color = "#92400e"; return ic; })()
         ]),
         el("h1", { style: "font-family: var(--ee-font-headline); font-size: 22px; font-weight: 700; color: var(--ee-on-surface);" }, "Connect to Odoo"),
         el("p", { style: "font-size: 14px; color: var(--ee-on-surface-variant); margin-top: 8px;" }, "Project Odoo — Governed Odoo 19")
@@ -48,9 +53,9 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
       el("div", { style: "display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 32px;" },
         [1, 2, 3].map(n => el("div", { style: "display: flex; align-items: center; gap: 8px;" }, [
           el("div", {
-            style: `width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; ${
+            style: `width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; ${
               n < state.step ? "background: var(--ee-secondary); color: white;" :
-              n === state.step ? "background: var(--ee-primary); color: white;" :
+              n === state.step ? "background: #0c1a30; color: #ffffff;" :
               "background: var(--ee-surface-container); color: var(--ee-outline);"
             }`
           }, [n < state.step ? lucideIcon("check", 16) : el("span", { text: String(n) })]),
@@ -104,7 +109,7 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
     const editionRow = el("div", { style: "display: flex; gap: 12px;" });
     ["community", "enterprise"].forEach(ed => {
       editionRow.append(el("button", {
-        style: `flex: 1; padding: 12px; ${state.edition === ed ? "background: var(--ee-primary); color: white;" : "background: var(--ee-surface-container); border: 1px solid var(--ee-outline-variant);"}`,
+        style: `flex: 1; padding: 12px; border-radius: 6px; ${state.edition === ed ? "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e;" : "background: var(--ee-surface-container); border: 1px solid var(--ee-outline-variant);"}`,
         onclick: () => { state.edition = ed; render(); }
       }, [
         el("p", { style: "font-size: 14px; font-weight: 600;" }, ed.charAt(0).toUpperCase() + ed.slice(1)),
@@ -164,7 +169,7 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
     const initialCanContinue = state.instanceUrl.length > 0;
     continueBtn = el("button", {
       className: "ee-btn ee-btn--primary ee-btn--full",
-      style: `margin-top: 24px; ${!initialCanContinue ? "opacity: 0.5;" : ""}`,
+      style: `margin-top: 24px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; ${!initialCanContinue ? "opacity: 0.5;" : ""}`,
       disabled: !initialCanContinue,
       onclick: () => {
         if (inputs.url) {
@@ -220,7 +225,7 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
     const isTesting = state.testStatus === "loading";
     content.append(el("button", {
       className: "ee-btn ee-btn--secondary",
-      style: `width: 100%; border: 2px solid var(--ee-primary); color: var(--ee-primary); margin-top: 16px; ${isTesting ? "opacity: 0.7;" : ""}`,
+      style: `width: 100%; border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; margin-top: 16px; ${isTesting ? "opacity: 0.7;" : ""}`,
       disabled: isTesting,
       onclick: async () => {
         if (isTesting) return;
@@ -323,9 +328,9 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
     // Buttons
     const buttons = el("div", { style: "display: flex; gap: 12px; margin-top: 16px;" });
     buttons.append(el("button", { className: "ee-btn ee-btn--secondary", style: "flex: 1;", onclick: () => { state.step = 1; render(); } }, [el("span", { text: "← Back" })]));
-    buttons.append(el("button", { 
-      className: "ee-btn ee-btn--primary", 
-      style: `flex: 1; ${!state.canContinue ? "opacity: 0.5; cursor: not-allowed;" : ""}`,
+    buttons.append(el("button", {
+      className: "ee-btn ee-btn--primary",
+      style: `flex: 1; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; ${!state.canContinue ? "opacity: 0.5; cursor: not-allowed;" : ""}`,
       disabled: !state.canContinue,
       onclick: () => { if (state.canContinue) { state.step = 3; render(); } }
     }, [el("span", { text: "Continue →" })]));
@@ -348,7 +353,7 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
 
       el("button", {
         className: "ee-btn ee-btn--primary ee-btn--full",
-        style: "margin: 16px 0;",
+        style: "margin: 16px 0; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px;",
         onclick: () => {
           const rawUrl = (state.instanceUrl || "").trim()
             .replace(/^https?:\/\//, "").replace(/\/.*$/, "");

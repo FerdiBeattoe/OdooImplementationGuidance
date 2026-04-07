@@ -26,6 +26,18 @@ import { lucideIcon } from "../lib/icons.js";
 import { pipelineStore } from "../state/pipeline-store.js";
 import { onboardingStore } from "../state/onboarding-store.js";
 
+let guidanceData = null;
+let guidanceLoadAttempted = false;
+
+function ensureGuidanceLoaded() {
+  if (guidanceLoadAttempted) return;
+  guidanceLoadAttempted = true;
+  fetch("/data/checkpoint-guidance.json")
+    .then((r) => r.json())
+    .then((data) => { guidanceData = data; })
+    .catch(() => { guidanceData = null; });
+}
+
 export const ONBOARDING_RESUME_ROUTE = "onboarding/questions";
 const REVIEW_COMMIT_BUTTON_STYLE = "display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; font-family: Inter, sans-serif;";
 const SECONDARY_HEADER_BUTTON_STYLE = "display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(12,26,48,0.06); border: 1px solid rgba(12,26,48,0.15); color: #0c1a30; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; font-family: Inter, sans-serif;";
@@ -386,6 +398,7 @@ export function renderPipelineDashboard({ onNavigate, onRun, onLoad, onApply, on
 // ---------------------------------------------------------------------------
 
 export function renderDashboardContent({ psState, obState, onNavigate, onRun, onLoad, onApply, onSave }) {
+  ensureGuidanceLoaded();
   const root = el("div", { className: "pd-root", dataset: { testid: "pipeline-dashboard" } });
 
   // ── Loading state ─────────────────────────────────────────────────────────
@@ -931,11 +944,95 @@ function renderCheckpointRow({
           })
         : null,
       inlineErrorEl,
+      renderGuidanceToggle(cp),
     ]),
 
     // Action
     actionArea,
   ]);
+}
+
+// ---------------------------------------------------------------------------
+// renderGuidanceToggle — "About this checkpoint" expandable panel
+// ---------------------------------------------------------------------------
+
+function renderGuidanceToggle(cp) {
+  const domainKey = cp?.domain ?? cp?.domain_id ?? null;
+  const cpId = cp?.checkpoint_id ?? null;
+  if (!domainKey || !cpId) return null;
+
+  const guidance = guidanceData?.domains?.[domainKey]?.checkpoints?.[cpId];
+  if (!guidance) return null;
+
+  const panel = el("div", {
+    style: "background: #f9fafb; border-top: 1px solid #e2e8f0; padding: 14px 16px; border-radius: 0 0 10px 10px; display: none;",
+    dataset: { testid: `guidance-panel-${cpId}` },
+  });
+
+  const labelStyle = "font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; font-weight: 700; margin-bottom: 4px;";
+  const contentStyle = "font-size: 13px; color: #374151; line-height: 1.6;";
+
+  if (guidance.what) {
+    panel.appendChild(el("div", { style: "margin-bottom: 12px;" }, [
+      el("div", { style: labelStyle, text: "WHAT THIS CONFIGURES" }),
+      el("div", { style: contentStyle, text: guidance.what }),
+    ]));
+  }
+
+  if (guidance.why) {
+    panel.appendChild(el("div", { style: "margin-bottom: 12px;" }, [
+      el("div", { style: labelStyle, text: "WHY IT MATTERS" }),
+      el("div", { style: contentStyle, text: guidance.why }),
+    ]));
+  }
+
+  if (Array.isArray(guidance.confirm_first) && guidance.confirm_first.length > 0) {
+    const list = el("ul", { style: "margin: 0; padding-left: 20px; font-size: 13px; color: #374151; line-height: 1.6;" },
+      guidance.confirm_first.map((item) => el("li", { text: item }))
+    );
+    panel.appendChild(el("div", { style: "margin-bottom: 12px;" }, [
+      el("div", { style: labelStyle, text: "CONFIRM WITH CLIENT FIRST" }),
+      list,
+    ]));
+  }
+
+  if (Array.isArray(guidance.common_mistakes) && guidance.common_mistakes.length > 0) {
+    const list = el("ul", { style: "margin: 0; padding-left: 20px; font-size: 13px; color: #374151; line-height: 1.6;" },
+      guidance.common_mistakes.map((item) => el("li", { text: item }))
+    );
+    panel.appendChild(el("div", { style: "margin-bottom: 0;" }, [
+      el("div", { style: labelStyle, text: "COMMON MISTAKES" }),
+      list,
+    ]));
+  }
+
+  if (guidance.odoo_docs_hint) {
+    panel.appendChild(el("div", { style: "font-size: 12px; font-style: italic; color: #6b7280; margin-top: 10px;" }, [
+      el("span", { text: "Find in Odoo: " }),
+      el("span", { text: guidance.odoo_docs_hint }),
+    ]));
+  }
+
+  const chevron = lucideIcon("ChevronDown", 13);
+  chevron.style.transition = "transform 0.15s ease";
+  chevron.style.marginLeft = "4px";
+
+  const toggle = el("div", {
+    style: "font-size: 13px; color: #0369a1; cursor: pointer; display: flex; align-items: center; margin-top: 6px;",
+    dataset: { testid: `guidance-toggle-${cpId}` },
+  }, [
+    el("span", { text: "About this checkpoint" }),
+    chevron,
+  ]);
+
+  toggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = panel.style.display !== "none";
+    panel.style.display = isOpen ? "none" : "block";
+    chevron.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+  });
+
+  return el("div", { dataset: { testid: `guidance-wrapper-${cpId}` } }, [toggle, panel]);
 }
 
 // ---------------------------------------------------------------------------

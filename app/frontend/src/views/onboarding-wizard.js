@@ -910,7 +910,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
 
   function getExitTarget() {
     const s = onboardingStore.getState();
-    const isAuth = !!s.sessionToken || !!s.connection?.project_id;
+    const isAuth = !!s.sessionToken || !!s.connection?.project_id || !!s.user?.id || !!s.user?.email;
     return isAuth ? "dashboard" : "home";
   }
 

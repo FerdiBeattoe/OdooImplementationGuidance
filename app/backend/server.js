@@ -146,6 +146,11 @@ function checkRateLimit(clientId, maxRequests = RATE_LIMIT_MAX_REQUESTS) {
 async function jwtMiddleware(req, res) {
   // Skip auth enforcement when Supabase is not configured (dev / test mode)
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (process.env.NODE_ENV === "production") {
+      console.error("[auth] Supabase not configured in production — refusing request");
+      sendJson(res, 500, { error: "Authentication service not configured" });
+      return null;
+    }
     return { id: 'dev', email: 'dev@local' };
   }
   const authHeader = req.headers['authorization'] || '';

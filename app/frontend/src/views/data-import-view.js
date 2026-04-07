@@ -1,4 +1,4 @@
-import { el } from "../lib/dom.js";
+import { clearNode, el } from "../lib/dom.js";
 import { lucideIcon } from "../lib/icons.js";
 import {
   getImportedData, setImportedData, addActivityLog,
@@ -440,10 +440,10 @@ function buildGrid(gridDef, onBack) {
       const successCount = rows.filter(r => r._status === "success").length;
       const errorCount = rows.filter(r => r._status === "error").length;
       if (errorCount > 0) {
-        importBtn.innerHTML = "";
+        clearNode(importBtn);
         importBtn.append(lucideIcon("alert-triangle", 18), el("span", { text: ` ${successCount} Written, ${errorCount} Refused` }));
       } else {
-        importBtn.innerHTML = "";
+        clearNode(importBtn);
         importBtn.append(lucideIcon("check-circle", 18), el("span", { text: ` ${successCount} Records Written` }));
       }
     }

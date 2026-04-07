@@ -699,6 +699,18 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
         return await handleTeamPatch(req, res, pathname, authUser);
       }
 
+      if (/^\/api\/audit\/[^/]+\/export$/.test(pathname) && req.method === "GET") {
+        const authUser = await jwtMiddleware(req, res);
+        if (!authUser) return;
+        return await handleAuditExport(req, res, pathname, authUser);
+      }
+
+      if (/^\/api\/audit\/[^/]+$/.test(pathname) && req.method === "GET") {
+        const authUser = await jwtMiddleware(req, res);
+        if (!authUser) return;
+        return await handleAuditList(req, res, pathname, authUser);
+      }
+
       if (pathname === "/api/audit/write" && req.method === "POST") {
         const authUser = await jwtMiddleware(req, res);
         if (!authUser) return;
@@ -2084,6 +2096,275 @@ function parseTeamMemberPath(pathname) {
   };
 }
 
+function parseAuditProjectPath(pathname) {
+  const match = pathname.match(/^\/api\/audit\/([^/]+)$/);
+  if (!match) {
+    return null;
+  }
+
+  return decodeURIComponent(match[1]);
+}
+
+function parseAuditExportPath(pathname) {
+  const match = pathname.match(/^\/api\/audit\/([^/]+)\/export$/);
+  if (!match) {
+    return null;
+  }
+
+  return decodeURIComponent(match[1]);
+}
+
+function getRequestUrl(req) {
+  return new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
+}
+
+function parseIsoDateParam(value, label) {
+  if (typeof value !== "string" || value.trim() === "") {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`Invalid ${label} date.`);
+  }
+
+  return parsed.toISOString();
+}
+
+function parsePaginationInteger(value, label, { defaultValue, minimum = 0, maximum = null }) {
+  if (value === null || value === undefined || value === "") {
+    return defaultValue;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isInteger(parsed) || parsed < minimum) {
+    throw new Error(`Invalid ${label}.`);
+  }
+
+  if (maximum !== null) {
+    return Math.min(parsed, maximum);
+  }
+
+  return parsed;
+}
+
+function parseAuditQueryParams(req, { includePagination = true } = {}) {
+  const requestUrl = getRequestUrl(req);
+  const actor = typeof requestUrl.searchParams.get("actor") === "string"
+    ? requestUrl.searchParams.get("actor").trim()
+    : "";
+  const action = typeof requestUrl.searchParams.get("action") === "string"
+    ? requestUrl.searchParams.get("action").trim()
+    : "";
+  const domain = typeof requestUrl.searchParams.get("domain") === "string"
+    ? requestUrl.searchParams.get("domain").trim()
+    : "";
+  const from = parseIsoDateParam(requestUrl.searchParams.get("from"), "from");
+  const to = parseIsoDateParam(requestUrl.searchParams.get("to"), "to");
+
+  const query = { actor, action, domain, from, to };
+
+  if (includePagination) {
+    query.limit = parsePaginationInteger(requestUrl.searchParams.get("limit"), "limit", {
+      defaultValue: 50,
+      minimum: 1,
+      maximum: 100,
+    });
+    query.offset = parsePaginationInteger(requestUrl.searchParams.get("offset"), "offset", {
+      defaultValue: 0,
+      minimum: 0,
+    });
+  }
+
+  return query;
+}
+
+function applyAuditFilters(query, projectId, filters) {
+  let nextQuery = query.eq("project_id", projectId);
+
+  if (filters.actor) {
+    nextQuery = nextQuery.ilike("actor_name", `%${filters.actor}%`);
+  }
+
+  if (filters.action) {
+    nextQuery = nextQuery.eq("action", filters.action);
+  }
+
+  if (filters.domain) {
+    nextQuery = nextQuery.ilike("domain", `%${filters.domain}%`);
+  }
+
+  if (filters.from) {
+    nextQuery = nextQuery.gte("created_at", filters.from);
+  }
+
+  if (filters.to) {
+    nextQuery = nextQuery.lte("created_at", filters.to);
+  }
+
+  return nextQuery;
+}
+
+function normalizeAuditEntryRecord(entry) {
+  return {
+    id: entry?.id ?? null,
+    project_id: entry?.project_id ?? null,
+    account_id: entry?.account_id ?? null,
+    actor_name: entry?.actor_name ?? null,
+    actor_role: entry?.actor_role ?? null,
+    action: entry?.action ?? null,
+    domain: entry?.domain ?? null,
+    checkpoint_id: entry?.checkpoint_id ?? null,
+    details: entry?.details ?? {},
+    created_at: entry?.created_at ?? null,
+  };
+}
+
+async function listAuditEntries(supabaseClient, projectId, filters, { limit = 50, offset = 0 } = {}) {
+  if (!supabaseClient) {
+    return { entries: [], total: 0, limit, offset };
+  }
+
+  let query = supabaseClient
+    .from("audit_log")
+    .select("id, project_id, account_id, actor_name, actor_role, action, domain, checkpoint_id, details, created_at", {
+      count: "exact",
+    });
+
+  query = applyAuditFilters(query, projectId, filters)
+    .order("created_at", { ascending: false })
+    .range(offset, Math.max(offset + Math.max(limit, 1) - 1, offset));
+
+  const { data, error, count } = await query;
+  if (error) {
+    throw new Error(error.message || "Failed to load audit log.");
+  }
+
+  const entries = Array.isArray(data) ? data.map(normalizeAuditEntryRecord) : [];
+  return {
+    entries,
+    total: typeof count === "number" ? count : entries.length,
+    limit,
+    offset,
+  };
+}
+
+async function listAllAuditEntries(supabaseClient, projectId, filters) {
+  if (!supabaseClient) {
+    return [];
+  }
+
+  const batchSize = 1000;
+  const entries = [];
+  let offset = 0;
+
+  while (true) {
+    let query = supabaseClient
+      .from("audit_log")
+      .select("id, project_id, account_id, actor_name, actor_role, action, domain, checkpoint_id, details, created_at");
+
+    query = applyAuditFilters(query, projectId, filters)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + batchSize - 1);
+
+    const { data, error } = await query;
+    if (error) {
+      throw new Error(error.message || "Failed to export audit log.");
+    }
+
+    const batch = Array.isArray(data) ? data.map(normalizeAuditEntryRecord) : [];
+    entries.push(...batch);
+
+    if (batch.length < batchSize) {
+      break;
+    }
+
+    offset += batchSize;
+  }
+
+  return entries;
+}
+
+function formatAuditCsvTimestamp(value) {
+  if (!value) {
+    return "";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(parsed);
+}
+
+function formatAuditCsvFilenameDate(value = new Date()) {
+  const safe = value instanceof Date ? value : new Date(value);
+  const parsed = Number.isNaN(safe.getTime()) ? new Date() : safe;
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}${month}${day}`;
+}
+
+function escapeCsvField(value) {
+  const text = String(value ?? "");
+  return `"${text.replace(/"/g, "\"\"")}"`;
+}
+
+function buildAuditCsvRow(entry) {
+  const fields = [
+    formatAuditCsvTimestamp(entry.created_at),
+    entry.actor_name || "",
+    entry.actor_role || "",
+    entry.action || "",
+    entry.domain || "",
+    entry.checkpoint_id || "",
+    JSON.stringify(entry.details ?? {}),
+  ];
+
+  return fields.map(escapeCsvField).join(",");
+}
+
+function writeAuditCsvResponse(res, projectId, entries) {
+  const filename = `audit-${projectId}-${formatAuditCsvFilenameDate()}.csv`;
+
+  res.writeHead(200, {
+    "Content-Type": "text/csv; charset=utf-8",
+    "Content-Disposition": `attachment; filename="${filename}"`,
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, Stripe-Signature",
+  });
+
+  res.write([
+    escapeCsvField("Date/Time"),
+    escapeCsvField("Actor"),
+    escapeCsvField("Role"),
+    escapeCsvField("Action"),
+    escapeCsvField("Domain"),
+    escapeCsvField("Checkpoint ID"),
+    escapeCsvField("Details"),
+  ].join(","));
+  res.write("\n");
+
+  for (const entry of entries) {
+    res.write(buildAuditCsvRow(entry));
+    res.write("\n");
+  }
+
+  res.end();
+}
+
 async function handleTeamList(req, res, pathname, user) {
   const projectId = parseTeamProjectPath(pathname);
   if (!projectId) {
@@ -2302,6 +2583,54 @@ async function handleAuditWrite(req, res, user) {
   });
 
   return sendJson(res, 200, { success: true });
+}
+
+async function handleAuditList(req, res, pathname, user) {
+  const projectId = parseAuditProjectPath(pathname);
+  if (!projectId) {
+    return sendJson(res, 404, { error: "Not found" });
+  }
+
+  try {
+    const memberAllowed = await assertProjectMember(supabase, user.id, projectId, res);
+    if (!memberAllowed) {
+      return;
+    }
+
+    const filters = parseAuditQueryParams(req, { includePagination: true });
+    const result = await listAuditEntries(supabase, projectId, filters, {
+      limit: filters.limit,
+      offset: filters.offset,
+    });
+
+    return sendJson(res, 200, result);
+  } catch (error) {
+    return sendJson(res, 400, {
+      error: error instanceof Error ? error.message : "Failed to load audit log.",
+    });
+  }
+}
+
+async function handleAuditExport(req, res, pathname, user) {
+  const projectId = parseAuditExportPath(pathname);
+  if (!projectId) {
+    return sendJson(res, 404, { error: "Not found" });
+  }
+
+  try {
+    const memberAllowed = await assertProjectMember(supabase, user.id, projectId, res);
+    if (!memberAllowed) {
+      return;
+    }
+
+    const filters = parseAuditQueryParams(req, { includePagination: false });
+    const entries = await listAllAuditEntries(supabase, projectId, filters);
+    return writeAuditCsvResponse(res, projectId, entries);
+  } catch (error) {
+    return sendJson(res, 400, {
+      error: error instanceof Error ? error.message : "Failed to export audit log.",
+    });
+  }
 }
 
 function generateProjectId() {

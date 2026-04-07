@@ -21,5 +21,11 @@ ui_export_current.txt
 # Tool directories
 .agents/
 .ruflo/
-.claude/agent-memory/
-.claude/agents/
+.claude/
+
+# Agent and memory files
+*.agent.md
+*.memory.md
+CLAUDE.md
+RUFLO_*.md
+docs/agents/

@@ -908,17 +908,11 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     local.popstateHandler = null;
   }
 
-  function getExitTarget() {
-    const s = onboardingStore.getState();
-    const isAuth = !!s.sessionToken || !!s.connection?.project_id || !!s.user?.id || !!s.user?.email;
-    return isAuth ? "dashboard" : "home";
-  }
-
   function requestExitWarning() {
     const s = onboardingStore.getState();
     if (s.screen !== "questions") {
       detachPopstateGuard();
-      onNavigate(getExitTarget());
+      onNavigate("dashboard");
       return;
     }
     local.activeQuestionFlush();
@@ -935,7 +929,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     local.exitWarningVisible = false;
     local.activeQuestionFlush();
     detachPopstateGuard();
-    onNavigate(getExitTarget());
+    onNavigate("dashboard");
   }
 
   function buildHeader() {
@@ -1417,7 +1411,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     wrap.append(el("div", { style: "display: flex; gap: 12px; justify-content: flex-end;" }, [
       el("button", {
         className: "ee-btn ee-btn--secondary",
-        onclick: () => onNavigate(getExitTarget()),
+        onclick: () => onNavigate("dashboard"),
       }, "Cancel"),
       el("button", {
         className: "ee-btn ee-btn--primary",

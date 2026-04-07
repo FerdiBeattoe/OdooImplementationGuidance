@@ -205,6 +205,282 @@ function detail(label, value, muted = false) {
   ]);
 }
 
+function memberName(member) {
+  return String(member?.full_name || member?.email || "").trim();
+}
+
+function resolveCompanyName(runtimeState, project, appState) {
+  const projectIdentity = runtimeState?.project_identity || {};
+  const candidates = [
+    appState?.activeProject?.projectIdentity?.organizationName,
+    project?.projectIdentity?.organizationName,
+    projectIdentity.organization_name,
+    projectIdentity.customer_entity,
+    projectIdentity.company_name,
+    projectIdentity.project_name,
+    appState?.activeProject?.projectIdentity?.projectName,
+    project?.projectIdentity?.projectName,
+  ];
+  const value = candidates.find((candidate) => typeof candidate === "string" && candidate.trim());
+  return value ? value.trim() : null;
+}
+
+function resolveProjectLeadDisplay(members, membership, onboardingState) {
+  const acceptedMembers = Array.isArray(members) ? members.filter((member) => member?.accepted_at) : [];
+  const projectLead = acceptedMembers.find((member) => member?.role === "project_lead");
+  if (projectLead) return `${memberName(projectLead) || EM_DASH} (${roleLabel(projectLead.role)})`;
+  if (membership) return `${memberName(membership) || EM_DASH} (${roleLabel(membership.role)})`;
+  const fallbackName = String(onboardingState?.user?.full_name || onboardingState?.user?.email || "").trim();
+  return fallbackName ? `${fallbackName} (${roleLabel(membership?.role || "project_lead") || "Project Lead"})` : EM_DASH;
+}
+
+function formatPdfDate(value) {
+  if (!value) return EM_DASH;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return EM_DASH;
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(parsed);
+}
+
+function formatPdfTimestamp(value) {
+  if (!value) return EM_DASH;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return EM_DASH;
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(parsed);
+}
+
+function formatPdfFilenameDate(value) {
+  const parsed = value ? new Date(value) : new Date();
+  const safe = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  const year = safe.getFullYear();
+  const month = String(safe.getMonth() + 1).padStart(2, "0");
+  const day = String(safe.getDate()).padStart(2, "0");
+  return `${year}${month}${day}`;
+}
+
+function stripedPdfRow(values, rowIndex, extra = {}) {
+  const fillColor = rowIndex % 2 === 0 ? "#ffffff" : "#f9fafb";
+  return values.map((value) => ({
+    text: value || EM_DASH,
+    fillColor,
+    ...extra,
+  }));
+}
+
+function pdfTableLayout() {
+  return {
+    hLineWidth: () => 0.5,
+    vLineWidth: () => 0.5,
+    hLineColor: () => BORDER,
+    vLineColor: () => BORDER,
+    paddingLeft: () => 6,
+    paddingRight: () => 6,
+    paddingTop: () => 5,
+    paddingBottom: () => 5,
+  };
+}
+
+function pdfMetadataLayout() {
+  return {
+    hLineWidth: () => 0,
+    vLineWidth: () => 0,
+    paddingLeft: () => 0,
+    paddingRight: () => 0,
+    paddingTop: () => 4,
+    paddingBottom: () => 4,
+  };
+}
+
+function checkpointPdfRows(domain) {
+  const rows = domain.checkpoints.length ? domain.checkpoints : [{
+    checkpointId: EM_DASH,
+    title: "No checkpoints available",
+    model: EM_DASH,
+    field: EM_DASH,
+    intendedValue: EM_DASH,
+    safetyClass: EM_DASH,
+    approvedBy: EM_DASH,
+    approvedAt: EM_DASH,
+  }];
+  return rows.map((checkpoint, index) => stripedPdfRow([
+    checkpoint.checkpointId || EM_DASH,
+    checkpoint.title || EM_DASH,
+    checkpoint.model || EM_DASH,
+    checkpoint.field || EM_DASH,
+    checkpoint.intendedValue || EM_DASH,
+    checkpoint.safetyClass || EM_DASH,
+    checkpoint.approvedBy || EM_DASH,
+    checkpoint.approvedAt || EM_DASH,
+  ], index, { fontSize: 9, color: NAVY }));
+}
+
+function buildPdfDefinition(report) {
+  const reportDate = formatPdfDate(report.generatedAt);
+  const metadataRows = [
+    ["Project", report.projectId || EM_DASH],
+    ["Instance", report.url || EM_DASH],
+    ["Database", report.database || EM_DASH],
+    ["Generated", formatPdfTimestamp(report.generatedAt)],
+    ["Approved by", report.projectLeadDisplay || EM_DASH],
+  ];
+  const content = [
+    {
+      text: "Pre-Commit Implementation Report",
+      fontSize: 20,
+      bold: true,
+      color: NAVY,
+      margin: [0, 0, 0, 16],
+    },
+    {
+      table: {
+        widths: [110, "*"],
+        body: metadataRows.map((row, index) => stripedPdfRow([
+          row[0],
+          row[1],
+        ], index, { fontSize: 9, color: NAVY }).map((cell, columnIndex) => ({
+          ...cell,
+          bold: columnIndex === 0,
+        }))),
+      },
+      layout: pdfMetadataLayout(),
+      margin: [0, 0, 0, 18],
+    },
+  ];
+
+  report.activeDomains.forEach((domain) => {
+    content.push(
+      {
+        text: String(domain.domainLabel || EM_DASH).toUpperCase(),
+        fontSize: 11,
+        bold: true,
+        color: NAVY,
+        margin: [0, 0, 0, 8],
+      },
+      {
+        table: {
+          headerRows: 1,
+          widths: [44, "*", 84, 68, "*", 78, 102, 76],
+          body: [
+            [
+              { text: "ID", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
+              { text: "Name", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
+              { text: "Model", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
+              { text: "Field", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
+              { text: "Intended Value", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
+              { text: "Safety Class", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
+              { text: "Approved By", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
+              { text: "Approved At", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
+            ],
+            ...checkpointPdfRows(domain),
+          ],
+        },
+        layout: pdfTableLayout(),
+        margin: [0, 0, 0, 18],
+      }
+    );
+  });
+
+  content.push({
+    table: {
+      headerRows: 1,
+      widths: ["*", "*", "*", "*"],
+      body: [
+        [
+          { text: "Total modules", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 10 },
+          { text: "Confirmed", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 10 },
+          { text: "Pending writes", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 10 },
+          { text: "Blocked", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 10 },
+        ],
+        stripedPdfRow([
+          String(report.totalModulesActive),
+          String(report.confirmedCheckpointCount),
+          String(report.pendingWriteCount),
+          String(report.blockedCheckpointCount),
+        ], 0, { fontSize: 10, color: NAVY }),
+      ],
+    },
+    layout: pdfTableLayout(),
+    margin: [0, 0, 0, 0],
+  });
+
+  return {
+    pageSize: "A4",
+    pageOrientation: "landscape",
+    pageMargins: [40, 72, 40, 56],
+    defaultStyle: {
+      fontSize: 10,
+      color: NAVY,
+    },
+    header(currentPage, pageCount, pageSize) {
+      return {
+        margin: [40, 18, 40, 0],
+        stack: [
+          {
+            columns: [
+              { text: report.clientCompanyName || report.projectId || EM_DASH, bold: true, color: NAVY, fontSize: 10 },
+              { text: reportDate, alignment: "right", color: NAVY, fontSize: 10 },
+            ],
+          },
+          {
+            canvas: [
+              { type: "line", x1: 0, y1: 10, x2: pageSize.width - 80, y2: 10, lineWidth: 2, lineColor: AMBER },
+            ],
+          },
+        ],
+      };
+    },
+    footer(currentPage, pageCount, pageSize) {
+      return {
+        margin: [40, 0, 40, 14],
+        stack: [
+          {
+            canvas: [
+              { type: "line", x1: 0, y1: 0, x2: pageSize.width - 80, y2: 0, lineWidth: 1, lineColor: NAVY },
+            ],
+            margin: [0, 0, 0, 8],
+          },
+          {
+            columns: [
+              { text: "Powered by Project Odoo  projecterp.com", fontSize: 8, color: MUTED },
+              {
+                text: [{ text: currentPage }, " of ", { text: pageCount }],
+                alignment: "right",
+                fontSize: 8,
+                color: MUTED,
+              },
+            ],
+          },
+        ],
+      };
+    },
+    content,
+  };
+}
+
+function exportPdf(report) {
+  if (typeof window === "undefined" || !window.pdfMake) {
+    console.error("PDF export unavailable: window.pdfMake is not loaded.");
+    showToast("PDF export unavailable. Please refresh and try again.");
+    return;
+  }
+  try {
+    const filename = `PreCommit-${report.projectId || "project"}-${formatPdfFilenameDate(report.generatedAt)}.pdf`;
+    window.pdfMake.createPdf(buildPdfDefinition(report)).download(filename);
+  } catch (error) {
+    console.error("PDF export failed.", error);
+    showToast("PDF export unavailable. Please refresh and try again.");
+  }
+}
+
 function buildReportModel({ runtimeState, members, onboardingState, project, appState, generatedAt }) {
   const records = getCheckpointRecords(runtimeState);
   const activeDomainIds = activeDomains(runtimeState);
@@ -262,8 +538,11 @@ function buildReportModel({ runtimeState, members, onboardingState, project, app
   const active = domains.filter((domain) => activeDomainIds.includes(domain.domainId) || domain.totalCount > 0);
   const affected = active.filter((domain) => domain.pendingWriteCount > 0);
   const membership = currentMembership(members, onboardingState);
+  const projectId = resolveProjectId(runtimeState, project, appState, onboardingState);
   return {
-    projectId: resolveProjectId(runtimeState, project, appState, onboardingState),
+    projectId,
+    clientCompanyName: resolveCompanyName(runtimeState, project, appState) || projectId || EM_DASH,
+    projectLeadDisplay: resolveProjectLeadDisplay(members, membership, onboardingState),
     url: onboardingState?.connection?.url || EM_DASH,
     database: onboardingState?.connection?.database || EM_DASH,
     generatedAt,
@@ -451,7 +730,7 @@ export function renderPreCommitReportView({ project, onNavigate } = {}) {
         el("div", { style: "font-size: 13px; color: #6b7280;", text: `Generated ${report.generatedLabel || EM_DASH}  ${report.url}  ${report.database}` }),
       ]),
       el("div", { style: "display: flex; align-items: center; gap: 10px; flex-wrap: wrap;" }, [
-        el("button", { type: "button", style: `${SECONDARY} display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px;`, onClick: () => showToast("PDF export coming soon."), dataset: { testid: "pre-commit-export-button" } }, [
+        el("button", { type: "button", style: `${SECONDARY} display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px;`, onClick: () => exportPdf(report), dataset: { testid: "pre-commit-export-button" } }, [
           icon("Download", 16),
           el("span", { text: "Export as PDF" }),
         ]),

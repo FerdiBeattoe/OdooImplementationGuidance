@@ -172,6 +172,9 @@ const dataRoot = path.resolve(repoRoot, "app", "backend", "data");
 const projectStorePath = path.resolve(dataRoot, "projects.json");
 const port = Number(process.env.PORT || 4174);
 const host = process.env.HOST || "0.0.0.0";
+const CORS_ORIGIN = process.env.NODE_ENV === "production"
+  ? (process.env.SITE_URL || "https://project-odoo.onrender.com")
+  : "*";
 
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
@@ -515,7 +518,7 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
       // Handle CORS preflight
       if (req.method === "OPTIONS") {
         res.writeHead(200, {
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": CORS_ORIGIN,
           "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization, Stripe-Signature",
           "Access-Control-Max-Age": "86400"
@@ -2345,7 +2348,7 @@ function writeAuditCsvResponse(res, projectId, entries) {
     "Content-Disposition": `attachment; filename="${filename}"`,
     "Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": CORS_ORIGIN,
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, Stripe-Signature",
   });
@@ -2923,7 +2926,7 @@ function sendJson(res, status, payload) {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Content-Security-Policy": "default-src 'self'; script-src 'self'",
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": CORS_ORIGIN,
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, Stripe-Signature"
   });

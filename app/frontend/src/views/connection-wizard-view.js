@@ -1,4 +1,4 @@
-import { el } from "../lib/dom.js";
+import { clearNode, el } from "../lib/dom.js";
 import { lucideIcon } from "../lib/icons.js";
 import { getState } from "../state/app-store.js";
 import { onboardingStore } from "../state/onboarding-store.js";
@@ -33,7 +33,7 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
   return container;
 
   function render() {
-    container.innerHTML = "";
+    clearNode(container);
     container.append(buildWizard());
   }
 

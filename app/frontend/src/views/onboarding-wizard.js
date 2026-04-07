@@ -909,7 +909,9 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
   }
 
   function getExitTarget() {
-    return getProjectId() ? "pipeline-dashboard" : "home";
+    const s = onboardingStore.getState();
+    const isAuth = !!s.sessionToken || !!s.connection?.project_id;
+    return isAuth ? "dashboard" : "home";
   }
 
   function requestExitWarning() {
@@ -1043,7 +1045,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     wrap.append(el("div", { style: "margin-top: 12px; text-align: center;" }, [
       el("button", {
         style: "background: none; border: none; color: var(--ee-on-surface-variant); font-size: 13px; cursor: pointer; text-decoration: underline;",
-        onclick: () => onboardingStore.setScreen("account-check"),
+        onclick: () => window.open("https://www.odoo.com/trial", "_blank"),
       }, "Don't have an account yet?"),
     ]));
 

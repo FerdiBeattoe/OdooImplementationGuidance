@@ -37,7 +37,8 @@
 /* ── Implementation header card (Section 1) ───────────────── */
 
 .pd-header-card {
-  background: var(--impl-navy);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   padding: 28px 32px;
   display: flex;
   flex-direction: column;
@@ -59,8 +60,9 @@
   z-index: 1;
 }
 
-/* Subtle grid texture */
+/* Subtle grid texture — disabled for light mode */
 .pd-header-card::before {
+  display: none;
   content: '';
   position: absolute;
   inset: 0;
@@ -90,7 +92,7 @@
   font-family: var(--font-display);
   font-size: 1.35rem;
   font-weight: 700;
-  color: var(--impl-navy-text);
+  color: #0c1a30;
   letter-spacing: -0.02em;
   margin: 0;
   line-height: 1.25;
@@ -102,8 +104,8 @@
   font-family: var(--font-display);
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--impl-navy-text);
-  background: rgba(255, 255, 255, 0.08);
+  color: #0c1a30;
+  background: rgba(245, 158, 11, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.16);
   padding: 8px 16px;
   border-radius: 6px;
@@ -117,15 +119,15 @@
 }
 
 .pd-header-review-link:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.3);
   transform: translateY(-1px);
 }
 
 .pd-header-meta {
   font-family: var(--font-display);
   font-size: 0.8rem;
-  color: var(--impl-navy-muted);
+  color: #64748b;
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
@@ -141,7 +143,7 @@
 
 .pd-header-meta-label {
   font-weight: 700;
-  color: rgba(232, 237, 242, 0.80);
+  color: #0c1a30;
   font-family: var(--font-display);
 }
 
@@ -728,7 +730,8 @@
 /* ── What's left summary (Section 4) ──────────────────────── */
 
 .pd-summary-card {
-  background: var(--impl-navy);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   padding: 24px 28px;
   display: flex;
   flex-direction: column;
@@ -775,7 +778,7 @@
   font-family: var(--font-display);
   font-size: 1.6rem;
   font-weight: 800;
-  color: var(--impl-navy-text);
+  color: #0c1a30;
   letter-spacing: -0.04em;
   line-height: 1;
 }
@@ -786,15 +789,15 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--impl-navy-muted);
+  color: #64748b;
 }
 
 /* ── Next action block ─────────────────────────────────────── */
 
 .pd-next-action-block {
   padding: 14px 18px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--impl-navy-border);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-left: 3px solid var(--impl-amber);
   display: flex;
   align-items: center;
@@ -820,7 +823,7 @@
   font-family: var(--font-display);
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--impl-navy-text);
+  color: #0c1a30;
   letter-spacing: -0.01em;
   line-height: 1.4;
 }

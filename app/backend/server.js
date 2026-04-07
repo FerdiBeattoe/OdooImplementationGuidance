@@ -141,6 +141,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..", "..");
 const frontendRoot = path.resolve(repoRoot, "app", "frontend");
+const pdfMakeRoot = path.resolve(repoRoot, "node_modules", "pdfmake", "build");
 const sharedRoot = path.resolve(repoRoot, "app", "shared");
 const dataRoot = path.resolve(repoRoot, "app", "backend", "data");
 const projectStorePath = path.resolve(dataRoot, "projects.json");
@@ -671,6 +672,14 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
 
       if (pathname.startsWith("/styles/") && req.method === "GET") {
         return serveStatic(res, path.resolve(frontendRoot, `.${pathname}`), frontendRoot);
+      }
+
+      if (pathname.startsWith("/node_modules/pdfmake/build/") && req.method === "GET") {
+        return serveStatic(
+          res,
+          path.resolve(pdfMakeRoot, pathname.replace("/node_modules/pdfmake/build/", "")),
+          pdfMakeRoot
+        );
       }
 
       if (pathname.startsWith("/src/") && req.method === "GET") {

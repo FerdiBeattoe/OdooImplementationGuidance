@@ -1887,8 +1887,6 @@ function sendOdooInstallError(res, error) {
 }
 
 async function handleOdooScan(req, res, user) {
-  void user;
-
   let payload;
   try {
     payload = await readJsonBody(req);
@@ -1901,6 +1899,14 @@ async function handleOdooScan(req, res, user) {
   if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
     return sendJson(res, 400, { error: "Request body must be a non-null object." });
   }
+
+  const projectId = trimString(payload.projectId);
+  if (!projectId) {
+    return sendJson(res, 400, { error: "projectId is required." });
+  }
+
+  const memberAllowed = await assertProjectMember(supabase, user?.id, projectId, res);
+  if (!memberAllowed) return;
 
   const database = trimString(payload.database);
   const username = trimString(payload.username);

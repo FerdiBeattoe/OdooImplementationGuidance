@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { createServer } from "node:http";
+import { randomUUID } from "node:crypto";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,6 +55,7 @@ import { assembleRentalOperationDefinitions } from "../shared/rental-operation-d
 import { assembleFieldServiceOperationDefinitions } from "../shared/field-service-operation-definitions.js";
 import { applyGoverned } from "./governed-odoo-apply-service.js";
 import * as authService from "./auth-service.js";
+import writeAudit from "./audit-service.js";
 import { validateInviteCode, consumeInviteCode } from "./invite-service.js";
 import supabase from "./supabase-client.js";
 import {
@@ -87,6 +89,9 @@ const RATE_LIMIT_MAX_REQUESTS = 100; // 100 requests per minute
 const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB limit
 const requestLog = new Map();
 const REQUEST_LOG_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const TEAM_ROLES = new Set(["project_lead", "implementor", "reviewer", "stakeholder"]);
+const TEAM_INVITE_ROLES = new Set(["implementor", "reviewer", "stakeholder"]);
+const localTeamMembers = new Map();
 
 function checkRateLimit(clientId, maxRequests = RATE_LIMIT_MAX_REQUESTS) {
   const now = Date.now();
@@ -160,6 +165,321 @@ if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   });
 }
 
+function normalizeTeamEmail(email) {
+  return typeof email === "string" ? email.trim().toLowerCase() : "";
+}
+
+function normalizeTeamRole(role) {
+  return typeof role === "string" ? role.trim() : "";
+}
+
+function buildTeamMemberResponse(member) {
+  return {
+    id: member.id,
+    account_id: member.account_id ?? null,
+    email: member.email,
+    full_name: member.full_name,
+    role: member.role,
+    accepted_at: member.accepted_at ?? null,
+    created_at: member.created_at,
+  };
+}
+
+function normalizeTeamMemberRecord(record) {
+  const projectId = typeof record?.project_id === "string" ? record.project_id.trim() : "";
+  const email = normalizeTeamEmail(record?.email);
+  const fullName = typeof record?.full_name === "string" ? record.full_name.trim() : "";
+  const role = normalizeTeamRole(record?.role);
+
+  if (!projectId || !email || !fullName || !TEAM_ROLES.has(role)) {
+    return null;
+  }
+
+  return {
+    id: typeof record?.id === "string" && record.id.trim() ? record.id.trim() : randomUUID(),
+    account_id: typeof record?.account_id === "string" && record.account_id.trim() ? record.account_id.trim() : null,
+    project_id: projectId,
+    email,
+    full_name: fullName,
+    role,
+    invited_by: typeof record?.invited_by === "string" && record.invited_by.trim() ? record.invited_by.trim() : null,
+    accepted_at: typeof record?.accepted_at === "string" && record.accepted_at.trim() ? record.accepted_at.trim() : null,
+    created_at: typeof record?.created_at === "string" && record.created_at.trim() ? record.created_at.trim() : new Date().toISOString(),
+  };
+}
+
+function sortTeamMembersAscending(a, b) {
+  const aTime = Date.parse(a?.created_at || "");
+  const bTime = Date.parse(b?.created_at || "");
+
+  if (Number.isNaN(aTime) && Number.isNaN(bTime)) return 0;
+  if (Number.isNaN(aTime)) return 1;
+  if (Number.isNaN(bTime)) return -1;
+  return aTime - bTime;
+}
+
+function getLocalTeamMembers(projectId = null) {
+  const members = Array.from(localTeamMembers.values())
+    .filter((member) => projectId ? member.project_id === projectId : true)
+    .sort(sortTeamMembersAscending);
+
+  return members.map((member) => ({ ...member }));
+}
+
+export function resetLocalTeamMembersForTests() {
+  localTeamMembers.clear();
+}
+
+export function setLocalTeamMembersForTests(records = []) {
+  localTeamMembers.clear();
+
+  for (const record of records) {
+    const normalized = normalizeTeamMemberRecord(record);
+    if (normalized) {
+      localTeamMembers.set(normalized.id, normalized);
+    }
+  }
+}
+
+export function listLocalTeamMembersForTests() {
+  return getLocalTeamMembers();
+}
+
+function isNoRowsError(error) {
+  return Boolean(
+    error &&
+    (
+      error.code === "PGRST116" ||
+      String(error.message || "").toLowerCase().includes("0 rows")
+    )
+  );
+}
+
+async function listProjectTeamMembers(supabaseClient, projectId) {
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient
+      .from("team_members")
+      .select("id, account_id, email, full_name, role, accepted_at, created_at")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      throw new Error(error.message || "Failed to load team members.");
+    }
+
+    return (data || []).map(buildTeamMemberResponse);
+  }
+
+  return getLocalTeamMembers(projectId).map(buildTeamMemberResponse);
+}
+
+async function getProjectMemberForUser(supabaseClient, userId, projectId) {
+  if (!userId || !projectId) {
+    return null;
+  }
+
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient
+      .from("team_members")
+      .select("id, account_id, email, full_name, role, accepted_at, created_at")
+      .eq("account_id", userId)
+      .eq("project_id", projectId)
+      .maybeSingle();
+
+    if (error && !isNoRowsError(error)) {
+      throw new Error(error.message || "Failed to load project membership.");
+    }
+
+    return data ? buildTeamMemberResponse(data) : null;
+  }
+
+  const member = getLocalTeamMembers(projectId).find((entry) => entry.account_id === userId);
+  return member ? buildTeamMemberResponse(member) : null;
+}
+
+async function getProjectMemberById(supabaseClient, projectId, memberId) {
+  if (!projectId || !memberId) {
+    return null;
+  }
+
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient
+      .from("team_members")
+      .select("id, account_id, email, full_name, role, accepted_at, created_at")
+      .eq("project_id", projectId)
+      .eq("id", memberId)
+      .maybeSingle();
+
+    if (error && !isNoRowsError(error)) {
+      throw new Error(error.message || "Failed to load team member.");
+    }
+
+    return data ? buildTeamMemberResponse(data) : null;
+  }
+
+  const member = getLocalTeamMembers(projectId).find((entry) => entry.id === memberId);
+  return member ? buildTeamMemberResponse(member) : null;
+}
+
+async function getProjectMemberByEmail(supabaseClient, projectId, email) {
+  const normalizedEmail = normalizeTeamEmail(email);
+  if (!projectId || !normalizedEmail) {
+    return null;
+  }
+
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient
+      .from("team_members")
+      .select("id, account_id, email, full_name, role, accepted_at, created_at")
+      .eq("project_id", projectId)
+      .eq("email", normalizedEmail)
+      .maybeSingle();
+
+    if (error && !isNoRowsError(error)) {
+      throw new Error(error.message || "Failed to load team member.");
+    }
+
+    return data ? buildTeamMemberResponse(data) : null;
+  }
+
+  const member = getLocalTeamMembers(projectId).find((entry) => entry.email === normalizedEmail);
+  return member ? buildTeamMemberResponse(member) : null;
+}
+
+async function createProjectTeamMember(supabaseClient, record) {
+  const normalized = normalizeTeamMemberRecord(record);
+  if (!normalized) {
+    throw new Error("Invalid team member record.");
+  }
+
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient
+      .from("team_members")
+      .insert(normalized)
+      .select("id, account_id, email, full_name, role, accepted_at, created_at")
+      .single();
+
+    if (error) {
+      throw new Error(error.message || "Failed to create team member.");
+    }
+
+    return buildTeamMemberResponse(data);
+  }
+
+  const duplicate = getLocalTeamMembers(normalized.project_id).find(
+    (entry) => entry.email === normalized.email
+  );
+  if (duplicate) {
+    throw new Error("A team member with that email already exists for this project.");
+  }
+
+  localTeamMembers.set(normalized.id, normalized);
+  return buildTeamMemberResponse(normalized);
+}
+
+async function updateProjectTeamMemberRole(supabaseClient, projectId, memberId, role) {
+  const normalizedRole = normalizeTeamRole(role);
+  if (!TEAM_ROLES.has(normalizedRole)) {
+    throw new Error("Invalid role.");
+  }
+
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient
+      .from("team_members")
+      .update({ role: normalizedRole })
+      .eq("project_id", projectId)
+      .eq("id", memberId)
+      .select("id, account_id, email, full_name, role, accepted_at, created_at")
+      .single();
+
+    if (error) {
+      throw new Error(error.message || "Failed to update team member role.");
+    }
+
+    return buildTeamMemberResponse(data);
+  }
+
+  const current = localTeamMembers.get(memberId);
+  if (!current || current.project_id !== projectId) {
+    return null;
+  }
+
+  const updated = {
+    ...current,
+    role: normalizedRole,
+  };
+  localTeamMembers.set(memberId, updated);
+  return buildTeamMemberResponse(updated);
+}
+
+async function deleteProjectTeamMember(supabaseClient, projectId, memberId) {
+  if (supabaseClient) {
+    const { error } = await supabaseClient
+      .from("team_members")
+      .delete()
+      .eq("project_id", projectId)
+      .eq("id", memberId);
+
+    if (error) {
+      throw new Error(error.message || "Failed to delete team member.");
+    }
+
+    return;
+  }
+
+  const current = localTeamMembers.get(memberId);
+  if (current && current.project_id === projectId) {
+    localTeamMembers.delete(memberId);
+  }
+}
+
+async function countProjectLeads(supabaseClient, projectId) {
+  const members = await listProjectTeamMembers(supabaseClient, projectId);
+  return members.filter((member) => member.role === "project_lead").length;
+}
+
+export async function ensureProjectLeadMembership(supabaseClient, user, projectId) {
+  if (!user?.id || !user?.email || !projectId) {
+    return null;
+  }
+
+  const email = normalizeTeamEmail(user.email);
+  const existingMember = await getProjectMemberByEmail(supabaseClient, projectId, email);
+  if (existingMember) {
+    return existingMember;
+  }
+
+  return createProjectTeamMember(supabaseClient, {
+    account_id: user.id,
+    project_id: projectId,
+    email,
+    full_name: user.user_metadata?.full_name || user.email,
+    role: "project_lead",
+    invited_by: user.id,
+    accepted_at: new Date().toISOString(),
+  });
+}
+
+async function assertProjectMember(supabaseClient, userId, projectId, res) {
+  const member = await getProjectMemberForUser(supabaseClient, userId, projectId);
+  if (!member) {
+    sendJson(res, 403, { error: "Insufficient permissions" });
+    return false;
+  }
+
+  return true;
+}
+
+async function assertProjectLead(supabaseClient, userId, projectId, res) {
+  const member = await getProjectMemberForUser(supabaseClient, userId, projectId);
+  if (!member || member.role !== "project_lead") {
+    sendJson(res, 403, { error: "Insufficient permissions" });
+    return false;
+  }
+
+  return true;
+}
+
 export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS } = {}) {
   return createServer(async (req, res) => {
     try {
@@ -170,7 +490,7 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
       if (req.method === "OPTIONS") {
         res.writeHead(200, {
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization, Stripe-Signature",
           "Access-Control-Max-Age": "86400"
         });
@@ -315,6 +635,30 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
 
       if (pathname === "/api/auth/verify" && req.method === "POST") {
         return await handleAuthVerify(req, res);
+      }
+
+      if (/^\/api\/team\/[^/]+$/.test(pathname) && req.method === "GET") {
+        const authUser = await jwtMiddleware(req, res);
+        if (!authUser) return;
+        return await handleTeamList(req, res, pathname, authUser);
+      }
+
+      if (pathname === "/api/team/invite" && req.method === "POST") {
+        const authUser = await jwtMiddleware(req, res);
+        if (!authUser) return;
+        return await handleTeamInvite(req, res, authUser);
+      }
+
+      if (/^\/api\/team\/[^/]+\/[^/]+$/.test(pathname) && req.method === "DELETE") {
+        const authUser = await jwtMiddleware(req, res);
+        if (!authUser) return;
+        return await handleTeamDelete(req, res, pathname, authUser);
+      }
+
+      if (/^\/api\/team\/[^/]+\/[^/]+$/.test(pathname) && req.method === "PATCH") {
+        const authUser = await jwtMiddleware(req, res);
+        if (!authUser) return;
+        return await handleTeamPatch(req, res, pathname, authUser);
       }
 
       if (pathname.startsWith("/shared/") && req.method === "GET") {
@@ -1329,6 +1673,214 @@ async function handleDetectDatabases(req, res) {
   }
 }
 
+function parseTeamProjectPath(pathname) {
+  const match = pathname.match(/^\/api\/team\/([^/]+)$/);
+  if (!match) {
+    return null;
+  }
+
+  return decodeURIComponent(match[1]);
+}
+
+function parseTeamMemberPath(pathname) {
+  const match = pathname.match(/^\/api\/team\/([^/]+)\/([^/]+)$/);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    projectId: decodeURIComponent(match[1]),
+    memberId: decodeURIComponent(match[2]),
+  };
+}
+
+async function handleTeamList(req, res, pathname, user) {
+  const projectId = parseTeamProjectPath(pathname);
+  if (!projectId) {
+    return sendJson(res, 404, { error: "Not found" });
+  }
+
+  try {
+    const memberAllowed = await assertProjectMember(supabase, user.id, projectId, res);
+    if (!memberAllowed) {
+      return;
+    }
+
+    const members = await listProjectTeamMembers(supabase, projectId);
+    return sendJson(res, 200, { members });
+  } catch (error) {
+    return sendJson(res, 400, {
+      error: error instanceof Error ? error.message : "Failed to load team members.",
+    });
+  }
+}
+
+async function handleTeamInvite(req, res, user) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, {
+      error: parseError instanceof Error ? parseError.message : "Invalid request payload.",
+    });
+  }
+
+  const projectId = typeof payload?.projectId === "string" ? payload.projectId.trim() : "";
+  const email = normalizeTeamEmail(payload?.email);
+  const fullName = typeof payload?.fullName === "string" ? payload.fullName.trim() : "";
+  const role = normalizeTeamRole(payload?.role);
+
+  if (!projectId || !email || !fullName) {
+    return sendJson(res, 400, {
+      error: "projectId, email, and fullName are required.",
+    });
+  }
+
+  if (!TEAM_INVITE_ROLES.has(role)) {
+    return sendJson(res, 400, { error: "Invalid role." });
+  }
+
+  try {
+    const leadAllowed = await assertProjectLead(supabase, user.id, projectId, res);
+    if (!leadAllowed) {
+      return;
+    }
+
+    const member = await createProjectTeamMember(supabase, {
+      account_id: null,
+      project_id: projectId,
+      email,
+      full_name: fullName,
+      role,
+      invited_by: user.id,
+      accepted_at: null,
+    });
+
+    if (supabase?.auth?.admin?.inviteUserByEmail) {
+      const { error } = await supabase.auth.admin.inviteUserByEmail(email);
+      if (error) {
+        await deleteProjectTeamMember(supabase, projectId, member.id);
+        return sendJson(res, 400, { error: error.message || "Failed to send invite." });
+      }
+    }
+
+    writeAudit(supabase, {
+      projectId,
+      accountId: user.id,
+      actorName: user.user_metadata?.full_name || user.email,
+      actorRole: "project_lead",
+      action: "member_invited",
+      details: { email, role },
+    });
+
+    return sendJson(res, 200, { success: true });
+  } catch (error) {
+    return sendJson(res, 400, {
+      error: error instanceof Error ? error.message : "Failed to invite team member.",
+    });
+  }
+}
+
+async function handleTeamDelete(req, res, pathname, user) {
+  const params = parseTeamMemberPath(pathname);
+  if (!params) {
+    return sendJson(res, 404, { error: "Not found" });
+  }
+
+  try {
+    const leadAllowed = await assertProjectLead(supabase, user.id, params.projectId, res);
+    if (!leadAllowed) {
+      return;
+    }
+
+    const member = await getProjectMemberById(supabase, params.projectId, params.memberId);
+    if (!member) {
+      return sendJson(res, 404, { error: "Team member not found" });
+    }
+
+    if (member.role === "project_lead") {
+      const projectLeadCount = await countProjectLeads(supabase, params.projectId);
+      if (projectLeadCount <= 1) {
+        return sendJson(res, 400, { error: "Cannot remove the only project lead" });
+      }
+    }
+
+    await deleteProjectTeamMember(supabase, params.projectId, params.memberId);
+
+    writeAudit(supabase, {
+      projectId: params.projectId,
+      accountId: user.id,
+      actorName: user.user_metadata?.full_name || user.email,
+      actorRole: "project_lead",
+      action: "member_removed",
+      details: { memberId: params.memberId },
+    });
+
+    return sendJson(res, 200, { success: true });
+  } catch (error) {
+    return sendJson(res, 400, {
+      error: error instanceof Error ? error.message : "Failed to remove team member.",
+    });
+  }
+}
+
+async function handleTeamPatch(req, res, pathname, user) {
+  const params = parseTeamMemberPath(pathname);
+  if (!params) {
+    return sendJson(res, 404, { error: "Not found" });
+  }
+
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, {
+      error: parseError instanceof Error ? parseError.message : "Invalid request payload.",
+    });
+  }
+
+  const role = normalizeTeamRole(payload?.role);
+  if (!TEAM_ROLES.has(role)) {
+    return sendJson(res, 400, { error: "Invalid role." });
+  }
+
+  try {
+    const leadAllowed = await assertProjectLead(supabase, user.id, params.projectId, res);
+    if (!leadAllowed) {
+      return;
+    }
+
+    const member = await getProjectMemberById(supabase, params.projectId, params.memberId);
+    if (!member) {
+      return sendJson(res, 404, { error: "Team member not found" });
+    }
+
+    if (member.role === "project_lead" && role !== "project_lead") {
+      const projectLeadCount = await countProjectLeads(supabase, params.projectId);
+      if (projectLeadCount <= 1) {
+        return sendJson(res, 400, { error: "Cannot remove the only project lead" });
+      }
+    }
+
+    await updateProjectTeamMemberRole(supabase, params.projectId, params.memberId, role);
+
+    writeAudit(supabase, {
+      projectId: params.projectId,
+      accountId: user.id,
+      actorName: user.user_metadata?.full_name || user.email,
+      actorRole: "project_lead",
+      action: "member_role_changed",
+      details: { memberId: params.memberId, newRole: role },
+    });
+
+    return sendJson(res, 200, { success: true });
+  } catch (error) {
+    return sendJson(res, 400, {
+      error: error instanceof Error ? error.message : "Failed to update team member role.",
+    });
+  }
+}
+
 function generateProjectId() {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let id = 'proj_';
@@ -1377,7 +1929,32 @@ async function handleAuthSignup(req, res) {
   }
 
   const projectId = generateProjectId();
-  await authService.createProject(user.id, projectId, null, null);
+  const { project: newProject, error: projectError } = await authService.createProject(
+    user.id,
+    projectId,
+    null,
+    null
+  );
+  if (projectError || !newProject) {
+    return sendJson(res, 400, { error: projectError || "Failed to create project." });
+  }
+
+  try {
+    await ensureProjectLeadMembership(supabase, {
+      ...user,
+      email: user.email || email,
+      user_metadata: {
+        ...(user.user_metadata || {}),
+        full_name: user.user_metadata?.full_name || fullName,
+      },
+    }, newProject.id);
+  } catch (membershipError) {
+    return sendJson(res, 500, {
+      error: membershipError instanceof Error
+        ? membershipError.message
+        : "Failed to assign project lead membership.",
+    });
+  }
 
   return sendJson(res, 200, {
     user: { id: user.id, email: user.email, fullName, companyName },
@@ -1591,7 +2168,7 @@ function sendJson(res, status, payload) {
     "X-Frame-Options": "DENY",
     "Content-Security-Policy": "default-src 'self'; script-src 'self'",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, Stripe-Signature"
   });
   res.end(JSON.stringify(payload, null, 2));

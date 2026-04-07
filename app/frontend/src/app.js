@@ -92,6 +92,7 @@ import { renderModuleSetupView } from "./wizards/module-wizards.js";
 import { renderDataImportView } from "./views/data-import-view.js";
 import { renderKnowledgeBaseView } from "./views/knowledge-base-view.js";
 import { renderAnalyticsView } from "./views/analytics-view.js";
+import { renderAuditLogView } from "./views/audit-log-view.js";
 import { renderTeamView } from "./views/team-view.js";
 import { renderPreCommitReportView } from "./views/pre-commit-report-view.js";
 import { renderConnectionWizardView } from "./views/connection-wizard-view.js";
@@ -473,6 +474,9 @@ function renderCurrentView(project, projectStore) {
 
     case "analytics":
       return renderAnalyticsView({ project });
+
+    case "audit-log":
+      return renderAuditLogView({ project });
 
     case "team":
       return renderTeamView({ project });

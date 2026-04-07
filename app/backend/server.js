@@ -29,6 +29,7 @@ import {
   validateConnection,
   registerPipelineConnection,
 } from "./engine.js";
+import { OdooClient, OdooRpcError } from "./odoo-client.js";
 import { runPipelineService } from "./pipeline-service.js";
 import { assembleFoundationOperationDefinitions } from "../shared/foundation-operation-definitions.js";
 import { assembleUsersRolesOperationDefinitions } from "../shared/users-roles-operation-definitions.js";
@@ -89,6 +90,16 @@ const RATE_LIMIT_MAX_REQUESTS = 100; // 100 requests per minute
 const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB limit
 const requestLog = new Map();
 const REQUEST_LOG_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const ODOO_SCAN_TIMEOUT_MS = 15000;
+const ODOO_SCAN_COUNT_MODELS = [
+  "res.users",
+  "res.partner",
+  "account.account",
+  "product.template",
+  "sale.order",
+  "purchase.order",
+  "stock.picking",
+];
 const TEAM_ROLES = new Set(["project_lead", "implementor", "reviewer", "stakeholder"]);
 const TEAM_INVITE_ROLES = new Set(["implementor", "reviewer", "stakeholder"]);
 const AUDIT_ACTIONS = new Set([
@@ -627,6 +638,12 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
 
       if (pathname === "/api/odoo/detect-databases" && req.method === "POST") {
         return await handleDetectDatabases(req, res);
+      }
+
+      if (pathname === "/api/odoo/scan" && req.method === "POST") {
+        const authUser = await jwtMiddleware(req, res);
+        if (!authUser) return;
+        return await handleOdooScan(req, res, authUser);
       }
 
       if (pathname === "/api/auth/signup" && req.method === "POST") {
@@ -1696,6 +1713,222 @@ async function handleDetectDatabases(req, res) {
       databases: [],
       error: isTimeout ? "Detection timed out — instance may be unreachable." : (err.message || "Unknown error"),
     });
+  }
+}
+
+function trimString(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function validateOdooBaseUrl(value) {
+  const normalized = trimString(value);
+  if (!normalized) {
+    throw new Error("url is required.");
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(normalized);
+  } catch {
+    throw new Error("url must be a valid URL.");
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("url must use http or https.");
+  }
+
+  return `${parsed.protocol}//${parsed.host}`;
+}
+
+function createOdooTimeoutFetch(timeoutMs) {
+  return async (resource, options = {}) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      return await fetch(resource, {
+        ...options,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (error?.name === "AbortError" || error?.code === "ABORT_ERR") {
+        throw new OdooRpcError("Odoo instance timed out", "TIMEOUT");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+}
+
+async function authenticateOdooClient(payload, timeoutMs) {
+  const client = new OdooClient({
+    baseUrl: payload.url,
+    database: payload.database,
+    fetchImpl: createOdooTimeoutFetch(timeoutMs),
+  });
+
+  let username = payload.username;
+  let password = payload.password;
+
+  try {
+    await client.authenticate(username, password);
+    return client;
+  } finally {
+    payload.username = undefined;
+    payload.password = undefined;
+    username = "";
+    password = "";
+  }
+}
+
+function isOdooTimeoutError(error) {
+  return error?.code === "TIMEOUT" || error?.name === "AbortError" || error?.code === "ABORT_ERR";
+}
+
+function isOdooConnectionError(error) {
+  if (isOdooTimeoutError(error)) {
+    return false;
+  }
+
+  const code = String(error?.cause?.code || error?.code || "").toUpperCase();
+  if (["ECONNREFUSED", "ECONNRESET", "ENOTFOUND", "EAI_AGAIN", "ETIMEDOUT"].includes(code)) {
+    return true;
+  }
+
+  const message = String(error?.message || "").toLowerCase();
+  return message.includes("fetch failed") || message.includes("could not connect");
+}
+
+function isOdooAuthError(error) {
+  if (isOdooTimeoutError(error) || isOdooConnectionError(error)) {
+    return false;
+  }
+
+  const message = String(error?.message || "").toLowerCase();
+  return message.includes("authentication failed") ||
+    message.includes("access denied") ||
+    message.includes("wrong login") ||
+    message.includes("wrong password") ||
+    message.includes("login");
+}
+
+function formatOdooRelation(value) {
+  if (Array.isArray(value)) {
+    return String(value[1] || value[0] || "");
+  }
+  return typeof value === "string" ? value : "";
+}
+
+function sendOdooScanError(res, error) {
+  if (isOdooTimeoutError(error)) {
+    return sendJson(res, 504, { error: "Odoo instance timed out" });
+  }
+
+  if (isOdooConnectionError(error)) {
+    return sendJson(res, 502, { error: "Could not connect to Odoo instance" });
+  }
+
+  if (isOdooAuthError(error)) {
+    return sendJson(res, 401, { error: "Authentication failed. Check credentials." });
+  }
+
+  return sendJson(res, 500, {
+    error: "Scan failed",
+    detail: error instanceof Error ? error.message : "Unknown error",
+  });
+}
+
+async function handleOdooScan(req, res, user) {
+  void user;
+
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, {
+      error: parseError instanceof Error ? parseError.message : "Invalid request payload.",
+    });
+  }
+
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+    return sendJson(res, 400, { error: "Request body must be a non-null object." });
+  }
+
+  const database = trimString(payload.database);
+  const username = trimString(payload.username);
+  const password = typeof payload.password === "string" ? payload.password : "";
+
+  if (!database) {
+    return sendJson(res, 400, { error: "database is required." });
+  }
+
+  if (!username) {
+    return sendJson(res, 400, { error: "username is required." });
+  }
+
+  if (!password) {
+    return sendJson(res, 400, { error: "password is required." });
+  }
+
+  try {
+    payload.url = validateOdooBaseUrl(payload.url);
+  } catch (error) {
+    return sendJson(res, 400, {
+      error: error instanceof Error ? error.message : "url must be a valid URL.",
+    });
+  }
+
+  payload.database = database;
+  payload.username = username;
+  payload.password = password;
+
+  let client;
+  try {
+    client = await authenticateOdooClient(payload, ODOO_SCAN_TIMEOUT_MS);
+  } catch (error) {
+    return sendOdooScanError(res, error);
+  }
+
+  try {
+    const companyRows = await client.searchRead(
+      "res.company",
+      [],
+      ["name", "currency_id", "country_id", "email", "phone", "website"],
+      { limit: 1 }
+    );
+    const installedModules = await client.searchRead(
+      "ir.module.module",
+      [["state", "=", "installed"]],
+      ["name", "shortdesc", "state"],
+      { limit: 500 }
+    );
+
+    const dataCounts = {};
+    for (const model of ODOO_SCAN_COUNT_MODELS) {
+      dataCounts[model] = await client.searchCount(model, []);
+    }
+
+    const company = companyRows[0] || {};
+    return sendJson(res, 200, {
+      company: {
+        name: String(company.name || ""),
+        currency: formatOdooRelation(company.currency_id),
+        country: formatOdooRelation(company.country_id),
+        email: String(company.email || ""),
+        phone: String(company.phone || ""),
+        website: String(company.website || ""),
+      },
+      modules_installed: installedModules.map((module) => ({
+        name: String(module.name || ""),
+        label: String(module.shortdesc || module.name || ""),
+        state: String(module.state || ""),
+      })),
+      data_counts: dataCounts,
+      scanned_at: new Date().toISOString(),
+    });
+  } catch (error) {
+    return sendOdooScanError(res, error);
   }
 }
 

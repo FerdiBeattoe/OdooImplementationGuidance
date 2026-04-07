@@ -91,6 +91,17 @@ const requestLog = new Map();
 const REQUEST_LOG_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const TEAM_ROLES = new Set(["project_lead", "implementor", "reviewer", "stakeholder"]);
 const TEAM_INVITE_ROLES = new Set(["implementor", "reviewer", "stakeholder"]);
+const AUDIT_ACTIONS = new Set([
+  "checkpoint_confirmed",
+  "checkpoint_executed",
+  "pipeline_run",
+  "member_invited",
+  "member_removed",
+  "member_role_changed",
+  "commit_approved",
+  "commit_cancelled",
+  "report_generated",
+]);
 const localTeamMembers = new Map();
 
 function checkRateLimit(clientId, maxRequests = RATE_LIMIT_MAX_REQUESTS) {
@@ -660,6 +671,12 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
         const authUser = await jwtMiddleware(req, res);
         if (!authUser) return;
         return await handleTeamPatch(req, res, pathname, authUser);
+      }
+
+      if (pathname === "/api/audit/write" && req.method === "POST") {
+        const authUser = await jwtMiddleware(req, res);
+        if (!authUser) return;
+        return await handleAuditWrite(req, res, authUser);
       }
 
       if (pathname.startsWith("/shared/") && req.method === "GET") {
@@ -1888,6 +1905,39 @@ async function handleTeamPatch(req, res, pathname, user) {
       error: error instanceof Error ? error.message : "Failed to update team member role.",
     });
   }
+}
+
+async function handleAuditWrite(req, res, user) {
+  let body;
+  try {
+    body = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, {
+      error: parseError instanceof Error ? parseError.message : "Invalid request payload.",
+    });
+  }
+
+  if (body === null || typeof body !== "object" || Array.isArray(body)) {
+    return sendJson(res, 400, { error: "Request body must be a non-null object." });
+  }
+
+  const action = typeof body.action === "string" ? body.action.trim() : "";
+  if (!AUDIT_ACTIONS.has(action)) {
+    return sendJson(res, 400, { error: "Invalid action." });
+  }
+
+  writeAudit(supabase, {
+    projectId: body.projectId,
+    accountId: user?.id || null,
+    actorName: body.actorName,
+    actorRole: body.actorRole,
+    action,
+    domain: body.domain || null,
+    checkpointId: body.checkpointId || null,
+    details: body.details || {},
+  });
+
+  return sendJson(res, 200, { success: true });
 }
 
 function generateProjectId() {

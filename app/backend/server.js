@@ -1966,6 +1966,9 @@ async function handleOdooScan(req, res, user) {
     client = await authenticateOdooClient(payload, ODOO_SCAN_TIMEOUT_MS);
   } catch (error) {
     return sendOdooScanError(res, error);
+  } finally {
+    payload.password = null;
+    payload.username = null;
   }
 
   try {
@@ -2078,6 +2081,9 @@ async function handleOdooInstallModule(req, res, user) {
     client = await authenticateOdooClient(payload, ODOO_INSTALL_TIMEOUT_MS);
   } catch (error) {
     return sendOdooInstallError(res, error);
+  } finally {
+    payload.password = null;
+    payload.username = null;
   }
 
   try {

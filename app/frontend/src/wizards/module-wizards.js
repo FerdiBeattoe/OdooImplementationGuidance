@@ -4,6 +4,7 @@
  */
 import { createWizardShell, formField, formInput, formSelect, formCheckbox, formSection, formGrid, pushSummaryStep } from "./WizardShell.js";
 import { el } from "../lib/dom.js";
+import { lucideIcon } from "../lib/icons.js";
 import {
   pushCompanySetup, pushUsersAccess, pushChartOfAccounts, pushSalesConfig,
   pushCrmConfig, pushInventoryConfig, pushAccountingConfig, pushPurchaseConfig,
@@ -26,7 +27,7 @@ export function renderCompanySetupWizard({ onComplete, onCancel }) {
   const shell = createWizardShell({
     title: "Company Setup",
     subtitle: "Configure your Odoo company identity",
-    icon: "business",
+    icon: "building-2",
     onComplete: (data) => {
       const merged = Object.assign({}, ...data);
       setWizardData("companySetup", merged);
@@ -82,7 +83,7 @@ export function renderCompanySetupWizard({ onComplete, onCancel }) {
           currSelect.addEventListener("change", e => setData({ currency: e.target.value }));
           return formSection("Branding & Locale", [
             el("div", { className: "p-4 rounded-xl border-2 border-dashed border-outline-variant/40 flex items-center gap-4 cursor-pointer hover:border-primary/30 transition-colors" }, [
-              el("span", { className: "material-symbols-outlined text-3xl text-on-surface-variant", text: "image" }),
+              lucideIcon("image", 28),
               el("div", {}, [
                 el("p", { className: "text-sm font-semibold text-on-surface", text: "Upload Company Logo" }),
                 el("p", { className: "text-xs text-on-surface-variant", text: "PNG, SVG or JPG — recommended 400×400px" })
@@ -132,7 +133,7 @@ export function renderUsersAccessWizard({ onComplete, onCancel }) {
   const shell = createWizardShell({
     title: "Users & Access Rights",
     subtitle: "Add team members and set their Odoo permissions",
-    icon: "manage_accounts",
+    icon: "users",
     onComplete: (data) => {
       const merged = { users, ...Object.assign({}, ...data) };
       setWizardData("usersAccess", merged);
@@ -160,7 +161,7 @@ export function renderUsersAccessWizard({ onComplete, onCancel }) {
                 el("button", {
                   className: "p-1 text-error hover:bg-error-container rounded-lg transition-colors",
                   onclick: () => { users.splice(i, 1); renderList(); }
-                }, [el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })])
+                }, [lucideIcon("trash-2", 16)])
               ]));
             });
           };
@@ -177,7 +178,7 @@ export function renderUsersAccessWizard({ onComplete, onCancel }) {
                 renderList();
               }
             }
-          }, [el("span", { className: "material-symbols-outlined text-[18px]", text: "person_add" }), el("span", { text: "Add User" })]);
+          }, [lucideIcon("user-plus", 18), el("span", { text: "Add User" })]);
 
           renderList();
           return el("div", { className: "space-y-6" }, [
@@ -262,7 +263,7 @@ export function renderChartOfAccountsWizard({ onComplete, onCancel }) {
   const shell = createWizardShell({
     title: "Chart of Accounts",
     subtitle: "Set up your accounting structure",
-    icon: "account_balance",
+    icon: "landmark",
     onComplete: (data) => {
       const merged = { accounts, ...Object.assign({}, ...data) };
       setWizardData("chartOfAccounts", merged);
@@ -285,7 +286,7 @@ export function renderChartOfAccountsWizard({ onComplete, onCancel }) {
               setData({ country: countrySelect.value, accountsLoaded: true });
             }
           }, [
-            el("span", { className: "material-symbols-outlined text-[18px]", text: "download" }),
+            lucideIcon("download", 18),
             el("span", { text: "Load Standard Chart of Accounts" })
           ]);
           countrySelect.addEventListener("change", e => setData({ country: e.target.value }));
@@ -294,7 +295,7 @@ export function renderChartOfAccountsWizard({ onComplete, onCancel }) {
             el("div", { className: "pt-2" }, [loadBtn]),
             data.accountsLoaded || existing.accountsLoaded
               ? el("div", { className: "flex items-center gap-2 text-green-700 text-sm font-medium mt-2" }, [
-                  el("span", { className: "material-symbols-outlined text-[18px]", text: "check_circle" }),
+                  lucideIcon("check-circle", 18),
                   el("span", { text: `${accounts.length} accounts loaded` })
                 ])
               : null
@@ -361,7 +362,7 @@ export function renderSalesConfigWizard({ onComplete, onCancel }) {
   const shell = createWizardShell({
     title: "Sales Configuration",
     subtitle: "Set up sales module features",
-    icon: "sell",
+    icon: "tag",
     onComplete: (data) => {
       const merged = Object.assign({}, ...data);
       setWizardData("salesConfig", merged);
@@ -392,11 +393,11 @@ export function renderSalesConfigWizard({ onComplete, onCancel }) {
             while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
             teams.forEach((t, i) => listEl.append(
               el("div", { className: "flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3" }, [
-                el("span", { className: "material-symbols-outlined text-secondary", text: "groups" }),
+                lucideIcon("users", 18),
                 el("span", { className: "flex-1 text-sm font-semibold", text: t.name }),
                 el("span", { className: "text-xs text-on-surface-variant", text: t.leader || "No leader" }),
                 el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { teams.splice(i,1); setData({ salesTeams: teams }); renderTeams(); } }, [
-                  el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })
+                  lucideIcon("trash-2", 16)
                 ])
               ])
             ));
@@ -426,7 +427,7 @@ export function renderSalesConfigWizard({ onComplete, onCancel }) {
                 el("span", { className: "flex-1 text-sm font-semibold", text: p.name }),
                 el("span", { className: "badge badge--secondary text-[10px]", text: p.currency }),
                 el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { pricelists.splice(i,1); setData({ pricelists }); renderList(); } }, [
-                  el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })
+                  lucideIcon("trash-2", 16)
                 ])
               ])
             ));
@@ -453,7 +454,7 @@ export function renderSalesConfigWizard({ onComplete, onCancel }) {
                 el("span", { className: "flex-1 text-sm font-semibold", text: t.name }),
                 el("span", { className: "text-xs text-on-surface-variant", text: `${t.days || 0} days` }),
                 el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { paymentTerms.splice(i,1); setData({ paymentTerms }); renderList(); } }, [
-                  el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })
+                  lucideIcon("trash-2", 16)
                 ])
               ])
             ));
@@ -485,7 +486,7 @@ export function renderCrmConfigWizard({ onComplete, onCancel }) {
   const shell = createWizardShell({
     title: "CRM Configuration",
     subtitle: "Configure your sales pipeline and lead management",
-    icon: "person_pin",
+    icon: "target",
     onComplete: (data) => {
       const merged = Object.assign({}, ...data);
       setWizardData("crmConfig", merged);
@@ -513,7 +514,7 @@ export function renderCrmConfigWizard({ onComplete, onCancel }) {
               el("div", { className: `w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs font-bold`, text: String(i + 1) }),
               el("span", { className: "flex-1 text-sm font-semibold", text: s.name }),
               el("span", { className: "badge badge--secondary text-[10px]", text: `${s.probability}%` }),
-              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { stages.splice(i, 1); setData({ stages }); renderList(); } }, [el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })])
+              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { stages.splice(i, 1); setData({ stages }); renderList(); } }, [lucideIcon("trash-2", 16)])
             ])));
           };
           renderList();
@@ -530,7 +531,7 @@ export function renderCrmConfigWizard({ onComplete, onCancel }) {
             while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
             sources.forEach((s, i) => listEl.append(el("span", { className: "flex items-center gap-1.5 badge badge--primary text-xs" }, [
               el("span", { text: s }),
-              el("button", { className: "hover:text-error", onclick: () => { sources.splice(i, 1); setData({ leadSources: sources }); renderList(); } }, [el("span", { className: "material-symbols-outlined text-[14px]", text: "close" })])
+              el("button", { className: "hover:text-error", onclick: () => { sources.splice(i, 1); setData({ leadSources: sources }); renderList(); } }, [lucideIcon("x", 14)])
             ])));
           };
           renderList();
@@ -563,7 +564,7 @@ export function renderCrmConfigWizard({ onComplete, onCancel }) {
             while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
             lostReasons.forEach((r, i) => listEl.append(el("span", { className: "flex items-center gap-1.5 badge badge--neutral text-xs" }, [
               el("span", { text: r }),
-              el("button", { className: "hover:text-error", onclick: () => { lostReasons.splice(i, 1); setData({ lostReasons }); renderList(); } }, [el("span", { className: "material-symbols-outlined text-[14px]", text: "close" })])
+              el("button", { className: "hover:text-error", onclick: () => { lostReasons.splice(i, 1); setData({ lostReasons }); renderList(); } }, [lucideIcon("x", 14)])
             ])));
           };
           renderList();
@@ -591,7 +592,7 @@ export function renderInventoryConfigWizard({ onComplete, onCancel }) {
   const shell = createWizardShell({
     title: "Inventory Configuration",
     subtitle: "Set up warehouses, locations and stock operations",
-    icon: "inventory_2",
+    icon: "package",
     onComplete: (data) => {
       const merged = Object.assign({}, ...data);
       setWizardData("inventoryConfig", merged);
@@ -613,7 +614,7 @@ export function renderInventoryConfigWizard({ onComplete, onCancel }) {
             warehouses.forEach((w, i) => listEl.append(el("div", { className: "flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3" }, [
               el("span", { className: "badge badge--secondary text-xs", text: w.shortName }),
               el("span", { className: "flex-1 text-sm font-semibold", text: w.name }),
-              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { warehouses.splice(i,1); setData({ warehouses }); renderList(); } }, [el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })])
+              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { warehouses.splice(i,1); setData({ warehouses }); renderList(); } }, [lucideIcon("trash-2", 16)])
             ])));
           };
           renderList();
@@ -667,7 +668,7 @@ export function renderInventoryConfigWizard({ onComplete, onCancel }) {
                 ot.returnType ? el("span", { className: "text-xs text-on-surface-variant italic", text: "Return" }) : null,
                 el("span", { className: "text-xs text-on-surface-variant", text: ot.reservation }),
                 el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { opTypes.splice(i,1); setData({ operationTypes: opTypes }); renderOps(); } }, [
-                  el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })
+                  lucideIcon("trash-2", 16)
                 ])
               ])
             ));
@@ -736,7 +737,7 @@ export function renderAccountingConfigWizard({ onComplete, onCancel }) {
   const shell = createWizardShell({
     title: "Accounting Configuration",
     subtitle: "Set up banks, journals and tax rules",
-    icon: "account_balance",
+    icon: "calculator",
     onComplete: (data) => {
       const merged = Object.assign({}, ...data);
       setWizardData("accountingConfig", merged);
@@ -756,9 +757,9 @@ export function renderAccountingConfigWizard({ onComplete, onCancel }) {
           const renderList = () => {
             while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
             banks.forEach((b, i) => listEl.append(el("div", { className: "flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3" }, [
-              el("span", { className: "material-symbols-outlined text-secondary", text: "account_balance" }),
+              lucideIcon("landmark", 18),
               el("div", { className: "flex-1" }, [el("p", { className: "text-sm font-semibold", text: b.bankName }), el("p", { className: "text-xs text-on-surface-variant font-mono", text: b.accountNumber })]),
-              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { banks.splice(i,1); setData({ bankAccounts: banks }); renderList(); } }, [el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })])
+              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { banks.splice(i,1); setData({ bankAccounts: banks }); renderList(); } }, [lucideIcon("trash-2", 16)])
             ])));
           };
           renderList();
@@ -819,7 +820,7 @@ export function renderAccountingConfigWizard({ onComplete, onCancel }) {
                   el("span", { className: "badge badge--neutral text-[10px]", text: fp.country }),
                   fp.autoApply ? el("span", { className: "badge badge--secondary text-[10px]", text: "Auto" }) : null,
                   el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { fiscalPositions.splice(i,1); setData({ fiscalPositions }); renderList(); } }, [
-                    el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })
+                    lucideIcon("trash-2", 16)
                   ])
                 ]),
                 fp.taxMappings?.length ? el("div", { className: "pl-4 space-y-0.5" },
@@ -877,7 +878,7 @@ export function renderAccountingConfigWizard({ onComplete, onCancel }) {
               el("span", { className: "flex-1 text-sm font-semibold", text: t.name }),
               el("span", { className: "badge badge--secondary text-[10px]", text: `${t.rate}%` }),
               el("span", { className: "badge badge--neutral text-[10px]", text: t.type }),
-              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { taxes.splice(i,1); setData({ taxes }); renderList(); } }, [el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })])
+              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { taxes.splice(i,1); setData({ taxes }); renderList(); } }, [lucideIcon("trash-2", 16)])
             ])));
           };
           renderList();
@@ -915,7 +916,7 @@ export function renderAccountingConfigWizard({ onComplete, onCancel }) {
                 el("span", { className: "text-xs font-mono text-on-surface-variant", text: s.prefix }),
                 el("span", { className: "badge badge--neutral text-[10px]", text: `${s.padding} digits` }),
                 el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { sequences.splice(i,1); setData({ sequences }); renderList(); } }, [
-                  el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })
+                  lucideIcon("trash-2", 16)
                 ])
               ])
             ));
@@ -961,7 +962,7 @@ export function renderPurchaseConfigWizard({ onComplete, onCancel }) {
   const shell = createWizardShell({
     title: "Purchase Configuration",
     subtitle: "Configure purchasing rules and approval workflows",
-    icon: "shopping_cart",
+    icon: "shopping-cart",
     onComplete: (data) => {
       const merged = Object.assign({}, ...data);
       setWizardData("purchaseConfig", merged);
@@ -1063,10 +1064,10 @@ export function renderManufacturingConfigWizard({ onComplete, onCancel }) {
           const renderList = () => {
             while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
             workcenters.forEach((w, i) => listEl.append(el("div", { className: "flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3" }, [
-              el("span", { className: "material-symbols-outlined text-tertiary", text: "precision_manufacturing" }),
+              lucideIcon("cog", 18),
               el("span", { className: "flex-1 text-sm font-semibold", text: w.name }),
               el("span", { className: "text-xs text-on-surface-variant", text: `Eff: ${w.efficiency}%` }),
-              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { workcenters.splice(i,1); setData({ workcenters }); renderList(); } }, [el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })])
+              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { workcenters.splice(i,1); setData({ workcenters }); renderList(); } }, [lucideIcon("trash-2", 16)])
             ])));
           };
           renderList();
@@ -1086,7 +1087,7 @@ export function renderManufacturingConfigWizard({ onComplete, onCancel }) {
             operations.forEach((o, i) => listEl.append(el("div", { className: "flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3" }, [
               el("span", { className: "flex-1 text-sm font-semibold", text: o.name }),
               el("span", { className: "text-xs text-on-surface-variant", text: `${o.timePerUnit} min/unit` }),
-              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { operations.splice(i,1); setData({ operations }); renderList(); } }, [el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })])
+              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { operations.splice(i,1); setData({ operations }); renderList(); } }, [lucideIcon("trash-2", 16)])
             ])));
           };
           renderList();
@@ -1113,7 +1114,7 @@ export function renderHrPayrollWizard({ onComplete, onCancel }) {
   const shell = createWizardShell({
     title: "HR & Payroll Configuration",
     subtitle: "Set up departments, positions and payroll",
-    icon: "group",
+    icon: "user-check",
     onComplete: (data) => {
       const merged = Object.assign({}, ...data);
       setWizardData("hrPayrollConfig", merged);
@@ -1132,10 +1133,10 @@ export function renderHrPayrollWizard({ onComplete, onCancel }) {
           const renderList = () => {
             while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
             departments.forEach((d, i) => listEl.append(el("div", { className: "flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3" }, [
-              el("span", { className: "material-symbols-outlined text-tertiary", text: "corporate_fare" }),
+              lucideIcon("building", 18),
               el("span", { className: "flex-1 text-sm font-semibold", text: d.name }),
               el("span", { className: "text-xs text-on-surface-variant", text: d.manager || "No manager" }),
-              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { departments.splice(i,1); setData({ departments }); renderList(); } }, [el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })])
+              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { departments.splice(i,1); setData({ departments }); renderList(); } }, [lucideIcon("trash-2", 16)])
             ])));
           };
           renderList();
@@ -1155,7 +1156,7 @@ export function renderHrPayrollWizard({ onComplete, onCancel }) {
             jobPositions.forEach((p, i) => listEl.append(el("div", { className: "flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3" }, [
               el("span", { className: "flex-1 text-sm font-semibold", text: p.name }),
               el("span", { className: "badge badge--neutral text-[10px]", text: p.department || "No dept" }),
-              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { jobPositions.splice(i,1); setData({ jobPositions }); renderList(); } }, [el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })])
+              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { jobPositions.splice(i,1); setData({ jobPositions }); renderList(); } }, [lucideIcon("trash-2", 16)])
             ])));
           };
           renderList();
@@ -1176,7 +1177,7 @@ export function renderHrPayrollWizard({ onComplete, onCancel }) {
             leaveTypes.forEach((lt, i) => listEl.append(el("div", { className: "flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3" }, [
               el("span", { className: "flex-1 text-sm font-semibold", text: lt.name }),
               el("span", { className: "badge badge--secondary text-[10px]", text: lt.allocationMode }),
-              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { leaveTypes.splice(i,1); setData({ leaveTypes }); renderList(); } }, [el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })])
+              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { leaveTypes.splice(i,1); setData({ leaveTypes }); renderList(); } }, [lucideIcon("trash-2", 16)])
             ])));
           };
           renderList();
@@ -1196,7 +1197,7 @@ export function renderHrPayrollWizard({ onComplete, onCancel }) {
             salaryRules.forEach((r, i) => listEl.append(el("div", { className: "flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3" }, [
               el("span", { className: "badge badge--neutral text-[10px]", text: String(r.sequence) }),
               el("span", { className: "flex-1 text-sm font-semibold", text: r.name }),
-              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { salaryRules.splice(i,1); setData({ salaryRules }); renderList(); } }, [el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })])
+              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { salaryRules.splice(i,1); setData({ salaryRules }); renderList(); } }, [lucideIcon("trash-2", 16)])
             ])));
           };
           renderList();
@@ -1223,7 +1224,7 @@ export function renderWebsiteEcommerceWizard({ onComplete, onCancel }) {
   const shell = createWizardShell({
     title: "Website & eCommerce",
     subtitle: "Set up your Odoo website and online store",
-    icon: "language",
+    icon: "globe",
     onComplete: (data) => {
       const merged = Object.assign({}, ...data);
       setWizardData("websiteEcommerce", merged);
@@ -1283,7 +1284,7 @@ export function renderWebsiteEcommerceWizard({ onComplete, onCancel }) {
             methods.forEach((m, i) => listEl.append(el("div", { className: "flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3" }, [
               el("span", { className: "flex-1 text-sm font-semibold", text: m.name }),
               el("span", { className: "text-xs text-on-surface-variant", text: `${getDefaultCurrency()} ${m.price}` }),
-              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { methods.splice(i,1); setData({ shippingMethods: methods }); renderList(); } }, [el("span", { className: "material-symbols-outlined text-[16px]", text: "delete" })])
+              el("button", { className: "p-1 text-error hover:bg-error-container rounded-lg", onclick: () => { methods.splice(i,1); setData({ shippingMethods: methods }); renderList(); } }, [lucideIcon("trash-2", 16)])
             ])));
           };
           renderList();
@@ -1310,7 +1311,7 @@ export function renderPosWizard({ onComplete, onCancel }) {
   const shell = createWizardShell({
     title: "Point of Sale",
     subtitle: "Configure your POS terminals",
-    icon: "point_of_sale",
+    icon: "monitor",
     onComplete: (data) => {
       const merged = Object.assign({}, ...data);
       setWizardData("posConfig", merged);
@@ -1407,18 +1408,18 @@ export function renderModuleSetupView({ wizardId, onComplete, onCancel, onNaviga
 
 function renderWizardLauncher(onNavigate) {
   const WIZARD_CARDS = [
-    { id: "company-setup",       label: "Company Setup",       icon: "business",         desc: "Name, address, currency, fiscal year" },
-    { id: "users-access",        label: "Users & Access",      icon: "manage_accounts",  desc: "Add team members and roles" },
-    { id: "chart-of-accounts",   label: "Chart of Accounts",   icon: "account_balance",  desc: "Load standard accounts for your country" },
-    { id: "sales-setup",         label: "Sales",               icon: "sell",             desc: "Teams, pricelists, payment terms" },
-    { id: "crm-setup",           label: "CRM",                 icon: "person_pin",       desc: "Pipeline stages, lead sources" },
-    { id: "inventory-setup",     label: "Inventory",           icon: "inventory_2",      desc: "Warehouses, locations, routes" },
-    { id: "accounting-setup",    label: "Accounting",          icon: "account_balance",  desc: "Banks, journals, taxes" },
-    { id: "purchase-setup",      label: "Purchase",            icon: "shopping_cart",    desc: "PO rules, approval workflows" },
+    { id: "company-setup",       label: "Company Setup",       icon: "building-2",       desc: "Name, address, currency, fiscal year" },
+    { id: "users-access",        label: "Users & Access",      icon: "users",            desc: "Add team members and roles" },
+    { id: "chart-of-accounts",   label: "Chart of Accounts",   icon: "landmark",         desc: "Load standard accounts for your country" },
+    { id: "sales-setup",         label: "Sales",               icon: "tag",              desc: "Teams, pricelists, payment terms" },
+    { id: "crm-setup",           label: "CRM",                 icon: "target",           desc: "Pipeline stages, lead sources" },
+    { id: "inventory-setup",     label: "Inventory",           icon: "package",          desc: "Warehouses, locations, routes" },
+    { id: "accounting-setup",    label: "Accounting",          icon: "calculator",       desc: "Banks, journals, taxes" },
+    { id: "purchase-setup",      label: "Purchase",            icon: "shopping-cart",    desc: "PO rules, approval workflows" },
     { id: "manufacturing-setup", label: "Manufacturing",       icon: "factory",          desc: "Workcenters, BOM routes" },
-    { id: "hr-setup",            label: "HR & Payroll",        icon: "group",            desc: "Departments, positions, payroll" },
-    { id: "website-setup",       label: "Website",             icon: "language",         desc: "Online store, payment providers" },
-    { id: "pos-setup",           label: "Point of Sale",       icon: "point_of_sale",    desc: "POS terminals, payment methods" }
+    { id: "hr-setup",            label: "HR & Payroll",        icon: "user-check",       desc: "Departments, positions, payroll" },
+    { id: "website-setup",       label: "Website",             icon: "globe",            desc: "Online store, payment providers" },
+    { id: "pos-setup",           label: "Point of Sale",       icon: "monitor",          desc: "POS terminals, payment methods" }
   ];
 
   return el("div", { style: "max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;" }, [
@@ -1439,7 +1440,7 @@ function renderWizardLauncher(onNavigate) {
           onclick: () => onNavigate("wizard-" + w.id)
         }, [
           el("div", { style: `width: 44px; height: 44px; border-radius: 10px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;` }, [
-            el("span", { className: "material-symbols-outlined", style: `font-size: 20px; color: ${done ? "#065f46" : "#92400e"};`, text: done ? "check" : w.icon })
+            (() => { const ic = lucideIcon(done ? "check" : w.icon, 20); ic.style.color = done ? "#065f46" : "#92400e"; return ic; })()
           ]),
           el("div", { style: "flex: 1; min-width: 0;" }, [
             el("h4", { style: "font-size: 15px; font-weight: 600; color: #0c1a30; margin-bottom: 2px;", text: w.label }),

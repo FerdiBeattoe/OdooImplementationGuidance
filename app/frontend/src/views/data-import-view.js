@@ -1,4 +1,5 @@
 import { el } from "../lib/dom.js";
+import { lucideIcon } from "../lib/icons.js";
 import {
   getImportedData, setImportedData, addActivityLog,
   getProductOptions, getCustomerOptions, getAccountOptions,
@@ -13,7 +14,7 @@ const GRIDS = [
   {
     id: "products",
     label: "Products",
-    icon: "inventory_2",
+    icon: "package",
     desc: "Products and services",
     columns: [
       { key: "internalRef",    label: "Internal Ref",    type: "text",     required: false },
@@ -33,7 +34,7 @@ const GRIDS = [
   {
     id: "productVariants",
     label: "Product Variants",
-    icon: "category",
+    icon: "layers",
     desc: "Attributes and variants for products",
     columns: [
       { key: "product",        label: "Product",         type: "dropdown", optionsFn: () => getProductOptions().map(o => o.label), required: true },
@@ -47,7 +48,7 @@ const GRIDS = [
   {
     id: "customers",
     label: "Customers",
-    icon: "person",
+    icon: "user",
     desc: "Customer contacts and accounts",
     columns: [
       { key: "name",        label: "Name",           type: "text",     required: true },
@@ -66,7 +67,7 @@ const GRIDS = [
   {
     id: "vendors",
     label: "Vendors / Suppliers",
-    icon: "local_shipping",
+    icon: "truck",
     desc: "Supplier contacts and accounts",
     columns: [
       { key: "name",        label: "Name",           type: "text",   required: true },
@@ -84,7 +85,7 @@ const GRIDS = [
   {
     id: "billsOfMaterials",
     label: "Bill of Materials",
-    icon: "account_tree",
+    icon: "git-branch",
     desc: "Manufacturing BOM structures",
     columns: [
       { key: "product",        label: "Product",          type: "dropdown", optionsFn: () => getProductOptions().map(o => o.label), required: true },
@@ -98,7 +99,7 @@ const GRIDS = [
   {
     id: "employees",
     label: "Employees",
-    icon: "badge",
+    icon: "badge-check",
     desc: "Employee records",
     columns: [
       { key: "name",          label: "Name",             type: "text",     required: true },
@@ -115,7 +116,7 @@ const GRIDS = [
   {
     id: "openingBalances",
     label: "Opening Balances",
-    icon: "account_balance_wallet",
+    icon: "wallet",
     desc: "Accounting opening balances",
     columns: [
       { key: "account",   label: "Account",   type: "dropdown", optionsFn: () => getAccountOptions().map(o => o.label), required: true },
@@ -129,7 +130,7 @@ const GRIDS = [
   {
     id: "reorderingRules",
     label: "Reordering Rules",
-    icon: "sync_alt",
+    icon: "refresh-cw",
     desc: "Automatic replenishment rules",
     columns: [
       { key: "product",       label: "Product",           type: "dropdown", optionsFn: () => getProductOptions().map(o => o.label), required: true },
@@ -158,7 +159,7 @@ const GRIDS = [
   {
     id: "salesOrders",
     label: "Sales Orders (Historical)",
-    icon: "receipt_long",
+    icon: "file-text",
     desc: "Historical sales order import",
     columns: [
       { key: "customer",    label: "Customer",     type: "dropdown", optionsFn: () => getCustomerOptions().map(o => o.label), required: true },
@@ -187,33 +188,35 @@ export function renderDataImportView({ onNavigate }) {
 
     container.append(
       el("div", { style: "margin-bottom: 32px;" }, [
-        el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin-bottom: 4px;", text: "BULK DATA ENTRY" }),
-        el("h2", { style: "font-family: var(--font-headline); font-size: 28px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug); margin-bottom: 8px;", text: "Data Import" }),
-        el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface-variant);", text: "Import records in bulk. Paste from Excel or upload a CSV. All grids validate data before pushing to Odoo." })
+        el("span", { style: "display: inline-block; font-size: 11px; letter-spacing: 0.1em; color: #92400e; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 6px; padding: 3px 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;", text: "BULK DATA ENTRY" }),
+        el("h2", { style: "font-size: 28px; font-weight: 700; color: #0c1a30; font-family: Inter, sans-serif; margin-bottom: 8px;", text: "Data Import" }),
+        el("p", { style: "font-size: 14px; color: #64748b;", text: "Import records in bulk. Paste from Excel or upload a CSV. All grids validate data before pushing to Odoo." })
       ])
     );
 
     if (!activeGridId) {
       // Grid selector
       container.append(
-        el("div", { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;" },
+        el("div", { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px;" },
           GRIDS.map(g => {
             const rows = getImportedData(g.id);
-            return el("div", {
-              style: "background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 20px; cursor: pointer; transition: all 150ms ease;",
-              onmouseenter: (e) => { e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.background = "var(--color-surface-container-low)"; },
-              onmouseleave: (e) => { e.currentTarget.style.boxShadow = "var(--shadow-sm)"; e.currentTarget.style.background = "var(--color-surface)"; },
+            const hasRows = rows.length > 0;
+            const card = el("div", {
+              style: "display: flex; align-items: center; gap: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;",
               onclick: () => showGrid(g.id)
             }, [
-              el("div", { style: "display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px;" }, [
-                el("div", { style: "width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: var(--color-primary-subtle);" }, [
-                  el("span", { className: "material-symbols-outlined", style: "font-size: 20px; color: var(--color-primary);", text: g.icon })
-                ]),
-                rows.length > 0 ? el("span", { style: "font-family: var(--font-label); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide); padding: 2px 6px; background: var(--color-secondary-container); color: var(--color-on-secondary-container);", text: `${rows.length} rows` }) : null
+              el("div", { style: "width: 44px; height: 44px; border-radius: 10px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #92400e;" }, [
+                lucideIcon(g.icon, 20)
               ]),
-              el("h4", { style: "font-family: var(--font-headline); font-size: 14px; font-weight: 600; color: var(--color-on-surface); margin-bottom: 4px;", text: g.label }),
-              el("p", { style: "font-family: var(--font-body); font-size: 12px; color: var(--color-on-surface-variant);", text: g.desc })
+              el("div", { style: "flex: 1; min-width: 0;" }, [
+                el("h4", { style: "font-size: 15px; font-weight: 600; color: #0c1a30; margin-bottom: 2px;", text: g.label }),
+                el("p", { style: "font-size: 12px; color: #64748b;", text: g.desc })
+              ]),
+              hasRows ? el("span", { style: "display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #065f46; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 6px; padding: 2px 8px; flex-shrink: 0;", text: `${rows.length} rows` }) : null
             ]);
+            card.onmouseenter = () => { card.style.borderColor = "#f59e0b"; card.style.boxShadow = "0 2px 8px rgba(245,158,11,0.1)"; };
+            card.onmouseleave = () => { card.style.borderColor = "#e2e8f0"; card.style.boxShadow = "none"; };
+            return card;
           })
         )
       );
@@ -232,7 +235,7 @@ function buildGrid(gridDef, onBack) {
   if (rows.length === 0) rows = [emptyRow()];
 
   const tableBody = el("tbody");
-  const countBadge = el("span", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide); padding: 2px 8px; background: var(--color-secondary-container); color: var(--color-on-secondary-container);" });
+  const countBadge = el("span", { style: "font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 6px; color: #92400e;" });
   let selectedRows = new Set();
 
   function emptyRow() {
@@ -248,39 +251,39 @@ function buildGrid(gridDef, onBack) {
   function renderRows() {
     while (tableBody.firstChild) tableBody.removeChild(tableBody.firstChild);
     rows.forEach((row, ri) => {
-      const checkCell = el("td", { style: "padding: 8px; width: 32px; border-bottom: 1px solid var(--color-surface-container-low);" });
+      const checkCell = el("td", { style: "padding: 8px; width: 32px; border-bottom: 1px solid #f1f5f9;" });
       const cb = el("input", { type: "checkbox", style: "width: 16px; height: 16px; cursor: pointer;" });
       cb.checked = selectedRows.has(ri);
       cb.addEventListener("change", () => { if (cb.checked) selectedRows.add(ri); else selectedRows.delete(ri); updateDeleteSelected(); });
       checkCell.append(cb);
       
-      const statusCell = el("td", { style: "padding: 8px; width: 24px; border-bottom: 1px solid var(--color-surface-container-low);" }, [
-        el("div", { style: `width: 8px; height: 8px; ${
+      const statusCell = el("td", { style: "padding: 8px; width: 24px; border-bottom: 1px solid #f1f5f9;" }, [
+        el("div", { style: `width: 8px; height: 8px; border-radius: 50%; ${
           row._status === "success" ? "background: #059669;" :
-          row._status === "error"   ? "background: var(--color-error);" :
-          row._status === "importing" ? "background: var(--color-secondary); animation: pulse 1s infinite;" : "background: var(--color-outline-variant);"
+          row._status === "error"   ? "background: #dc2626;" :
+          row._status === "importing" ? "background: #f59e0b; animation: pulse 1s infinite;" : "background: #cbd5e1;"
         }`, title: row._statusMessage || row._status })
       ]);
       
       const cells = gridDef.columns.map(col => {
         const isInvalid = row._invalidCols?.has(col.key);
-        const cellEl = el("td", { style: `padding: 4px 8px; border-bottom: 1px solid var(--color-surface-container-low); ${isInvalid ? "background: var(--color-error-container);" : ""}` });
+        const cellEl = el("td", { style: `padding: 4px 8px; border-bottom: 1px solid #f1f5f9; ${isInvalid ? "background: rgba(239,68,68,0.06);" : ""}` });
         const inputEl = buildCellInput(col, row[col.key], (val) => {
           rows[ri][col.key] = val;
           if (val && row._invalidCols) { row._invalidCols.delete(col.key); cellEl.style.background = ""; }
         });
-        if (isInvalid) inputEl.style.border = "1px solid var(--color-error)";
+        if (isInvalid) inputEl.style.border = "1px solid #dc2626";
         cellEl.append(inputEl);
         return cellEl;
       });
       
-      const deleteCell = el("td", { style: "padding: 8px; width: 32px; border-bottom: 1px solid var(--color-surface-container-low);" }, [
+      const deleteCell = el("td", { style: "padding: 8px; width: 32px; border-bottom: 1px solid #f1f5f9;" }, [
         el("button", {
-          style: "padding: 4px; color: var(--color-on-surface-variant); background: none; border: none; cursor: pointer;",
-          onmouseenter: (e) => e.target.style.color = "var(--color-error)",
-          onmouseleave: (e) => e.target.style.color = "var(--color-on-surface-variant)",
+          style: "padding: 4px; color: #94a3b8; background: none; border: none; cursor: pointer;",
+          onmouseenter: (e) => e.currentTarget.style.color = "#dc2626",
+          onmouseleave: (e) => e.currentTarget.style.color = "#94a3b8",
           onclick: () => { rows.splice(ri, 1); selectedRows.delete(ri); if (rows.length === 0) rows.push(emptyRow()); renderRows(); updateCount(); }
-        }, [el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "delete" })])
+        }, [lucideIcon("trash-2", 16)])
       ]);
       
       tableBody.append(el("tr", { style: "height: 40px;" }, [checkCell, statusCell, ...cells, deleteCell]));
@@ -291,7 +294,7 @@ function buildGrid(gridDef, onBack) {
   renderRows();
 
   const deleteSelectedBtn = el("button", {
-    style: "display: flex; align-items: center; gap: 4px; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--color-error); background: none; border: none; cursor: pointer; padding: 8px; display: none;",
+    style: "display: none; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #dc2626; background: none; border: none; cursor: pointer; padding: 8px;",
     onclick: () => {
       const indices = [...selectedRows].sort((a, b) => b - a);
       indices.forEach(i => rows.splice(i, 1));
@@ -302,7 +305,7 @@ function buildGrid(gridDef, onBack) {
       updateDeleteSelected();
     }
   }, [
-    el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "delete_sweep" }),
+    lucideIcon("trash", 16),
     el("span", { text: "Delete Selected" })
   ]);
 
@@ -316,16 +319,16 @@ function buildGrid(gridDef, onBack) {
   }
 
   const addRowBtn = el("button", {
-    style: "display: flex; align-items: center; gap: 4px; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--color-primary); background: none; border: none; cursor: pointer; padding: 8px;",
+    style: "display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #92400e; background: none; border: none; cursor: pointer; padding: 8px;",
     onclick: () => { rows.push(emptyRow()); renderRows(); updateCount(); }
   }, [
-    el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "add" }),
+    lucideIcon("plus", 16),
     el("span", { text: "Add Row" })
   ]);
 
   // CSV template download
   const downloadTemplateBtn = el("button", {
-    style: "display: flex; align-items: center; gap: 4px; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--color-on-surface-variant); background: none; border: none; cursor: pointer; padding: 8px;",
+    style: "display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #64748b; background: none; border: none; cursor: pointer; padding: 8px;",
     onclick: () => {
       const headers = gridDef.columns.map(c => c.label).join(",");
       const blob = new Blob([headers + "\n"], { type: "text/csv" });
@@ -337,7 +340,7 @@ function buildGrid(gridDef, onBack) {
       URL.revokeObjectURL(url);
     }
   }, [
-    el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "download" }),
+    lucideIcon("download", 16),
     el("span", { text: "Download CSV Template" })
   ]);
 
@@ -360,21 +363,21 @@ function buildGrid(gridDef, onBack) {
   });
 
   const uploadBtn = el("button", {
-    style: "display: flex; align-items: center; gap: 8px; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--color-secondary); border: 1px solid var(--color-secondary); padding: 8px 16px; background: none; cursor: pointer;",
+    style: "display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #92400e; border: 1px solid rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); border-radius: 6px; padding: 8px 16px; cursor: pointer;",
     onclick: () => fileInput.click()
   }, [
-    el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "upload_file" }),
+    lucideIcon("upload", 16),
     el("span", { text: "Upload CSV File" })
   ]);
 
   // CSV paste area
   const csvTextarea = el("textarea", {
-    style: "width: 100%; height: 100px; padding: 12px; font-family: monospace; font-size: 12px; background: var(--color-surface-container-high); border: 1px solid var(--color-outline-variant); resize: none;",
+    style: "width: 100%; height: 100px; padding: 12px; font-family: monospace; font-size: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; resize: none; color: #0c1a30; box-sizing: border-box;",
     placeholder: "Paste CSV data here (first row = headers matching column names)..."
   });
 
   const parseCSVBtn = el("button", {
-    style: "display: flex; align-items: center; gap: 8px; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--color-on-secondary); background: var(--color-secondary); border: none; padding: 8px 16px; cursor: pointer;",
+    style: "display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #92400e; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; padding: 8px 16px; cursor: pointer;",
     onclick: () => {
       const text = csvTextarea.value.trim();
       if (!text) return;
@@ -387,12 +390,12 @@ function buildGrid(gridDef, onBack) {
       }
     }
   }, [
-    el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "table_view" }),
+    lucideIcon("table", 16),
     el("span", { text: "Parse & Add Rows" })
   ]);
 
   const importBtn = el("button", {
-    style: "display: flex; align-items: center; gap: 8px; font-family: var(--font-label); font-size: 14px; font-weight: 600; color: var(--color-on-primary); background: var(--color-primary); border: none; padding: 10px 20px; cursor: pointer;",
+    style: "display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #92400e; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; padding: 10px 20px; cursor: pointer;",
     onclick: async () => {
       // Validate with per-cell highlighting
       let hasInvalid = false;
@@ -437,13 +440,15 @@ function buildGrid(gridDef, onBack) {
       const successCount = rows.filter(r => r._status === "success").length;
       const errorCount = rows.filter(r => r._status === "error").length;
       if (errorCount > 0) {
-        importBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px;">warning</span><span>${successCount} Written, ${errorCount} Refused</span>`;
+        importBtn.innerHTML = "";
+        importBtn.append(lucideIcon("alert-triangle", 18), el("span", { text: ` ${successCount} Written, ${errorCount} Refused` }));
       } else {
-        importBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px;">check</span><span>✓ ${successCount} Records Written</span>`;
+        importBtn.innerHTML = "";
+        importBtn.append(lucideIcon("check-circle", 18), el("span", { text: ` ${successCount} Records Written` }));
       }
     }
   }, [
-    el("span", { className: "material-symbols-outlined", style: "font-size: 18px;", text: "cloud_upload" }),
+    lucideIcon("cloud-upload", 18),
     el("span", { text: `Import ${gridDef.label} to Odoo` })
   ]);
 
@@ -451,25 +456,25 @@ function buildGrid(gridDef, onBack) {
     // Header
     el("div", { style: "display: flex; align-items: center; gap: 16px;" }, [
       el("button", {
-        style: "padding: 8px; color: var(--color-on-surface-variant); background: none; border: none; cursor: pointer;",
+        style: "padding: 8px; color: #64748b; background: none; border: none; cursor: pointer;",
         onclick: onBack
-      }, [el("span", { className: "material-symbols-outlined", style: "font-size: 24px;", text: "arrow_back" })]),
+      }, [lucideIcon("arrow-left", 20)]),
       el("div", { style: "display: flex; align-items: center; gap: 12px; flex: 1;" }, [
-        el("div", { style: "width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: var(--color-primary-subtle);" }, [
-          el("span", { className: "material-symbols-outlined", style: "font-size: 20px; color: var(--color-primary);", text: gridDef.icon })
+        el("div", { style: "width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); color: #92400e;" }, [
+          lucideIcon(gridDef.icon, 20)
         ]),
         el("div", {}, [
-          el("h3", { style: "font-family: var(--font-headline); font-size: 18px; font-weight: 700; color: var(--color-on-surface);", text: gridDef.label }),
-          el("p", { style: "font-family: var(--font-body); font-size: 12px; color: var(--color-on-surface-variant);", text: gridDef.desc })
+          el("h3", { style: "font-size: 18px; font-weight: 700; color: #0c1a30; font-family: Inter, sans-serif;", text: gridDef.label }),
+          el("p", { style: "font-size: 12px; color: #64748b;", text: gridDef.desc })
         ])
       ]),
       countBadge
     ]),
     
     // CSV import panel
-    el("div", { style: "background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 20px; display: flex; flex-direction: column; gap: 12px;" }, [
+    el("div", { style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 12px;" }, [
       el("div", { style: "display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;" }, [
-        el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-on-surface-variant);", text: "CSV Import" }),
+        el("p", { style: "font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b;", text: "CSV Import" }),
         el("div", { style: "display: flex; align-items: center; gap: 12px;" }, [downloadTemplateBtn, uploadBtn])
       ]),
       fileInput,
@@ -478,12 +483,12 @@ function buildGrid(gridDef, onBack) {
     ]),
     
     // Grid table
-    el("div", { style: "background: var(--color-surface); box-shadow: var(--shadow-sm); overflow: hidden;" }, [
+    el("div", { style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;" }, [
       el("div", { style: "overflow-x: auto;" }, [
         el("table", { style: "width: 100%; font-size: 12px; border-collapse: collapse;" }, [
           el("thead", {}, [
             el("tr", {}, [
-              el("th", { style: "padding: 8px; font-family: var(--font-label); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-on-surface-variant); text-align: left;" }, [
+              el("th", { style: "padding: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; text-align: left;" }, [
                 (() => {
                   const selectAll = el("input", { type: "checkbox", style: "width: 16px; height: 16px; cursor: pointer;" });
                   selectAll.addEventListener("change", () => {
@@ -497,9 +502,9 @@ function buildGrid(gridDef, onBack) {
               ]),
               el("th", { style: "padding: 8px; width: 24px;" }),
               ...gridDef.columns.map(col =>
-                el("th", { style: "padding: 8px; font-family: var(--font-label); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-on-surface-variant); text-align: left; white-space: nowrap;" }, [
+                el("th", { style: "padding: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; text-align: left; white-space: nowrap;" }, [
                   el("span", { text: col.label }),
-                  col.required ? el("span", { style: "color: var(--color-error); margin-left: 2px;", text: "*" }) : null
+                  col.required ? el("span", { style: "color: #dc2626; margin-left: 2px;", text: "*" }) : null
                 ])
               ),
               el("th", { style: "padding: 8px; width: 32px;" })
@@ -508,7 +513,7 @@ function buildGrid(gridDef, onBack) {
           tableBody
         ])
       ]),
-      el("div", { style: "padding: 12px 16px; border-top: 1px solid var(--color-surface-container-low); display: flex; align-items: center; justify-content: space-between;" }, [
+      el("div", { style: "padding: 12px 16px; border-top: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;" }, [
         el("div", { style: "display: flex; align-items: center; gap: 12px;" }, [addRowBtn, deleteSelectedBtn]),
         importBtn
       ])

@@ -5,6 +5,7 @@ import {
   summarizeCheckpoints
 } from "/shared/index.js";
 import { el } from "../lib/dom.js";
+import { lucideIcon } from "../lib/icons.js";
 import { labelValue } from "../lib/formatters.js";
 import { renderCheckpointPanel } from "../components/checkpoint-panel.js";
 import { renderGuidanceBlock } from "../components/guidance-block.js";
@@ -170,7 +171,7 @@ function renderOverviewSection({ project, summary, checkpointSummary, primaryChe
     el("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6" }, [
       el("div", { className: "lg:col-span-1 bg-surface-container-lowest p-8 relative overflow-hidden group border-b-2 border-secondary" }, [
         el("div", { className: "absolute top-0 right-0 p-4 opacity-10" }, [
-          el("span", { className: "material-symbols-outlined text-8xl text-secondary", text: "verified_user" })
+          lucideIcon("shield-check", 64)
         ]),
         el("div", { className: "relative z-10" }, [
           el("p", { className: "text-xs font-bold tracking-widest text-secondary uppercase mb-2", text: "Checkpoint Pass Rate" }),
@@ -179,7 +180,7 @@ function renderOverviewSection({ project, summary, checkpointSummary, primaryChe
             el("span", { className: "text-2xl text-secondary/60", text: "%" })
           ]),
           el("div", { className: "flex items-center gap-2 text-sm font-medium text-secondary" }, [
-            el("span", { className: "material-symbols-outlined text-sm", text: "verified" }),
+            lucideIcon("check-circle", 14),
             el("span", { text: `${passCount} of ${totalCheckpoints} checkpoints passing` })
           ])
         ]),
@@ -234,7 +235,7 @@ function renderOverviewSection({ project, summary, checkpointSummary, primaryChe
         el("div", { className: "px-6 py-4 border-b border-surface-container-low flex justify-between items-center" }, [
           el("h4", { className: "text-sm font-bold uppercase tracking-widest text-on-surface", text: "Recent Activity" }),
           el("div", { className: "flex items-center gap-4" }, [
-            el("span", { className: "material-symbols-outlined text-sm text-slate-400", text: "filter_list" })
+            lucideIcon("filter", 14)
           ])
         ]),
         el("div", { className: "divide-y divide-surface-container-low" },
@@ -251,7 +252,7 @@ function renderOverviewSection({ project, summary, checkpointSummary, primaryChe
       ]),
       el("div", { className: "bg-tertiary text-on-tertiary-container p-6 flex flex-col justify-between" }, [
         el("div", {}, [
-          el("span", { className: "material-symbols-outlined text-tertiary-fixed mb-4", text: "lightbulb" }),
+          lucideIcon("lightbulb", 20),
           el("h4", { className: "text-lg font-bold text-white mb-2 leading-tight", text: "Next Step" }),
           el("p", { className: "text-xs text-on-tertiary-container/80 leading-relaxed mb-6", text: moduleStatus.completed < moduleStatus.total ? `Complete the remaining ${moduleStatus.total - moduleStatus.completed} module wizard(s) to progress your implementation.` : "All modules configured. Review the roadmap for final go-live steps." })
         ]),
@@ -297,7 +298,7 @@ function activityLogItem(time, title, desc) {
       el("p", { className: "text-sm text-on-surface font-bold", text: title }),
       el("p", { className: "text-xs text-slate-500 mt-1", text: desc })
     ]),
-    el("span", { className: "material-symbols-outlined text-secondary opacity-0 group-hover:opacity-100 transition-opacity", text: "chevron_right" })
+    lucideIcon("chevron-right", 18)
   ]);
 }
 

@@ -7,6 +7,7 @@
 // ---------------------------------------------------------------------------
 
 import { el } from "../lib/dom.js";
+import { lucideIcon } from "../lib/icons.js";
 import { onboardingStore, normaliseOdooUrl } from "../state/onboarding-store.js";
 import { setCurrentView } from "../state/app-store.js";
 
@@ -31,21 +32,21 @@ const INDUSTRIES = [
     id: "retail",
     name: "Retail & POS",
     description: "For shops with physical stores and online sales",
-    icon: "shopping_bag",
+    icon: "shopping-bag",
     modules: ["pos", "inventory", "sales", "website_ecommerce", "accounting", "crm"],
   },
   {
     id: "distribution",
     name: "Distribution & Wholesale",
     description: "For businesses that buy and sell without manufacturing",
-    icon: "local_shipping",
+    icon: "truck",
     modules: ["purchase", "sales", "inventory", "accounting", "crm"],
   },
   {
     id: "services",
     name: "Services & Projects",
     description: "For businesses selling time and expertise",
-    icon: "groups",
+    icon: "users",
     modules: ["projects", "sales", "accounting", "hr", "crm"],
   },
 ];
@@ -942,7 +943,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
           className: "ow-header-mark",
           style: "width: 40px; height: 40px; background: var(--ee-primary); display: flex; align-items: center; justify-content: center;",
         }, [
-          el("span", { className: "material-symbols-outlined", style: "color: white; font-size: 20px;", text: "rocket_launch" }),
+          (() => { const ic = lucideIcon("rocket", 20); ic.style.color = "white"; return ic; })(),
         ]),
         el("div", {}, [
           el("h1", { style: "font-family: var(--ee-font-headline); font-size: 18px; font-weight: 700; color: var(--ee-on-surface); margin: 0;" }, "Business Assessment"),
@@ -974,7 +975,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       style: "width: 100%; text-align: center; padding: 28px 20px; background: var(--ee-surface-container); border: 2px solid var(--ee-outline-variant); cursor: pointer; transition: border-color 0.15s;",
       onclick: () => onboardingStore.setAccountStatus("existing"),
     }, [
-      el("span", { className: "material-symbols-outlined", style: "font-size: 32px; color: var(--ee-primary); display: block; margin-bottom: 10px;", text: "check_circle" }),
+      (() => { const ic = lucideIcon("check-circle", 32); ic.style.cssText = "color: #f59e0b; display: block; margin-bottom: 10px;"; return ic; })(),
       el("p", { style: "font-size: 15px; font-weight: 700; color: var(--ee-on-surface);" }, "Yes, I have an Odoo instance"),
     ]));
 
@@ -983,7 +984,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       style: "width: 100%; text-align: center; padding: 28px 20px; background: var(--ee-surface-container); border: 2px solid var(--ee-outline-variant); cursor: pointer; transition: border-color 0.15s;",
       onclick: () => onboardingStore.setAccountStatus("new"),
     }, [
-      el("span", { className: "material-symbols-outlined", style: "font-size: 32px; color: var(--ee-on-surface-variant); display: block; margin-bottom: 10px;", text: "add_circle" }),
+      (() => { const ic = lucideIcon("plus-circle", 32); ic.style.cssText = "color: #64748b; display: block; margin-bottom: 10px;"; return ic; })(),
       el("p", { style: "font-size: 15px; font-weight: 700; color: var(--ee-on-surface);" }, "No, I need to create one"),
     ]));
 
@@ -1010,7 +1011,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
         className: "ee-btn ee-btn--secondary",
         style: "display: inline-flex; align-items: center; gap: 8px; text-decoration: none;",
       }, [
-        el("span", { className: "material-symbols-outlined", style: "font-size: 18px;", text: "open_in_new" }),
+        lucideIcon("external-link", 18),
         "Open Odoo signup",
       ]),
     ]));
@@ -1105,11 +1106,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       if (dbUiState.detecting) {
         dbArea.append(
           el("div", { style: "display: flex; align-items: center; gap: 8px; padding: 10px 0;" }, [
-            el("span", {
-              className: "material-symbols-outlined",
-              style: "font-size: 18px; color: var(--ee-on-surface-variant); animation: spin 1s linear infinite;",
-              text: "sync",
-            }),
+            (() => { const ic = lucideIcon("loader-2", 18); ic.style.cssText = "color: #64748b; animation: spin 1s linear infinite;"; return ic; })(),
             el("span", { style: "font-size: 13px; color: var(--ee-on-surface-variant);" }, "Detecting databases..."),
           ])
         );
@@ -1362,11 +1359,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
         },
       }, [
         el("div", { style: "display: flex; align-items: flex-start; gap: 14px;" }, [
-          el("span", {
-            className: "material-symbols-outlined",
-            style: `font-size: 28px; color: ${isSelected ? "var(--ee-primary)" : "var(--ee-on-surface-variant)"};`,
-            text: industry.icon,
-          }),
+          (() => { const ic = lucideIcon(industry.icon, 28); ic.style.color = isSelected ? "#f59e0b" : "#64748b"; return ic; })(),
           el("div", { style: "flex: 1;" }, [
             el("p", { style: "font-size: 15px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 4px;" }, industry.name),
             el("p", { style: "font-size: 13px; color: var(--ee-on-surface-variant); margin-bottom: 12px;" }, industry.description),
@@ -1473,7 +1466,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     const deferredCount = onboardingStore.getDeferredCount();
     if (deferredCount > 0 && idx === 0) {
       wrap.append(el("div", { className: "ow-banner ow-banner--warning", style: "padding: 12px 16px; background: #FFF3CD; border-left: 3px solid #F0A500; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;" }, [
-        el("span", { className: "material-symbols-outlined", style: "color: #F0A500; font-size: 18px;", text: "warning" }),
+        (() => { const ic = lucideIcon("alert-triangle", 18); ic.style.color = "#F0A500"; return ic; })(),
         el("p", { style: "font-size: 13px; color: #7A5200; margin: 0;" }, `You have ${deferredCount} unanswered question(s). Answer them to refine your implementation scope.`),
       ]));
     }
@@ -1497,7 +1490,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     const prePopulatedAnswer = s.pre_populated_answers[question.id];
     if (prePopulatedAnswer && !s.answers[question.id]) {
       card.append(el("div", { className: "ow-prepop-badge", style: "display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--ee-secondary-container); margin-bottom: 12px;" }, [
-        el("span", { className: "material-symbols-outlined", style: "font-size: 14px; color: var(--ee-secondary);", text: "auto_awesome" }),
+        (() => { const ic = lucideIcon("sparkles", 14); ic.style.color = "var(--ee-secondary)"; return ic; })(),
         el("span", { style: "font-size: 11px; font-weight: 600; color: var(--ee-secondary);" }, "Pre-populated by industry template"),
       ]));
     }
@@ -1517,7 +1510,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
 
     // Domain impact
     card.append(el("div", { className: "ow-panel ow-impact-panel", style: "margin-top: 14px; padding: 10px 12px; background: var(--ee-surface-container); display: flex; align-items: flex-start; gap: 8px;" }, [
-      el("span", { className: "material-symbols-outlined", style: "font-size: 15px; color: var(--ee-on-surface-variant); flex-shrink: 0; margin-top: 1px;", text: "info" }),
+      (() => { const ic = lucideIcon("info", 15); ic.style.cssText = "color: var(--ee-on-surface-variant); flex-shrink: 0; margin-top: 1px;"; return ic; })(),
       el("p", { style: "font-size: 12px; color: var(--ee-on-surface-variant); margin: 0;" }, question.domainImpact),
     ]));
 
@@ -1620,7 +1613,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
 
     if (isDeferred) {
       wrap.append(el("div", { className: "ow-panel ow-panel--notice", style: "padding: 10px 14px; background: var(--ee-surface-container); border-left: 3px solid var(--ee-outline); display: flex; align-items: center; gap: 8px;" }, [
-        el("span", { className: "material-symbols-outlined", style: "font-size: 16px; color: var(--ee-on-surface-variant);", text: "schedule" }),
+        (() => { const ic = lucideIcon("clock", 16); ic.style.color = "var(--ee-on-surface-variant)"; return ic; })(),
         el("span", { style: "font-size: 13px; color: var(--ee-on-surface-variant);" }, "Marked as deferred. Select an answer below to override."),
       ]));
     }
@@ -1693,7 +1686,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
           el("div", {
             className: `ow-option-indicator${isChecked ? " ow-option-indicator--selected" : ""}`,
             style: `width: 16px; height: 16px; flex-shrink: 0; border: 2px solid ${isChecked ? "var(--ee-primary)" : "var(--ee-outline)"}; background: ${isChecked ? "var(--ee-primary)" : "transparent"}; display: flex; align-items: center; justify-content: center;`,
-          }, isChecked ? [el("span", { className: "material-symbols-outlined", style: "font-size: 12px; color: white;", text: "check" })] : []),
+          }, isChecked ? [(() => { const ic = lucideIcon("check", 12); ic.style.color = "white"; return ic; })()] : []),
           el("span", { className: `ow-option-label${isChecked ? " ow-option-label--selected" : ""}`, style: `font-size: 14px; color: var(--ee-on-surface); font-weight: ${isChecked ? "600" : "400"};`, text: opt }),
         ]),
       ]));
@@ -1771,7 +1764,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     const card = el("div", { className: "ow-card ow-card--warning", style: "background: var(--ee-surface-container-low); box-shadow: var(--ee-shadow-lg); padding: 32px; border-top: 4px solid var(--ee-error);" });
 
     card.append(el("div", { style: "display: flex; align-items: center; gap: 12px; margin-bottom: 20px;" }, [
-      el("span", { className: "material-symbols-outlined", style: "font-size: 28px; color: var(--ee-error);", text: "warning" }),
+      (() => { const ic = lucideIcon("alert-triangle", 28); ic.style.color = "var(--ee-error)"; return ic; })(),
       el("h2", { style: "font-family: var(--ee-font-headline); font-size: 18px; font-weight: 700; color: var(--ee-error);" },
         questionId === "BM-03"
           ? "This decision cannot be changed after accounting entries are posted."
@@ -2008,7 +2001,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
         },
       }, [
         el("span", { style: "font-size: 13px; font-weight: 700; color: var(--ee-on-surface);" }, sectionName),
-        el("span", { className: "material-symbols-outlined", style: "font-size: 18px; color: var(--ee-on-surface-variant);", text: isExpanded ? "expand_less" : "expand_more" }),
+        (() => { const ic = lucideIcon(isExpanded ? "chevron-up" : "chevron-down", 18); ic.style.color = "var(--ee-on-surface-variant)"; return ic; })(),
       ]));
 
       if (isExpanded) {
@@ -2085,7 +2078,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     const section = el("div", { className: "ow-warning-card", style: "background: #FFF3CD; border: 1px solid #F0A500; padding: 20px; margin-bottom: 16px;" });
 
     section.append(el("div", { style: "display: flex; align-items: center; gap: 8px; margin-bottom: 12px;" }, [
-      el("span", { className: "material-symbols-outlined", style: "color: #F0A500; font-size: 20px;", text: "warning" }),
+      (() => { const ic = lucideIcon("alert-triangle", 20); ic.style.color = "#F0A500"; return ic; })(),
       el("h3", { style: "font-size: 14px; font-weight: 700; color: #7A5200; margin: 0;" }, "Domains activated by default — unanswered questions"),
     ]));
 
@@ -2131,7 +2124,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       el("div", {
         className: `ow-toggle-indicator${s.deferred_acknowledged ? " ow-toggle-indicator--active" : ""}`,
         style: `width: 18px; height: 18px; flex-shrink: 0; border: 2px solid ${s.deferred_acknowledged ? "var(--ee-success)" : "var(--ee-outline)"}; background: ${s.deferred_acknowledged ? "var(--ee-success)" : "transparent"}; display: flex; align-items: center; justify-content: center; margin-top: 1px;`,
-      }, s.deferred_acknowledged ? [el("span", { className: "material-symbols-outlined", style: "font-size: 13px; color: white;", text: "check" })] : []),
+      }, s.deferred_acknowledged ? [(() => { const ic = lucideIcon("check", 13); ic.style.color = "white"; return ic; })()] : []),
       el("p", { style: "font-size: 13px; color: var(--ee-on-surface); line-height: 1.5; margin: 0;" },
         `I acknowledge that ${domainCount} domain(s) have been activated by default because I deferred ${deferredCount} question(s). I understand the implementation scope may be larger than necessary and I can reduce it by answering those questions before confirming.`
       ),
@@ -2147,7 +2140,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       el("div", {
         className: `ow-toggle-indicator${s.confirmed ? " ow-toggle-indicator--active" : ""}`,
         style: `width: 18px; height: 18px; flex-shrink: 0; border: 2px solid ${s.confirmed ? "var(--ee-primary)" : "var(--ee-outline)"}; background: ${s.confirmed ? "var(--ee-primary)" : "transparent"}; display: flex; align-items: center; justify-content: center; margin-top: 1px;`,
-      }, s.confirmed ? [el("span", { className: "material-symbols-outlined", style: "font-size: 13px; color: white;", text: "check" })] : []),
+      }, s.confirmed ? [(() => { const ic = lucideIcon("check", 13); ic.style.color = "white"; return ic; })()] : []),
       el("p", { style: "font-size: 13px; font-weight: 600; color: var(--ee-on-surface); margin: 0;" }, "I understand what will be set up for my business and I am ready to run the implementation pipeline."),
     ]);
   }

@@ -1,4 +1,5 @@
 import { el } from "../lib/dom.js";
+import { lucideIcon } from "../lib/icons.js";
 
 /**
  * WizardShell — shared scaffold for all 12 module setup wizards.
@@ -73,7 +74,7 @@ export function createWizardShell({ title, subtitle, icon, steps, onComplete, on
       }, [
         el("div", { style: circleStyle }, [
           isDone
-            ? el("span", { className: "material-symbols-outlined", style: "font-size: 18px;", text: "check" })
+            ? lucideIcon("check", 16)
             : el("span", { text: String(i + 1) })
         ]),
         el("span", {
@@ -183,7 +184,7 @@ export function createWizardShell({ title, subtitle, icon, steps, onComplete, on
       onclick: onCancel,
       title: "Cancel"
     }, [
-      el("span", { className: "material-symbols-outlined", style: "font-size: 20px;", text: "close" })
+      lucideIcon("x", 20)
     ]);
     closeBtn.onmouseenter = () => { closeBtn.style.background = "rgba(12,26,48,0.06)"; };
     closeBtn.onmouseleave = () => { closeBtn.style.background = "none"; };
@@ -194,7 +195,7 @@ export function createWizardShell({ title, subtitle, icon, steps, onComplete, on
         // Header
         el("div", { style: "padding: 24px 28px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: flex-start; gap: 16px;" }, [
           icon ? el("div", { style: "width: 44px; height: 44px; border-radius: 10px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); color: #92400e; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" }, [
-            el("span", { className: "material-symbols-outlined", style: "font-size: 20px;", text: icon })
+            lucideIcon(icon, 20)
           ]) : null,
           el("div", { style: "flex: 1;" }, [
             el("h2", { style: "font-size: 18px; font-weight: 600; color: #0c1a30; margin-bottom: 2px;", text: title }),
@@ -300,7 +301,7 @@ export function pushSummaryStep(label, data, onPush) {
       pushState = "loading";
       pushBtn.disabled = true;
       pushBtn.innerHTML = "";
-      const spinner = el("span", { className: "animate-spin material-symbols-outlined text-[18px]", text: "autorenew" });
+      const spinner = lucideIcon("loader-2", 18); spinner.classList.add("animate-spin");
       pushBtn.append(spinner, document.createTextNode(" Pushing to Odoo..."));
       statusEl.className = "text-center text-sm text-on-surface-variant py-2";
       statusEl.textContent = "Sending data to Odoo...";
@@ -310,7 +311,7 @@ export function pushSummaryStep(label, data, onPush) {
         pushState = "success";
         pushBtn.innerHTML = "";
         pushBtn.append(
-          el("span", { className: "material-symbols-outlined text-[18px]", text: "check_circle" }),
+          lucideIcon("check-circle", 18),
           document.createTextNode(" Pushed Successfully!")
         );
         pushBtn.className = "w-full flex items-center justify-center gap-2 bg-secondary text-on-secondary font-bold text-sm py-3 rounded-xl cursor-default";
@@ -327,7 +328,7 @@ export function pushSummaryStep(label, data, onPush) {
       }
     }
   }, [
-    el("span", { className: "material-symbols-outlined text-[18px]", text: "cloud_upload" }),
+    lucideIcon("cloud-upload", 18),
     el("span", { text: `Push ${label} to Odoo` })
   ]);
 

@@ -1,15 +1,16 @@
 import { getProjectStoreRecordId, getProjectStoreRecordLabel, renderConnectionCapabilityLabel } from "/shared/index.js";
 import { el } from "../lib/dom.js";
+import { lucideIcon } from "../lib/icons.js";
 
 const NAV_ITEMS = [
-  { id: "new-project",          icon: "add",                label: "New Project" },
-  { id: "dashboard",            icon: "dashboard",          label: "Dashboard" },
-  { id: "implementation-roadmap", icon: "route",          label: "Implementation Roadmap" },
-  { id: "module-setup",         icon: "tune",               label: "Module Setup" },
-  { id: "data-import",          icon: "upload_file",        label: "Data Import" },
-  { id: "knowledge-base",       icon: "menu_book",          label: "Knowledge Base" },
-  { id: "analytics",            icon: "bar_chart",          label: "Analytics" },
-  { id: "pipeline",             icon: "schema",             label: "Pipeline" }
+  { id: "new-project",          icon: "plus-circle",        label: "New Project" },
+  { id: "dashboard",            icon: "layout-dashboard",   label: "Dashboard" },
+  { id: "implementation-roadmap", icon: "map",              label: "Implementation Roadmap" },
+  { id: "module-setup",         icon: "settings",           label: "Module Setup" },
+  { id: "data-import",          icon: "upload",             label: "Data Import" },
+  { id: "knowledge-base",       icon: "book-open",          label: "Knowledge Base" },
+  { id: "analytics",            icon: "bar-chart-2",        label: "Analytics" },
+  { id: "pipeline",             icon: "git-branch",         label: "Pipeline" }
 ];
 
 export function renderLayoutShell({ project, content, notifications, onNavigate, onSave, onResume, onConnect, onDisconnect }) {
@@ -55,7 +56,7 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
         },
         "aria-label": "Toggle sidebar"
       }, [
-        el("span", { className: "material-symbols-outlined text-[#80747a]", text: "menu" })
+        (() => { const ic = lucideIcon("menu", 20); ic.style.color = "#80747a"; return ic; })()
       ]),
       el("h1", {
         className: "ee-header__title",
@@ -83,7 +84,7 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
             style: "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 13px; padding: 8px 16px; cursor: pointer;",
             onclick: onSave
           }, [
-            el("span", { className: "material-symbols-outlined text-[18px]", text: "sync" }),
+            lucideIcon("refresh-cw", 16),
             el("span", { className: "hidden sm:inline", text: "Sync to Odoo" })
           ])
         : el("button", {
@@ -91,7 +92,7 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
             style: "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 13px; padding: 8px 16px; cursor: pointer;",
             onclick: () => onNavigate("connection-wizard")
           }, [
-            el("span", { className: "material-symbols-outlined text-[18px]", text: "link" }),
+            lucideIcon("link", 16),
             el("span", { className: "hidden sm:inline", text: "Connect Odoo" })
           ]),
       el("div", {
@@ -114,10 +115,7 @@ export function renderLayoutShell({ project, content, notifications, onNavigate,
               ? "background: var(--ee-success-soft); color: var(--ee-success); border: 1px solid rgba(45, 106, 60, 0.2);"
               : "background: var(--ee-surface-container); color: var(--ee-on-surface); border: 1px solid var(--ee-outline-variant);"
         }, [
-          el("span", {
-            className: "material-symbols-outlined text-[18px]",
-            text: n.type === "error" ? "error" : n.type === "success" ? "check_circle" : "info"
-          }),
+          lucideIcon(n.type === "error" ? "alert-circle" : n.type === "success" ? "check-circle" : "info", 18),
           el("span", { text: n.message })
         ]))
       )
@@ -167,11 +165,7 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
         if (onClose) onClose();
       }
     }, [
-      el("span", {
-        className: "material-symbols-outlined ee-nav__icon",
-        style: `font-size: 20px; color: ${isActive ? "#f59e0b" : "#64748b"};`,
-        text: item.icon
-      }),
+      (() => { const ic = lucideIcon(item.icon, 18); ic.style.color = isActive ? "#f59e0b" : "#64748b"; ic.style.flexShrink = "0"; return ic; })(),
       item.id === "pipeline"
         ? el("span", { style: "display: flex; flex-direction: column;" }, [
             el("span", { text: item.label }),
@@ -210,7 +204,7 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
       el("div", {
         style: "display: flex; align-items: center; gap: 8px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;"
       }, [
-        el("span", { className: "material-symbols-outlined", style: "font-size: 16px; color: #0c1a30;", text: "folder" }),
+        (() => { const ic = lucideIcon("folder", 16); ic.style.color = "#0c1a30"; return ic; })(),
         el("span", {
           style: "font-size: 13px; font-weight: 500; color: #0c1a30; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;",
           text: projectName
@@ -228,7 +222,7 @@ function buildSidebar(project, currentView, onNavigate, onSave, savedProjects, o
         style: "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 13px; padding: 8px 14px; width: 100%; cursor: pointer;",
         onclick: onSave
       }, [
-        el("span", { className: "material-symbols-outlined", style: "font-size: 18px;", text: "save" }),
+        lucideIcon("save", 16),
         el("span", { text: "Save Progress" })
       ]),
       savedProjects.length

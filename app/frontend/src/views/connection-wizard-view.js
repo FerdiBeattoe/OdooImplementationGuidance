@@ -1,4 +1,5 @@
 import { el } from "../lib/dom.js";
+import { lucideIcon } from "../lib/icons.js";
 import { getState } from "../state/app-store.js";
 
 export function renderConnectionWizardView({ onConnect, onSkip }) {
@@ -37,7 +38,7 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
         el("div", { 
           style: "width: 48px; height: 48px; background: var(--ee-primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;"
         }, [
-          el("span", { className: "material-symbols-outlined", style: "color: white; font-size: 24px;", text: "hub" })
+          (() => { const ic = lucideIcon("network", 24); ic.style.color = "white"; return ic; })()
         ]),
         el("h1", { style: "font-family: var(--ee-font-headline); font-size: 22px; font-weight: 700; color: var(--ee-on-surface);" }, "Connect to Odoo"),
         el("p", { style: "font-size: 14px; color: var(--ee-on-surface-variant); margin-top: 8px;" }, "Project Odoo — Governed Odoo 19")
@@ -52,7 +53,7 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
               n === state.step ? "background: var(--ee-primary); color: white;" :
               "background: var(--ee-surface-container); color: var(--ee-outline);"
             }`
-          }, [n < state.step ? el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: "check" }) : el("span", { text: String(n) })]),
+          }, [n < state.step ? lucideIcon("check", 16) : el("span", { text: String(n) })]),
           n < 3 ? el("div", { style: `width: 32px; height: 2px; background: ${n < state.step ? "var(--ee-primary)" : "var(--ee-surface-container-high)"};` }) : null
         ]))
       ),
@@ -73,9 +74,9 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
 
     // Type options
     const types = [
-      { id: "online", icon: "public", label: "Odoo Online", desc: "odoo.com hosted" },
+      { id: "online", icon: "globe", label: "Odoo Online", desc: "odoo.com hosted" },
       { id: "sh", icon: "cloud", label: "Odoo.sh", desc: "Managed cloud platform" },
-      { id: "selfhost", icon: "dns", label: "Self-hosted", desc: "On-premise server" }
+      { id: "selfhost", icon: "server", label: "Self-hosted", desc: "On-premise server" }
     ];
 
     types.forEach(t => {
@@ -89,7 +90,7 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
         }
       }, [
         el("div", { style: "display: flex; align-items: center; gap: 12px;" }, [
-          el("span", { className: "material-symbols-outlined", style: `font-size: 22px; color: ${state.instanceType === t.id ? "var(--ee-primary)" : "var(--ee-on-surface-variant)"};`, text: t.icon }),
+          (() => { const ic = lucideIcon(t.icon, 22); ic.style.color = state.instanceType === t.id ? "#f59e0b" : "#64748b"; return ic; })(),
           el("div", {}, [
             el("p", { style: "font-size: 14px; font-weight: 600; color: var(--ee-on-surface);" }, t.label),
             el("p", { style: "font-size: 12px; color: var(--ee-on-surface-variant);" }, t.desc)
@@ -201,7 +202,7 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
       onclick: () => { state.isNewDatabase = !state.isNewDatabase; render(); }
     }, [
       el("div", { style: `width: 20px; height: 20px; border: 2px solid ${state.isNewDatabase ? "var(--ee-primary)" : "var(--ee-outline)"}; background: ${state.isNewDatabase ? "var(--ee-primary)" : "transparent"};` }, 
-        state.isNewDatabase ? el("span", { className: "material-symbols-outlined", style: "font-size: 14px; color: white;", text: "check" }) : null),
+        state.isNewDatabase ? (() => { const ic = lucideIcon("check", 14); ic.style.color = "white"; return ic; })() : null),
       el("span", { style: "font-size: 14px;" }, "Create new database")
     ]));
 
@@ -301,9 +302,9 @@ export function renderConnectionWizardView({ onConnect, onSkip }) {
         render();
       }
     }, [
-      isTesting 
-        ? el("span", { className: "material-symbols-outlined", style: "animation: spin 1s linear infinite;", text: "autorenew" })
-        : el("span", { className: "material-symbols-outlined", text: "wifi_tethering" }),
+      isTesting
+        ? (() => { const ic = lucideIcon("loader-2", 18); ic.style.animation = "spin 1s linear infinite"; return ic; })()
+        : lucideIcon("wifi", 18),
       el("span", { text: isTesting ? "Testing..." : "Test Connection" })
     ]));
 

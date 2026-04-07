@@ -1,5 +1,6 @@
 import { STAGES } from "/shared/index.js";
 import { el } from "../lib/dom.js";
+import { lucideIcon } from "../lib/icons.js";
 
 export function renderStagesView(project, onSelectStage) {
   const total = project.checkpoints.length;
@@ -30,14 +31,14 @@ export function renderStagesView(project, onSelectStage) {
         const stageCheckpoints = project.checkpoints.filter(c => c.stageId === stage.id);
         
         let theme, icon, margin;
-        if (index === 0) { theme = "primary"; icon = "cloud_done"; margin = ""; }
-        else if (index === 1) { theme = "secondary"; icon = "settings_suggest"; margin = "lg:mt-12"; }
+        if (index === 0) { theme = "primary"; icon = "cloud"; margin = ""; }
+        else if (index === 1) { theme = "secondary"; icon = "settings"; margin = "lg:mt-12"; }
         else { theme = "tertiary"; icon = "database"; margin = "lg:mt-24"; }
 
         return el("div", { className: `lg:col-span-4 space-y-6 ${margin}` }, [
           el("div", { className: "flex items-center gap-3 mb-2" }, [
             el("div", { className: `w-10 h-10 ${theme === 'primary' ? 'bg-primary-fixed text-primary' : theme === 'secondary' ? 'bg-secondary-fixed text-secondary' : 'bg-tertiary-fixed text-tertiary'} rounded-lg flex items-center justify-center` }, [
-              el("span", { className: "material-symbols-outlined", text: icon })
+              lucideIcon(icon, 20)
             ]),
             el("h2", { className: "text-xl font-bold font-headline", text: `${index + 1}. ${stage.label}` })
           ]),
@@ -60,7 +61,7 @@ export function renderStagesView(project, onSelectStage) {
         ])
       ]),
       el("div", { className: "bg-primary text-on-primary p-8 rounded-xl flex flex-col" }, [
-        el("span", { className: "material-symbols-outlined text-primary-fixed mb-4 text-4xl", text: "psychology" }),
+        lucideIcon("brain", 32),
         el("h3", { className: "text-xl font-bold font-headline mb-4", text: "Architect's Guidance" }),
         el("p", { className: "text-sm leading-relaxed text-on-primary-container mb-8", text: `"Prioritize the Multi-Company structure before the Chart of Accounts import. Odoo handles tax positions dynamically based on this hierarchy, avoiding duplicate manual entries later."` })
       ])
@@ -109,7 +110,7 @@ function renderRoadmapCard(checkpoint, colorTheme) {
     el("h3", { className: "font-bold text-on-surface mb-1 font-headline", text: checkpoint.title }),
     el("p", { className: "text-xs text-on-surface-variant mb-4 font-body leading-relaxed", text: checkpoint.validationSource }),
     isDone ? el("div", { className: "flex items-center gap-2" }, [
-      el("span", { className: `material-symbols-outlined text-sm ${verifyClass}`, text: "check_circle" }),
+      lucideIcon("check-circle", 14),
       el("span", { className: `text-[11px] font-medium ${verifyClass}`, text: "Verified" })
     ]) : null
   ]);

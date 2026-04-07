@@ -1,4 +1,5 @@
 import { el } from "../lib/dom.js";
+import { lucideIcon } from "../lib/icons.js";
 
 const ARTICLES = [
   // Sales
@@ -83,7 +84,7 @@ export function renderKnowledgeBaseView() {
       
       // Search bar
       el("div", { style: "position: relative;" }, [
-        el("span", { className: "material-symbols-outlined", style: "position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 20px; color: var(--color-on-surface-variant);", text: "search" }),
+        (() => { const ic = lucideIcon("search", 20); ic.style.cssText = "position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #64748b;"; return ic; })(),
         el("input", {
           type: "search",
           style: "width: 100%; height: 44px; padding: 0 16px 0 44px; font-family: var(--font-body); font-size: 14px; background: var(--color-surface); border: 1px solid #e2e8f0; border-radius: 6px;",
@@ -109,7 +110,7 @@ export function renderKnowledgeBaseView() {
       // Article grid
       articles.length === 0
         ? el("div", { style: "text-align: center; padding: 48px; color: var(--color-on-surface-variant);" }, [
-            el("span", { className: "material-symbols-outlined", style: "font-size: 48px; display: block; margin-bottom: 16px; opacity: 0.3;", text: "search_off" }),
+            (() => { const ic = lucideIcon("search-x", 48); ic.style.cssText = "display: block; margin: 0 auto 16px; opacity: 0.3;"; return ic; })(),
             el("p", { style: "font-family: var(--font-body); font-size: 14px;", text: "No articles found. Try a different search or category." })
           ])
         : el("div", { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;" },
@@ -159,7 +160,7 @@ export function renderKnowledgeBaseView() {
         onmouseleave: (e) => e.target.style.color = "var(--color-on-surface-variant)",
         onclick: onBack
       }, [
-        el("span", { className: "material-symbols-outlined", style: "font-size: 18px;", text: "arrow_back" }),
+        lucideIcon("arrow-left", 18),
         el("span", { text: "Back to Knowledge Base" })
       ]),
       
@@ -208,7 +209,7 @@ export function renderKnowledgeBaseView() {
                 onclick: () => { activeArticle = r; render(); }
               }, [
                 el("span", { style: "font-family: var(--font-body); font-size: 14px; font-weight: 500; color: var(--color-on-surface);", text: r.title }),
-                el("span", { className: "material-symbols-outlined", style: "font-size: 20px; color: var(--color-on-surface-variant);", text: "chevron_right" })
+                (() => { const ic = lucideIcon("chevron-right", 20); ic.style.color = "#64748b"; return ic; })()
               ]))
             )
           ])

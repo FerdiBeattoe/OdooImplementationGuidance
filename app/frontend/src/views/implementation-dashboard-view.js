@@ -1,4 +1,5 @@
 import { el } from "../lib/dom.js";
+import { lucideIcon } from "../lib/icons.js";
 import {
   getState,
   getModuleCompletionStatus,
@@ -9,18 +10,18 @@ import { getImplementationState } from "../state/implementationStore.js";
 import { pipelineStore } from "../state/pipeline-store.js";
 
 const MODULES = [
-  { id: "company-setup", name: "Company Setup", icon: "business", wizardId: "company-setup" },
-  { id: "users-access", name: "Users & Access", icon: "manage_accounts", wizardId: "users-access" },
-  { id: "chart-of-accounts", name: "Chart of Accounts", icon: "account_balance", wizardId: "chart-of-accounts" },
-  { id: "sales-setup", name: "Sales", icon: "sell", wizardId: "sales-setup" },
-  { id: "crm-setup", name: "CRM", icon: "person_pin", wizardId: "crm-setup" },
-  { id: "inventory-setup", name: "Inventory", icon: "inventory_2", wizardId: "inventory-setup" },
-  { id: "accounting-setup", name: "Accounting", icon: "account_balance", wizardId: "accounting-setup" },
-  { id: "purchase-setup", name: "Purchase", icon: "shopping_cart", wizardId: "purchase-setup" },
-  { id: "manufacturing-setup", name: "Manufacturing", icon: "precision_manufacturing", wizardId: "manufacturing-setup" },
-  { id: "hr-setup", name: "HR & Payroll", icon: "badge", wizardId: "hr-setup" },
-  { id: "website-setup", name: "Website & eCommerce", icon: "language", wizardId: "website-setup" },
-  { id: "pos-setup", name: "Point of Sale", icon: "point_of_sale", wizardId: "pos-setup" }
+  { id: "company-setup", name: "Company Setup", icon: "building-2", wizardId: "company-setup" },
+  { id: "users-access", name: "Users & Access", icon: "users", wizardId: "users-access" },
+  { id: "chart-of-accounts", name: "Chart of Accounts", icon: "landmark", wizardId: "chart-of-accounts" },
+  { id: "sales-setup", name: "Sales", icon: "tag", wizardId: "sales-setup" },
+  { id: "crm-setup", name: "CRM", icon: "target", wizardId: "crm-setup" },
+  { id: "inventory-setup", name: "Inventory", icon: "package", wizardId: "inventory-setup" },
+  { id: "accounting-setup", name: "Accounting", icon: "calculator", wizardId: "accounting-setup" },
+  { id: "purchase-setup", name: "Purchase", icon: "shopping-cart", wizardId: "purchase-setup" },
+  { id: "manufacturing-setup", name: "Manufacturing", icon: "factory", wizardId: "manufacturing-setup" },
+  { id: "hr-setup", name: "HR & Payroll", icon: "user-check", wizardId: "hr-setup" },
+  { id: "website-setup", name: "Website & eCommerce", icon: "globe", wizardId: "website-setup" },
+  { id: "pos-setup", name: "Point of Sale", icon: "monitor", wizardId: "pos-setup" }
 ];
 
 const NEXT_STEPS = [
@@ -134,9 +135,9 @@ export function renderImplementationDashboardView({ onNavigate, onOpenRoadmap })
         style: "display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;"
       }, [
         renderKpiCard(kpis.modulesConfigured, "Modules Configured", "settings"),
-        renderKpiCard(kpis.dataImported, "Data Imported", "database"),
-        renderKpiCard(kpis.stepsComplete, "Steps Complete", "checklist"),
-        renderKpiCard(kpis.estTimeRemaining, "Est. Time Remaining", "schedule")
+        renderKpiCard(kpis.dataImported, "Data Imported", "upload"),
+        renderKpiCard(kpis.stepsComplete, "Steps Complete", "check-circle"),
+        renderKpiCard(kpis.estTimeRemaining, "Est. Time Remaining", "clock")
       ]),
 
       // Implementation Progress Section
@@ -189,13 +190,9 @@ function renderKpiCard(value, label, icon) {
     style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; flex: 1; display: flex; flex-direction: column; gap: 8px; position: relative;"
   }, [
     el("div", {
-      style: "position: absolute; top: 20px; right: 20px;"
+      style: "position: absolute; top: 20px; right: 20px; color: #f59e0b; opacity: 0.7;"
     }, [
-      el("span", {
-        className: "material-symbols-outlined",
-        style: "font-size: 20px; color: #f59e0b; opacity: 0.7;",
-        text: icon
-      })
+      lucideIcon(icon, 20)
     ]),
     el("div", {
       style: "font-family: Inter, sans-serif; font-size: 28px; font-weight: 700; color: #0c1a30; line-height: 1;"
@@ -250,13 +247,9 @@ function renderModuleItem(module, onClick, completedWizards) {
     onclick: () => onClick && onClick(module.wizardId)
   }, [
     el("div", {
-      style: "background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
+      style: `background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: ${isComplete ? "#065f46" : "#92400e"};`
     }, [
-      el("span", {
-        className: "material-symbols-outlined",
-        style: `font-size: 20px; color: ${isComplete ? "#065f46" : "#92400e"};`,
-        text: isComplete ? "check" : module.icon
-      })
+      lucideIcon(isComplete ? "check" : module.icon, 20)
     ]),
     el("span", {
       style: "font-size: 15px; font-weight: 600; color: #0c1a30; font-family: Inter, sans-serif;"

@@ -30,6 +30,7 @@ import {
   SAMPLE_GUIDANCE_BLOCKS
 } from "/shared/index.js";
 import { el } from "../lib/dom.js";
+import { lucideIcon } from "../lib/icons.js";
 import { renderCheckpointPanel } from "../components/checkpoint-panel.js";
 import { renderGuidanceBlock } from "../components/guidance-block.js";
 import { renderGridBuilderShell } from "../components/grid-builder-shell.js";
@@ -299,7 +300,7 @@ export function renderDomainsView({
               isActive ? el("div", { className: "absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12" }) : null,
               el("div", { className: "flex justify-between items-start mb-6 relative z-10" }, [
                 el("div", { className: `w-14 h-14 rounded-xl flex items-center justify-center ${isActive ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' : 'bg-secondary-container text-secondary'}` }, [
-                  el("span", { className: "material-symbols-outlined text-3xl", style: "font-variation-settings: 'FILL' 1;", text: "extension" })
+                  lucideIcon("puzzle", 28)
                 ]),
                 el("span", { className: `px-3 py-1 text-[11px] font-bold tracking-wider rounded-full uppercase ${isActive ? 'bg-secondary/10 text-secondary' : 'bg-surface-container-high text-on-surface-variant'}`, text: isActive ? 'Active' : 'Configure' })
               ]),

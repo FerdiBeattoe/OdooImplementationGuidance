@@ -1,4 +1,5 @@
 import { el } from "../lib/dom.js";
+import { lucideIcon } from "../lib/icons.js";
 import {
   getGovernedRoadmapStep,
   setGovernedRoadmapStep,
@@ -182,7 +183,7 @@ function buildStep(step, status, locked, onNavigate, onStatusChange) {
     el("div", {
       style: `position: absolute; left: -41px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: ${cfg.bg}; color: ${cfg.color}; border: ${cfg.border || "none"}; font-family: var(--font-label); font-size: ${status === "complete" ? "16px" : "12px"}; font-weight: 700;`
     }, [
-      el("span", { className: "material-symbols-outlined", style: "font-size: 16px;", text: cfg.icon })
+      status === "complete" ? lucideIcon("check", 16) : el("span", { style: "font-size: 12px; font-weight: 700;", text: cfg.icon })
     ]),
     el("div", { style: "flex: 1; min-width: 0;" }, [
       el("div", { style: "display: flex; align-items: center; gap: 8px; margin-bottom: 4px;" }, [
@@ -192,7 +193,7 @@ function buildStep(step, status, locked, onNavigate, onStatusChange) {
       el("p", { style: "font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--color-on-surface); margin-bottom: 2px;", text: step.title }),
       el("div", { style: "display: flex; align-items: center; gap: 12px; margin-top: 4px;" }, [
         el("span", { style: "font-family: var(--font-body); font-size: 11px; color: var(--color-on-surface-variant); display: flex; align-items: center; gap: 4px;" }, [
-          el("span", { className: "material-symbols-outlined", style: "font-size: 13px;", text: "schedule" }),
+          lucideIcon("clock", 13),
           el("span", { text: step.est })
         ])
       ])
@@ -206,7 +207,7 @@ function buildStep(step, status, locked, onNavigate, onStatusChange) {
             onmouseleave: (e) => e.target.style.textDecoration = "none",
             onclick: (e) => { e.stopPropagation(); onNavigate("wizard-" + step.wizardId); }
           }, [el("span", { text: "Open →" })])
-        : el("span", { className: "material-symbols-outlined", style: "font-size: 18px; color: var(--color-on-surface-variant);", text: "lock" })
+        : (() => { const ic = lucideIcon("lock", 18); ic.style.color = "#94a3b8"; return ic; })()
     ])
   ]);
 

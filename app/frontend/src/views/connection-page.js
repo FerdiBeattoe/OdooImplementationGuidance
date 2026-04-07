@@ -6,6 +6,7 @@ import {
   getCombinationError
 } from "/shared/index.js";
 import { el } from "../lib/dom.js";
+import { lucideIcon } from "../lib/icons.js";
 
 /**
  * Full-page non-technical connection / project setup screen.
@@ -125,7 +126,7 @@ export function renderConnectionPage(project, onIdentityChange, onEnvironmentCha
 
   const errorNote = combinationError
     ? el("div", { style: "display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--color-error-container); margin-bottom: 16px;" }, [
-        el("span", { className: "material-symbols-outlined", style: "font-size: 18px; color: var(--color-error);", text: "warning" }),
+        (() => { const ic = lucideIcon("alert-triangle", 18); ic.style.color = "#dc2626"; return ic; })(),
         el("span", { style: "font-family: var(--font-body); font-size: 13px; color: var(--color-on-error-container);", text: combinationError })
       ])
     : null;
@@ -176,7 +177,7 @@ export function renderConnectionPage(project, onIdentityChange, onEnvironmentCha
 
 function featureBullet(icon, text) {
   return el("li", { style: "display: flex; align-items: center; gap: 12px; font-family: var(--font-body); font-size: 14px; color: rgba(255, 255, 255, 0.8);" }, [
-    el("span", { className: "material-symbols-outlined", style: "font-size: 18px; color: var(--color-primary-fixed-dim); flex-shrink: 0;", text: icon }),
+    (() => { const ic = lucideIcon(icon, 18); ic.style.color = "#f59e0b"; ic.style.flexShrink = "0"; return ic; })(),
     el("span", { text })
   ]);
 }

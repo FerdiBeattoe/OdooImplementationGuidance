@@ -22,13 +22,102 @@
 // ---------------------------------------------------------------------------
 
 import { el } from "../lib/dom.js";
+import { lucideIcon } from "../lib/icons.js";
 import { pipelineStore } from "../state/pipeline-store.js";
 import { onboardingStore } from "../state/onboarding-store.js";
 
 export const ONBOARDING_RESUME_ROUTE = "onboarding/questions";
+const REVIEW_COMMIT_BUTTON_STYLE = "display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; font-family: Inter, sans-serif;";
 
 function navigateToQuestions(onNavigate) {
   if (onNavigate) onNavigate(ONBOARDING_RESUME_ROUTE);
+}
+
+function buildTeamHeaders(token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+function renderPipelineIcon(name, size) {
+  const normalized = String(name || "")
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/([A-Za-z])([0-9])/g, "$1-$2")
+    .replace(/([0-9])([A-Za-z])/g, "$1-$2")
+    .toLowerCase();
+
+  return lucideIcon(normalized, size);
+}
+
+function isProjectLeadMember(members, onboardingState) {
+  const currentUserId = onboardingState?.user?.id || null;
+  const currentUserEmail = String(onboardingState?.user?.email || "").trim().toLowerCase();
+  const activeMembers = Array.isArray(members)
+    ? members.filter((member) => member?.accepted_at)
+    : [];
+  const currentMembership = activeMembers.find((member) => {
+    if (currentUserId && member.account_id === currentUserId) {
+      return true;
+    }
+
+    return (
+      !currentUserId &&
+      currentUserEmail &&
+      String(member.email || "").trim().toLowerCase() === currentUserEmail
+    );
+  }) || null;
+
+  return currentMembership?.role === "project_lead";
+}
+
+async function appendReviewCommitButton({ actionsEl, projectId, obState, onNavigate }) {
+  if (!actionsEl || !projectId || typeof fetch !== "function") {
+    return;
+  }
+
+  try {
+    const onboardingState = onboardingStore.getState();
+    const hasUserIdentity = Boolean(
+      onboardingState?.user?.id ||
+      String(onboardingState?.user?.email || "").trim()
+    );
+    if (!hasUserIdentity) {
+      return;
+    }
+
+    const response = await fetch(`/api/team/${encodeURIComponent(projectId)}`, {
+      method: "GET",
+      headers: buildTeamHeaders(onboardingState?.sessionToken || obState?.sessionToken || null),
+    });
+
+    let payload = {};
+    try {
+      payload = await response.json();
+    } catch {
+      payload = {};
+    }
+
+    if (!response.ok || !isProjectLeadMember(payload?.members, onboardingState)) {
+      return;
+    }
+
+    actionsEl.appendChild(
+      el("button", {
+        style: REVIEW_COMMIT_BUTTON_STYLE,
+        dataset: { testid: "header-review-commit-button" },
+        onClick: () => {
+          if (onNavigate) onNavigate("pre-commit-report");
+        },
+      }, [
+        renderPipelineIcon("FileCheck", 16),
+        el("span", { text: "Review & Commit" }),
+      ])
+    );
+  } catch {
+    // Team membership lookup is best-effort. Hide the action when it cannot be verified.
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -424,20 +513,33 @@ function renderHeader({ runtimeState, obState, completionPct, savedAt, checkpoin
     ? `${projectId} (${instanceUrl})`
     : projectId;
 
+  const headerActions = el("div", {
+    style: "display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap;",
+  }, [
+    el("button", {
+      className: "pd-header-review-link",
+      dataset: { testid: "header-review-answers-link" },
+      text: "Review or update answers",
+      onClick: () => {
+        navigateToQuestions(onNavigate);
+      },
+    }),
+  ]);
+
+  void appendReviewCommitButton({
+    actionsEl: headerActions,
+    projectId: typeof projectId === "string" ? projectId.trim() : "",
+    obState,
+    onNavigate,
+  });
+
   return el(
     "div",
     { className: "pd-header-card", dataset: { testid: "dashboard-header" } },
     [
       el("div", { className: "pd-header-top" }, [
         el("h1", { className: "pd-header-title", text: displayTitle }),
-        el("button", {
-          className: "pd-header-review-link",
-          dataset: { testid: "header-review-answers-link" },
-          text: "Review or update answers",
-          onClick: () => {
-            navigateToQuestions(onNavigate);
-          },
-        }),
+        headerActions,
       ]),
 
       el("div", { className: "pd-header-meta" }, [

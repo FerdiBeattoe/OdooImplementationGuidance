@@ -941,9 +941,9 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       el("div", { style: "display: flex; align-items: center; gap: 12px;" }, [
         el("div", {
           className: "ow-header-mark",
-          style: "width: 40px; height: 40px; background: var(--ee-primary); display: flex; align-items: center; justify-content: center;",
+          style: "width: 40px; height: 40px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;",
         }, [
-          (() => { const ic = lucideIcon("rocket", 20); ic.style.color = "white"; return ic; })(),
+          (() => { const ic = lucideIcon("rocket", 20); ic.style.color = "#92400e"; return ic; })(),
         ]),
         el("div", {}, [
           el("h1", { style: "font-family: var(--ee-font-headline); font-size: 18px; font-weight: 700; color: var(--ee-on-surface); margin: 0;" }, "Business Assessment"),
@@ -1367,7 +1367,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
               industry.modules.map((mod) =>
                 el("span", {
                   className: `ow-chip${isSelected ? " ow-chip--active" : ""}`,
-                  style: `font-size: 11px; font-weight: 600; padding: 3px 8px; background: ${isSelected ? "var(--ee-primary)" : "var(--ee-surface-container-high)"}; color: ${isSelected ? "white" : "var(--ee-on-surface-variant)"}; text-transform: uppercase; letter-spacing: 0.04em;`,
+                  style: `font-size: 11px; font-weight: 600; padding: 3px 8px; background: ${isSelected ? "rgba(245,158,11,0.12)" : "var(--ee-surface-container-high)"}; color: ${isSelected ? "#92400e" : "var(--ee-on-surface-variant)"}; text-transform: uppercase; letter-spacing: 0.04em;`,
                   text: mod,
                 })
               )
@@ -2064,7 +2064,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       allDomains.forEach((domain) => {
         list.append(el("span", {
           className: "ow-chip ow-chip--active",
-          style: "font-size: 12px; font-weight: 600; padding: 4px 10px; background: var(--ee-primary); color: white; text-transform: uppercase; letter-spacing: 0.04em;",
+          style: "font-size: 12px; font-weight: 600; padding: 4px 10px; background: rgba(245,158,11,0.12); color: #92400e; text-transform: uppercase; letter-spacing: 0.04em;",
           text: domain,
         }));
       });

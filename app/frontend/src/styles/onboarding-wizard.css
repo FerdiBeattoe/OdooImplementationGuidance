@@ -58,33 +58,30 @@
   white-space: nowrap;
 }
 
-/* Primary — amber pill, action-forward */
+/* Primary — faded amber, action-forward */
 .ee-btn--primary {
-  background: var(--impl-amber);
-  color: var(--impl-amber-on);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #92400e;
   border-radius: 6px;
-  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.22);
-  animation: impl-pulse-ring 3.2s ease infinite;
+  font-weight: 600;
 }
 
 .ee-btn--primary:hover:not(:disabled) {
-  background: var(--impl-amber-hover);
-  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.32);
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.5);
   transform: translateY(-1px);
-  animation-play-state: paused;
 }
 
 .ee-btn--primary:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.22);
 }
 
 .ee-btn--primary:disabled {
   background: #e0dbd4;
   color: #9a9188;
-  box-shadow: none;
+  border-color: transparent;
   cursor: not-allowed;
-  animation: none;
 }
 
 /* Secondary — calm, retreat, pill shape */
@@ -256,11 +253,7 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ee-btn--primary {
-    animation: none;
-  }
-}
+/* (pulse animation removed from .ee-btn--primary) */
 
 /* ── Warning card: amber tint (not red) ───────────────────── */
 

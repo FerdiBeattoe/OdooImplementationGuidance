@@ -104,6 +104,7 @@ import { renderBlogPage } from "./views/pages/blog-page.js";
 import { renderTermsPage } from "./views/pages/terms-page.js";
 import { renderPrivacyPage } from "./views/pages/privacy-page.js";
 import { onboardingStore } from "./state/onboarding-store.js";
+import { startTour, shouldShowTour } from "./components/onboarding-tour.js";
 
 // ── Legacy views (keep for backward compatibility) ────────────
 import { renderDashboardView } from "./views/dashboard-view.js";
@@ -312,6 +313,7 @@ export function renderApp(root) {
               void pipelineStore.loadPipelineState(projectId);
             }
             setCurrentView("dashboard");
+            setTimeout(() => { if (shouldShowTour()) startTour(); }, 800);
           },
           onNavigate: (view) => handleAppNavigation(view),
         })

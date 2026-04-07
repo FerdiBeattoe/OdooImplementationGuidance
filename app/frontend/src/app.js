@@ -129,6 +129,8 @@ export {
 
 export { ONBOARDING_RESUME_ROUTE } from "./views/pipeline-dashboard.js";
 
+let connectionWizardReturnTo = "dashboard";
+
 export function handleAppNavigation(view) {
   if (!view) return;
 
@@ -136,6 +138,11 @@ export function handleAppNavigation(view) {
     onboardingStore.resumeAtQuestions();
     setCurrentView("onboarding");
     return;
+  }
+
+  if (view === "connection-wizard") {
+    const current = getState().activeProject.workflowState?.currentView;
+    connectionWizardReturnTo = current === "onboarding" ? "onboarding" : "dashboard";
   }
 
   setCurrentView(view);
@@ -345,11 +352,27 @@ export function renderApp(root) {
         renderConnectionWizardView({
           onConnect: async (credentials) => {
             await connectProject(credentials);
-            if (getState().activeProject.connectionState?.status === "connected_execute") {
-              setCurrentView("dashboard");
+            const connStatus = getState().activeProject.connectionState?.status || "";
+            if (connStatus.startsWith("connected")) {
+              if (connectionWizardReturnTo === "onboarding") {
+                const projectId = credentials.url
+                  ? new URL(credentials.url).hostname.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+                  : null;
+                onboardingStore.setConnection({
+                  url: credentials.url,
+                  database: credentials.database,
+                  project_id: projectId,
+                });
+              }
+              setCurrentView(connectionWizardReturnTo);
+              connectionWizardReturnTo = "dashboard";
             }
           },
-          onSkip: () => setCurrentView("dashboard")
+          onSkip: () => {
+            const returnTo = connectionWizardReturnTo;
+            connectionWizardReturnTo = "dashboard";
+            setCurrentView(returnTo);
+          }
         })
       );
       restoreRenderFocus(root, focusSnapshot);

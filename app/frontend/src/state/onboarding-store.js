@@ -391,6 +391,20 @@ export function createOnboardingStore({ persist = false } = {}) {
     notify();
   }
 
+  // ── setConnection ──────────────────────────────────────────────────────────
+  // Sets connection fields directly (used when external connection wizard succeeds).
+
+  function setConnection({ url, database, project_id }) {
+    if (project_id) state.connection.project_id = project_id;
+    if (url) state.connection.url = url;
+    if (database) state.connection.database = database;
+    state.connection.registered_at = new Date().toISOString();
+    state.status = "success";
+    state.error = null;
+    state.screen = "industry";
+    notify();
+  }
+
   // ── setScreen ─────────────────────────────────────────────────────────────
 
   function setScreen(screen) {
@@ -659,6 +673,7 @@ export function createOnboardingStore({ persist = false } = {}) {
     reset,
     setAccountStatus,
     registerConnection,
+    setConnection,
     clearSensitiveData,
     setConnectionError,
     selectIndustry,

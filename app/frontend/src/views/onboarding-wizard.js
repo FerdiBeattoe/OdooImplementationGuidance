@@ -848,14 +848,10 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
 
     switch (s.screen) {
       case "account-check":
-        container.append(buildConnectAccountScreen(s));
-        break;
       case "create-account":
-        container.append(buildCreateAccountScreen(s));
-        break;
       case "connect-account":
-        container.append(buildConnectAccountScreen(s));
-        break;
+        onNavigate("connection-wizard");
+        return;
       case "industry":
         container.append(buildIndustryScreen(s));
         break;

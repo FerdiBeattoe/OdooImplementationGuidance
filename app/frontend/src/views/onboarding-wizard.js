@@ -1072,7 +1072,20 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       urlError: null,
     };
 
+    // Pre-fill URL and database from stored connection (password is never stored)
+    const storedUrl = s.connection?.url || "";
+    const storedDatabase = s.connection?.database || "";
+    if (storedUrl) formState.url = storedUrl;
+    if (storedDatabase) formState.database = storedDatabase;
+
     const card = el("div", { className: "ow-card", style: "background: var(--ee-surface-container-low); box-shadow: var(--ee-shadow-lg); padding: 24px;" });
+
+    // Welcome-back banner when a stored connection exists
+    if (storedUrl) {
+      card.append(el("div", {
+        style: "background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #92400e;",
+      }, "Welcome back. Your instance details are pre-filled \u2014 just enter your password to reconnect."));
+    }
 
     const fieldStyle = "display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px;";
     const labelStyle = "font-size: 12px; font-weight: 600; color: var(--ee-on-surface); text-transform: uppercase; letter-spacing: 0.04em;";
@@ -1083,6 +1096,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       type: "text",
       className: "ee-input",
       placeholder: "mycompany.odoo.com",
+      value: storedUrl,
     });
     const urlError = el("p", {
       style: "font-size: 12px; color: var(--ee-error); margin-top: 4px; display: none;",
@@ -1271,11 +1285,20 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
 
     renderDbArea(); // initially hidden
 
+    // Auto-trigger database detection when URL is pre-filled from stored connection
+    if (storedUrl) {
+      detectDatabases(storedUrl);
+    }
+
     card.append(
       urlField,
       dbArea,
       el("div", { style: fieldStyle }, [el("label", { style: labelStyle }, "Username (email)"), userInput]),
-      el("div", { style: fieldStyle }, [el("label", { style: labelStyle }, "Password"), passInput]),
+      el("div", { style: fieldStyle }, [
+        el("label", { style: labelStyle }, "Password"),
+        passInput,
+        el("p", { style: "font-size: 11px; color: #94a3b8; margin-top: 4px;" }, "Your password is used to connect and is never stored."),
+      ]),
     );
 
     // Error display

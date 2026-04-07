@@ -38,8 +38,19 @@ async function loadConnectionRegistry() {
 
 async function saveConnectionRegistry() {
   try {
+    // Strip session credentials before writing to disk — only persist
+    // baseUrl + database so returning users get pre-filled fields.
+    // sessionId and uid are runtime-only (session auth, never stored).
+    const safeConnections = {};
+    for (const [key, value] of connectionRegistry.entries()) {
+      safeConnections[key] = {
+        baseUrl: value.baseUrl,
+        database: value.database,
+        timestamp: value.timestamp
+      };
+    }
     const data = {
-      connections: Object.fromEntries(connectionRegistry),
+      connections: safeConnections,
       savedAt: new Date().toISOString()
     };
     await writeFile(connectionRegistryPath, JSON.stringify(data, null, 2));

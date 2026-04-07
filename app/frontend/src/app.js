@@ -92,6 +92,7 @@ import { renderModuleSetupView } from "./wizards/module-wizards.js";
 import { renderDataImportView } from "./views/data-import-view.js";
 import { renderKnowledgeBaseView } from "./views/knowledge-base-view.js";
 import { renderAnalyticsView } from "./views/analytics-view.js";
+import { renderTeamView } from "./views/team-view.js";
 import { renderConnectionWizardView } from "./views/connection-wizard-view.js";
 import { renderOnboardingWizard } from "./views/onboarding-wizard.js";
 import { renderAuthScreen } from "./views/auth-screen.js";
@@ -471,6 +472,9 @@ function renderCurrentView(project, projectStore) {
 
     case "analytics":
       return renderAnalyticsView({ project });
+
+    case "team":
+      return renderTeamView({ project });
   }
 
   // ── Wizard routes ─────────────────────────────────────────

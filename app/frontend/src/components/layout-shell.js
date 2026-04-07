@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { id: "data-import",          icon: "upload",             label: "Data Import" },
   { id: "knowledge-base",       icon: "book-open",          label: "Knowledge Base" },
   { id: "analytics",            icon: "bar-chart-2",        label: "Analytics" },
+  { id: "team",                 icon: "Users",              label: "Team" },
   { id: "pipeline",             icon: "git-branch",         label: "Pipeline" }
 ];
 

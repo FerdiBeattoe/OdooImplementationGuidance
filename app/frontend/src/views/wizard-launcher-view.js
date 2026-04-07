@@ -40,13 +40,13 @@ const WIZARD_CATEGORIES = [
 
 export function renderWizardLauncherView(project, onLaunchWizard, onBack) {
   const completedWizards = project.workflowState?.completedWizards || [];
-  
+
   return el("div", { style: "max-width: 1100px; margin: 0 auto; padding: 32px; display: flex; flex-direction: column; gap: 32px;" }, [
     // Header
     el("div", {}, [
-      el("p", { style: "font-family: var(--font-label); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin-bottom: 4px;", text: "PROJECTODOO SETUP" }),
-      el("h2", { style: "font-family: var(--font-headline); font-size: 28px; font-weight: 700; color: var(--color-on-surface); letter-spacing: var(--ls-snug); margin-bottom: 8px;", text: "Setup Wizards" }),
-      el("p", { style: "font-family: var(--font-body); font-size: 14px; color: var(--color-on-surface-variant);", text: "Step-by-step assistants to configure Odoo correctly. Each wizard guides you through the right sequence of decisions." })
+      el("span", { style: "display: inline-block; font-size: 11px; letter-spacing: 0.1em; color: #92400e; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 6px; padding: 3px 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;", text: "CONFIGURATION WIZARDS" }),
+      el("h2", { style: "font-size: 28px; font-weight: 700; color: #0c1a30; font-family: Inter, sans-serif; margin-bottom: 8px;", text: "Setup Wizards" }),
+      el("p", { style: "font-size: 14px; color: #64748b;", text: "Step-by-step assistants to configure Odoo correctly. Each wizard guides you through the right sequence of decisions." })
     ]),
     
     // Categories
@@ -54,9 +54,9 @@ export function renderWizardLauncherView(project, onLaunchWizard, onBack) {
     
     // Back button
     el("div", { style: "margin-top: 16px;" }, [
-      el("button", { 
-        style: "font-family: var(--font-label); font-size: 13px; font-weight: 600; color: var(--color-on-surface-variant); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 8px;",
-        onclick: onBack 
+      el("button", {
+        style: "font-size: 13px; font-weight: 600; color: #64748b; background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 8px;",
+        onclick: onBack
       }, [
         el("span", { className: "material-symbols-outlined", style: "font-size: 18px;", text: "arrow_back" }),
         el("span", { text: "Back to Dashboard" })
@@ -68,44 +68,42 @@ export function renderWizardLauncherView(project, onLaunchWizard, onBack) {
 function renderWizardCategory(category, completedWizards, onLaunchWizard) {
   return el("div", { style: "margin-bottom: 32px;" }, [
     // Category header
-    el("div", { style: "display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--color-surface-container-high);" }, [
-      el("span", { className: "material-symbols-outlined", style: "font-size: 22px; color: var(--color-on-surface-variant);", text: category.icon }),
+    el("div", { style: "display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;" }, [
+      el("span", { className: "material-symbols-outlined", style: "font-size: 22px; color: #64748b;", text: category.icon }),
       el("div", {}, [
-        el("h3", { style: "font-family: var(--font-headline); font-size: 18px; font-weight: 600; color: var(--color-on-surface); letter-spacing: var(--ls-snug); margin-bottom: 2px;", text: category.label }),
-        el("p", { style: "font-family: var(--font-body); font-size: 13px; color: var(--color-on-surface-variant);", text: category.description })
+        el("h3", { style: "font-size: 18px; font-weight: 600; color: #0c1a30; margin-bottom: 2px;", text: category.label }),
+        el("p", { style: "font-size: 13px; color: #64748b;", text: category.description })
       ])
     ]),
     // Wizard grid
-    el("div", { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;" },
+    el("div", { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px;" },
       category.wizards.map(wizard => {
         const isCompleted = completedWizards.includes(wizard.id);
-        
-        return el("div", {
-          style: `position: relative; background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 24px; cursor: pointer; transition: all 150ms ease; ${isCompleted ? "border-left: 3px solid #059669;" : ""}`,
-          onmouseenter: (e) => { e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.background = "var(--color-surface-container-low)"; },
-          onmouseleave: (e) => { e.currentTarget.style.boxShadow = "var(--shadow-sm)"; e.currentTarget.style.background = "var(--color-surface)"; },
+        const statusBadge = isCompleted
+          ? el("span", { style: "display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #065f46; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 6px; padding: 2px 8px; margin-left: auto; flex-shrink: 0;", text: "Complete" })
+          : el("span", { style: "display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; background: rgba(12,26,48,0.06); border: 1px solid rgba(12,26,48,0.1); border-radius: 6px; padding: 2px 8px; margin-left: auto; flex-shrink: 0;", text: "Not Started" });
+
+        const card = el("div", {
+          style: "display: flex; align-items: center; gap: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;",
           onclick: () => onLaunchWizard(wizard.id)
         }, [
-          // Complete badge
-          isCompleted ? el("div", { 
-            style: "position: absolute; top: 16px; right: 16px; width: 24px; height: 24px; background: #059669; display: flex; align-items: center; justify-content: center;" 
-          }, [
-            el("span", { className: "material-symbols-outlined", style: "font-size: 16px; color: #ffffff;", text: "check" })
-          ]) : null,
           // Icon
           el("div", {
-            style: "width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); border-radius: 50%; margin-bottom: 16px;"
+            style: "width: 44px; height: 44px; border-radius: 10px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
           }, [
-            el("span", { className: "material-symbols-outlined", style: "font-size: 20px; color: #92400e;", text: wizard.icon })
+            el("span", { className: "material-symbols-outlined", style: `font-size: 20px; color: ${isCompleted ? "#065f46" : "#92400e"};`, text: isCompleted ? "check" : wizard.icon })
           ]),
-          // Content
-          el("h4", { style: "font-family: var(--font-headline); font-size: 16px; font-weight: 600; color: var(--color-on-surface); margin-bottom: 4px;", text: wizard.label }),
-          el("p", { style: "font-family: var(--font-body); font-size: 13px; color: var(--color-on-surface-variant); margin-bottom: 12px; line-height: 1.5;", text: wizard.description }),
-          // Status badge
-          isCompleted 
-            ? el("span", { style: "font-family: var(--font-label); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide); padding: 2px 6px; background: rgba(16, 185, 129, 0.1); color: #059669;", text: "Complete" })
-            : el("span", { style: "font-family: var(--font-label); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: var(--ls-wide); padding: 2px 6px; background: var(--color-surface-container-high); color: var(--color-on-surface-variant);", text: "Not Started" })
+          // Text
+          el("div", { style: "flex: 1; min-width: 0;" }, [
+            el("h4", { style: "font-size: 15px; font-weight: 600; color: #0c1a30; margin-bottom: 2px;", text: wizard.label }),
+            el("p", { style: "font-size: 12px; color: #64748b;", text: wizard.description })
+          ]),
+          statusBadge
         ]);
+
+        card.onmouseenter = () => { card.style.borderColor = "#f59e0b"; card.style.boxShadow = "0 2px 8px rgba(245,158,11,0.1)"; };
+        card.onmouseleave = () => { card.style.borderColor = "#e2e8f0"; card.style.boxShadow = "none"; };
+        return card;
       })
     )
   ]);

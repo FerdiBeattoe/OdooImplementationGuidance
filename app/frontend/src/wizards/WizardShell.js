@@ -59,27 +59,25 @@ export function createWizardShell({ title, subtitle, icon, steps, onComplete, on
     steps.forEach((step, i) => {
       const isDone    = i < currentStep;
       const isActive  = i === currentStep;
-      const isUpcoming = i > currentStep;
 
-      // dot
+      const circleStyle = isDone
+        ? "width: 32px; height: 32px; border-radius: 50%; background: #f59e0b; color: #0c1a30; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center;"
+        : isActive
+        ? "width: 32px; height: 32px; border-radius: 50%; background: #0c1a30; color: #ffffff; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center;"
+        : "width: 32px; height: 32px; border-radius: 50%; background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center;";
+
+      const labelColor = isActive || isDone ? "#0c1a30" : "#64748b";
+
       const dot = el("div", {
-        className: `flex flex-col items-center gap-1.5 flex-shrink-0`,
+        style: "display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0;",
       }, [
-        el("div", {
-          className: `flex items-center justify-center rounded-full border-2 transition-all ${
-            isDone
-              ? "w-9 h-9 bg-secondary text-on-secondary border-secondary shadow-sm"
-              : isActive
-              ? "w-10 h-10 bg-primary text-on-primary border-primary shadow-md ring-4 ring-primary-fixed/50"
-              : "w-9 h-9 bg-surface-container-highest text-outline border-outline-variant"
-          }`,
-        }, [
+        el("div", { style: circleStyle }, [
           isDone
-            ? el("span", { className: "material-symbols-outlined text-[18px]", style: "font-variation-settings: 'FILL' 1", text: "check" })
-            : el("span", { className: `font-bold ${isActive ? "text-sm" : "text-xs"}`, text: String(i + 1) })
+            ? el("span", { className: "material-symbols-outlined", style: "font-size: 18px;", text: "check" })
+            : el("span", { text: String(i + 1) })
         ]),
         el("span", {
-          className: `text-[10px] font-semibold uppercase tracking-wide ${isActive ? "text-primary" : isDone ? "text-secondary" : "text-outline"}`,
+          style: `font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: ${labelColor};`,
           text: step.label || `Step ${i + 1}`
         })
       ]);
@@ -89,8 +87,7 @@ export function createWizardShell({ title, subtitle, icon, steps, onComplete, on
       // connector (not after last)
       if (i < steps.length - 1) {
         stepperArea.append(el("div", {
-          className: `flex-1 h-0.5 mb-4 transition-colors ${isDone ? "bg-secondary" : "bg-surface-container-high"}`,
-          style: "min-width: 16px"
+          style: `flex: 1; height: 1px; background: #e2e8f0; margin-bottom: 24px; min-width: 16px;`
         }));
       }
     });
@@ -99,13 +96,11 @@ export function createWizardShell({ title, subtitle, icon, steps, onComplete, on
   function updateNav() {
     if (!prevBtn || !nextBtn || !progressLabel) return;
     prevBtn.disabled = currentStep === 0;
-    prevBtn.classList.toggle("opacity-40", currentStep === 0);
-    prevBtn.classList.toggle("cursor-not-allowed", currentStep === 0);
+    prevBtn.style.opacity = currentStep === 0 ? "0.4" : "1";
+    prevBtn.style.cursor = currentStep === 0 ? "not-allowed" : "pointer";
 
     const isLast = currentStep === steps.length - 1;
-    nextBtn.textContent = isLast ? "Finish & Push to Odoo" : "Next →";
-    nextBtn.classList.toggle("bg-secondary", isLast);
-    nextBtn.classList.toggle("bg-primary", !isLast);
+    nextBtn.textContent = isLast ? "Finish & Push to Odoo" : "Next \u2192";
 
     progressLabel.textContent = `Step ${currentStep + 1} of ${steps.length}`;
   }
@@ -134,26 +129,24 @@ export function createWizardShell({ title, subtitle, icon, steps, onComplete, on
 
   function render() {
     stepperArea = el("div", {
-      className: "flex items-end gap-0 px-8 py-5 bg-surface-container-low border-b border-outline-variant/10 overflow-x-auto no-scrollbar"
+      style: "display: flex; align-items: flex-end; gap: 0; padding: 20px 28px; border-bottom: 1px solid #f1f5f9; overflow-x: auto;"
     });
 
     contentArea = el("div", {
-      className: "wizard-content-area px-8 py-8 min-h-96 transition-all duration-150",
-      style: "opacity: 1; transform: translateY(0)"
+      style: "padding: 24px 28px; min-height: 280px; opacity: 1; transform: translateY(0); transition: opacity 0.15s, transform 0.15s;"
     });
 
     prevBtn = el("button", {
-      className: "flex items-center gap-2 px-5 py-2.5 rounded-xl border border-outline-variant text-on-surface text-sm font-semibold hover:bg-surface-container transition-colors",
+      style: "background: none; border: none; color: #64748b; font-size: 14px; font-weight: 500; cursor: pointer; padding: 0;",
       onclick: () => {
         if (currentStep > 0) goToStep(currentStep - 1);
       }
     }, [
-      el("span", { className: "material-symbols-outlined text-[18px]", text: "arrow_back" }),
-      el("span", { text: "Previous" })
+      el("span", { text: "\u2190 Previous" })
     ]);
 
     nextBtn = el("button", {
-      className: "flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-bold shadow-sm hover:opacity-90 active:scale-95 transition-all",
+      style: "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-size: 14px; font-weight: 600; padding: 8px 20px; cursor: pointer;",
       onclick: () => {
         if (currentStep < steps.length - 1) {
           if (!validateCurrentStep()) return;
@@ -163,16 +156,15 @@ export function createWizardShell({ title, subtitle, icon, steps, onComplete, on
         }
       }
     }, [
-      el("span", { text: "Next →" }),
-      el("span", { className: "material-symbols-outlined text-[18px]", text: "arrow_forward" })
+      el("span", { text: "Next \u2192" })
     ]);
 
     progressLabel = el("span", {
-      className: "text-xs text-on-surface-variant font-medium"
+      style: "font-size: 12px; color: #94a3b8;"
     });
 
     const footer = el("div", {
-      className: "flex items-center justify-between px-8 py-5 border-t border-outline-variant/10 bg-surface-container-low"
+      style: "padding: 16px 28px; border-top: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;"
     }, [
       prevBtn,
       progressLabel,
@@ -186,27 +178,29 @@ export function createWizardShell({ title, subtitle, icon, steps, onComplete, on
     updateStepper();
     updateNav();
 
-    return el("div", { className: "max-w-3xl mx-auto" }, [
+    const closeBtn = el("button", {
+      style: "margin-left: auto; background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; padding: 4px; border-radius: 6px;",
+      onclick: onCancel,
+      title: "Cancel"
+    }, [
+      el("span", { className: "material-symbols-outlined", style: "font-size: 20px;", text: "close" })
+    ]);
+    closeBtn.onmouseenter = () => { closeBtn.style.background = "rgba(12,26,48,0.06)"; };
+    closeBtn.onmouseleave = () => { closeBtn.style.background = "none"; };
+
+    return el("div", { style: "max-width: 680px; width: 100%; margin: 0 auto;" }, [
       // Card
-      el("div", { className: "bg-surface-container-lowest rounded-xl shadow-card border border-outline-variant/10 overflow-hidden" }, [
+      el("div", { style: "background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 24px 64px rgba(0,0,0,0.12); overflow: hidden;" }, [
         // Header
-        el("div", { className: "px-8 py-6 border-b border-outline-variant/10 flex items-center justify-between" }, [
-          el("div", { className: "flex items-center gap-4" }, [
-            icon ? el("div", { className: "w-10 h-10 rounded-xl primary-gradient flex items-center justify-center" }, [
-              el("span", { className: "material-symbols-outlined text-white", text: icon })
-            ]) : null,
-            el("div", {}, [
-              el("h2", { className: "font-headline text-xl font-bold text-on-surface", text: title }),
-              subtitle ? el("p", { className: "text-sm text-on-surface-variant mt-0.5", text: subtitle }) : null
-            ])
+        el("div", { style: "padding: 24px 28px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: flex-start; gap: 16px;" }, [
+          icon ? el("div", { style: "width: 44px; height: 44px; border-radius: 10px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); color: #92400e; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" }, [
+            el("span", { className: "material-symbols-outlined", style: "font-size: 20px;", text: icon })
+          ]) : null,
+          el("div", { style: "flex: 1;" }, [
+            el("h2", { style: "font-size: 18px; font-weight: 600; color: #0c1a30; margin-bottom: 2px;", text: title }),
+            subtitle ? el("p", { style: "font-size: 13px; color: #64748b;", text: subtitle }) : null
           ]),
-          el("button", {
-            className: "p-2 rounded-lg hover:bg-surface-container transition-colors text-on-surface-variant",
-            onclick: onCancel,
-            title: "Cancel"
-          }, [
-            el("span", { className: "material-symbols-outlined text-[20px]", text: "close" })
-          ])
+          closeBtn
         ]),
         // Stepper
         stepperArea,
@@ -239,13 +233,13 @@ export function formField(label, inputEl, helperText, required = false) {
       }
     });
   }
-  return el("div", { className: "space-y-1.5" }, [
-    el("label", { className: "block text-sm font-semibold text-on-surface-variant" }, [
+  return el("div", { style: "display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;" }, [
+    el("label", { style: "font-size: 13px; font-weight: 500; color: #374151; display: block;" }, [
       el("span", { text: label }),
-      required ? el("span", { className: "text-error ml-0.5", text: "*" }) : null
+      required ? el("span", { style: "color: #dc2626; margin-left: 2px;", text: "*" }) : null
     ]),
     inputEl,
-    helperText ? el("p", { className: "text-xs text-on-surface-variant", text: helperText }) : null,
+    helperText ? el("p", { style: "font-size: 12px; color: #64748b;", text: helperText }) : null,
     required ? el("p", { className: "field-error", text: `${label} is required` }) : null
   ]);
 }
@@ -255,14 +249,14 @@ export function formInput(options = {}) {
     type: options.type || "text",
     placeholder: options.placeholder || "",
     value: options.value || "",
-    className: "w-full h-11 px-4 bg-surface-container-high border-0 border-b-2 border-outline focus:border-primary rounded-lg focus:ring-0 text-on-surface text-sm transition-colors",
+    style: "width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; color: #0c1a30; box-sizing: border-box; outline: none;",
     ...options.attrs
   });
 }
 
 export function formSelect(options = [], selected = "", attrs = {}) {
   return el("select", {
-    className: "w-full h-11 px-4 bg-surface-container-high border-0 border-b-2 border-outline focus:border-primary rounded-lg focus:ring-0 text-on-surface text-sm transition-colors",
+    style: "width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; color: #0c1a30; box-sizing: border-box; outline: none; background: #ffffff;",
     ...attrs
   }, options.map(opt => {
     const val = typeof opt === "string" ? opt : opt.value;
@@ -273,24 +267,24 @@ export function formSelect(options = [], selected = "", attrs = {}) {
 
 export function formCheckbox(label, checked = false, onChange) {
   const id = `cb-${Math.random().toString(36).slice(2, 8)}`;
-  const cb = el("input", { type: "checkbox", id, className: "rounded border-outline w-4 h-4 text-primary focus:ring-primary/20" });
+  const cb = el("input", { type: "checkbox", id, style: "accent-color: #f59e0b; width: 16px; height: 16px;" });
   if (checked) cb.checked = true;
   if (onChange) cb.addEventListener("change", e => onChange(e.target.checked));
-  return el("label", { htmlFor: id, className: "flex items-center gap-3 cursor-pointer group" }, [
+  return el("label", { htmlFor: id, style: "display: flex; align-items: center; gap: 12px; cursor: pointer;" }, [
     cb,
-    el("span", { className: "text-sm text-on-surface font-medium group-hover:text-primary transition-colors", text: label })
+    el("span", { style: "font-size: 14px; color: #0c1a30; font-weight: 500;", text: label })
   ]);
 }
 
 export function formSection(title, children) {
-  return el("div", { className: "space-y-4" }, [
-    el("h4", { className: "font-headline text-sm font-bold text-on-surface-variant uppercase tracking-widest border-b border-outline-variant/20 pb-2", text: title }),
+  return el("div", { style: "display: flex; flex-direction: column; gap: 16px;" }, [
+    el("h4", { style: "font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin-bottom: 0; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9;", text: title }),
     ...children
   ]);
 }
 
 export function formGrid(children, cols = 2) {
-  return el("div", { className: `grid grid-cols-1 md:grid-cols-${cols} gap-4` }, children);
+  return el("div", { style: `display: grid; grid-template-columns: repeat(${cols}, 1fr); gap: 16px;` }, children);
 }
 
 export function pushSummaryStep(label, data, onPush) {

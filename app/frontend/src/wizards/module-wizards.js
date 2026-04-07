@@ -1421,29 +1421,35 @@ function renderWizardLauncher(onNavigate) {
     { id: "pos-setup",           label: "Point of Sale",       icon: "point_of_sale",    desc: "POS terminals, payment methods" }
   ];
 
-  return el("div", { className: "max-w-4xl mx-auto space-y-6" }, [
+  return el("div", { style: "max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;" }, [
     el("div", {}, [
-      el("p", { className: "text-xs font-bold uppercase tracking-widest text-secondary mb-1", text: "Configuration Wizards" }),
-      el("h2", { className: "font-headline text-2xl font-bold text-on-surface", text: "Module Setup" }),
-      el("p", { className: "text-sm text-on-surface-variant mt-1", text: "Complete each wizard to configure your Odoo modules. Data flows automatically between wizards." })
+      el("span", { style: "display: inline-block; font-size: 11px; letter-spacing: 0.1em; color: #92400e; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 6px; padding: 3px 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;", text: "Configuration Wizards" }),
+      el("h2", { style: "font-size: 24px; font-weight: 700; color: #0c1a30; font-family: Inter, sans-serif;", text: "Module Setup" }),
+      el("p", { style: "font-size: 14px; color: #64748b; margin-top: 4px;", text: "Complete each wizard to configure your Odoo modules. Data flows automatically between wizards." })
     ]),
-    el("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" },
+    el("div", { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px;" },
       WIZARD_CARDS.map(w => {
         const completedWizards = getCompletedWizards();
         const done = !!getWizardData(toCamelKey(w.id)) || completedWizards.includes(w.id);
-        return el("button", {
-          className: `text-left bg-surface-container-lowest rounded-xl border ${done ? "border-secondary/30" : "border-outline-variant/10"} shadow-sm p-5 hover:shadow-md hover:border-primary/20 transition-all active:scale-[0.98]`,
+        const statusBadge = done
+          ? el("span", { style: "display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #065f46; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 6px; padding: 2px 8px; margin-left: auto; flex-shrink: 0;", text: "Done" })
+          : null;
+        const card = el("button", {
+          style: "text-align: left; display: flex; align-items: center; gap: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;",
           onclick: () => onNavigate("wizard-" + w.id)
         }, [
-          el("div", { className: "flex items-start justify-between mb-3" }, [
-            el("div", { className: `w-10 h-10 rounded-xl flex items-center justify-center ${done ? "bg-secondary text-on-secondary" : "primary-gradient text-on-primary"}` }, [
-              el("span", { className: "material-symbols-outlined text-[20px]", text: done ? "check" : w.icon })
-            ]),
-            done ? el("span", { className: "badge badge--success text-[10px]", text: "Done" }) : null
+          el("div", { style: `width: 44px; height: 44px; border-radius: 10px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;` }, [
+            el("span", { className: "material-symbols-outlined", style: `font-size: 20px; color: ${done ? "#065f46" : "#92400e"};`, text: done ? "check" : w.icon })
           ]),
-          el("h4", { className: "font-headline text-sm font-bold text-on-surface mb-1", text: w.label }),
-          el("p", { className: "text-xs text-on-surface-variant", text: w.desc })
+          el("div", { style: "flex: 1; min-width: 0;" }, [
+            el("h4", { style: "font-size: 15px; font-weight: 600; color: #0c1a30; margin-bottom: 2px;", text: w.label }),
+            el("p", { style: "font-size: 12px; color: #64748b;", text: w.desc })
+          ]),
+          statusBadge
         ]);
+        card.onmouseenter = () => { card.style.borderColor = "#f59e0b"; card.style.boxShadow = "0 2px 8px rgba(245,158,11,0.1)"; };
+        card.onmouseleave = () => { card.style.borderColor = "#e2e8f0"; card.style.boxShadow = "none"; };
+        return card;
       })
     )
   ]);

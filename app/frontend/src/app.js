@@ -95,6 +95,7 @@ import { renderAnalyticsView } from "./views/analytics-view.js";
 import { renderAuditLogView } from "./views/audit-log-view.js";
 import { renderTeamView } from "./views/team-view.js";
 import { renderPreCommitReportView } from "./views/pre-commit-report-view.js";
+import { renderInstanceScannerView } from "./views/instance-scanner-view.js";
 import { renderConnectionWizardView } from "./views/connection-wizard-view.js";
 import { renderOnboardingWizard } from "./views/onboarding-wizard.js";
 import { renderAuthScreen } from "./views/auth-screen.js";
@@ -486,6 +487,13 @@ function renderCurrentView(project, projectStore) {
         project,
         onNavigate: (view) => handleAppNavigation(view)
       });
+
+    case "instance-scanner":
+      return renderInstanceScannerView({
+        project,
+        onNavigate: (view) => handleAppNavigation(view)
+      });
+
   }
 
   // ── Wizard routes ─────────────────────────────────────────

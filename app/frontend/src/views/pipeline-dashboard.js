@@ -28,6 +28,7 @@ import { onboardingStore } from "../state/onboarding-store.js";
 
 export const ONBOARDING_RESUME_ROUTE = "onboarding/questions";
 const REVIEW_COMMIT_BUTTON_STYLE = "display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; font-family: Inter, sans-serif;";
+const SECONDARY_HEADER_BUTTON_STYLE = "display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(12,26,48,0.06); border: 1px solid rgba(12,26,48,0.15); color: #0c1a30; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; font-family: Inter, sans-serif;";
 
 function navigateToQuestions(onNavigate) {
   if (onNavigate) onNavigate(ONBOARDING_RESUME_ROUTE);
@@ -47,6 +48,10 @@ function renderPipelineIcon(name, size) {
     .replace(/([A-Za-z])([0-9])/g, "$1-$2")
     .replace(/([0-9])([A-Za-z])/g, "$1-$2")
     .toLowerCase();
+
+  if (typeof window === "undefined" || !window.lucide || !window.lucide.icons) {
+    return null;
+  }
 
   return lucideIcon(normalized, size);
 }
@@ -516,6 +521,17 @@ function renderHeader({ runtimeState, obState, completionPct, savedAt, checkpoin
   const headerActions = el("div", {
     style: "display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap;",
   }, [
+    el("button", {
+      type: "button",
+      style: SECONDARY_HEADER_BUTTON_STYLE,
+      dataset: { testid: "header-scan-instance-button" },
+      onClick: () => {
+        if (onNavigate) onNavigate("instance-scanner");
+      },
+    }, [
+      renderPipelineIcon("ScanLine", 16),
+      el("span", { text: "Scan Instance" }),
+    ]),
     el("button", {
       className: "pd-header-review-link",
       dataset: { testid: "header-review-answers-link" },

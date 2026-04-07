@@ -91,6 +91,7 @@ const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB limit
 const requestLog = new Map();
 const REQUEST_LOG_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const ODOO_SCAN_TIMEOUT_MS = 15000;
+const ODOO_INSTALL_TIMEOUT_MS = 30000;
 const ODOO_SCAN_COUNT_MODELS = [
   "res.users",
   "res.partner",
@@ -100,6 +101,7 @@ const ODOO_SCAN_COUNT_MODELS = [
   "purchase.order",
   "stock.picking",
 ];
+const MODULE_NAME_PATTERN = /^[A-Za-z0-9_]+$/;
 const TEAM_ROLES = new Set(["project_lead", "implementor", "reviewer", "stakeholder"]);
 const TEAM_INVITE_ROLES = new Set(["implementor", "reviewer", "stakeholder"]);
 const AUDIT_ACTIONS = new Set([
@@ -112,6 +114,7 @@ const AUDIT_ACTIONS = new Set([
   "commit_approved",
   "commit_cancelled",
   "report_generated",
+  "module_installed",
 ]);
 const localTeamMembers = new Map();
 
@@ -644,6 +647,12 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
         const authUser = await jwtMiddleware(req, res);
         if (!authUser) return;
         return await handleOdooScan(req, res, authUser);
+      }
+
+      if (pathname === "/api/odoo/install-module" && req.method === "POST") {
+        const authUser = await jwtMiddleware(req, res);
+        if (!authUser) return;
+        return await handleOdooInstallModule(req, res, authUser);
       }
 
       if (pathname === "/api/auth/signup" && req.method === "POST") {
@@ -1839,6 +1848,25 @@ function sendOdooScanError(res, error) {
   });
 }
 
+function sendOdooInstallError(res, error) {
+  if (isOdooTimeoutError(error)) {
+    return sendJson(res, 504, { error: "Odoo instance timed out" });
+  }
+
+  if (isOdooAuthError(error)) {
+    return sendJson(res, 401, { error: "Authentication failed. Check credentials." });
+  }
+
+  const detail = isOdooConnectionError(error)
+    ? "Could not connect to Odoo instance"
+    : (error instanceof Error ? error.message : "Unknown error");
+
+  return sendJson(res, 502, {
+    error: "Module install failed",
+    detail,
+  });
+}
+
 async function handleOdooScan(req, res, user) {
   void user;
 
@@ -1929,6 +1957,109 @@ async function handleOdooScan(req, res, user) {
     });
   } catch (error) {
     return sendOdooScanError(res, error);
+  }
+}
+
+async function handleOdooInstallModule(req, res, user) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, {
+      error: parseError instanceof Error ? parseError.message : "Invalid request payload.",
+    });
+  }
+
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+    return sendJson(res, 400, { error: "Request body must be a non-null object." });
+  }
+
+  const projectId = trimString(payload.projectId);
+  const database = trimString(payload.database);
+  const username = trimString(payload.username);
+  const password = typeof payload.password === "string" ? payload.password : "";
+  const moduleName = trimString(payload.moduleName);
+
+  if (!projectId) {
+    return sendJson(res, 400, { error: "projectId is required." });
+  }
+
+  const leadAllowed = await assertProjectLead(supabase, user?.id, projectId, res);
+  if (!leadAllowed) {
+    return;
+  }
+
+  if (!database) {
+    return sendJson(res, 400, { error: "database is required." });
+  }
+
+  if (!username) {
+    return sendJson(res, 400, { error: "username is required." });
+  }
+
+  if (!password) {
+    return sendJson(res, 400, { error: "password is required." });
+  }
+
+  if (!moduleName) {
+    return sendJson(res, 400, { error: "moduleName is required." });
+  }
+
+  if (!MODULE_NAME_PATTERN.test(moduleName)) {
+    return sendJson(res, 400, { error: "moduleName must contain only letters, numbers, and underscores." });
+  }
+
+  try {
+    payload.url = validateOdooBaseUrl(payload.url);
+  } catch (error) {
+    return sendJson(res, 400, {
+      error: error instanceof Error ? error.message : "url must be a valid URL.",
+    });
+  }
+
+  payload.projectId = projectId;
+  payload.database = database;
+  payload.username = username;
+  payload.password = password;
+  payload.moduleName = moduleName;
+
+  let client;
+  try {
+    client = await authenticateOdooClient(payload, ODOO_INSTALL_TIMEOUT_MS);
+  } catch (error) {
+    return sendOdooInstallError(res, error);
+  }
+
+  try {
+    const rows = await client.searchRead(
+      "ir.module.module",
+      [["name", "=", moduleName]],
+      ["id", "name"],
+      { limit: 1 }
+    );
+    const moduleId = Number(rows?.[0]?.id || 0);
+    if (!moduleId) {
+      return sendJson(res, 404, { error: "Module not found" });
+    }
+
+    await client.executeKw("ir.module.module", "button_immediate_install", [[moduleId]], {});
+
+    writeAudit(supabase, {
+      projectId,
+      accountId: user?.id || null,
+      actorName: user?.user_metadata?.full_name || user?.email || "",
+      actorRole: "project_lead",
+      action: "module_installed",
+      details: {
+        moduleName,
+        url: payload.url,
+        database,
+      },
+    });
+
+    return sendJson(res, 200, { success: true, moduleName });
+  } catch (error) {
+    return sendOdooInstallError(res, error);
   }
 }
 

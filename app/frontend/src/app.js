@@ -93,6 +93,7 @@ import { renderDataImportView } from "./views/data-import-view.js";
 import { renderKnowledgeBaseView } from "./views/knowledge-base-view.js";
 import { renderAnalyticsView } from "./views/analytics-view.js";
 import { renderTeamView } from "./views/team-view.js";
+import { renderPreCommitReportView } from "./views/pre-commit-report-view.js";
 import { renderConnectionWizardView } from "./views/connection-wizard-view.js";
 import { renderOnboardingWizard } from "./views/onboarding-wizard.js";
 import { renderAuthScreen } from "./views/auth-screen.js";
@@ -475,6 +476,12 @@ function renderCurrentView(project, projectStore) {
 
     case "team":
       return renderTeamView({ project });
+
+    case "pre-commit-report":
+      return renderPreCommitReportView({
+        project,
+        onNavigate: (view) => handleAppNavigation(view)
+      });
   }
 
   // ── Wizard routes ─────────────────────────────────────────

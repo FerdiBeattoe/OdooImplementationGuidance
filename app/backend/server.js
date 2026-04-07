@@ -717,6 +717,10 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
         return await handleAuditWrite(req, res, authUser);
       }
 
+      if (pathname.startsWith("/data/") && req.method === "GET") {
+        return serveStatic(res, path.resolve(dataRoot, `.${pathname.replace("/data", "")}`), dataRoot);
+      }
+
       if (pathname.startsWith("/shared/") && req.method === "GET") {
         return serveStatic(res, path.resolve(sharedRoot, `.${pathname.replace("/shared", "")}`), sharedRoot);
       }

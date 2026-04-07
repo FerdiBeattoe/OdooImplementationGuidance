@@ -22,6 +22,10 @@ ui_export_current.txt
 .agents/
 .ruflo/
 .claude/
+.codex/
+
+# Decorative images (not assets)
+Flowing curves and gradient tones.png
 
 # Agent and memory files
 *.agent.md

@@ -1,4 +1,4 @@
-import { el } from "../lib/dom.js";
+import { clearNode, el } from "../lib/dom.js";
 
 const UPDATE_PASSWORD_TIMEOUT_MS = 15_000;
 
@@ -182,7 +182,7 @@ export function renderResetPasswordScreen({ setCurrentView }) {
   }
 
   function render() {
-    container.innerHTML = "";
+    clearNode(container);
 
     const card = el("div", {
       style: "background:#ffffff; border-radius:12px; padding:48px 40px; width:420px; max-width:90vw; box-shadow:0 24px 64px rgba(0,0,0,0.4); box-sizing:border-box;"

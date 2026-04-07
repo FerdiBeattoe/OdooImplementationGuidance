@@ -1,4 +1,4 @@
-import { el } from "../lib/dom.js";
+import { clearNode, el } from "../lib/dom.js";
 import { onboardingStore } from "../state/onboarding-store.js";
 import { setCurrentView } from "../state/app-store.js";
 import { writeStoredProjectId } from "./landing-page.js";
@@ -33,7 +33,7 @@ export function renderAuthScreen({ onBack } = {}) {
   }
 
   function render() {
-    container.innerHTML = "";
+    clearNode(container);
 
     // Browser back support — remove previous listener before adding new one
     if (container._cleanupPopstate) {
@@ -334,7 +334,7 @@ export function renderAuthScreen({ onBack } = {}) {
   }
 
   function renderForgotPassword(target) {
-    target.innerHTML = "";
+    clearNode(target);
 
     let messageEl = null;
     let errorEl = null;

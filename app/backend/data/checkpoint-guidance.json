@@ -1,0 +1,2507 @@
+{
+  "version": "1.0",
+  "generated": "2026-04-07T12:00:00.000Z",
+  "domains": {
+    "foundation": {
+      "label": "Foundation / Company / Localization",
+      "overview": "Establishes company identity, localization context, fiscal baseline, and currencies on res.company. Every downstream domain depends on these foundational decisions being explicit and correct.",
+      "checkpoints": {
+        "FND-FOUND-001": {
+          "title": "Company country configuration",
+          "what": "Writes the primary operating country (country_id) onto res.company. This determines the legal and fiscal jurisdiction for the entire implementation.",
+          "why": "Every localization package, tax rule, fiscal position, and compliance assumption derives from this setting. An incorrect country cascades errors into accounting, invoicing, and reporting.",
+          "confirm_first": [
+            "What is the legal operating country for this company entity?",
+            "If multi-country operations exist, which country is the primary fiscal jurisdiction?"
+          ],
+          "common_mistakes": [
+            "Setting the country to the parent company's jurisdiction when the entity operates in a different country.",
+            "Changing the country after localization has been applied, which does not retroactively update dependent records."
+          ],
+          "odoo_docs_hint": "Settings > Companies > [Company Name] > General Information"
+        },
+        "FND-FOUND-002": {
+          "title": "Localization configuration",
+          "what": "Applies the country-appropriate localization package (chart of accounts, tax baseline, fiscal positions) to res.company based on country_id.",
+          "why": "The localization package determines the chart of accounts structure, default tax configuration, and fiscal position logic. Choosing the wrong localization means rebuilding accounting foundations later.",
+          "confirm_first": [
+            "Has the correct country been confirmed in FND-FOUND-001?",
+            "Does the client need a specific chart of accounts variant within the localization (e.g., simplified vs. full)?",
+            "Is this an Enterprise or Community edition? Some localizations differ by edition."
+          ],
+          "common_mistakes": [
+            "Applying localization before the country is confirmed, then needing to re-apply.",
+            "Assuming a generic localization is sufficient for a country with specific fiscal requirements."
+          ],
+          "odoo_docs_hint": "Settings > Companies > [Company Name] > Fiscal Localization"
+        },
+        "FND-FOUND-003": {
+          "title": "Base currency acknowledgement",
+          "what": "Informational checkpoint confirming the implementor has acknowledged the base currency setting on the company. No write is performed — FND-DREQ-002 handles the actual currency write.",
+          "why": "The base currency cannot be changed after transactions are posted. Acknowledging this before proceeding prevents irreversible mistakes.",
+          "confirm_first": [
+            "Is the base currency (set in FND-DREQ-002) correct for this entity's primary reporting currency?",
+            "Does the client understand that the base currency is effectively permanent once transactions post?"
+          ],
+          "common_mistakes": [
+            "Treating this as a formality without verifying the currency matches the entity's reporting requirements."
+          ],
+          "odoo_docs_hint": "Settings > Companies > [Company Name] > Currency"
+        },
+        "FND-FOUND-004": {
+          "title": "Fiscal country context acknowledgement",
+          "what": "Informational checkpoint confirming the fiscal country context is understood and aligned with the localization selection.",
+          "why": "Misalignment between the operating country and fiscal country creates downstream issues in tax computation, fiscal positions, and compliance reporting.",
+          "confirm_first": [
+            "Does the fiscal country match the legal jurisdiction where this entity files taxes?",
+            "Are there any special economic zones or cross-border arrangements that affect fiscal treatment?"
+          ],
+          "common_mistakes": [
+            "Assuming the fiscal country is always the same as the operating country in cross-border setups."
+          ],
+          "odoo_docs_hint": "Settings > Companies > [Company Name] > General Information"
+        },
+        "FND-FOUND-005": {
+          "title": "Shared baseline settings acknowledgement",
+          "what": "Informational checkpoint confirming that baseline company settings (language, timezone, operational defaults) are reviewed before downstream domains proceed.",
+          "why": "Downstream domains inherit company-level settings. If baseline settings are wrong, every domain built on top of them will carry those errors.",
+          "confirm_first": [
+            "Has the default language been set for the company?",
+            "Is the timezone correct for the primary operating location?",
+            "Are units of measure settings appropriate for the business (metric vs. imperial)?"
+          ],
+          "common_mistakes": [
+            "Leaving default settings from the localization package without reviewing them against business requirements."
+          ],
+          "odoo_docs_hint": "Settings > General Settings"
+        },
+        "FND-FOUND-006": {
+          "title": "Multi-company structure acknowledgement",
+          "what": "Conditional checkpoint (BM-02=Yes). Informational confirmation that multi-company intent is acknowledged and will be reflected in downstream access and data design.",
+          "why": "Multi-company mode fundamentally changes access rules, inter-company transactions, and data segregation. Enabling it later requires significant rework.",
+          "confirm_first": [
+            "How many company entities will operate in this Odoo instance?",
+            "Will inter-company transactions be required?",
+            "Has the client confirmed the legal structure that maps to Odoo companies?"
+          ],
+          "common_mistakes": [
+            "Enabling multi-company without a clear inter-company transaction design.",
+            "Treating branches or departments as separate companies when they should be cost centers."
+          ],
+          "odoo_docs_hint": "Settings > Companies"
+        },
+        "FND-DREQ-001": {
+          "title": "Fiscal year configuration",
+          "what": "Configures the company fiscal year (start/end dates, reporting calendar) on res.company.",
+          "why": "The fiscal year drives accounting period behavior, lock dates, and financial reporting boundaries. An incorrect fiscal year means reporting periods will not align with legal requirements.",
+          "confirm_first": [
+            "What is the fiscal year start date for this entity?",
+            "Does the fiscal year follow a calendar year or a custom period?",
+            "Are there specific lock date requirements mandated by the client's auditors?"
+          ],
+          "common_mistakes": [
+            "Defaulting to calendar year without confirming with finance.",
+            "Setting the fiscal year after transactions have been posted in the wrong period."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Settings > Fiscal Year"
+        },
+        "FND-DREQ-002": {
+          "title": "Currency configuration",
+          "what": "Sets the primary operating currency (currency_id) on res.company. This is the base currency for all accounting entries.",
+          "why": "The base currency is functionally permanent after transactions post. Every journal entry, invoice, and financial report uses this as the reference currency.",
+          "confirm_first": [
+            "What is the entity's primary reporting currency?",
+            "Does the client understand this cannot be changed after transactions are posted?",
+            "If multi-currency is needed later, is this the correct base for conversion?"
+          ],
+          "common_mistakes": [
+            "Setting USD when the entity reports in EUR, or vice versa.",
+            "Assuming the currency can be easily changed later — it cannot once transactions exist."
+          ],
+          "odoo_docs_hint": "Settings > Companies > [Company Name] > Currency"
+        },
+        "FND-DREQ-003": {
+          "title": "Multi-currency activation",
+          "what": "Conditional checkpoint (BM-04=Yes). Activates multi-currency accounting on res.company, enabling currency conversion, exchange rate management, and multi-currency journal entries.",
+          "why": "Without multi-currency activation, the system cannot process transactions in foreign currencies. Enabling it later requires retroactive configuration that may conflict with existing entries.",
+          "confirm_first": [
+            "Does the business transact in multiple currencies?",
+            "Has a currency exchange rate source been identified (manual or automatic)?",
+            "Has finance confirmed the exchange gain/loss account mapping?"
+          ],
+          "common_mistakes": [
+            "Activating multi-currency without setting up exchange rate providers.",
+            "Not configuring gain/loss accounts before processing foreign currency transactions."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Settings > Currencies"
+        },
+        "FND-DREQ-004": {
+          "title": "Fiscal lock date policy",
+          "what": "Conditional checkpoint (FC-04=Yes). Informational confirmation that the fiscal lock date policy has been reviewed and will be applied consistently.",
+          "why": "Lock dates prevent retroactive changes to closed fiscal periods. Without a clear policy, users may modify posted entries in closed periods.",
+          "confirm_first": [
+            "Who has authority to change lock dates?",
+            "Will lock dates be applied monthly, quarterly, or annually?",
+            "Does the client's audit process require specific lock date controls?"
+          ],
+          "common_mistakes": [
+            "Leaving lock dates unset, allowing anyone to modify historical entries.",
+            "Setting lock dates without communicating the policy to the finance team."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Settings > Lock Dates"
+        }
+      }
+    },
+    "users_roles": {
+      "label": "Users / Roles / Security",
+      "overview": "Defines user accounts, role assignments, access rights groups, and approval responsibilities on res.users and res.groups. Every domain with restricted actions or approvals depends on this being correct.",
+      "checkpoints": {
+        "USR-FOUND-001": {
+          "title": "User account provisioning foundation",
+          "what": "Establishes the base user account configuration on res.users — language, timezone, and foundational user record settings.",
+          "why": "User records are the identity layer for everything in Odoo. Incorrect base configuration (wrong language, missing fields) cascades into every domain that references the user.",
+          "confirm_first": [
+            "Who are the initial users that need accounts?",
+            "What is the default language and timezone for user accounts?",
+            "Is there an existing user directory (LDAP/SSO) that will feed user creation?"
+          ],
+          "common_mistakes": [
+            "Creating users with admin access as a shortcut, then never restricting them.",
+            "Not setting the user language, leaving it mismatched with the company locale."
+          ],
+          "odoo_docs_hint": "Settings > Users & Companies > Users"
+        },
+        "USR-FOUND-002": {
+          "title": "Access design boundaries acknowledgement",
+          "what": "Informational checkpoint confirming that access design boundaries (admin vs. user, internal vs. portal) have been reviewed.",
+          "why": "Access boundaries determine what data and actions each user can reach. Without explicit boundaries, the default is often too permissive or too restrictive.",
+          "confirm_first": [
+            "Has the client identified which users are internal vs. portal?",
+            "Is there a separation of duties requirement (e.g., person who approves POs cannot also receive goods)?",
+            "Who is the designated system administrator?"
+          ],
+          "common_mistakes": [
+            "Giving all users full admin rights during setup and never revoking them.",
+            "Not distinguishing between portal users and internal users until go-live."
+          ],
+          "odoo_docs_hint": "Settings > Users & Companies > Users > Access Rights tab"
+        },
+        "USR-DREQ-001": {
+          "title": "User role baseline assignment",
+          "what": "Assigns baseline roles to provisioned users via res.users group assignments. Maps each user to their functional role (e.g., Sales User, Inventory User, Accounting Adviser).",
+          "why": "Role assignments control what each user can see and do. Incorrect roles mean users either cannot perform their job or have access to data they should not see.",
+          "confirm_first": [
+            "Has a role matrix been defined mapping job functions to Odoo access groups?",
+            "Are there users who need cross-domain access (e.g., sales + inventory)?",
+            "Has the client approved the initial role assignments?"
+          ],
+          "common_mistakes": [
+            "Assigning the broadest possible role to avoid access complaints during testing.",
+            "Not testing role assignments with actual workflows before go-live."
+          ],
+          "odoo_docs_hint": "Settings > Users & Companies > Users > [User] > Access Rights"
+        },
+        "USR-DREQ-002": {
+          "title": "Access rights group configuration",
+          "what": "Configures access rights groups on res.groups, defining the permission sets that roles reference. Controls model-level read/write/create/delete permissions.",
+          "why": "Groups are the building blocks of Odoo access control. Misconfigured groups create security gaps or block legitimate operations.",
+          "confirm_first": [
+            "Are the default Odoo groups sufficient or does the client need custom group modifications?",
+            "Have approval-chain groups been identified (e.g., purchase approval, sales approval)?",
+            "Is there a requirement for record-level security rules beyond group permissions?"
+          ],
+          "common_mistakes": [
+            "Modifying base groups without understanding implied group inheritance.",
+            "Creating overlapping custom groups that produce unpredictable combined permissions."
+          ],
+          "odoo_docs_hint": "Settings > Technical > Security > Groups"
+        },
+        "USR-DREQ-003": {
+          "title": "Privileged access review acknowledgement",
+          "what": "Informational checkpoint confirming that privileged access (system admin, settings access, technical features) has been explicitly reviewed and scoped.",
+          "why": "Privileged users can change system-wide settings, install modules, and bypass business rules. Uncontrolled privileged access is a security and compliance risk.",
+          "confirm_first": [
+            "Who has Settings/Administration access and why?",
+            "Is Technical Features enabled for any non-developer users?",
+            "Has the client reviewed and accepted the privileged access list?"
+          ],
+          "common_mistakes": [
+            "Leaving multiple users with full admin access after initial setup.",
+            "Not documenting who has privileged access and why."
+          ],
+          "odoo_docs_hint": "Settings > Users & Companies > Users > [User] > Administration dropdown"
+        },
+        "USR-DREQ-004": {
+          "title": "Technical administrator provisioning",
+          "what": "Conditional checkpoint (TA-02=Yes). Provisions a dedicated technical administrator user account on res.users, separate from the business admin.",
+          "why": "Separating technical administration from business administration provides audit clarity and reduces the risk of accidental configuration changes.",
+          "confirm_first": [
+            "Who will serve as the technical administrator?",
+            "Is this person different from the business/functional administrator?",
+            "What specific technical permissions does this role require?"
+          ],
+          "common_mistakes": [
+            "Using a shared account for technical administration, losing audit traceability."
+          ],
+          "odoo_docs_hint": "Settings > Users & Companies > Users"
+        },
+        "USR-DREQ-005": {
+          "title": "Multi-company access configuration",
+          "what": "Conditional checkpoint (BM-02=Yes). Configures multi-company group access on res.groups, enabling users to access records across company entities.",
+          "why": "In multi-company setups, users must be explicitly granted access to each company. Without this, users cannot see records in other entities they need to work with.",
+          "confirm_first": [
+            "Which users need access to which companies?",
+            "Are there users who should only see their own company's data?",
+            "Has inter-company access been reviewed against separation of duties requirements?"
+          ],
+          "common_mistakes": [
+            "Granting all users access to all companies without reviewing data sensitivity.",
+            "Forgetting to set the user's default company correctly."
+          ],
+          "odoo_docs_hint": "Settings > Users & Companies > Users > [User] > Allowed Companies"
+        },
+        "USR-DREQ-006": {
+          "title": "Large-team access governance",
+          "what": "Conditional checkpoint (BM-05 > 50). Informational confirmation that access governance is appropriate for a large user base.",
+          "why": "With more than 50 users, individual user management becomes impractical. Role-based governance and group templates become essential.",
+          "confirm_first": [
+            "Is there a scalable approach to user provisioning (e.g., role templates)?",
+            "Has the client identified user groups by department or function?",
+            "Is there a process for onboarding/offboarding users?"
+          ],
+          "common_mistakes": [
+            "Managing users individually rather than through role templates at scale."
+          ],
+          "odoo_docs_hint": "Settings > Users & Companies > Users"
+        },
+        "USR-DREQ-007": {
+          "title": "Discount authority access control",
+          "what": "Conditional checkpoint (SC-02=Yes). Informational confirmation that discount authority has been mapped to specific user roles.",
+          "why": "Uncontrolled discounting erodes margins. Mapping discount authority to roles ensures only authorized users can apply discounts beyond defined thresholds.",
+          "confirm_first": [
+            "Which roles are authorized to apply discounts?",
+            "Are there discount limits by role or approval thresholds?",
+            "Has the sales policy for discounts been documented?"
+          ],
+          "common_mistakes": [
+            "Allowing all sales users to apply unlimited discounts."
+          ],
+          "odoo_docs_hint": "Sales > Configuration > Settings > Pricing > Discounts"
+        },
+        "USR-DREQ-008": {
+          "title": "Purchase approval authority mapping",
+          "what": "Conditional checkpoint (PI-02 != 'No approval'). Informational confirmation that purchase approval authority has been assigned to appropriate roles.",
+          "why": "Purchase approvals are a key financial control. Without explicit authority mapping, either approvals are bypassed or the wrong people are approving expenditures.",
+          "confirm_first": [
+            "Who can approve purchase orders?",
+            "Are there approval thresholds (e.g., orders above $X require manager approval)?",
+            "Has the approval chain been tested with realistic scenarios?"
+          ],
+          "common_mistakes": [
+            "Setting up approval rules but not assigning the approver role to any user."
+          ],
+          "odoo_docs_hint": "Purchase > Configuration > Settings > Purchase Order Approval"
+        },
+        "USR-DREQ-009": {
+          "title": "Sales manager approval mapping",
+          "what": "Conditional checkpoint (SC-04='Manager approval'). Informational confirmation that manager-level sales approval authority has been assigned.",
+          "why": "Manager approval for sales orders ensures oversight on deals that exceed normal parameters. Without the mapping, the approval workflow will not function.",
+          "confirm_first": [
+            "Which users have the Sales Manager role?",
+            "What triggers the need for manager approval (discount threshold, order value)?",
+            "Has the approval workflow been tested end-to-end?"
+          ],
+          "common_mistakes": [
+            "Enabling manager approval without assigning anyone the manager role, blocking all orders."
+          ],
+          "odoo_docs_hint": "Sales > Configuration > Settings > Quotations & Orders"
+        },
+        "USR-DREQ-010": {
+          "title": "PLM/engineering access configuration",
+          "what": "Conditional checkpoint (MF-05=Yes). Informational confirmation that engineering and PLM access rights have been mapped to the appropriate users.",
+          "why": "PLM access controls who can create, approve, and release engineering changes. Without proper mapping, engineering changes may be blocked or made by unauthorized users.",
+          "confirm_first": [
+            "Who are the engineering users that need PLM access?",
+            "Are there separate roles for ECO creation vs. ECO approval?",
+            "Has the engineering team been briefed on the approval workflow?"
+          ],
+          "common_mistakes": [
+            "Giving all manufacturing users full PLM access when only engineers need it."
+          ],
+          "odoo_docs_hint": "Settings > Users & Companies > Users > [User] > Manufacturing section"
+        },
+        "USR-DREQ-011": {
+          "title": "Analytic accounting access configuration",
+          "what": "Conditional checkpoint (FC-03=Yes). Informational confirmation that analytic accounting access has been properly configured for users who need cost center visibility.",
+          "why": "Analytic accounting provides cost allocation and project costing capabilities. Users who need to tag entries or view analytic reports must have the appropriate access.",
+          "confirm_first": [
+            "Which users need to create or view analytic accounts?",
+            "Is analytic accounting used for department cost centers, projects, or both?",
+            "Are there reporting requirements that depend on analytic data?"
+          ],
+          "common_mistakes": [
+            "Enabling analytic accounting without giving relevant users access to analytic menus."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Settings > Analytics"
+        }
+      }
+    },
+    "master_data": {
+      "label": "Master Data",
+      "overview": "Governs shared reference records (products, contacts, categories) on product.category, res.partner.category, and related models. Every downstream operational domain depends on master data structure being defined and consistent.",
+      "checkpoints": {
+        "MAS-FOUND-001": {
+          "title": "Core master-data ownership defined",
+          "what": "Confirms that product category structure and ownership rules have been reviewed. Target: product.category. No governed write — confirm route only.",
+          "why": "Product categories drive accounting mapping, reporting grouping, and operational routing. Without clear ownership, categories proliferate without governance.",
+          "confirm_first": [
+            "Who owns the product category taxonomy?",
+            "Has the existing category structure been reviewed for accuracy?",
+            "Are there business rules for when new categories can be created?"
+          ],
+          "common_mistakes": [
+            "Letting every department create categories without a naming convention.",
+            "Not reviewing the localization-installed default categories before adding custom ones."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Product Categories"
+        },
+        "MAS-FOUND-002": {
+          "title": "Shared classification structure defined",
+          "what": "Confirms that partner categories, product templates, and classification structures are reviewed and understood. Covers product.category, res.partner.category, and product.template.",
+          "why": "Classification structures affect how products appear in eCommerce, how partners are filtered in reporting, and how inventory is organized.",
+          "confirm_first": [
+            "Has the partner category taxonomy been reviewed (customer types, vendor types)?",
+            "Are product templates structured for the business's actual product lines?",
+            "Is the UoM (unit of measure) configuration appropriate?"
+          ],
+          "common_mistakes": [
+            "Creating duplicate classification structures that overlap with existing ones.",
+            "Ignoring partner categories and losing segmentation capability for CRM and sales reporting."
+          ],
+          "odoo_docs_hint": "Contacts > Configuration > Contact Tags"
+        },
+        "MAS-DREQ-001": {
+          "title": "Product records readiness for downstream use",
+          "what": "Informational checkpoint confirming product records (product.category structure) are ready for downstream domains to reference. No governed write.",
+          "why": "Sales, inventory, manufacturing, and purchasing all reference products. If product data is incomplete or miscategorized, every downstream domain inherits the problem.",
+          "confirm_first": [
+            "Are the core products created with correct categories, types, and UoMs?",
+            "Have storable vs. consumable vs. service product types been correctly assigned?",
+            "Are product codes/references consistent with the client's naming convention?"
+          ],
+          "common_mistakes": [
+            "Importing products without setting the correct product type (storable vs. consumable).",
+            "Not assigning products to categories, making inventory valuation mapping impossible."
+          ],
+          "odoo_docs_hint": "Inventory > Products > Products"
+        },
+        "MAS-DREQ-002": {
+          "title": "Partner/contact category scaffolding",
+          "what": "Informational checkpoint confirming partner categories (res.partner.category) are structured for downstream CRM, sales, and purchase use. No governed write.",
+          "why": "Partner categories enable segmentation for marketing, reporting, and pricing rules. Without them, the client loses the ability to filter and analyze by customer/vendor type.",
+          "confirm_first": [
+            "Has the client defined their customer and vendor segmentation categories?",
+            "Are partner categories aligned with CRM pipeline and sales team structure?",
+            "Will partner categories be used for automated pricing rules?"
+          ],
+          "common_mistakes": [
+            "Skipping partner categories entirely, then needing them for reports after go-live."
+          ],
+          "odoo_docs_hint": "Contacts > Configuration > Contact Tags"
+        },
+        "MAS-DREQ-003": {
+          "title": "Customer records readiness for downstream use",
+          "what": "Informational checkpoint confirming customer records are structured for sales, invoicing, and eCommerce use. No governed write.",
+          "why": "Customer records with incorrect payment terms, fiscal positions, or missing addresses create invoicing failures and shipping errors in downstream domains.",
+          "confirm_first": [
+            "Have key customer records been created with correct addresses, payment terms, and fiscal positions?",
+            "Are customer contacts linked to the correct parent company records?",
+            "Has the customer data import been validated against business requirements?"
+          ],
+          "common_mistakes": [
+            "Importing customers without payment terms, causing every invoice to use defaults.",
+            "Not linking contacts to parent companies, breaking the contact hierarchy."
+          ],
+          "odoo_docs_hint": "Contacts > Contacts"
+        },
+        "MAS-DREQ-004": {
+          "title": "Data stewardship acknowledgement",
+          "what": "Informational checkpoint confirming that data stewardship rules (who can create/modify master data) have been reviewed and assigned.",
+          "why": "Without stewardship rules, master data quality degrades over time as multiple users create duplicate or inconsistent records.",
+          "confirm_first": [
+            "Who is responsible for maintaining product data accuracy?",
+            "Who is responsible for maintaining contact/partner data?",
+            "Is there a process for requesting new master data records?"
+          ],
+          "common_mistakes": [
+            "Assuming data quality will self-govern without explicit ownership."
+          ],
+          "odoo_docs_hint": "N/A — organizational policy decision"
+        },
+        "MAS-DREQ-005": {
+          "title": "Operations product category extension",
+          "what": "Conditional checkpoint (OP-01=Yes). Informational confirmation that product categories are extended for inventory/operations use. Target model: product.category.",
+          "why": "Inventory and operations domains need specific category attributes (e.g., valuation method, costing method) set at the category level. Missing category configuration blocks inventory valuation.",
+          "confirm_first": [
+            "Have product categories been configured with the correct inventory valuation method?",
+            "Are removal strategies (FIFO, LIFO) set at the category level where needed?",
+            "Has finance reviewed category-level accounting mappings?"
+          ],
+          "common_mistakes": [
+            "Leaving product category accounting fields blank, causing valuation entries to fail."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Product Categories > Account Properties"
+        },
+        "MAS-DREQ-006": {
+          "title": "Manufacturing product category configuration",
+          "what": "Conditional checkpoint (MF-01=Yes). Informational confirmation that product categories are configured for manufacturing use (BOM components, finished goods). Target model: product.category.",
+          "why": "Manufacturing depends on correct product categorization to drive BOM behavior, work order routing, and production cost allocation.",
+          "confirm_first": [
+            "Are raw materials, semi-finished goods, and finished goods in distinct categories?",
+            "Has the costing method been set for manufacturing product categories?",
+            "Are BOM components correctly categorized as storable products?"
+          ],
+          "common_mistakes": [
+            "Mixing service products into manufacturing BOMs where storable products are required."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Product Categories"
+        },
+        "MAS-DREQ-007": {
+          "title": "Industry partner category scaffolding",
+          "what": "Conditional checkpoint (PI-04 != None). Configures industry-specific partner categories on res.partner.category for specialized segmentation.",
+          "why": "Industry-specific partner categories enable targeted pricing, reporting, and workflow automation that generic categories cannot support.",
+          "confirm_first": [
+            "Has the client defined industry-specific partner segments?",
+            "Will these categories drive pricing rules or automated workflows?",
+            "Are the categories mutually exclusive or can partners belong to multiple categories?"
+          ],
+          "common_mistakes": [
+            "Creating too many granular categories that users will not consistently apply."
+          ],
+          "odoo_docs_hint": "Contacts > Configuration > Contact Tags"
+        }
+      }
+    },
+    "accounting": {
+      "label": "Accounting",
+      "overview": "Governs fiscal setup, journals, taxes, chart of accounts, and financial control on account.journal, account.tax, and account.account. Finance policy checkpoints must be completed before valuation-sensitive operational checkpoints can proceed.",
+      "checkpoints": {
+        "ACCT-FOUND-001": {
+          "title": "Accounting module activation foundation",
+          "what": "Informational checkpoint confirming the accounting module is activated and the journal baseline (account.journal) from localization is reviewed. No governed write.",
+          "why": "Journals are the backbone of every accounting entry. The localization installs default journals that must be reviewed before any transactions are created.",
+          "confirm_first": [
+            "Has the localization-installed journal list been reviewed?",
+            "Are all required journal types present (sales, purchase, bank, cash, miscellaneous)?",
+            "Do journal names match the client's accounting terminology?"
+          ],
+          "common_mistakes": [
+            "Starting to post entries before reviewing whether the default journals are appropriate.",
+            "Creating duplicate journals instead of renaming the localization defaults."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Journals"
+        },
+        "ACCT-FOUND-002": {
+          "title": "Chart of accounts configuration",
+          "what": "Informational checkpoint confirming the chart of accounts (account.account, 124 records from localization on test236) has been reviewed. No governed write.",
+          "why": "The chart of accounts determines how every financial transaction is categorized. Errors here affect every financial report and tax return.",
+          "confirm_first": [
+            "Has the finance team reviewed the localization-installed chart of accounts?",
+            "Are there accounts that need to be added for the client's specific reporting needs?",
+            "Is the account code structure clear and consistent?"
+          ],
+          "common_mistakes": [
+            "Adding accounts without following the existing code structure.",
+            "Not mapping custom accounts to the correct account type, breaking financial reports."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Chart of Accounts"
+        },
+        "ACCT-FOUND-003": {
+          "title": "Currency-accounting alignment",
+          "what": "Informational checkpoint confirming that the accounting currency aligns with the company base currency set in foundation. Depends on FND-FOUND-003.",
+          "why": "If accounting and company currencies are misaligned, every journal entry will have incorrect currency references, corrupting financial reporting.",
+          "confirm_first": [
+            "Does the accounting currency match the company base currency from FND-DREQ-002?",
+            "If multi-currency is active, are the exchange rate accounts configured?"
+          ],
+          "common_mistakes": [
+            "Proceeding with accounting work before confirming currency alignment with foundation settings."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Settings > Currencies"
+        },
+        "ACCT-DREQ-001": {
+          "title": "Journal configuration baseline",
+          "what": "Informational checkpoint confirming journal configuration (account.journal) is appropriate for the business. Reviews journal names, sequences, and default accounts.",
+          "why": "Every transaction flows through a journal. Incorrect journal configuration causes entries to land in wrong accounts or fail validation.",
+          "confirm_first": [
+            "Has each journal's default debit/credit account been reviewed?",
+            "Are bank journal names matching actual bank accounts?",
+            "Is the journal sequence numbering scheme acceptable to the client?"
+          ],
+          "common_mistakes": [
+            "Not linking bank journals to the correct bank account records."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Journals > [Journal] > Journal Entries tab"
+        },
+        "ACCT-DREQ-002": {
+          "title": "Tax configuration baseline",
+          "what": "Informational checkpoint confirming the tax baseline (account.tax, 16 records from localization on test236) is reviewed. No governed write.",
+          "why": "Tax configuration drives every sales and purchase invoice. Incorrect tax rates, account mappings, or tax groups cause compliance failures.",
+          "confirm_first": [
+            "Has the finance team reviewed the localization-installed tax records?",
+            "Are tax rates current for the applicable jurisdiction?",
+            "Are tax account mappings correct for both sales and purchase taxes?"
+          ],
+          "common_mistakes": [
+            "Assuming localization taxes are always current — tax rates change with legislation.",
+            "Not testing tax behavior on sample invoices before go-live."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Taxes"
+        },
+        "ACCT-DREQ-003": {
+          "title": "Account code structure configuration",
+          "what": "Informational checkpoint confirming the account code structure (account.account) is organized correctly for reporting and operational use. No governed write.",
+          "why": "Account code structure determines report grouping, trial balance readability, and ease of financial analysis.",
+          "confirm_first": [
+            "Is the account code numbering scheme clear and documented?",
+            "Are expense, revenue, asset, and liability accounts in the correct groups?",
+            "Does the structure support the client's management reporting needs?"
+          ],
+          "common_mistakes": [
+            "Adding accounts in random code ranges, making the chart of accounts unreadable."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Chart of Accounts"
+        },
+        "ACCT-DREQ-004": {
+          "title": "Fiscal period configuration",
+          "what": "Informational checkpoint confirming fiscal periods and reporting calendar are properly configured. No governed write.",
+          "why": "Fiscal periods control when entries can be posted and how financial statements are grouped. Misconfigured periods cause entries to be posted in wrong periods.",
+          "confirm_first": [
+            "Has the fiscal year been set correctly in FND-DREQ-001?",
+            "Are reporting periods monthly, quarterly, or custom?",
+            "Has the initial lock date policy been decided?"
+          ],
+          "common_mistakes": [
+            "Not setting an initial lock date, allowing entries to be posted in prior periods."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Settings > Fiscal Periods"
+        },
+        "ACCT-DREQ-005": {
+          "title": "Multi-currency accounting activation",
+          "what": "Conditional checkpoint (BM-04=Yes). Activates multi-currency accounting journals on account.journal.",
+          "why": "Multi-currency journals enable transactions in foreign currencies with automatic exchange rate differences. Without this, foreign currency entries cannot be properly recorded.",
+          "confirm_first": [
+            "Which journals need multi-currency capability?",
+            "Has the exchange rate source been configured (ECB, manual)?",
+            "Are exchange gain/loss accounts mapped in the chart of accounts?"
+          ],
+          "common_mistakes": [
+            "Enabling multi-currency on all journals when only bank and sales journals need it."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Journals > [Journal] > Advanced Settings"
+        },
+        "ACCT-DREQ-006": {
+          "title": "AVCO/FIFO stock valuation accounts",
+          "what": "Conditional checkpoint (FC-02=AVCO or FIFO). Configures stock valuation accounts on account.account for automated inventory valuation.",
+          "why": "AVCO and FIFO valuation methods generate automatic accounting entries. Without correctly mapped accounts, stock valuation entries fail or land in wrong accounts.",
+          "confirm_first": [
+            "Has finance confirmed the stock input, output, and valuation accounts?",
+            "Is the costing method decision (AVCO vs. FIFO) final?",
+            "Has the product category been configured to use automated inventory valuation?"
+          ],
+          "common_mistakes": [
+            "Setting up valuation accounts without aligning with the product category accounting properties.",
+            "Switching between AVCO and FIFO after initial inventory is loaded."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Product Categories > Account Properties"
+        },
+        "ACCT-DREQ-007": {
+          "title": "Standard price variance accounts",
+          "what": "Conditional checkpoint (FC-02=Standard Price). Configures price variance accounts on account.account for standard cost valuation.",
+          "why": "Standard costing generates price variance entries when actual costs differ from standard costs. Without variance accounts, these entries have nowhere to go.",
+          "confirm_first": [
+            "Has finance defined the price difference account for purchase price variances?",
+            "Is the standard cost update process documented?",
+            "Has the production variance account been mapped if manufacturing is in scope?"
+          ],
+          "common_mistakes": [
+            "Not configuring variance accounts, causing inventory receipts with price differences to fail."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Product Categories > Account Properties > Price Difference Account"
+        },
+        "ACCT-REC-001": {
+          "title": "Analytic accounting configuration",
+          "what": "Conditional checkpoint (FC-05=Yes). Configures analytic accounting structure for cost center, project, or department-level financial tracking.",
+          "why": "Analytic accounting enables cost allocation and profitability analysis. Without it, management reporting lacks the granularity needed for operational decisions.",
+          "confirm_first": [
+            "What dimensions of analysis does the client need (department, project, product line)?",
+            "Has the analytic account plan been designed?",
+            "Will analytic tags or analytic plans be used?"
+          ],
+          "common_mistakes": [
+            "Creating an overly complex analytic structure that users will not consistently apply."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Analytic Accounting"
+        },
+        "ACCT-REC-002": {
+          "title": "Full accounting reconciliation readiness",
+          "what": "Conditional checkpoint (FC-01=Full accounting). Informational confirmation that reconciliation processes are reviewed for full accounting scope.",
+          "why": "Full accounting requires regular bank reconciliation, payment matching, and aged receivable/payable management. Without a process, the ledger drifts from reality.",
+          "confirm_first": [
+            "Has the bank reconciliation process been documented?",
+            "Who is responsible for reconciliation and how often?",
+            "Are bank feeds or import files available for automated matching?"
+          ],
+          "common_mistakes": [
+            "Assuming reconciliation can be deferred until after go-live."
+          ],
+          "odoo_docs_hint": "Accounting > Dashboard > Bank Journals > Reconcile"
+        },
+        "ACCT-GL-001": {
+          "title": "Accounting go-live readiness: account structure",
+          "what": "Informational go-live checkpoint confirming the account structure is finalized and ready for operational use.",
+          "why": "Changes to the account structure after go-live risk breaking existing entries and reports.",
+          "confirm_first": [
+            "Is the chart of accounts finalized?",
+            "Have all required accounts been created and tested?",
+            "Has finance signed off on the account structure?"
+          ],
+          "common_mistakes": [
+            "Treating go-live readiness as automatic once accounts exist."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Chart of Accounts"
+        },
+        "ACCT-GL-002": {
+          "title": "Accounting go-live readiness: closing procedures",
+          "what": "Go-live checkpoint confirming that period closing procedures are documented and tested.",
+          "why": "Without tested closing procedures, the first month-end close will be chaotic, with missing entries and unresolved items.",
+          "confirm_first": [
+            "Has a month-end closing checklist been created?",
+            "Has a test close been performed in the staging environment?",
+            "Are lock date responsibilities assigned?"
+          ],
+          "common_mistakes": [
+            "Going live without ever running a simulated period close."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Settings > Lock Dates"
+        },
+        "ACCT-GL-003": {
+          "title": "Accounting go-live readiness: opening balances",
+          "what": "Go-live checkpoint confirming that opening balance entry procedures are planned and responsible parties are assigned.",
+          "why": "Without correct opening balances, the entire general ledger starts from an incorrect position, invalidating all subsequent reporting.",
+          "confirm_first": [
+            "Has the opening balance date been agreed with the client?",
+            "Who will prepare the opening balance journal entry?",
+            "Has the source of opening balances been identified (prior system, trial balance)?"
+          ],
+          "common_mistakes": [
+            "Posting opening balances without reconciling them against the prior system's closing balance."
+          ],
+          "odoo_docs_hint": "Accounting > Journal Entries > Create (opening balance entry)"
+        }
+      }
+    },
+    "crm": {
+      "label": "CRM",
+      "overview": "Governs lead and opportunity pipeline structure, sales team assignments, and commercial qualification on crm.stage and crm.team. CRM design directly affects how opportunities flow into quotations and sales orders.",
+      "checkpoints": {
+        "CRM-FOUND-001": {
+          "title": "CRM pipeline/stage activation foundation",
+          "what": "Establishes the CRM pipeline stage structure on crm.stage. Defines what stages opportunities pass through from initial lead to won/lost.",
+          "why": "Pipeline stages drive forecasting accuracy, activity reminders, and management reporting. A poorly designed pipeline makes CRM data unreliable.",
+          "confirm_first": [
+            "Has the client defined their sales process stages?",
+            "How many pipeline stages are needed (avoid too many — 5-7 is typical)?",
+            "Does the stage structure reflect probability weighting for forecasting?"
+          ],
+          "common_mistakes": [
+            "Creating too many stages, causing sales reps to skip stages and break reporting.",
+            "Not setting probability percentages on stages, making forecasting meaningless."
+          ],
+          "odoo_docs_hint": "CRM > Configuration > Stages"
+        },
+        "CRM-FOUND-002": {
+          "title": "CRM team/user assignment foundation",
+          "what": "Establishes sales team structure on crm.team, mapping teams to users and defining team-level pipeline access.",
+          "why": "Sales teams control lead assignment, pipeline visibility, and team-level reporting. Without teams, all leads go to everyone or no one.",
+          "confirm_first": [
+            "How many sales teams are needed?",
+            "Who are the team leaders?",
+            "Will leads be auto-assigned by rules or manually assigned?"
+          ],
+          "common_mistakes": [
+            "Creating only one team, losing the ability to segment pipeline reporting.",
+            "Not assigning team leaders, which breaks assignment rules."
+          ],
+          "odoo_docs_hint": "CRM > Configuration > Sales Teams"
+        },
+        "CRM-DREQ-001": {
+          "title": "Pipeline stage configuration",
+          "what": "Informational checkpoint confirming pipeline stage configuration (crm.stage) is aligned with the sales process. No governed write.",
+          "why": "Stage names, sequences, and probability settings must match the actual sales workflow or CRM data becomes unreliable.",
+          "confirm_first": [
+            "Have the default stages been renamed to match the client's sales process?",
+            "Are stage probabilities set for accurate forecasting?",
+            "Is the win/lost stage configuration correct?"
+          ],
+          "common_mistakes": [
+            "Keeping default Odoo stage names that do not match the client's process terminology."
+          ],
+          "odoo_docs_hint": "CRM > Configuration > Stages"
+        },
+        "CRM-DREQ-002": {
+          "title": "Lead assignment rules",
+          "what": "Configures lead assignment rules on crm.team, defining how new leads are distributed to teams and salespeople.",
+          "why": "Without assignment rules, leads accumulate unassigned and are never followed up. This directly impacts revenue.",
+          "confirm_first": [
+            "Should leads be assigned by geographic territory, product interest, or round-robin?",
+            "What happens to leads that match no assignment rule?",
+            "Has the assignment logic been tested with sample leads?"
+          ],
+          "common_mistakes": [
+            "Creating assignment rules that overlap, causing leads to be assigned to multiple teams."
+          ],
+          "odoo_docs_hint": "CRM > Configuration > Sales Teams > [Team] > Assignment"
+        },
+        "CRM-DREQ-003": {
+          "title": "Activity/pipeline discipline",
+          "what": "Configures activity and pipeline discipline rules on crm.stage, ensuring opportunities have required follow-up activities at each stage.",
+          "why": "Without activity discipline, opportunities stagnate in stages without follow-up, and management cannot identify bottlenecks.",
+          "confirm_first": [
+            "Are there mandatory activities at each pipeline stage?",
+            "What is the expected time in each stage before escalation?",
+            "Has the activity type list been customized for the business?"
+          ],
+          "common_mistakes": [
+            "Not setting rotting time on stages, so stale opportunities are never flagged."
+          ],
+          "odoo_docs_hint": "CRM > Configuration > Stages > [Stage] > Rotting"
+        },
+        "CRM-DREQ-004": {
+          "title": "Team activity tracking",
+          "what": "Conditional checkpoint (TA-02=Yes). Configures team-level activity tracking on crm.team for teams that require activity monitoring.",
+          "why": "Team activity tracking provides management visibility into sales team productivity and follow-up compliance.",
+          "confirm_first": [
+            "Which teams need activity tracking enabled?",
+            "What KPIs will be monitored at the team level?",
+            "Has the reporting dashboard been configured for team leads?"
+          ],
+          "common_mistakes": [
+            "Enabling tracking without defining what constitutes meaningful activity metrics."
+          ],
+          "odoo_docs_hint": "CRM > Configuration > Sales Teams > [Team]"
+        },
+        "CRM-REC-001": {
+          "title": "CRM reporting/team readiness",
+          "what": "Informational recommended checkpoint confirming CRM reporting structure and team configuration are ready for operational use.",
+          "why": "CRM reporting accuracy depends on correct stage, team, and activity configuration. Going live with misconfigured CRM produces misleading dashboards.",
+          "confirm_first": [
+            "Has the CRM dashboard been reviewed with sales leadership?",
+            "Are pipeline and forecast reports producing expected results with test data?",
+            "Have sales team leads validated their team configuration?"
+          ],
+          "common_mistakes": [
+            "Assuming CRM reports will be accurate without verifying stage probabilities and team assignments."
+          ],
+          "odoo_docs_hint": "CRM > Reporting > Pipeline Analysis"
+        }
+      }
+    },
+    "sales": {
+      "label": "Sales",
+      "overview": "Governs quotation-to-order flow, pricing, and commercial execution policy on product.pricelist and related settings. Sales configuration drives how quotes are created, priced, and converted to orders.",
+      "checkpoints": {
+        "SAL-FOUND-001": {
+          "title": "Sales master data readiness acknowledgement",
+          "what": "Informational checkpoint confirming that products and customer records are ready for sales use. No governed write.",
+          "why": "Sales cannot create accurate quotations without correct product records, prices, and customer data from master data.",
+          "confirm_first": [
+            "Are the products that will appear on quotations created with correct sales prices?",
+            "Are customer records complete with correct addresses and payment terms?",
+            "Has the pricelist structure been decided?"
+          ],
+          "common_mistakes": [
+            "Starting to create quotations with incomplete product or customer records."
+          ],
+          "odoo_docs_hint": "Sales > Products > Products"
+        },
+        "SAL-FOUND-002": {
+          "title": "Sales module configuration foundation",
+          "what": "Establishes sales module configuration on product.pricelist, defining the baseline pricelist and sales policy settings.",
+          "why": "The default pricelist determines pricing for all quotations unless overridden. Getting this wrong means every quote uses incorrect prices.",
+          "confirm_first": [
+            "What is the default pricing strategy (fixed price, discount-based, formula)?",
+            "How many pricelists are needed (e.g., retail, wholesale)?",
+            "Has the default pricelist currency been confirmed?"
+          ],
+          "common_mistakes": [
+            "Creating pricelists without testing them on sample quotations.",
+            "Not setting the default pricelist on the sales order form."
+          ],
+          "odoo_docs_hint": "Sales > Configuration > Pricelists"
+        },
+        "SAL-DREQ-001": {
+          "title": "Quotation-to-order baseline / commercial policy",
+          "what": "Configures the quotation-to-order conversion policy on product.pricelist, including quotation validity, confirmation workflow, and order numbering.",
+          "why": "Commercial policy determines how quotes become binding orders. Without a clear policy, quotes may be confirmed without proper authorization.",
+          "confirm_first": [
+            "What is the default quotation validity period?",
+            "Is a quotation confirmation email sent to the customer?",
+            "Does the client require a separate order number from the quotation number?"
+          ],
+          "common_mistakes": [
+            "Setting quotation validity too long, creating stale quotes with outdated pricing."
+          ],
+          "odoo_docs_hint": "Sales > Configuration > Settings > Quotations & Orders"
+        },
+        "SAL-DREQ-002": {
+          "title": "Pricing baseline",
+          "what": "Configures pricing baseline rules on product.pricelist, defining how prices are computed and what discounts apply.",
+          "why": "Pricing rules affect every quotation line. Incorrect rules result in wrong prices that may only be caught after invoicing.",
+          "confirm_first": [
+            "Are pricing rules set for all relevant customer segments?",
+            "Has the client provided a price list or pricing matrix?",
+            "Are volume discounts or tiered pricing needed?"
+          ],
+          "common_mistakes": [
+            "Configuring complex pricing rules without testing them against real-world scenarios."
+          ],
+          "odoo_docs_hint": "Sales > Configuration > Pricelists > [Pricelist] > Price Rules"
+        },
+        "SAL-DREQ-003": {
+          "title": "Pricelist discount rules",
+          "what": "Conditional checkpoint (SC-02=Yes). Informational confirmation that discount rules are configured and mapped to authorized users.",
+          "why": "Discount rules without user-level authorization controls allow unauthorized discounting.",
+          "confirm_first": [
+            "Which users can apply manual discounts?",
+            "Are discount limits defined per role or pricelist?",
+            "Has the discount approval workflow been tested?"
+          ],
+          "common_mistakes": [
+            "Enabling discounts without setting limits, allowing 100% discounts."
+          ],
+          "odoo_docs_hint": "Sales > Configuration > Settings > Pricing > Discounts"
+        },
+        "SAL-DREQ-004": {
+          "title": "Quotation template configuration",
+          "what": "Conditional checkpoint (SC-03=Yes). Configures quotation templates for standardized sales proposals on product.pricelist.",
+          "why": "Quotation templates ensure consistent sales proposals and reduce manual errors in line item configuration.",
+          "confirm_first": [
+            "What quotation templates does the client need?",
+            "Should templates include pre-defined product lines or optional products?",
+            "Will templates be used for online quotation signing?"
+          ],
+          "common_mistakes": [
+            "Creating templates that do not reflect actual product bundles or service offerings."
+          ],
+          "odoo_docs_hint": "Sales > Configuration > Quotation Templates"
+        },
+        "SAL-DREQ-005": {
+          "title": "Manager approval pricing",
+          "what": "Conditional checkpoint (SC-04='Manager approval'). Configures manager approval rules for sales orders.",
+          "why": "Manager approval ensures oversight on orders that exceed normal parameters, protecting margins and ensuring compliance with commercial policy.",
+          "confirm_first": [
+            "What triggers the need for manager approval?",
+            "Who has the Sales Manager role to approve?",
+            "Has the approval workflow been tested end-to-end?"
+          ],
+          "common_mistakes": [
+            "Setting approval triggers without assigning anyone the authority to approve."
+          ],
+          "odoo_docs_hint": "Sales > Configuration > Settings > Quotations & Orders"
+        },
+        "SAL-DREQ-006": {
+          "title": "Invoicing policy linkage",
+          "what": "Conditional checkpoint (FC-06=Yes). Configures invoicing policy settings linking sales orders to invoice generation.",
+          "why": "Invoicing policy determines whether invoices are generated on order confirmation or on delivery. The wrong policy creates cash flow timing issues.",
+          "confirm_first": [
+            "Should invoicing happen on ordered quantities or delivered quantities?",
+            "Does the policy differ by product type (goods vs. services)?",
+            "Has finance approved the invoicing policy?"
+          ],
+          "common_mistakes": [
+            "Invoicing on ordered quantities when the business ships partial orders."
+          ],
+          "odoo_docs_hint": "Sales > Configuration > Settings > Invoicing"
+        },
+        "SAL-DREQ-007": {
+          "title": "Dropship/delivery pricing",
+          "what": "Conditional checkpoint (PI-05=Yes). Configures delivery and dropship pricing rules on product.pricelist.",
+          "why": "Dropship and delivery pricing rules ensure shipping costs are correctly computed and passed through to customers.",
+          "confirm_first": [
+            "Are delivery methods configured with correct pricing?",
+            "How should dropship costs be reflected on sales orders?",
+            "Are there free shipping thresholds?"
+          ],
+          "common_mistakes": [
+            "Not configuring delivery carriers, causing shipping lines to show zero cost."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Delivery Methods"
+        },
+        "SAL-GL-001": {
+          "title": "Sales go-live readiness",
+          "what": "Go-live checkpoint confirming sales configuration is finalized and ready for production quotations.",
+          "why": "Going live with sales before confirming pricing, templates, and approval workflows risks incorrect quotes reaching customers.",
+          "confirm_first": [
+            "Has the sales team tested the complete quote-to-order workflow?",
+            "Are all pricelists, templates, and approval rules finalized?",
+            "Has the sales team been trained on the new workflow?"
+          ],
+          "common_mistakes": [
+            "Going live with sales without running a parallel test with real customer scenarios."
+          ],
+          "odoo_docs_hint": "Sales > Orders > Quotations"
+        }
+      }
+    },
+    "purchase": {
+      "label": "Purchase",
+      "overview": "Governs supplier procurement, purchasing control, and inbound commercial commitments on res.company (via res.config.settings). Purchase configuration controls RFQ flow, approval thresholds, and vendor terms.",
+      "checkpoints": {
+        "PUR-FOUND-001": {
+          "title": "Purchase baseline acknowledgement",
+          "what": "Informational checkpoint confirming vendor/partner records are ready for purchase use. No governed write.",
+          "why": "Purchase orders require complete vendor records with correct payment terms, lead times, and currency settings.",
+          "confirm_first": [
+            "Are key vendor records created with correct payment terms and lead times?",
+            "Are vendor pricelists configured if applicable?",
+            "Has the vendor approval process been documented?"
+          ],
+          "common_mistakes": [
+            "Creating purchase orders before vendor records are complete, causing incorrect billing."
+          ],
+          "odoo_docs_hint": "Purchase > Orders > Vendors"
+        },
+        "PUR-DREQ-001": {
+          "title": "RFQ-to-purchase-order purchase policy settings",
+          "what": "Configures RFQ-to-PO conversion policy on res.company (via res.config.settings), including purchase order locking and receipt reminders.",
+          "why": "Purchase policy settings control how RFQs become binding purchase orders. Without configuration, orders may be confirmed without proper controls.",
+          "confirm_first": [
+            "Should confirmed purchase orders be locked from editing?",
+            "Are receipt reminder emails needed?",
+            "What is the default RFQ validity period?"
+          ],
+          "common_mistakes": [
+            "Not locking confirmed POs, allowing post-confirmation edits that are not communicated to vendors."
+          ],
+          "odoo_docs_hint": "Purchase > Configuration > Settings"
+        },
+        "PUR-DREQ-002": {
+          "title": "Vendor terms and pricing policy settings",
+          "what": "Configures vendor terms and pricing policy on res.company, establishing default vendor payment terms and pricing behavior.",
+          "why": "Vendor terms affect cash flow forecasting and vendor relationship management. Incorrect defaults create unnecessary manual corrections.",
+          "confirm_first": [
+            "What are the standard vendor payment terms?",
+            "Are there vendor-specific pricing agreements that need to be configured?",
+            "Has the client provided a vendor master list with terms?"
+          ],
+          "common_mistakes": [
+            "Using a single default payment term for all vendors when different terms are negotiated."
+          ],
+          "odoo_docs_hint": "Purchase > Configuration > Vendor Pricelists"
+        },
+        "PUR-DREQ-003": {
+          "title": "Purchase approval threshold settings",
+          "what": "Conditional checkpoint (PI-02=Threshold). Configures threshold-based purchase approval on res.company (po_double_validation_amount).",
+          "why": "Approval thresholds ensure that purchases above a defined amount receive management oversight before being confirmed.",
+          "confirm_first": [
+            "What is the approval threshold amount?",
+            "Who are the designated approvers?",
+            "Has the threshold been reviewed against typical purchase order values?"
+          ],
+          "common_mistakes": [
+            "Setting the threshold too low, causing unnecessary approval bottlenecks.",
+            "Setting it too high, effectively removing the control."
+          ],
+          "odoo_docs_hint": "Purchase > Configuration > Settings > Purchase Order Approval"
+        },
+        "PUR-DREQ-004": {
+          "title": "Purchase approval all-orders setting",
+          "what": "Conditional checkpoint (PI-02=All orders). Configures all-order purchase approval on res.company (po_double_validation='always').",
+          "why": "When all purchase orders require approval, there must be designated approvers available to avoid blocking procurement.",
+          "confirm_first": [
+            "Are there enough approvers to handle the volume of purchase orders?",
+            "Is there a backup approver for when the primary is unavailable?",
+            "Has the approval workflow been tested with realistic volume?"
+          ],
+          "common_mistakes": [
+            "Requiring approval on all orders without considering the approval bottleneck this creates."
+          ],
+          "odoo_docs_hint": "Purchase > Configuration > Settings > Purchase Order Approval"
+        },
+        "PUR-DREQ-005": {
+          "title": "Purchase-accounting linkage settings",
+          "what": "Conditional checkpoint (FC-03=Yes). Configures analytic accounting linkage for purchase orders on res.company.",
+          "why": "Purchase-accounting linkage enables cost allocation of purchases to analytic accounts (cost centers, projects).",
+          "confirm_first": [
+            "Will purchase orders be tagged with analytic accounts?",
+            "Has the analytic account plan been configured in ACCT-REC-001?",
+            "Who is responsible for selecting the correct analytic account on POs?"
+          ],
+          "common_mistakes": [
+            "Enabling analytic tagging without training procurement staff on when to use it."
+          ],
+          "odoo_docs_hint": "Purchase > Configuration > Settings > Analytics"
+        },
+        "PUR-DREQ-006": {
+          "title": "Subcontracting purchase settings",
+          "what": "Conditional checkpoint (MF-04=Yes). Informational confirmation that subcontracting purchase settings are configured. Depends on MRP-DREQ-007.",
+          "why": "Subcontracting in Odoo links purchase orders to manufacturing. Misconfigured settings cause component tracking and cost allocation failures.",
+          "confirm_first": [
+            "Has the subcontracting workflow been defined with manufacturing?",
+            "Are subcontractors set up as vendors with the correct subcontracting location?",
+            "Has component shipping to subcontractors been tested?"
+          ],
+          "common_mistakes": [
+            "Not configuring the subcontracting location, causing components to be consumed from the wrong warehouse."
+          ],
+          "odoo_docs_hint": "Manufacturing > Configuration > Settings > Subcontracting"
+        },
+        "PUR-DREQ-007": {
+          "title": "Dropship purchase settings",
+          "what": "Conditional checkpoint (PI-05=Yes). Informational confirmation that dropship routes and purchase settings are configured.",
+          "why": "Dropshipping sends goods directly from vendors to customers. Without correct route and purchase configuration, orders fail to create vendor deliveries.",
+          "confirm_first": [
+            "Which products use the dropship route?",
+            "Are vendor lead times set for dropship products?",
+            "Has the dropship delivery flow been tested end-to-end?"
+          ],
+          "common_mistakes": [
+            "Enabling dropship routes without configuring vendor delivery addresses."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Routes > Dropship"
+        },
+        "PUR-GL-001": {
+          "title": "Purchase go-live readiness",
+          "what": "Go-live checkpoint confirming purchase configuration is finalized and ready for production procurement.",
+          "why": "Going live with purchase before approval workflows and vendor terms are set creates uncontrolled procurement.",
+          "confirm_first": [
+            "Has the procurement team tested the full RFQ-to-PO-to-receipt workflow?",
+            "Are all approval rules and vendor terms finalized?",
+            "Has the procurement team been trained?"
+          ],
+          "common_mistakes": [
+            "Going live without testing the approval workflow with actual approvers."
+          ],
+          "odoo_docs_hint": "Purchase > Orders > Purchase Orders"
+        }
+      }
+    },
+    "inventory": {
+      "label": "Inventory",
+      "overview": "Governs warehouse structure, operation types, routes, and valuation on stock.warehouse and stock.picking.type. Inventory design affects every physical goods movement and links directly to accounting through valuation.",
+      "checkpoints": {
+        "INV-FOUND-001": {
+          "title": "Warehouse structure foundation",
+          "what": "Establishes the warehouse structure on stock.warehouse, defining warehouses, their short codes, and initial location hierarchy.",
+          "why": "Warehouses are the top-level container for all inventory operations. Wrong warehouse design means every pick, pack, and ship operation uses incorrect locations.",
+          "confirm_first": [
+            "How many physical warehouses does the business operate?",
+            "What are the warehouse names and short codes?",
+            "Will multi-step receiving or shipping be used?"
+          ],
+          "common_mistakes": [
+            "Creating multiple warehouses when the business has one physical location with multiple areas.",
+            "Not setting warehouse short codes, causing operation sequence confusion."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Warehouses"
+        },
+        "INV-FOUND-002": {
+          "title": "Warehouse operation baseline acknowledgement",
+          "what": "Informational checkpoint confirming warehouse operations baseline is reviewed. No governed write.",
+          "why": "Operation baselines define the default receipt, delivery, and internal transfer behavior. Incorrect baselines mean every warehouse transaction follows the wrong process.",
+          "confirm_first": [
+            "Has the default receipt process been reviewed (1-step, 2-step, 3-step)?",
+            "Has the default delivery process been reviewed?",
+            "Are internal transfer operations needed?"
+          ],
+          "common_mistakes": [
+            "Accepting default 1-step operations when the business requires quality checks or packing steps."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Warehouses > [Warehouse]"
+        },
+        "INV-FOUND-003": {
+          "title": "Operation types and sequences foundation",
+          "what": "Establishes operation types and sequences on stock.warehouse (creates operation types when warehouse is configured). Defines how receipt, delivery, and internal operations are categorized.",
+          "why": "Operation types control the picking flow, sequence numbering, and reporting categorization for all inventory movements.",
+          "confirm_first": [
+            "Are the default operation types sufficient or are custom types needed?",
+            "Is the sequence numbering scheme acceptable?",
+            "Have operation type names been aligned with the client's warehouse terminology?"
+          ],
+          "common_mistakes": [
+            "Creating custom operation types when renaming defaults would suffice.",
+            "Not configuring return operation types, blocking customer and vendor returns."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Operations Types"
+        },
+        "INV-DREQ-001": {
+          "title": "Product-inventory structure alignment",
+          "what": "Configures product-specific inventory settings (stock.picking.type/routes alignment) to ensure products move through the correct warehouse operations.",
+          "why": "Products must be linked to the correct routes and operation types. Misalignment means products follow wrong warehouse flows.",
+          "confirm_first": [
+            "Are products assigned to the correct warehouse routes?",
+            "Have storable products been distinguished from consumables?",
+            "Are lot/serial number tracking requirements defined per product?"
+          ],
+          "common_mistakes": [
+            "Not setting tracking (lot/serial) requirements before initial inventory is loaded."
+          ],
+          "odoo_docs_hint": "Inventory > Products > [Product] > Inventory tab"
+        },
+        "INV-DREQ-002": {
+          "title": "Inventory valuation policy alignment",
+          "what": "Informational checkpoint confirming inventory valuation settings align with accounting policy. Depends on ACCT-DREQ-003 when full accounting is active.",
+          "why": "Inventory valuation generates accounting entries. If valuation and accounting are misaligned, the general ledger does not reflect actual inventory value.",
+          "confirm_first": [
+            "Is inventory valuation set to manual or automated (perpetual)?",
+            "Has the costing method been confirmed (standard, AVCO, FIFO)?",
+            "Are product categories configured with the correct valuation accounts?"
+          ],
+          "common_mistakes": [
+            "Setting automated valuation without confirming the accounting accounts are mapped."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Product Categories > Inventory Valuation"
+        },
+        "INV-DREQ-003": {
+          "title": "Multi-warehouse operation type configuration",
+          "what": "Conditional checkpoint (OP-02 >= 2). Configures operation types for multi-warehouse environments, including inter-warehouse transfer operations.",
+          "why": "Multi-warehouse operations require transfer routes and operation types that correctly move stock between warehouses.",
+          "confirm_first": [
+            "How do goods move between warehouses (direct transfer, transit location)?",
+            "Are inter-warehouse transfers tracked with separate operation types?",
+            "Has the transit time between warehouses been configured?"
+          ],
+          "common_mistakes": [
+            "Not creating inter-warehouse transfer routes, forcing manual stock adjustments."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Warehouses > Resupply"
+        },
+        "INV-DREQ-004": {
+          "title": "2-step receipt configuration",
+          "what": "Conditional checkpoint (PI-03=2 steps). Configures 2-step receipt operations (receive + quality check / put-away) on stock.picking.type.",
+          "why": "2-step receipts add a quality or input step before goods reach stock. Without configuration, the extra step blocks goods from entering inventory.",
+          "confirm_first": [
+            "What is the purpose of the second step (quality check, input zone)?",
+            "Are the input and stock locations correctly defined?",
+            "Has the 2-step flow been tested with a sample receipt?"
+          ],
+          "common_mistakes": [
+            "Enabling 2-step receipt without training warehouse staff on the additional step."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Warehouses > [Warehouse] > Reception Steps"
+        },
+        "INV-DREQ-005": {
+          "title": "3-step receipt configuration",
+          "what": "Conditional checkpoint (PI-03=3 steps). Configures 3-step receipt operations (receive + quality + stock) on stock.picking.type.",
+          "why": "3-step receipts provide maximum control but add operational complexity. Each step must be correctly configured or goods get stuck in intermediate locations.",
+          "confirm_first": [
+            "Does the business truly need 3 steps or would 2 suffice?",
+            "Are quality check criteria defined for the inspection step?",
+            "Has the full 3-step flow been tested end-to-end?"
+          ],
+          "common_mistakes": [
+            "Implementing 3 steps when the business does not actually perform quality inspection on receipt."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Warehouses > [Warehouse] > Reception Steps"
+        },
+        "INV-DREQ-006": {
+          "title": "Dropship inventory configuration",
+          "what": "Conditional checkpoint (PI-05=Yes). Informational confirmation that dropship routes are correctly configured in inventory. Depends on INV-FOUND-003.",
+          "why": "Dropship routes bypass the warehouse entirely. Without correct configuration, dropship orders create phantom inventory movements.",
+          "confirm_first": [
+            "Is the dropship route activated on the relevant products?",
+            "Are vendor locations correctly configured for dropship flows?",
+            "Has a dropship order been tested end-to-end?"
+          ],
+          "common_mistakes": [
+            "Enabling dropship routes without configuring the partner/vendor delivery flow."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Routes > Dropship"
+        },
+        "INV-DREQ-007": {
+          "title": "AVCO/FIFO valuation configuration",
+          "what": "Conditional checkpoint (FC-02=AVCO or FIFO). Configures real-cost inventory valuation on stock.picking.type, linking to accounting valuation accounts.",
+          "why": "AVCO and FIFO valuation generate automatic accounting entries on every stock movement. Misconfiguration causes incorrect cost of goods sold and inventory values.",
+          "confirm_first": [
+            "Has the costing method decision (AVCO vs. FIFO) been confirmed by finance?",
+            "Are valuation accounts configured per product category (ACCT-DREQ-006)?",
+            "Has a test receipt been processed to verify valuation entries?"
+          ],
+          "common_mistakes": [
+            "Switching costing methods after initial inventory is loaded."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Product Categories > Inventory Valuation"
+        },
+        "INV-DREQ-008": {
+          "title": "Manufacturing inventory integration",
+          "what": "Conditional checkpoint (MF-01=Yes). Informational confirmation that inventory is configured for manufacturing integration — component locations, finished goods locations, and production operation types.",
+          "why": "Manufacturing consumes components from and produces finished goods to specific inventory locations. Misconfiguration causes production orders to fail stock moves.",
+          "confirm_first": [
+            "Are component and finished goods locations defined?",
+            "Is the production operation type correctly configured?",
+            "Has a test manufacturing order been run to verify stock movements?"
+          ],
+          "common_mistakes": [
+            "Not configuring the production location, causing MO stock moves to use the wrong source."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Warehouses > [Warehouse]"
+        },
+        "INV-DREQ-009": {
+          "title": "Rental inventory integration",
+          "what": "Conditional checkpoint (RM-04=Yes). Informational confirmation that inventory is configured for rental product tracking and return flow.",
+          "why": "Rental products require specific inventory handling for checkout, return, and availability tracking. Without configuration, rental stock is not properly tracked.",
+          "confirm_first": [
+            "Are rental products configured as storable products with serial tracking?",
+            "Is the rental return operation type configured?",
+            "Has the rental checkout and return flow been tested?"
+          ],
+          "common_mistakes": [
+            "Not enabling serial tracking on rental products, losing individual asset traceability."
+          ],
+          "odoo_docs_hint": "Inventory > Products > [Product] > Inventory tab"
+        },
+        "INV-GL-001": {
+          "title": "Inventory go-live readiness: operations",
+          "what": "Go-live checkpoint confirming warehouse operations are finalized and ready for production use.",
+          "why": "Going live with inventory before routes, operation types, and warehouse structure are finalized creates operational chaos.",
+          "confirm_first": [
+            "Has the warehouse team tested all major workflows (receipt, delivery, internal transfer)?",
+            "Are all routes and operation types finalized?",
+            "Has initial inventory been loaded or is a count planned?"
+          ],
+          "common_mistakes": [
+            "Going live without loading initial inventory balances."
+          ],
+          "odoo_docs_hint": "Inventory > Operations"
+        },
+        "INV-GL-002": {
+          "title": "Inventory go-live readiness: valuation",
+          "what": "Go-live checkpoint confirming inventory valuation configuration is finalized and aligned with accounting.",
+          "why": "Inventory valuation errors after go-live require complex corrections. Valuation must be right from the first transaction.",
+          "confirm_first": [
+            "Has a test transaction verified that valuation entries post correctly?",
+            "Are opening inventory values loaded at the correct cost?",
+            "Has finance reviewed and approved the valuation setup?"
+          ],
+          "common_mistakes": [
+            "Loading opening inventory at zero cost, then trying to correct values after the fact."
+          ],
+          "odoo_docs_hint": "Accounting > Reporting > Inventory Valuation"
+        }
+      }
+    },
+    "manufacturing": {
+      "label": "Manufacturing (MRP)",
+      "overview": "Governs production execution, bills of materials, work centers, and manufacturing control on mrp.workcenter. Manufacturing design depends on inventory and master data being correctly configured.",
+      "checkpoints": {
+        "MRP-FOUND-001": {
+          "title": "Manufacturing module activation foundation",
+          "what": "Informational checkpoint confirming the manufacturing module is activated and baseline settings are reviewed. No governed write.",
+          "why": "Manufacturing depends on inventory operation types being correctly configured first. Activating MRP without inventory foundations creates dependency conflicts.",
+          "confirm_first": [
+            "Is the manufacturing module installed?",
+            "Has the production location been configured in the warehouse?",
+            "Are the basic manufacturing settings reviewed?"
+          ],
+          "common_mistakes": [
+            "Activating manufacturing before inventory warehouse and operation types are configured."
+          ],
+          "odoo_docs_hint": "Manufacturing > Configuration > Settings"
+        },
+        "MRP-DREQ-001": {
+          "title": "BOM governance baseline",
+          "what": "Informational checkpoint confirming BOM governance rules are defined — who can create/modify BOMs, versioning rules, and approval requirements.",
+          "why": "BOMs are the core data structure for manufacturing. Ungoverned BOM changes cause production errors, incorrect costing, and material shortages.",
+          "confirm_first": [
+            "Who is authorized to create and modify BOMs?",
+            "Is there a BOM approval process?",
+            "Has a standard BOM template been defined for the business?"
+          ],
+          "common_mistakes": [
+            "Allowing all manufacturing users to modify BOMs without oversight."
+          ],
+          "odoo_docs_hint": "Manufacturing > Products > Bills of Materials"
+        },
+        "MRP-DREQ-002": {
+          "title": "Work order and routing control",
+          "what": "Configures work center and routing definitions on mrp.workcenter, establishing the production process flow.",
+          "why": "Work centers define where production happens and how long it takes. Incorrect work center configuration produces wrong capacity planning and production scheduling.",
+          "confirm_first": [
+            "What are the work centers in the production facility?",
+            "What is the capacity and working hours for each work center?",
+            "Have routing sequences been defined for the main products?"
+          ],
+          "common_mistakes": [
+            "Not setting work center capacity, causing scheduling to assume infinite capacity.",
+            "Creating one generic work center instead of modeling the actual production flow."
+          ],
+          "odoo_docs_hint": "Manufacturing > Configuration > Work Centers"
+        },
+        "MRP-DREQ-003": {
+          "title": "Multi-level BOM configuration",
+          "what": "Conditional checkpoint (MF-02=Multi-level). Configures multi-level BOM structures on mrp.workcenter (routing for sub-assemblies).",
+          "why": "Multi-level BOMs create nested production orders for sub-assemblies. Without proper configuration, Odoo may not automatically plan sub-assembly production.",
+          "confirm_first": [
+            "Has the BOM hierarchy been mapped (top-level to sub-assemblies)?",
+            "Are sub-assembly products configured as 'Manufacture' route?",
+            "Has a multi-level production order been tested?"
+          ],
+          "common_mistakes": [
+            "Not configuring replenishment rules for sub-assemblies, requiring manual MO creation."
+          ],
+          "odoo_docs_hint": "Manufacturing > Products > Bills of Materials > [BOM] > BOM Type"
+        },
+        "MRP-DREQ-004": {
+          "title": "Phantom BOM configuration",
+          "what": "Conditional checkpoint (MF-02=Phantom). Configures phantom/kit BOMs that explode into components without creating production orders.",
+          "why": "Phantom BOMs are kits — they decompose into components on sales orders or production orders. Incorrect configuration means components are not consumed correctly.",
+          "confirm_first": [
+            "Which products are kits that should use phantom BOMs?",
+            "Are kit components configured with correct product types?",
+            "Has a sales order with a phantom BOM product been tested?"
+          ],
+          "common_mistakes": [
+            "Using phantom BOMs for products that actually need production orders."
+          ],
+          "odoo_docs_hint": "Manufacturing > Products > Bills of Materials > [BOM] > BOM Type = Kit"
+        },
+        "MRP-DREQ-005": {
+          "title": "Work center capacity and scheduling",
+          "what": "Conditional checkpoint (MF-03=Yes). Informational confirmation that work center capacity and scheduling parameters are configured.",
+          "why": "Without capacity configuration, production scheduling assumes work centers have unlimited capacity, creating unrealistic production plans.",
+          "confirm_first": [
+            "Are working hours configured for each work center?",
+            "Is the time efficiency (OEE) set correctly?",
+            "Has production scheduling been tested with realistic order volumes?"
+          ],
+          "common_mistakes": [
+            "Leaving default capacity values, producing schedules that do not match reality."
+          ],
+          "odoo_docs_hint": "Manufacturing > Configuration > Work Centers > [Work Center] > General Information"
+        },
+        "MRP-DREQ-006": {
+          "title": "Work center costing configuration",
+          "what": "Conditional checkpoint (MF-03=Yes). Informational confirmation that work center costing rates are configured for production cost calculation.",
+          "why": "Work center costs feed into product costing through routings. Incorrect rates mean production cost calculations are wrong.",
+          "confirm_first": [
+            "Has the cost per hour been set for each work center?",
+            "Does the costing rate include overhead or just direct labor?",
+            "Has finance reviewed the work center costing rates?"
+          ],
+          "common_mistakes": [
+            "Leaving work center cost at zero, causing production to show no labor cost."
+          ],
+          "odoo_docs_hint": "Manufacturing > Configuration > Work Centers > [Work Center] > Costing"
+        },
+        "MRP-DREQ-007": {
+          "title": "Subcontracting configuration",
+          "what": "Conditional checkpoint (MF-04=Yes). Informational confirmation that subcontracting is configured — subcontractor locations, BOM subcontracting type, and component shipping.",
+          "why": "Subcontracting automates component shipment to subcontractors and receipt of finished goods. Misconfiguration breaks the entire subcontracting flow.",
+          "confirm_first": [
+            "Are subcontractor partners configured with subcontracting locations?",
+            "Are BOMs set to 'Subcontracting' type?",
+            "Has a subcontracting order been tested end-to-end?"
+          ],
+          "common_mistakes": [
+            "Not configuring subcontractor locations, causing component shipments to fail."
+          ],
+          "odoo_docs_hint": "Manufacturing > Configuration > Settings > Subcontracting"
+        },
+        "MRP-DREQ-008": {
+          "title": "Manufacturing-accounting cost integration",
+          "what": "Conditional checkpoint (FC-01=Full accounting AND MF-02=Multi-level). Configures manufacturing cost accounting integration for multi-level production.",
+          "why": "Multi-level manufacturing with full accounting generates complex cost flows through WIP accounts. Without proper configuration, production costs are misallocated.",
+          "confirm_first": [
+            "Are WIP (work-in-progress) accounts configured?",
+            "Has the cost flow through multi-level production been mapped?",
+            "Has finance verified cost entries from a test production run?"
+          ],
+          "common_mistakes": [
+            "Not mapping WIP accounts, causing production cost entries to fail."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Product Categories > Account Properties > Stock Accounts"
+        },
+        "MRP-GL-001": {
+          "title": "Manufacturing go-live readiness: production",
+          "what": "Go-live checkpoint confirming manufacturing configuration is finalized for production use.",
+          "why": "Manufacturing errors after go-live affect inventory accuracy, production scheduling, and cost reporting.",
+          "confirm_first": [
+            "Has the production team tested the full MO lifecycle?",
+            "Are all BOMs, work centers, and routings finalized?",
+            "Has the production team been trained?"
+          ],
+          "common_mistakes": [
+            "Going live without testing a complete manufacturing order cycle."
+          ],
+          "odoo_docs_hint": "Manufacturing > Operations > Manufacturing Orders"
+        },
+        "MRP-GL-002": {
+          "title": "Manufacturing go-live readiness: inventory-accounting alignment",
+          "what": "Go-live checkpoint confirming manufacturing's inventory and accounting integration is finalized.",
+          "why": "Manufacturing touches inventory (component consumption, finished goods) and accounting (cost entries). Both must be aligned before go-live.",
+          "confirm_first": [
+            "Has a production order been run and verified against inventory and accounting?",
+            "Are cost variance accounts configured if standard costing is used?",
+            "Has finance signed off on the manufacturing cost flow?"
+          ],
+          "common_mistakes": [
+            "Going live with manufacturing without verifying that production cost entries are correct."
+          ],
+          "odoo_docs_hint": "Manufacturing > Reporting > Cost Analysis"
+        }
+      }
+    },
+    "plm": {
+      "label": "PLM",
+      "overview": "Governs engineering change control (ECO) linked to manufacturing structures. PLM depends on manufacturing BOM governance being established. Coverage gap: mrp.eco and mrp.eco.type are not in the governed apply surface.",
+      "checkpoints": {
+        "PLM-FOUND-001": {
+          "title": "Engineering change control foundation",
+          "what": "Establishes the PLM foundation — confirms engineering change orders (ECO) are available and BOM revision governance is understood.",
+          "why": "ECOs are the formal mechanism for BOM changes in regulated or controlled manufacturing. Without PLM foundation, BOM changes are untracked.",
+          "confirm_first": [
+            "Is the PLM module installed?",
+            "Has the engineering team been introduced to the ECO workflow?",
+            "Are ECO stage definitions aligned with the engineering change process?"
+          ],
+          "common_mistakes": [
+            "Installing PLM without a clear process for when ECOs are required vs. direct BOM edits."
+          ],
+          "odoo_docs_hint": "PLM > Engineering Change Orders"
+        },
+        "PLM-DREQ-001": {
+          "title": "ECO approval design",
+          "what": "Configures ECO approval workflows — who can create, review, and approve engineering changes. Depends on USR-DREQ-010 (PLM access configuration).",
+          "why": "Without an approval design, engineering changes either cannot be approved or are approved by unauthorized users.",
+          "confirm_first": [
+            "Who are the ECO approvers?",
+            "Is there a multi-stage approval process (review, test, approve)?",
+            "Has the approval workflow been tested with a sample ECO?"
+          ],
+          "common_mistakes": [
+            "Not assigning ECO approvers, blocking all engineering changes."
+          ],
+          "odoo_docs_hint": "PLM > Configuration > ECO Stages"
+        },
+        "PLM-DREQ-002": {
+          "title": "ECO-BOM revision governance",
+          "what": "Informational checkpoint confirming the relationship between ECOs and BOM revisions is understood and documented. Coverage gap: mrp.eco.type not in governed apply surface.",
+          "why": "ECOs that create BOM revisions must follow a controlled process. Without governance, BOM versions proliferate without traceability.",
+          "confirm_first": [
+            "How are BOM versions tracked (ECO-driven vs. manual)?",
+            "Is there a naming convention for BOM revisions?",
+            "Who decides when a BOM revision is released to production?"
+          ],
+          "common_mistakes": [
+            "Creating BOM revisions outside the ECO process, losing change traceability."
+          ],
+          "odoo_docs_hint": "PLM > Engineering Change Orders > [ECO] > BOM Changes"
+        },
+        "PLM-REC-001": {
+          "title": "PLM documentation linkage",
+          "what": "Recommended checkpoint for linking engineering documents to ECOs and BOM revisions.",
+          "why": "Engineering changes without supporting documentation (drawings, specifications) are difficult to verify and audit.",
+          "confirm_first": [
+            "Will engineering drawings be attached to ECOs?",
+            "Is there a document management process for engineering specifications?",
+            "Has the Documents module been configured for PLM use?"
+          ],
+          "common_mistakes": [
+            "Approving ECOs without attaching supporting engineering documentation."
+          ],
+          "odoo_docs_hint": "PLM > Engineering Change Orders > [ECO] > Attachments"
+        }
+      }
+    },
+    "hr": {
+      "label": "HR",
+      "overview": "Governs employee records, department structure, and HR-related operational policies on hr.department, hr.job, and res.company. HR structure affects approval workflows across multiple domains.",
+      "checkpoints": {
+        "HR-FOUND-001": {
+          "title": "Employee and department structure foundation",
+          "what": "Establishes the HR department structure on hr.department, defining organizational units and their hierarchy.",
+          "why": "Department structure drives approval chains, reporting lines, and cost center allocation. Every domain that uses manager approval depends on HR structure.",
+          "confirm_first": [
+            "What is the organizational department structure?",
+            "Has the department hierarchy been mapped to the Odoo department model?",
+            "Who are the department managers?"
+          ],
+          "common_mistakes": [
+            "Creating a flat department structure when the business needs hierarchical approval chains.",
+            "Not assigning department managers, breaking approval workflows."
+          ],
+          "odoo_docs_hint": "Employees > Configuration > Departments"
+        },
+        "HR-DREQ-001": {
+          "title": "Employee record governance",
+          "what": "Informational checkpoint confirming employee record governance rules are defined — who creates employee records, required fields, and data privacy.",
+          "why": "Employee records contain sensitive data. Without governance, records may be incomplete, inaccurate, or inappropriately accessed.",
+          "confirm_first": [
+            "Who is responsible for creating and maintaining employee records?",
+            "What fields are mandatory for the business (emergency contact, contract type)?",
+            "Are there data privacy requirements for employee information?"
+          ],
+          "common_mistakes": [
+            "Creating employee records with minimal data, then needing to backfill critical fields later."
+          ],
+          "odoo_docs_hint": "Employees > Employees > [Employee]"
+        },
+        "HR-DREQ-002": {
+          "title": "Job position structure",
+          "what": "Configures job positions on hr.job, defining the role taxonomy within the organization.",
+          "why": "Job positions drive recruitment, reporting, and organizational clarity. Without defined positions, employee records lack role context.",
+          "confirm_first": [
+            "Has the client provided a list of job positions?",
+            "Are positions mapped to departments?",
+            "Will job positions be used for recruitment?"
+          ],
+          "common_mistakes": [
+            "Creating too many granular job positions that add maintenance overhead without value."
+          ],
+          "odoo_docs_hint": "Employees > Configuration > Job Positions"
+        },
+        "HR-DREQ-003": {
+          "title": "HR leave management configuration",
+          "what": "Conditional checkpoint (TA-03 includes HR leave). Configures leave types and allocation rules on res.company HR settings.",
+          "why": "Leave management affects employee availability, project planning, and payroll. Incorrect configuration causes leave balance errors.",
+          "confirm_first": [
+            "What leave types does the business offer (annual, sick, unpaid)?",
+            "Are leave allocations annual or accrual-based?",
+            "Who approves leave requests?"
+          ],
+          "common_mistakes": [
+            "Not configuring leave allocations, causing employees to have zero leave balance."
+          ],
+          "odoo_docs_hint": "Time Off > Configuration > Leave Types"
+        },
+        "HR-DREQ-004": {
+          "title": "Timesheet configuration",
+          "what": "Conditional checkpoint (RM-02=Yes). Informational confirmation that timesheet configuration is aligned with project and billing requirements.",
+          "why": "Timesheets feed into project billing and employee productivity reporting. Misconfiguration means unbillable hours or incorrect invoicing.",
+          "confirm_first": [
+            "Which employees will use timesheets?",
+            "Will timesheets be used for client billing?",
+            "Has the timesheet approval workflow been defined?"
+          ],
+          "common_mistakes": [
+            "Enabling timesheets without training employees on how to use them."
+          ],
+          "odoo_docs_hint": "Timesheets > Configuration > Settings"
+        }
+      }
+    },
+    "pos": {
+      "label": "POS",
+      "overview": "Governs point-of-sale session control, cashier access, payment methods, and accounting linkage on pos.payment.method. POS configuration depends on foundation settings and accounting being correct. Coverage gap: pos.config not in governed apply surface.",
+      "checkpoints": {
+        "POS-FOUND-001": {
+          "title": "POS module activation foundation",
+          "what": "Informational checkpoint confirming POS module is activated and payment method baseline (pos.payment.method) is reviewed. No governed write.",
+          "why": "POS depends on payment methods being correctly configured before any sessions can operate. Missing payment methods block POS operations.",
+          "confirm_first": [
+            "Is the POS module installed?",
+            "Have the default payment methods been reviewed (cash, card, etc.)?",
+            "Has the POS shop/config been created?"
+          ],
+          "common_mistakes": [
+            "Opening POS sessions before configuring payment methods."
+          ],
+          "odoo_docs_hint": "Point of Sale > Configuration > Payment Methods"
+        },
+        "POS-DREQ-001": {
+          "title": "POS session control configuration",
+          "what": "Configures POS session control rules on pos.payment.method, defining session opening/closing procedures and cash control.",
+          "why": "Session control determines how cash is managed, when sessions must be closed, and what reconciliation is required. Without controls, cash discrepancies go undetected.",
+          "confirm_first": [
+            "Is opening cash control required (counting cash at session start)?",
+            "Is closing cash control required (counting cash at session end)?",
+            "What is the maximum session duration allowed?"
+          ],
+          "common_mistakes": [
+            "Disabling cash control to speed up operations, losing visibility into cash discrepancies."
+          ],
+          "odoo_docs_hint": "Point of Sale > Configuration > Point of Sale > [POS] > Payment"
+        },
+        "POS-DREQ-002": {
+          "title": "POS product and pricing configuration",
+          "what": "Configures POS-specific product availability and pricing on pos.payment.method (linked config).",
+          "why": "POS product availability determines what items appear on the POS interface. Incorrect configuration means products are missing or wrong prices are shown.",
+          "confirm_first": [
+            "Which product categories should be available in POS?",
+            "Are POS-specific prices different from standard sales prices?",
+            "Are barcode scanning requirements configured?"
+          ],
+          "common_mistakes": [
+            "Making all products available in POS when only a subset should be."
+          ],
+          "odoo_docs_hint": "Point of Sale > Configuration > Point of Sale > [POS] > Products"
+        },
+        "POS-DREQ-003": {
+          "title": "POS cashier access control",
+          "what": "Informational checkpoint confirming cashier access roles are configured. Depends on USR-DREQ-001 (role baseline).",
+          "why": "Cashier access determines who can operate POS sessions, apply discounts, and process refunds. Without role controls, any user can perform any POS action.",
+          "confirm_first": [
+            "Which users are authorized to operate POS sessions?",
+            "Are there restrictions on discount or refund authority for cashiers?",
+            "Is PIN-based cashier login required?"
+          ],
+          "common_mistakes": [
+            "Not restricting cashier roles, allowing any employee to process sales and refunds."
+          ],
+          "odoo_docs_hint": "Point of Sale > Configuration > Point of Sale > [POS] > Employees"
+        },
+        "POS-DREQ-004": {
+          "title": "POS-accounting journal linkage",
+          "what": "Conditional checkpoint (FC-01=Full accounting). Informational confirmation that POS journals are linked to the correct accounting journals.",
+          "why": "POS transactions generate journal entries. If journals are not linked, POS revenue and cash movements do not appear in accounting.",
+          "confirm_first": [
+            "Is the POS sales journal linked to the correct revenue accounts?",
+            "Are cash and card payment methods linked to the correct bank/cash journals?",
+            "Has a test POS session been reconciled against accounting?"
+          ],
+          "common_mistakes": [
+            "Not testing the POS-to-accounting flow before go-live."
+          ],
+          "odoo_docs_hint": "Point of Sale > Configuration > Payment Methods > [Method] > Journal"
+        },
+        "POS-DREQ-005": {
+          "title": "POS-inventory stock linkage",
+          "what": "Conditional checkpoint (OP-01=Yes). Informational confirmation that POS is configured to decrement stock on sales.",
+          "why": "Without stock linkage, POS sales do not reduce inventory quantities, making stock levels unreliable.",
+          "confirm_first": [
+            "Should POS sales decrement inventory in real-time?",
+            "Is the POS linked to the correct warehouse location?",
+            "Have lot/serial tracking requirements been considered for POS products?"
+          ],
+          "common_mistakes": [
+            "Forgetting to link POS to a warehouse, causing POS sales to not affect inventory."
+          ],
+          "odoo_docs_hint": "Point of Sale > Configuration > Point of Sale > [POS] > Inventory"
+        },
+        "POS-GL-001": {
+          "title": "POS go-live readiness",
+          "what": "Go-live checkpoint confirming POS configuration is finalized for store operations.",
+          "why": "POS errors after go-live directly affect customers and cash management. All configuration must be tested before stores open.",
+          "confirm_first": [
+            "Has a complete POS session been tested (open, sell, close, reconcile)?",
+            "Are all payment methods working (cash, card, etc.)?",
+            "Has the store team been trained on the POS interface?"
+          ],
+          "common_mistakes": [
+            "Going live with POS without testing the full session lifecycle including closing and reconciliation."
+          ],
+          "odoo_docs_hint": "Point of Sale > Dashboard"
+        }
+      }
+    },
+    "website_ecommerce": {
+      "label": "Website / eCommerce",
+      "overview": "Governs customer-facing digital commerce, catalog publication, checkout, and order integration. Coverage gap: website and website_sale models not in governed apply surface — assembler returns empty map.",
+      "checkpoints": {
+        "WEB-FOUND-001": {
+          "title": "Website scope baseline",
+          "what": "Informational checkpoint confirming website module is activated and baseline configuration is reviewed. No governed write — assembler returns empty map.",
+          "why": "Website decisions affect customer experience, SEO, and order flow. Without a baseline, downstream website configuration lacks context.",
+          "confirm_first": [
+            "Is the website module installed?",
+            "Has the website domain and company been configured?",
+            "What is the primary purpose of the website (eCommerce, catalog, corporate)?"
+          ],
+          "common_mistakes": [
+            "Publishing the website before content and checkout configuration are complete."
+          ],
+          "odoo_docs_hint": "Website > Configuration > Settings"
+        },
+        "WEB-DREQ-001": {
+          "title": "Catalog and product publication baseline",
+          "what": "Configures which products are published on the website and how they appear to customers.",
+          "why": "Published products are visible to anyone. Without publication governance, internal or draft products may appear on the public website.",
+          "confirm_first": [
+            "Which products should be published on the website?",
+            "Are product images and descriptions ready for customer viewing?",
+            "Has the product categorization for website navigation been configured?"
+          ],
+          "common_mistakes": [
+            "Publishing all products by default, including internal-use or draft items."
+          ],
+          "odoo_docs_hint": "Website > eCommerce > Products"
+        },
+        "WEB-DREQ-002": {
+          "title": "Payment provider configuration",
+          "what": "Informational checkpoint confirming payment providers are configured for online checkout. No governed write — coverage gap.",
+          "why": "Without payment providers, customers cannot complete purchases on the website. Misconfigured providers cause payment failures.",
+          "confirm_first": [
+            "Which payment providers will be enabled (Stripe, PayPal, etc.)?",
+            "Have payment provider credentials been configured and tested?",
+            "Is the payment flow tested in a sandbox environment?"
+          ],
+          "common_mistakes": [
+            "Going live with production payment credentials without testing in sandbox mode first."
+          ],
+          "odoo_docs_hint": "Website > Configuration > Payment Providers"
+        },
+        "WEB-DREQ-003": {
+          "title": "Customer account and access configuration",
+          "what": "Configures customer portal access rules — whether customers can browse as guests, must register, or use B2B portal features.",
+          "why": "Customer access rules affect conversion rates and data capture. Too restrictive = lost sales; too open = no customer data for CRM.",
+          "confirm_first": [
+            "Can customers browse and purchase as guests?",
+            "Is customer registration required before checkout?",
+            "Are there B2B customers who need portal access to order history and invoices?"
+          ],
+          "common_mistakes": [
+            "Requiring registration for all customers, creating friction that reduces conversions."
+          ],
+          "odoo_docs_hint": "Website > Configuration > Settings > Customer Account"
+        },
+        "WEB-DREQ-004": {
+          "title": "Website-inventory delivery integration",
+          "what": "Conditional checkpoint (OP-01=Yes). Configures delivery methods and shipping cost computation for eCommerce orders.",
+          "why": "Delivery methods determine shipping options and costs at checkout. Without configuration, customers cannot select delivery or see shipping costs.",
+          "confirm_first": [
+            "Which delivery methods are available for online orders?",
+            "Are shipping rates computed by carrier integration or flat rate?",
+            "Has a test order been placed and fulfilled end-to-end?"
+          ],
+          "common_mistakes": [
+            "Not configuring delivery methods, causing checkout to fail at the shipping step."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Delivery Methods"
+        },
+        "WEB-DREQ-005": {
+          "title": "Website-sales quotation template integration",
+          "what": "Conditional checkpoint (SC-03=Yes). Configures quotation templates for online sales proposals and B2B portal quotes.",
+          "why": "Quotation templates create consistent online sales proposals. Without integration, online quotes may differ from sales team quotes.",
+          "confirm_first": [
+            "Will online quotations use the same templates as direct sales?",
+            "Are optional products configured on website quotation templates?",
+            "Has the online quotation signing flow been tested?"
+          ],
+          "common_mistakes": [
+            "Having different quotation templates online vs. offline, creating customer confusion."
+          ],
+          "odoo_docs_hint": "Sales > Configuration > Quotation Templates"
+        },
+        "WEB-GL-001": {
+          "title": "Website/eCommerce go-live readiness",
+          "what": "Go-live checkpoint confirming the website and eCommerce configuration is finalized for public launch.",
+          "why": "Website launch exposes the business to customers. Errors in checkout, pricing, or delivery create immediate revenue and reputation impact.",
+          "confirm_first": [
+            "Has the full purchase flow been tested (browse, cart, checkout, payment, delivery)?",
+            "Are all product prices, descriptions, and images correct?",
+            "Has the website been tested on mobile devices?"
+          ],
+          "common_mistakes": [
+            "Launching the website without testing the complete customer journey end-to-end."
+          ],
+          "odoo_docs_hint": "Website > Dashboard"
+        }
+      }
+    },
+    "projects": {
+      "label": "Projects",
+      "overview": "Governs project delivery structures, task flow, billing linkage, and ownership. Coverage gap: project.project and project.task.type are not in the governed apply surface.",
+      "checkpoints": {
+        "PRJ-FOUND-001": {
+          "title": "Project structure foundation",
+          "what": "Establishes the project structure baseline — project types, task stages, and organizational context. Coverage gap: project.project not in governed apply surface.",
+          "why": "Project structure determines how work is organized, tracked, and billed. Without a baseline, projects are created ad-hoc without consistent governance.",
+          "confirm_first": [
+            "What types of projects does the business run (internal, client-facing, fixed-price, T&M)?",
+            "Has a task stage workflow been defined?",
+            "Who are the project managers?"
+          ],
+          "common_mistakes": [
+            "Creating projects without defining task stages, losing visibility into project progress."
+          ],
+          "odoo_docs_hint": "Project > Configuration > Stages"
+        },
+        "PRJ-DREQ-001": {
+          "title": "Task flow and stage configuration",
+          "what": "Configures task stages and workflow rules. Coverage gap: project.task.type not in governed apply surface.",
+          "why": "Task stages drive Kanban views, automation rules, and project reporting. Without defined stages, project tracking is unstructured.",
+          "confirm_first": [
+            "What are the task stages for each project type?",
+            "Are there automation rules for stage transitions?",
+            "Has the Kanban view been configured for the project team's workflow?"
+          ],
+          "common_mistakes": [
+            "Using default stages that do not match the client's project management methodology."
+          ],
+          "odoo_docs_hint": "Project > Configuration > Stages"
+        },
+        "PRJ-DREQ-002": {
+          "title": "Project billing linkage",
+          "what": "Configures the linkage between projects and sales/invoicing. Depends on SAL-DREQ-001 (sales baseline).",
+          "why": "Project billing determines how time and materials or fixed-price projects generate invoices. Without linkage, billable work is not invoiced.",
+          "confirm_first": [
+            "Are projects billed as time & materials or fixed price?",
+            "Has the service product been configured with the correct invoicing policy?",
+            "Has a test project been billed to verify the invoice flow?"
+          ],
+          "common_mistakes": [
+            "Configuring project billing without testing that timesheets correctly feed into invoices."
+          ],
+          "odoo_docs_hint": "Project > Configuration > Settings > Time Management"
+        },
+        "PRJ-DREQ-003": {
+          "title": "Project timesheet integration",
+          "what": "Conditional checkpoint (RM-02=Yes). Configures timesheet integration with projects for time tracking and billing.",
+          "why": "Timesheets provide the data for T&M billing and project profitability analysis. Without integration, time data cannot be converted to invoices.",
+          "confirm_first": [
+            "Which projects require timesheet tracking?",
+            "Will timesheets be used for billing, tracking, or both?",
+            "Has the timesheet approval workflow been defined?"
+          ],
+          "common_mistakes": [
+            "Enabling timesheets without configuring the hourly rate on the service product."
+          ],
+          "odoo_docs_hint": "Timesheets > Configuration > Settings"
+        },
+        "PRJ-DREQ-004": {
+          "title": "Project analytic accounting linkage",
+          "what": "Conditional checkpoint (FC-05=Yes). Configures analytic accounting linkage for project cost tracking. Depends on ACCT-REC-001.",
+          "why": "Analytic accounts enable project-level profitability analysis. Without linkage, project costs cannot be tracked against revenue.",
+          "confirm_first": [
+            "Should each project automatically create an analytic account?",
+            "Has the analytic plan been configured for project costing?",
+            "Will analytic accounts be used for both revenue and cost tracking?"
+          ],
+          "common_mistakes": [
+            "Not enabling automatic analytic account creation on projects, requiring manual setup for each project."
+          ],
+          "odoo_docs_hint": "Project > Configuration > Settings > Analytics"
+        },
+        "PRJ-GL-001": {
+          "title": "Projects go-live readiness",
+          "what": "Go-live checkpoint confirming project configuration is finalized for operational use.",
+          "why": "Project configuration errors after go-live affect billing accuracy, time tracking, and resource visibility.",
+          "confirm_first": [
+            "Has a complete project lifecycle been tested (create, tasks, timesheets, billing)?",
+            "Are all task stages and project templates finalized?",
+            "Has the project team been trained?"
+          ],
+          "common_mistakes": [
+            "Going live with projects without testing the billing-to-invoice flow."
+          ],
+          "odoo_docs_hint": "Project > My Projects"
+        }
+      }
+    },
+    "quality": {
+      "label": "Quality",
+      "overview": "Governs quality control points, checks, and inspection flow on quality.point. Quality depends on inventory operation types being configured. Coverage gap: quality.alert not in governed apply surface.",
+      "checkpoints": {
+        "QUA-FOUND-001": {
+          "title": "Quality control baseline",
+          "what": "Informational checkpoint confirming quality module is activated and baseline quality control strategy is reviewed. No governed write.",
+          "why": "Quality control must be designed before quality points are created. Without a strategy, quality checks are either missing or create unnecessary bottlenecks.",
+          "confirm_first": [
+            "Is the Quality module installed?",
+            "At which operations should quality checks occur (receipt, production, delivery)?",
+            "What type of quality checks are needed (pass/fail, measure, picture)?"
+          ],
+          "common_mistakes": [
+            "Adding quality checks on every operation, creating warehouse bottlenecks."
+          ],
+          "odoo_docs_hint": "Quality > Configuration > Quality Control Points"
+        },
+        "QUA-DREQ-001": {
+          "title": "Receipt quality control points",
+          "what": "Conditional checkpoint (MF-06 includes Receipt). Informational confirmation that quality control points are configured for receiving operations.",
+          "why": "Receipt quality checks ensure incoming materials meet standards before entering inventory. Without them, defective materials contaminate stock.",
+          "confirm_first": [
+            "Which products require receipt quality inspection?",
+            "What are the pass/fail criteria?",
+            "What happens when a receipt fails quality (quarantine, return)?"
+          ],
+          "common_mistakes": [
+            "Requiring quality checks on all receipts when only critical materials need inspection."
+          ],
+          "odoo_docs_hint": "Quality > Configuration > Quality Control Points > [Point] > Operation: Receipts"
+        },
+        "QUA-DREQ-002": {
+          "title": "In-process quality control points",
+          "what": "Conditional checkpoint (MF-06 includes In-process). Informational confirmation that quality control points are configured for manufacturing operations. Depends on MRP-DREQ-005.",
+          "why": "In-process quality checks catch defects during production before more value is added. Without them, defects are only found at finished goods inspection.",
+          "confirm_first": [
+            "At which work center operations should quality checks occur?",
+            "Are there specific measurements or tolerances to check?",
+            "What is the rework or scrap process for failed checks?"
+          ],
+          "common_mistakes": [
+            "Not integrating quality checks into routing steps, making them manual and easily skipped."
+          ],
+          "odoo_docs_hint": "Quality > Configuration > Quality Control Points > [Point] > Operation: Manufacturing"
+        },
+        "QUA-DREQ-003": {
+          "title": "Finished goods quality control points",
+          "what": "Conditional checkpoint (MF-06 includes Finished goods). Informational confirmation that quality control points are configured for finished goods inspection.",
+          "why": "Finished goods inspection is the last check before products reach customers. Skipping it risks shipping defective products.",
+          "confirm_first": [
+            "Which finished goods require final inspection?",
+            "What are the acceptance criteria?",
+            "How are failed finished goods handled (rework, scrap, quarantine)?"
+          ],
+          "common_mistakes": [
+            "Not configuring a quarantine location for failed finished goods."
+          ],
+          "odoo_docs_hint": "Quality > Configuration > Quality Control Points > [Point] > Operation: Delivery Orders"
+        }
+      }
+    },
+    "maintenance": {
+      "label": "Maintenance",
+      "overview": "Governs equipment maintenance planning and service execution. Maintenance depends on manufacturing work centers being configured.",
+      "checkpoints": {
+        "MNT-FOUND-001": {
+          "title": "Maintenance module foundation",
+          "what": "Informational checkpoint confirming maintenance module is activated and equipment register baseline is reviewed. Depends on MRP-DREQ-005 (work centers).",
+          "why": "Maintenance planning requires an equipment register. Without it, preventive maintenance cannot be scheduled and reactive maintenance is untracked.",
+          "confirm_first": [
+            "Is the Maintenance module installed?",
+            "Has the equipment register been populated?",
+            "Are equipment categories defined?"
+          ],
+          "common_mistakes": [
+            "Installing maintenance without first registering equipment."
+          ],
+          "odoo_docs_hint": "Maintenance > Configuration > Equipment Categories"
+        },
+        "MNT-DREQ-001": {
+          "title": "Preventive maintenance schedule",
+          "what": "Configures preventive maintenance schedules — frequency, responsible teams, and maintenance types.",
+          "why": "Preventive maintenance reduces unplanned downtime. Without schedules, maintenance is reactive only, increasing costs and production disruption.",
+          "confirm_first": [
+            "Which equipment requires preventive maintenance?",
+            "What are the maintenance frequencies (daily, weekly, monthly)?",
+            "Who is responsible for each type of maintenance?"
+          ],
+          "common_mistakes": [
+            "Creating maintenance schedules without assigning responsible teams."
+          ],
+          "odoo_docs_hint": "Maintenance > Maintenance > Maintenance Requests > Preventive"
+        },
+        "MNT-DREQ-002": {
+          "title": "Maintenance team configuration",
+          "what": "Configures maintenance teams and assigns team members. Depends on USR-DREQ-001 (role baseline).",
+          "why": "Maintenance requests are routed to teams. Without team configuration, maintenance requests have no assignee and remain unresolved.",
+          "confirm_first": [
+            "How many maintenance teams are needed?",
+            "Who are the team members and team leaders?",
+            "Are teams specialized (electrical, mechanical) or generalist?"
+          ],
+          "common_mistakes": [
+            "Creating only one maintenance team when specialized teams are needed for proper routing."
+          ],
+          "odoo_docs_hint": "Maintenance > Configuration > Maintenance Teams"
+        },
+        "MNT-REC-001": {
+          "title": "Maintenance-equipment linkage readiness",
+          "what": "Recommended checkpoint confirming equipment records are linked to work centers, locations, and maintenance schedules.",
+          "why": "Equipment linked to work centers enables maintenance impact analysis — if a work center is down for maintenance, production scheduling adjusts.",
+          "confirm_first": [
+            "Are equipment records linked to the correct work centers?",
+            "Is the equipment location set correctly?",
+            "Has the maintenance history import been considered?"
+          ],
+          "common_mistakes": [
+            "Not linking equipment to work centers, losing the connection between maintenance and production."
+          ],
+          "odoo_docs_hint": "Maintenance > Equipment > [Equipment] > Work Center"
+        }
+      }
+    },
+    "repairs": {
+      "label": "Repairs",
+      "overview": "Governs controlled repair workflows for repair operations. Repairs depends on inventory and master data for parts tracking and billing. Coverage gap: repair.order not in governed apply surface.",
+      "checkpoints": {
+        "REP-FOUND-001": {
+          "title": "Repairs module foundation",
+          "what": "Informational checkpoint confirming the repair module is activated and baseline repair workflow is reviewed. Depends on INV-FOUND-003.",
+          "why": "Repair operations consume parts from inventory and may generate invoices. Without foundation, repairs are untracked and parts consumption is unmanaged.",
+          "confirm_first": [
+            "Is the Repairs module installed?",
+            "What types of repairs does the business perform?",
+            "Are repair operations linked to specific product categories?"
+          ],
+          "common_mistakes": [
+            "Activating repairs without inventory foundation, causing parts consumption failures."
+          ],
+          "odoo_docs_hint": "Repairs > Repair Orders"
+        },
+        "REP-DREQ-001": {
+          "title": "Repair order workflow and parts management",
+          "what": "Configures repair order workflow including parts consumption, labor tracking, and repair status flow. Depends on MAS-DREQ-001.",
+          "why": "Repair orders consume inventory parts. Without proper configuration, parts are consumed without tracking or cost allocation.",
+          "confirm_first": [
+            "Are repair parts stocked and tracked in inventory?",
+            "Is labor time tracked on repair orders?",
+            "Has the repair status workflow been defined (draft, confirmed, in progress, done)?"
+          ],
+          "common_mistakes": [
+            "Not configuring parts consumption routes, causing repairs to not affect inventory."
+          ],
+          "odoo_docs_hint": "Repairs > Repair Orders > [Order] > Parts"
+        },
+        "REP-DREQ-002": {
+          "title": "Repair billing configuration",
+          "what": "Configures repair billing — whether repairs are billable to customers, warranty-covered, or internal. Depends on SAL-DREQ-001.",
+          "why": "Repair billing determines whether costs are recovered from customers or absorbed internally. Without configuration, billable repairs may not generate invoices.",
+          "confirm_first": [
+            "Are repairs billable to external customers?",
+            "Is there a warranty policy that affects billing?",
+            "Has the repair invoicing flow been tested?"
+          ],
+          "common_mistakes": [
+            "Not distinguishing between warranty repairs (free) and billable repairs."
+          ],
+          "odoo_docs_hint": "Repairs > Repair Orders > [Order] > Invoice Method"
+        },
+        "REP-REC-001": {
+          "title": "Repair reporting readiness",
+          "what": "Recommended checkpoint confirming repair reporting and analytics are configured for operational insights.",
+          "why": "Repair data reveals product quality issues, warranty costs, and customer satisfaction trends. Without reporting, this data is not actionable.",
+          "confirm_first": [
+            "What repair metrics does management want to track?",
+            "Are repair categories configured for meaningful reporting?",
+            "Has the repair reporting dashboard been reviewed?"
+          ],
+          "common_mistakes": [
+            "Not configuring repair categories, making it impossible to analyze repair trends by type."
+          ],
+          "odoo_docs_hint": "Repairs > Reporting"
+        }
+      }
+    },
+    "documents": {
+      "label": "Documents",
+      "overview": "Governs structured document storage, retrieval, and operational document workflows. Documents domain has Safe write class. Coverage gap: documents.document not in governed apply surface.",
+      "checkpoints": {
+        "DOC-FOUND-001": {
+          "title": "Document workspace foundation",
+          "what": "Establishes document workspace structure — workspaces, folder hierarchy, and base access rules.",
+          "why": "Workspaces organize documents by business function. Without structure, documents are stored in a flat list with no governance.",
+          "confirm_first": [
+            "What workspace categories does the business need (HR, Contracts, Projects)?",
+            "Who should have access to each workspace?",
+            "Will documents be linked to operational records (invoices, purchase orders)?"
+          ],
+          "common_mistakes": [
+            "Creating too many workspaces without a clear naming convention."
+          ],
+          "odoo_docs_hint": "Documents > Configuration > Workspaces"
+        },
+        "DOC-DREQ-001": {
+          "title": "Document access control and workflow rules",
+          "what": "Configures document access control and workflow automation rules. Depends on USR-DREQ-002 (access rights configuration).",
+          "why": "Document access rules protect sensitive information. Without them, all users can access all documents regardless of sensitivity.",
+          "confirm_first": [
+            "Are there documents with restricted access requirements (contracts, HR records)?",
+            "Are workflow automation rules needed (e.g., auto-tag invoices)?",
+            "Has the access policy been reviewed with the document owner?"
+          ],
+          "common_mistakes": [
+            "Leaving all documents accessible to all internal users."
+          ],
+          "odoo_docs_hint": "Documents > Configuration > Workspaces > [Workspace] > Access"
+        },
+        "DOC-REC-001": {
+          "title": "Document operational linkage",
+          "what": "Recommended checkpoint confirming documents are linked to operational records for traceability.",
+          "why": "Linking documents to records (invoices, orders, contracts) provides audit trail and reduces time spent searching for supporting documentation.",
+          "confirm_first": [
+            "Which record types should have document linkage?",
+            "Are document tags configured for search and filtering?",
+            "Has the document upload process been tested?"
+          ],
+          "common_mistakes": [
+            "Not configuring automatic document actions, missing the automation benefits of the Documents module."
+          ],
+          "odoo_docs_hint": "Documents > Configuration > Workflow Actions"
+        }
+      }
+    },
+    "sign": {
+      "label": "Sign",
+      "overview": "Governs signature workflows, signer roles, and document approval execution. Coverage gap: sign.template not in governed apply surface.",
+      "checkpoints": {
+        "SGN-FOUND-001": {
+          "title": "Signature template foundation",
+          "what": "Establishes the signature template baseline — template types, field placement, and foundational signing workflow.",
+          "why": "Signature templates define how documents are presented for signing. Without templates, every signature request must be configured from scratch.",
+          "confirm_first": [
+            "What types of documents will be sent for signature (contracts, NDAs, approvals)?",
+            "Has the template library been designed?",
+            "Are signature field placements (name, date, signature) defined?"
+          ],
+          "common_mistakes": [
+            "Creating templates without testing the signing experience from the signer's perspective."
+          ],
+          "odoo_docs_hint": "Sign > Templates"
+        },
+        "SGN-DREQ-001": {
+          "title": "Signer role and access configuration",
+          "what": "Configures who can send, sign, and manage signature requests. Depends on USR-DREQ-001 (role baseline).",
+          "why": "Signer roles control who can initiate and complete signature workflows. Without configuration, signature requests may not reach the right people.",
+          "confirm_first": [
+            "Who is authorized to send signature requests?",
+            "Are there multi-signer templates that require specific role ordering?",
+            "Has the signature request-to-completion flow been tested?"
+          ],
+          "common_mistakes": [
+            "Not testing the email notification flow for external signers."
+          ],
+          "odoo_docs_hint": "Sign > Templates > [Template] > Signers"
+        },
+        "SGN-DREQ-002": {
+          "title": "Signature traceability and record linkage",
+          "what": "Configures how signed documents are stored, linked to records, and made available for audit.",
+          "why": "Signed documents have legal significance. Without traceability, signed documents may be lost or disconnected from the records they support.",
+          "confirm_first": [
+            "Where will signed documents be stored (Documents module, attached to records)?",
+            "Is there a retention policy for signed documents?",
+            "Has the audit trail for completed signatures been reviewed?"
+          ],
+          "common_mistakes": [
+            "Not linking signed documents to the originating record (contract, agreement)."
+          ],
+          "odoo_docs_hint": "Sign > Completed Documents"
+        }
+      }
+    },
+    "approvals": {
+      "label": "Approvals",
+      "overview": "Governs formal approval requests outside individual module approval rules. Depends on Users/Roles approval design. Coverage gap: approval.category not in governed apply surface.",
+      "checkpoints": {
+        "APR-FOUND-001": {
+          "title": "Approval structure foundation",
+          "what": "Establishes the approval module baseline — approval categories, minimum approvers, and general approval workflow. Depends on USR-DREQ-003 (privileged access review).",
+          "why": "The Approvals module centralizes requests that do not fit into module-specific approval workflows (e.g., budget requests, special expenditures).",
+          "confirm_first": [
+            "What types of approval requests does the business need beyond module-specific approvals?",
+            "Who are the approvers for each category?",
+            "What is the minimum number of approvals required?"
+          ],
+          "common_mistakes": [
+            "Creating approval categories that duplicate module-specific approvals (e.g., purchase approval)."
+          ],
+          "odoo_docs_hint": "Approvals > Configuration > Approval Types"
+        },
+        "APR-DREQ-001": {
+          "title": "Approval category and approver configuration",
+          "what": "Configures specific approval categories and assigns approvers for each category.",
+          "why": "Each approval category needs designated approvers. Without them, approval requests cannot be processed.",
+          "confirm_first": [
+            "Has each approval category been assigned at least one approver?",
+            "Are there backup approvers for each category?",
+            "Has the approval notification flow been tested?"
+          ],
+          "common_mistakes": [
+            "Creating approval categories without assigning approvers."
+          ],
+          "odoo_docs_hint": "Approvals > Configuration > Approval Types > [Type] > Approvers"
+        },
+        "APR-DREQ-002": {
+          "title": "Approval authority and traceability",
+          "what": "Configures approval authority controls and audit traceability for approval decisions.",
+          "why": "Approval decisions must be traceable for compliance. Without authority controls, anyone could approve any request.",
+          "confirm_first": [
+            "Are approval authority levels defined (e.g., department manager, director, VP)?",
+            "Is there an escalation path for delayed approvals?",
+            "Has the approval audit trail been verified?"
+          ],
+          "common_mistakes": [
+            "Not configuring escalation, causing approval requests to stall indefinitely."
+          ],
+          "odoo_docs_hint": "Approvals > Configuration > Approval Types"
+        },
+        "APR-DREQ-003": {
+          "title": "Inventory adjustment approval",
+          "what": "Conditional checkpoint (TA-03 includes Inventory adjustments). Configures approval requirements for inventory adjustment requests.",
+          "why": "Inventory adjustments directly affect stock values and accounting. Without approval controls, unauthorized adjustments can hide shrinkage or errors.",
+          "confirm_first": [
+            "Who can request inventory adjustments?",
+            "Who must approve them?",
+            "Is there a threshold below which adjustments do not require approval?"
+          ],
+          "common_mistakes": [
+            "Allowing inventory adjustments without any approval requirement."
+          ],
+          "odoo_docs_hint": "Approvals > Configuration > Approval Types"
+        },
+        "APR-DREQ-004": {
+          "title": "Expense approval configuration",
+          "what": "Conditional checkpoint (TA-03 includes Expenses). Configures approval requirements for expense reports.",
+          "why": "Expense approvals are a fundamental financial control. Without them, expenses are reimbursed without review.",
+          "confirm_first": [
+            "Who approves expense reports (direct manager, finance)?",
+            "Are there expense thresholds that require additional approval?",
+            "Has the expense-to-reimbursement flow been tested?"
+          ],
+          "common_mistakes": [
+            "Not defining expense categories, making expense analysis impossible."
+          ],
+          "odoo_docs_hint": "Expenses > Configuration > Settings"
+        },
+        "APR-DREQ-005": {
+          "title": "Manufacturing order approval",
+          "what": "Conditional checkpoint (TA-03 includes Manufacturing order). Configures approval requirements for manufacturing orders.",
+          "why": "Manufacturing order approval ensures production capacity and material availability are confirmed before committing to production.",
+          "confirm_first": [
+            "Do all manufacturing orders require approval or only above certain quantities?",
+            "Who approves manufacturing orders?",
+            "Has the MO approval workflow been tested?"
+          ],
+          "common_mistakes": [
+            "Requiring approval on all MOs when only large or non-standard orders need oversight."
+          ],
+          "odoo_docs_hint": "Approvals > Configuration > Approval Types"
+        },
+        "APR-DREQ-006": {
+          "title": "HR leave approval configuration",
+          "what": "Conditional checkpoint (TA-03 includes HR leave). Configures approval requirements for leave requests through the Approvals module.",
+          "why": "Leave approval ensures adequate staffing and prevents scheduling conflicts.",
+          "confirm_first": [
+            "Are leave requests approved by the direct manager?",
+            "Are there leave types that require HR approval in addition to manager approval?",
+            "Has the leave request notification flow been tested?"
+          ],
+          "common_mistakes": [
+            "Duplicating leave approval in both HR module and Approvals module."
+          ],
+          "odoo_docs_hint": "Approvals > Configuration > Approval Types"
+        },
+        "APR-DREQ-007": {
+          "title": "Document signing approval",
+          "what": "Conditional checkpoint (TA-03 includes Document signing). Configures approval requirements for document signing requests.",
+          "why": "Document signing approval ensures that documents sent for signature have been reviewed and authorized before committing the organization.",
+          "confirm_first": [
+            "Which document types require pre-signing approval?",
+            "Who approves signing requests?",
+            "Has the approval-to-signing flow been tested?"
+          ],
+          "common_mistakes": [
+            "Not linking signing approval to the Sign module workflow."
+          ],
+          "odoo_docs_hint": "Approvals > Configuration > Approval Types"
+        }
+      }
+    },
+    "subscriptions": {
+      "label": "Subscriptions",
+      "overview": "Governs recurring revenue models, renewal policy, and recurring invoicing. Subscriptions depends on sales configuration for baseline commercial policy. Coverage gap: sale.order.template and sale.order not in governed apply surface.",
+      "checkpoints": {
+        "SUB-FOUND-001": {
+          "title": "Subscription module foundation",
+          "what": "Establishes the subscription module baseline — confirms subscription plans, recurring periods, and renewal settings are available. Depends on SAL-DREQ-001.",
+          "why": "Subscriptions automate recurring revenue. Without foundation, recurring invoices are not generated and renewal management is manual.",
+          "confirm_first": [
+            "Is the Subscriptions module installed?",
+            "What are the subscription plan types (monthly, annual)?",
+            "Has the recurring billing cycle been defined?"
+          ],
+          "common_mistakes": [
+            "Starting subscription sales before the billing cycle and renewal policy are configured."
+          ],
+          "odoo_docs_hint": "Subscriptions > Configuration > Subscription Plans"
+        },
+        "SUB-DREQ-001": {
+          "title": "Subscription plan and pricing configuration",
+          "what": "Configures subscription plans with pricing, recurrence periods, and auto-renewal settings.",
+          "why": "Subscription plans drive the recurring billing engine. Incorrect plan configuration causes wrong invoice amounts or billing frequencies.",
+          "confirm_first": [
+            "What are the subscription pricing tiers?",
+            "Are there different plans for different customer segments?",
+            "Is auto-renewal enabled and at what terms?"
+          ],
+          "common_mistakes": [
+            "Not testing the full subscription lifecycle (create, renew, cancel, invoice)."
+          ],
+          "odoo_docs_hint": "Subscriptions > Configuration > Subscription Plans"
+        },
+        "SUB-DREQ-002": {
+          "title": "Subscription renewal and lifecycle policy",
+          "what": "Configures subscription renewal, cancellation, and lifecycle management rules.",
+          "why": "Renewal policy affects revenue recognition and customer retention. Without lifecycle rules, subscriptions may auto-renew or cancel unexpectedly.",
+          "confirm_first": [
+            "What is the renewal notification period?",
+            "How are cancellations handled (immediate, end of period)?",
+            "Are there early termination penalties?"
+          ],
+          "common_mistakes": [
+            "Not configuring renewal reminders, causing subscriptions to lapse without customer notification."
+          ],
+          "odoo_docs_hint": "Subscriptions > Configuration > Settings"
+        },
+        "SUB-DREQ-003": {
+          "title": "Subscription-accounting journal linkage",
+          "what": "Conditional checkpoint (FC-01=Full accounting). Informational confirmation that subscription invoicing is linked to the correct accounting journals and revenue recognition settings.",
+          "why": "Subscription revenue may require deferred revenue recognition. Without journal linkage, recurring invoices may post to incorrect accounts.",
+          "confirm_first": [
+            "Is deferred revenue recognition needed for subscriptions?",
+            "Has the subscription invoice journal been configured?",
+            "Has finance reviewed the subscription accounting flow?"
+          ],
+          "common_mistakes": [
+            "Not configuring deferred revenue accounts for annual subscriptions billed upfront."
+          ],
+          "odoo_docs_hint": "Accounting > Configuration > Journals"
+        },
+        "SUB-GL-001": {
+          "title": "Subscriptions go-live readiness",
+          "what": "Go-live checkpoint confirming subscription configuration is finalized for production billing.",
+          "why": "Subscription billing errors affect recurring revenue and customer relationships. Configuration must be correct before the first billing cycle.",
+          "confirm_first": [
+            "Has a full subscription lifecycle been tested (create, invoice, renew)?",
+            "Are all plans and pricing finalized?",
+            "Has the subscription team been trained?"
+          ],
+          "common_mistakes": [
+            "Going live with subscriptions without testing the automatic invoice generation."
+          ],
+          "odoo_docs_hint": "Subscriptions > Subscriptions"
+        }
+      }
+    },
+    "rental": {
+      "label": "Rental",
+      "overview": "Governs rental inventory, reservations, pricing periods, and return handling. Rental depends on master data and inventory for product tracking. Coverage gap: sale.order and product.template not in governed apply surface.",
+      "checkpoints": {
+        "RNT-FOUND-001": {
+          "title": "Rental module foundation",
+          "what": "Establishes rental module baseline — confirms rental products, pricing periods, and availability tracking are available. Depends on MAS-DREQ-001.",
+          "why": "Rental operations require products configured for rental with period-based pricing and availability tracking. Without foundation, rental orders cannot be processed.",
+          "confirm_first": [
+            "Is the Rental module installed?",
+            "Are rental products configured with correct product type (storable)?",
+            "Has the rental pricing structure been defined (daily, weekly, monthly)?"
+          ],
+          "common_mistakes": [
+            "Configuring rental products as consumable instead of storable, losing individual asset tracking."
+          ],
+          "odoo_docs_hint": "Rental > Products"
+        },
+        "RNT-DREQ-001": {
+          "title": "Rental pricing and order configuration",
+          "what": "Configures rental pricing periods, order workflow, and pickup/return procedures. Depends on SAL-DREQ-001.",
+          "why": "Rental pricing must account for time-based charges. Without configuration, rental orders use standard sales pricing instead of period-based rates.",
+          "confirm_first": [
+            "What are the rental pricing periods (hourly, daily, weekly)?",
+            "Are there different pricing tiers for different durations?",
+            "Has the pickup and return workflow been defined?"
+          ],
+          "common_mistakes": [
+            "Not configuring rental-specific pricing, causing all rentals to use the base product price."
+          ],
+          "odoo_docs_hint": "Rental > Configuration > Settings"
+        },
+        "RNT-DREQ-002": {
+          "title": "Rental-inventory return flow",
+          "what": "Informational checkpoint confirming rental return flow is configured in inventory. Depends on INV-FOUND-003. Coverage gap: sale.order not in governed apply surface.",
+          "why": "Rental returns must update availability and condition tracking. Without the return flow, returned assets do not become available for re-rental.",
+          "confirm_first": [
+            "Is the rental return operation type configured?",
+            "Are condition checks performed on return?",
+            "How are damaged returns handled?"
+          ],
+          "common_mistakes": [
+            "Not creating a return operation type, causing returned rental assets to disappear from availability."
+          ],
+          "odoo_docs_hint": "Inventory > Configuration > Operation Types"
+        },
+        "RNT-GL-001": {
+          "title": "Rental go-live readiness",
+          "what": "Go-live checkpoint confirming rental configuration is finalized for operational rental orders.",
+          "why": "Rental errors after go-live affect asset utilization, pricing accuracy, and customer experience.",
+          "confirm_first": [
+            "Has a complete rental cycle been tested (reserve, pickup, return, invoice)?",
+            "Are all rental products and pricing finalized?",
+            "Has the rental team been trained?"
+          ],
+          "common_mistakes": [
+            "Going live without testing the return-and-reinventory flow."
+          ],
+          "odoo_docs_hint": "Rental > Rental Orders"
+        }
+      }
+    },
+    "field_service": {
+      "label": "Field Service",
+      "overview": "Governs on-site service execution, scheduling, task completion, and service-related inventory/billing linkage on hr.employee (technician assignment). Coverage gap: project.task not in governed apply surface.",
+      "checkpoints": {
+        "FSV-FOUND-001": {
+          "title": "Field service module foundation",
+          "what": "Establishes the field service baseline — confirms field tasks, technician teams, and dispatch workflow are available. Depends on PRJ-DREQ-001 (project task configuration).",
+          "why": "Field service requires project tasks to be configured for on-site work. Without foundation, field tasks cannot be created or dispatched.",
+          "confirm_first": [
+            "Is the Field Service module installed?",
+            "Has the technician team structure been defined?",
+            "What types of field service tasks does the business perform?"
+          ],
+          "common_mistakes": [
+            "Activating field service without configuring the project module first."
+          ],
+          "odoo_docs_hint": "Field Service > Configuration > Settings"
+        },
+        "FSV-DREQ-001": {
+          "title": "Field service task and scheduling configuration",
+          "what": "Configures field service task types, scheduling rules, and technician assignment on hr.employee.",
+          "why": "Task configuration determines how work is scheduled, dispatched, and tracked. Without it, field tasks are created without proper assignment or scheduling.",
+          "confirm_first": [
+            "What are the field service task categories?",
+            "How are technicians assigned to tasks (geographic, skill-based)?",
+            "Is the scheduling calendar configured for technician availability?"
+          ],
+          "common_mistakes": [
+            "Not configuring technician availability, causing scheduling conflicts."
+          ],
+          "odoo_docs_hint": "Field Service > Planning"
+        },
+        "FSV-DREQ-002": {
+          "title": "Field service billing configuration",
+          "what": "Configures field service billing — how on-site work is invoiced to customers. Depends on SAL-DREQ-001.",
+          "why": "Field service billing captures labor, travel, and material costs for customer invoicing. Without configuration, field work is not billed.",
+          "confirm_first": [
+            "Is field service billed on time & materials or fixed price?",
+            "Are travel costs billable?",
+            "Has the field service invoicing flow been tested?"
+          ],
+          "common_mistakes": [
+            "Not configuring the service product for field service billing."
+          ],
+          "odoo_docs_hint": "Field Service > Configuration > Settings > Billing"
+        },
+        "FSV-DREQ-003": {
+          "title": "Field service inventory integration",
+          "what": "Conditional checkpoint (OP-01=Yes). Informational confirmation that field service is integrated with inventory for on-site material consumption. Depends on INV-FOUND-001 and MAS-DREQ-001.",
+          "why": "Field technicians consume parts on-site. Without inventory integration, parts consumption is not tracked and stock levels are inaccurate.",
+          "confirm_first": [
+            "Will technicians consume parts from a mobile/truck stock?",
+            "Is the field service warehouse/location configured?",
+            "Has a test field task with parts consumption been run?"
+          ],
+          "common_mistakes": [
+            "Not configuring a field service warehouse location, causing all parts to be consumed from the main warehouse."
+          ],
+          "odoo_docs_hint": "Field Service > Configuration > Settings > Inventory"
+        },
+        "FSV-GL-001": {
+          "title": "Field service go-live readiness",
+          "what": "Go-live checkpoint confirming field service configuration is finalized for operational dispatch.",
+          "why": "Field service errors after go-live directly affect customer service quality and technician productivity.",
+          "confirm_first": [
+            "Has a complete field service cycle been tested (create, dispatch, complete, invoice)?",
+            "Are all task types and technician assignments finalized?",
+            "Have technicians been trained on the mobile interface?"
+          ],
+          "common_mistakes": [
+            "Going live without testing the mobile field service experience."
+          ],
+          "odoo_docs_hint": "Field Service > My Tasks"
+        }
+      }
+    }
+  }
+}

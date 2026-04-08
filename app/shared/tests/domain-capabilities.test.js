@@ -7,7 +7,7 @@ import { getAllDomainCapabilities, getDomainCapability } from "../domain-capabil
 test("all in-scope domains expose an explicit target capability level", () => {
   const capabilities = getAllDomainCapabilities(createInitialProjectState());
 
-  assert.equal(capabilities.length, 34);
+  assert.equal(capabilities.length, 51);
   assert.ok(capabilities.every((item) => item.targetLevel >= 1 || item.domainId));
   assert.ok(capabilities.some((item) => item.domainId === "inventory" && item.targetLabel === "Bounded executable"));
   assert.ok(capabilities.some((item) => item.domainId === "crm" && item.targetLabel === "Bounded executable"));
@@ -29,6 +29,23 @@ test("all in-scope domains expose an explicit target capability level", () => {
   assert.ok(capabilities.some((item) => item.domainId === "payroll" && item.targetLabel === "Previewable"));
   assert.ok(capabilities.some((item) => item.domainId === "planning" && item.targetLabel === "Previewable"));
   assert.ok(capabilities.some((item) => item.domainId === "knowledge" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "discuss" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "outgoing-mail" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "incoming-mail" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "accounting-reports" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "spreadsheet" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "live-chat" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "whatsapp" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "sms-marketing" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "calendar" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "iot" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "studio" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "consolidation" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "lunch" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "referrals" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "loyalty" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "appraisals" && item.targetLabel === "Previewable"));
+  assert.ok(capabilities.some((item) => item.domainId === "voip" && item.targetLabel === "Previewable"));
 });
 
 test("CRM and inventory only reach level 4 after truthful executable inspection support exists", () => {

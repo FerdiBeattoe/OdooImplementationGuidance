@@ -498,6 +498,633 @@ export async function pushPosConfig(data) {
   return pushResult(results);
 }
 
+// ── WIZARD 13: Field Service ────────────────────────────────────
+export async function pushFieldServiceConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("fieldServiceConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("field-service", "Field Service");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Field Service", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Field Service Configuration completed", module: "Field Service", status: "success" });
+  } catch (err) {
+    results.push({ field: "Field Service", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 14: Maintenance ──────────────────────────────────────
+export async function pushMaintenanceConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("maintenanceConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("maintenance", "Maintenance");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Maintenance", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Maintenance Configuration completed", module: "Maintenance", status: "success" });
+  } catch (err) {
+    results.push({ field: "Maintenance", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 15: Rental ───────────────────────────────────────────
+export async function pushRentalConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("rentalConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("rental", "Rental");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Rental", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Rental Configuration completed", module: "Rental", status: "success" });
+  } catch (err) {
+    results.push({ field: "Rental", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 16: Repairs ──────────────────────────────────────────
+export async function pushRepairsConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("repairsConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("repairs", "Repairs");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Repairs", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Repairs Configuration completed", module: "Repairs", status: "success" });
+  } catch (err) {
+    results.push({ field: "Repairs", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 17: Subscriptions ────────────────────────────────────
+export async function pushSubscriptionsConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("subscriptionsConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("subscriptions", "Subscriptions");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Subscriptions", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Subscriptions Configuration completed", module: "Subscriptions", status: "success" });
+  } catch (err) {
+    results.push({ field: "Subscriptions", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 18: Timesheets ───────────────────────────────────────
+export async function pushTimesheetsConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("timesheetsConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("timesheets", "Timesheets");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Timesheets", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Timesheets Configuration completed", module: "Timesheets", status: "success" });
+  } catch (err) {
+    results.push({ field: "Timesheets", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 19: Expenses ─────────────────────────────────────────
+export async function pushExpensesConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("expensesConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("expenses", "Expenses");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Expenses", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Expenses Configuration completed", module: "Expenses", status: "success" });
+  } catch (err) {
+    results.push({ field: "Expenses", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 20: Attendance ───────────────────────────────────────
+export async function pushAttendanceConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("attendanceConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("attendance", "Attendance");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Attendance", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Attendance Configuration completed", module: "Attendance", status: "success" });
+  } catch (err) {
+    results.push({ field: "Attendance", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 21: Recruitment ──────────────────────────────────────
+export async function pushRecruitmentConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("recruitmentConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("recruitment", "Recruitment");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Recruitment", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Recruitment Configuration completed", module: "Recruitment", status: "success" });
+  } catch (err) {
+    results.push({ field: "Recruitment", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 22: Fleet ────────────────────────────────────────────
+export async function pushFleetConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("fleetConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("fleet", "Fleet");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Fleet", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Fleet Configuration completed", module: "Fleet", status: "success" });
+  } catch (err) {
+    results.push({ field: "Fleet", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 23: Events ───────────────────────────────────────────
+export async function pushEventsConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("eventsConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("events", "Events");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Events", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Events Configuration completed", module: "Events", status: "success" });
+  } catch (err) {
+    results.push({ field: "Events", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 24: Email Marketing ──────────────────────────────────
+export async function pushEmailMarketingConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("emailMarketingConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("email-marketing", "Email Marketing");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Email Marketing", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Email Marketing Configuration completed", module: "Email Marketing", status: "success" });
+  } catch (err) {
+    results.push({ field: "Email Marketing", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 25: Helpdesk ─────────────────────────────────────────
+export async function pushHelpdeskConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("helpdeskConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("helpdesk", "Helpdesk");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Helpdesk", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Helpdesk Configuration completed", module: "Helpdesk", status: "success" });
+  } catch (err) {
+    results.push({ field: "Helpdesk", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 26: Payroll ──────────────────────────────────────────
+export async function pushPayrollConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("payrollConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("payroll", "Payroll");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Payroll", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Payroll Configuration completed", module: "Payroll", status: "success" });
+  } catch (err) {
+    results.push({ field: "Payroll", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 27: Planning ─────────────────────────────────────────
+export async function pushPlanningConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("planningConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("planning", "Planning");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Planning", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Planning Configuration completed", module: "Planning", status: "success" });
+  } catch (err) {
+    results.push({ field: "Planning", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 28: Knowledge ────────────────────────────────────────
+export async function pushKnowledgeConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("knowledgeConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("knowledge", "Knowledge");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Knowledge", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Knowledge Configuration completed", module: "Knowledge", status: "success" });
+  } catch (err) {
+    results.push({ field: "Knowledge", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 29: Discuss ──────────────────────────────────────────
+export async function pushDiscussConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("discussConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("discuss", "Discuss");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Discuss", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Discuss Configuration completed", module: "Discuss", status: "success" });
+  } catch (err) {
+    results.push({ field: "Discuss", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 30: Outgoing Mail ────────────────────────────────────
+export async function pushOutgoingMailConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("outgoingMailConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("outgoing-mail", "Outgoing Mail");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Outgoing Mail", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Outgoing Mail Configuration completed", module: "Outgoing Mail", status: "success" });
+  } catch (err) {
+    results.push({ field: "Outgoing Mail", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 31: Incoming Mail ────────────────────────────────────
+export async function pushIncomingMailConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("incomingMailConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("incoming-mail", "Incoming Mail");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Incoming Mail", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Incoming Mail Configuration completed", module: "Incoming Mail", status: "success" });
+  } catch (err) {
+    results.push({ field: "Incoming Mail", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 32: Accounting Reports ───────────────────────────────
+export async function pushAccountingReportsConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("accountingReportsConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("accounting-reports", "Accounting Reports");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Accounting Reports", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Accounting Reports Configuration completed", module: "Accounting Reports", status: "success" });
+  } catch (err) {
+    results.push({ field: "Accounting Reports", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 33: Spreadsheet ──────────────────────────────────────
+export async function pushSpreadsheetConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("spreadsheetConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("spreadsheet", "Spreadsheet");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Spreadsheet", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Spreadsheet Configuration completed", module: "Spreadsheet", status: "success" });
+  } catch (err) {
+    results.push({ field: "Spreadsheet", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 34: Live Chat ────────────────────────────────────────
+export async function pushLiveChatConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("liveChatConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("live-chat", "Live Chat");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Live Chat", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Live Chat Configuration completed", module: "Live Chat", status: "success" });
+  } catch (err) {
+    results.push({ field: "Live Chat", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 35: WhatsApp ─────────────────────────────────────────
+export async function pushWhatsappConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("whatsappConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("whatsapp", "WhatsApp");
+      results.push(...governed);
+    } else {
+      results.push({ field: "WhatsApp", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "WhatsApp Configuration completed", module: "WhatsApp", status: "success" });
+  } catch (err) {
+    results.push({ field: "WhatsApp", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 36: SMS Marketing ────────────────────────────────────
+export async function pushSmsMarketingConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("smsMarketingConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("sms-marketing", "SMS Marketing");
+      results.push(...governed);
+    } else {
+      results.push({ field: "SMS Marketing", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "SMS Marketing Configuration completed", module: "SMS Marketing", status: "success" });
+  } catch (err) {
+    results.push({ field: "SMS Marketing", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 37: Calendar ─────────────────────────────────────────
+export async function pushCalendarConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("calendarConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("calendar", "Calendar");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Calendar", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Calendar Configuration completed", module: "Calendar", status: "success" });
+  } catch (err) {
+    results.push({ field: "Calendar", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 38: IoT ──────────────────────────────────────────────
+export async function pushIotConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("iotConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("iot", "IoT");
+      results.push(...governed);
+    } else {
+      results.push({ field: "IoT", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "IoT Configuration completed", module: "IoT", status: "success" });
+  } catch (err) {
+    results.push({ field: "IoT", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 39: Studio ───────────────────────────────────────────
+export async function pushStudioConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("studioConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("studio", "Studio");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Studio", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Studio Configuration completed", module: "Studio", status: "success" });
+  } catch (err) {
+    results.push({ field: "Studio", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 40: Consolidation ────────────────────────────────────
+export async function pushConsolidationConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("consolidationConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("consolidation", "Consolidation");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Consolidation", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Consolidation Configuration completed", module: "Consolidation", status: "success" });
+  } catch (err) {
+    results.push({ field: "Consolidation", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 41: Lunch ────────────────────────────────────────────
+export async function pushLunchConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("lunchConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("lunch", "Lunch");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Lunch", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Lunch Configuration completed", module: "Lunch", status: "success" });
+  } catch (err) {
+    results.push({ field: "Lunch", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 42: Referrals ────────────────────────────────────────
+export async function pushReferralsConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("referralsConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("referrals", "Referrals");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Referrals", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Referrals Configuration completed", module: "Referrals", status: "success" });
+  } catch (err) {
+    results.push({ field: "Referrals", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 43: Loyalty / Gift Cards ─────────────────────────────
+export async function pushLoyaltyConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("loyaltyConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("loyalty", "Loyalty");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Loyalty", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Loyalty Configuration completed", module: "Loyalty", status: "success" });
+  } catch (err) {
+    results.push({ field: "Loyalty", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 44: Appraisals ───────────────────────────────────────
+export async function pushAppraisalsConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("appraisalsConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("appraisals", "Appraisals");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Appraisals", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Appraisals Configuration completed", module: "Appraisals", status: "success" });
+  } catch (err) {
+    results.push({ field: "Appraisals", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// ── WIZARD 45: VoIP ─────────────────────────────────────────────
+export async function pushVoipConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("voipConfig", data);
+    if (isConnected()) {
+      const governed = await governedPush("voip", "VoIP");
+      results.push(...governed);
+    } else {
+      results.push({ field: "VoIP", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "VoIP Configuration completed", module: "VoIP", status: "success" });
+  } catch (err) {
+    results.push({ field: "VoIP", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
 // ── PUSH MAP ─────────────────────────────────────────────────────
 export const WIZARD_PUSH_MAP = {
   "company-setup": pushCompanySetup,
@@ -511,5 +1138,38 @@ export const WIZARD_PUSH_MAP = {
   "manufacturing-setup": pushManufacturingConfig,
   "hr-setup": pushHrPayroll,
   "website-setup": pushWebsiteEcommerce,
-  "pos-setup": pushPosConfig
+  "pos-setup": pushPosConfig,
+  "field-service-setup": pushFieldServiceConfig,
+  "maintenance-setup": pushMaintenanceConfig,
+  "rental-setup": pushRentalConfig,
+  "repairs-setup": pushRepairsConfig,
+  "subscriptions-setup": pushSubscriptionsConfig,
+  "timesheets-setup": pushTimesheetsConfig,
+  "expenses-setup": pushExpensesConfig,
+  "attendance-setup": pushAttendanceConfig,
+  "recruitment-setup": pushRecruitmentConfig,
+  "fleet-setup": pushFleetConfig,
+  "events-setup": pushEventsConfig,
+  "email-marketing-setup": pushEmailMarketingConfig,
+  "helpdesk-setup": pushHelpdeskConfig,
+  "payroll-setup": pushPayrollConfig,
+  "planning-setup": pushPlanningConfig,
+  "knowledge-setup": pushKnowledgeConfig,
+  "discuss-setup": pushDiscussConfig,
+  "outgoing-mail-setup": pushOutgoingMailConfig,
+  "incoming-mail-setup": pushIncomingMailConfig,
+  "accounting-reports-setup": pushAccountingReportsConfig,
+  "spreadsheet-setup": pushSpreadsheetConfig,
+  "live-chat-setup": pushLiveChatConfig,
+  "whatsapp-setup": pushWhatsappConfig,
+  "sms-marketing-setup": pushSmsMarketingConfig,
+  "calendar-setup": pushCalendarConfig,
+  "iot-setup": pushIotConfig,
+  "studio-setup": pushStudioConfig,
+  "consolidation-setup": pushConsolidationConfig,
+  "lunch-setup": pushLunchConfig,
+  "referrals-setup": pushReferralsConfig,
+  "loyalty-setup": pushLoyaltyConfig,
+  "appraisals-setup": pushAppraisalsConfig,
+  "voip-setup": pushVoipConfig
 };

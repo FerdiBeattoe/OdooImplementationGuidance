@@ -172,6 +172,134 @@ const DOMAIN_SUPPORT = {
     executeSupport: false,
     moduleNames: ["approvals"],
     summary: "Approvals inspection with module/setup preview only."
+  },
+  "field-service": {
+    targetLevel: 2,
+    inspectModels: ["project.task"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["industry_fsm"],
+    summary: "Field Service inspection with job preview and scheduling guidance only."
+  },
+  maintenance: {
+    targetLevel: 2,
+    inspectModels: ["maintenance.equipment"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["maintenance"],
+    summary: "Maintenance inspection with equipment/setup preview only."
+  },
+  rental: {
+    targetLevel: 2,
+    inspectModels: ["product.template"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["rental"],
+    summary: "Rental inspection with product and contract preview only."
+  },
+  repairs: {
+    targetLevel: 2,
+    inspectModels: ["repair.order"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["repair"],
+    summary: "Repairs inspection with work order preview only."
+  },
+  subscriptions: {
+    targetLevel: 2,
+    inspectModels: ["sale.subscription.plan"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["sale_subscription"],
+    summary: "Subscriptions inspection with plan/setup preview only."
+  },
+  timesheets: {
+    targetLevel: 2,
+    inspectModels: ["hr.timesheet"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["hr_timesheet"],
+    summary: "Timesheets inspection with entry/setup preview only."
+  },
+  expenses: {
+    targetLevel: 2,
+    inspectModels: ["hr.expense"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["hr_expense"],
+    summary: "Expenses inspection with report/setup preview only."
+  },
+  attendance: {
+    targetLevel: 2,
+    inspectModels: ["hr.attendance"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["hr_attendance"],
+    summary: "Attendance inspection with check-in/out preview only."
+  },
+  recruitment: {
+    targetLevel: 2,
+    inspectModels: ["hr.applicant"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["hr_recruitment"],
+    summary: "Recruitment inspection with pipeline/application preview only."
+  },
+  fleet: {
+    targetLevel: 2,
+    inspectModels: ["fleet.vehicle"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["fleet"],
+    summary: "Fleet inspection with vehicle/setup preview only."
+  },
+  events: {
+    targetLevel: 2,
+    inspectModels: ["event.event"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["event"],
+    summary: "Events inspection with event/campaign preview only."
+  },
+  "email-marketing": {
+    targetLevel: 2,
+    inspectModels: ["mailing.mailing"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["mass_mailing"],
+    summary: "Email Marketing inspection with mailing preview only."
+  },
+  helpdesk: {
+    targetLevel: 2,
+    inspectModels: ["helpdesk.ticket"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["helpdesk"],
+    summary: "Helpdesk inspection with ticket/setup preview only."
+  },
+  payroll: {
+    targetLevel: 2,
+    inspectModels: ["hr.payslip"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["hr_payroll"],
+    summary: "Payroll inspection with payslip/setup preview only."
+  },
+  planning: {
+    targetLevel: 2,
+    inspectModels: ["planning.slot"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["planning"],
+    summary: "Planning inspection with shift/setup preview only."
+  },
+  knowledge: {
+    targetLevel: 2,
+    inspectModels: ["knowledge.article"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["knowledge"],
+    summary: "Knowledge inspection with article/setup preview only."
   }
 };
 

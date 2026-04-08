@@ -26,6 +26,65 @@ import { lucideIcon } from "../lib/icons.js";
 import { pipelineStore } from "../state/pipeline-store.js";
 import { onboardingStore } from "../state/onboarding-store.js";
 
+function getWizardIdForCheckpoint(checkpointId) {
+  if (!checkpointId) return null;
+  const prefix = checkpointId.split("-")[0].toUpperCase();
+  const map = {
+    "FND":  "company-setup",
+    "USR":  "users-access",
+    "MAS":  "master-data-setup",
+    "CRM":  "crm-setup",
+    "SAL":  "sales-setup",
+    "PUR":  "purchase-setup",
+    "INV":  "inventory-setup",
+    "MRP":  "manufacturing-setup",
+    "PLM":  "plm-setup",
+    "ACCT": "accounting-setup",
+    "POS":  "pos-setup",
+    "WEB":  "website-setup",
+    "PRJ":  "projects-setup",
+    "HR":   "hr-setup",
+    "QUA":  "quality-setup",
+    "MNT":  "maintenance-setup",
+    "REP":  "repairs-setup",
+    "DOC":  "documents-setup",
+    "SGN":  "sign-setup",
+    "APR":  "approvals-setup",
+    "FSV":  "field-service-setup",
+    "RNT":  "rental-setup",
+    "SUB":  "subscriptions-setup",
+    "TS":   "timesheets-setup",
+    "EXP":  "expenses-setup",
+    "ATT":  "attendance-setup",
+    "REC":  "recruitment-setup",
+    "FLT":  "fleet-setup",
+    "EVT":  "events-setup",
+    "MKT":  "email-marketing-setup",
+    "HLP":  "helpdesk-setup",
+    "PAY":  "payroll-setup",
+    "PLN":  "planning-setup",
+    "KNW":  "knowledge-setup",
+    "DIS":  "discuss-setup",
+    "OMT":  "outgoing-mail-setup",
+    "IMT":  "incoming-mail-setup",
+    "ARP":  "accounting-reports-setup",
+    "SPR":  "spreadsheet-setup",
+    "LCH":  "live-chat-setup",
+    "WHA":  "whatsapp-setup",
+    "SMS":  "sms-marketing-setup",
+    "CAL":  "calendar-setup",
+    "IOT":  "iot-setup",
+    "STU":  "studio-setup",
+    "CON":  "consolidation-setup",
+    "LUN":  "lunch-setup",
+    "REF":  "referrals-setup",
+    "LOY":  "loyalty-setup",
+    "APP":  "appraisals-setup",
+    "VOI":  "voip-setup",
+  };
+  return map[prefix] ?? null;
+}
+
 let guidanceData = null;
 let guidanceLoadAttempted = false;
 
@@ -366,7 +425,13 @@ export function findHighestPriorityCheckpoint(checkpointRecords, activeBlockers)
 // @param {Function} [props.onSave]      — called to save state
 // ---------------------------------------------------------------------------
 
-export function renderPipelineDashboard({ onNavigate, onRun, onLoad, onApply, onSave }) {
+export function renderPipelineDashboard({
+  onNavigate = null,
+  onRun,
+  onLoad,
+  onApply,
+  onSave,
+} = {}) {
   const psState   = pipelineStore.getState();
   const obState   = onboardingStore.getState();
 
@@ -397,7 +462,15 @@ export function renderPipelineDashboard({ onNavigate, onRun, onLoad, onApply, on
 // @param {Function} [params.onSave]
 // ---------------------------------------------------------------------------
 
-export function renderDashboardContent({ psState, obState, onNavigate, onRun, onLoad, onApply, onSave }) {
+export function renderDashboardContent({
+  psState,
+  obState,
+  onNavigate = null,
+  onRun,
+  onLoad,
+  onApply,
+  onSave,
+} = {}) {
   ensureGuidanceLoaded();
   const root = el("div", { className: "pd-root", dataset: { testid: "pipeline-dashboard" } });
 
@@ -628,7 +701,7 @@ function renderDomainsSection({
   onLoad,
   psState,
   obState,
-  onNavigate,
+  onNavigate = null,
 }) {
   // Build domain → checkpoint map from records
   const byDomain = {};
@@ -679,6 +752,7 @@ function renderDomainsSection({
       onLoad,
       psState,
       obState,
+      onNavigate,
     });
   });
 
@@ -699,6 +773,7 @@ function renderDomainCard({
   onLoad,
   psState,
   obState,
+  onNavigate = null,
 }) {
   const domainName   = humanizeDomainId(domainId);
   const domainStatus = deriveDomainStatus(domainCps, activeBlockers);
@@ -733,6 +808,7 @@ function renderDomainCard({
         onLoad,
         psState,
         obState,
+        onNavigate,
       })
     )
   );
@@ -816,6 +892,7 @@ function renderCheckpointRow({
   onLoad,
   psState,
   obState,
+  onNavigate = null,
 }) {
   const id     = cp?.checkpoint_id ?? "—";
   const status = cp?.status ?? "Not_Started";
@@ -823,6 +900,7 @@ function renderCheckpointRow({
   const safety = cp?.safety_class ?? "Not_Applicable";
   const vsrc   = cp?.validation_source ?? "";
   const name   = cp?.checkpoint_name ?? id;
+  const wizardId = getWizardIdForCheckpoint(id);
 
   // Check if this checkpoint has an active blocker
   const isBlocked = Array.isArray(activeBlockers) && activeBlockers.some(
@@ -918,6 +996,24 @@ function renderCheckpointRow({
 
     actionArea.appendChild(confirmToggleBtn);
     actionArea.appendChild(confirmPanel);
+  }
+
+  if (wizardId && status !== "Complete") {
+    const configureBtn = el("button", {
+      className: "pd-btn pd-btn--secondary",
+      text: "Configure",
+      dataset: {
+        testid: `checkpoint-configure-btn-${id}`,
+        checkpointId: id,
+        wizardId: wizardId,
+      },
+      onClick: () => {
+        if (onNavigate) {
+          onNavigate("wizard-" + wizardId);
+        }
+      },
+    });
+    actionArea.appendChild(configureBtn);
   }
 
   return el("div", {

@@ -494,29 +494,44 @@ export function createOnboardingStore({ persist = false } = {}) {
   // @param {string} projectId
   // @returns {{ ok: boolean, runtime_state?: object, error?: string }}
 
-  async function confirmAndRun(projectId) {
+  async function confirmAndRun(projectId, { target_context = null } = {}) {
     state.status = "loading";
     state.error = null;
     notify();
 
-    // Build discovery_answers payload from store answers
-    const discovery_answers = {};
+    // Build discovery_answers payload from store answers — wrapped in
+    // { answers: { ... } } to match the pipeline contract used by
+    // pipeline-view and pipeline-dashboard.
+    //
+    // Store answers are { answer, deferred } wrappers. The engine expects
+    // raw values (strings, numbers, arrays) inside discovery_answers.answers,
+    // so we unwrap here at the caller boundary.
+    const answers = {};
     for (const [qId, entry] of Object.entries(state.answers)) {
-      discovery_answers[qId] = entry;
+      if (entry.deferred) continue; // deferred questions have no truthful answer to send
+      answers[qId] = entry.answer;
     }
     if (state.industry_id) {
-      discovery_answers["industry_template"] = { answer: state.industry_id, deferred: false };
+      answers["industry_template"] = state.industry_id;
     }
+    const discovery_answers = { answers };
 
     try {
       const token = state.sessionToken || "";
+
+      const body = {
+        project_identity:  projectId ? { project_id: projectId } : null,
+        discovery_answers,
+        target_context:    target_context ?? null,
+      };
+
       const res = await fetch("/api/pipeline/run", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({ discovery_answers, project_id: projectId }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();

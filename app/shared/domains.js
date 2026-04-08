@@ -35,5 +35,22 @@ export const DOMAINS = [
     { id: "helpdesk", label: "Helpdesk" },
     { id: "payroll", label: "Payroll" },
     { id: "planning", label: "Planning" },
-    { id: "knowledge", label: "Knowledge" }
+    { id: "knowledge", label: "Knowledge" },
+    { id: "discuss", label: "Discuss / Messaging" },
+    { id: "outgoing-mail", label: "Outgoing Mail" },
+    { id: "incoming-mail", label: "Incoming Mail" },
+    { id: "accounting-reports", label: "Accounting Reports" },
+    { id: "spreadsheet", label: "Spreadsheet" },
+    { id: "live-chat", label: "Live Chat" },
+    { id: "whatsapp", label: "WhatsApp" },
+    { id: "sms-marketing", label: "SMS Marketing" },
+    { id: "calendar", label: "Calendar" },
+    { id: "iot", label: "IoT" },
+    { id: "studio", label: "Studio" },
+    { id: "consolidation", label: "Consolidation" },
+    { id: "lunch", label: "Lunch" },
+    { id: "referrals", label: "Referrals" },
+    { id: "loyalty", label: "Loyalty / Gift Cards" },
+    { id: "appraisals", label: "Appraisals" },
+    { id: "voip", label: "VoIP" }
   ]);

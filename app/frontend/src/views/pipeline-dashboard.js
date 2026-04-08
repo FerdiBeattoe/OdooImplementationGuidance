@@ -1387,15 +1387,20 @@ export async function triggerRefresh({ psState, obState, onRun, onLoad }) {
 // Returns a discovery_answers object suitable for the pipeline run payload.
 // ---------------------------------------------------------------------------
 
-function buildDiscoveryAnswers(obState) {
+export function buildDiscoveryAnswers(obState) {
+  // Unwrap store answer entries to raw values at the caller boundary.
+  // Store answers are { answer, deferred } wrappers. The engine expects
+  // raw values (strings, numbers, arrays) inside discovery_answers.answers.
+  // Matches the proven pattern in onboarding-store.js (commit edd0b79).
   const answers = {};
   if (obState?.answers) {
     for (const [qId, entry] of Object.entries(obState.answers)) {
-      answers[qId] = entry;
+      if (entry.deferred) continue; // deferred questions have no truthful answer to send
+      answers[qId] = entry.answer;
     }
   }
   if (obState?.industry_id) {
-    answers["industry_template"] = { answer: obState.industry_id, deferred: false };
+    answers["industry_template"] = obState.industry_id;
   }
   return { answers };
 }

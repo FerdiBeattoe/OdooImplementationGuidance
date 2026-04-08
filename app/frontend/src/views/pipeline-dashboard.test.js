@@ -40,6 +40,7 @@ import {
   derivePriorityScore,
   findHighestPriorityCheckpoint,
   getDeferredCount,
+  buildDiscoveryAnswers,
   renderDashboardContent,
   triggerRefresh,
 } from "./pipeline-dashboard.js";
@@ -1159,4 +1160,87 @@ test("Domain progress count shows correct fraction", () => {
   const count = document.querySelector("[data-testid='domain-progress-count-foundation']");
   assert.ok(count !== null);
   assert.equal(count.textContent, "1 of 3 complete");
+});
+
+// ---------------------------------------------------------------------------
+// buildDiscoveryAnswers — unwraps store wrappers to raw values
+// ---------------------------------------------------------------------------
+
+test("buildDiscoveryAnswers outputs raw answer values, not wrapper objects", () => {
+  const obState = {
+    answers: {
+      "FC-01": { answer: "Full accounting", deferred: false },
+      "BM-04": { answer: "Yes", deferred: false },
+      "OP-01": { answer: "Yes", deferred: false },
+    },
+  };
+  const result = buildDiscoveryAnswers(obState);
+
+  assert.equal(result.answers["FC-01"], "Full accounting");
+  assert.equal(result.answers["BM-04"], "Yes");
+  assert.equal(result.answers["OP-01"], "Yes");
+});
+
+test("buildDiscoveryAnswers excludes deferred answers from outbound payload", () => {
+  const obState = {
+    answers: {
+      "FC-01": { answer: "Full accounting", deferred: false },
+      "BM-04": { answer: null, deferred: true },
+      "SC-02": { answer: null, deferred: true },
+    },
+  };
+  const result = buildDiscoveryAnswers(obState);
+
+  assert.equal(result.answers["FC-01"], "Full accounting");
+  assert.equal(result.answers["BM-04"], undefined, "deferred answer must not appear");
+  assert.equal(result.answers["SC-02"], undefined, "deferred answer must not appear");
+});
+
+test("buildDiscoveryAnswers includes industry_template as raw string", () => {
+  const obState = {
+    answers: { "MF-01": { answer: "Yes", deferred: false } },
+    industry_id: "manufacturing",
+  };
+  const result = buildDiscoveryAnswers(obState);
+
+  assert.equal(result.answers["industry_template"], "manufacturing");
+  assert.equal(result.answers["MF-01"], "Yes");
+});
+
+test("buildDiscoveryAnswers returns { answers: {} } for empty/null obState", () => {
+  assert.deepEqual(buildDiscoveryAnswers(null), { answers: {} });
+  assert.deepEqual(buildDiscoveryAnswers({}), { answers: {} });
+  assert.deepEqual(buildDiscoveryAnswers({ answers: null }), { answers: {} });
+});
+
+test("buildDiscoveryAnswers preserves numeric and array raw values", () => {
+  const obState = {
+    answers: {
+      "BM-05": { answer: 15, deferred: false },
+      "MF-06": { answer: ["Receipt", "In-process"], deferred: false },
+    },
+  };
+  const result = buildDiscoveryAnswers(obState);
+
+  assert.equal(result.answers["BM-05"], 15);
+  assert.deepEqual(result.answers["MF-06"], ["Receipt", "In-process"]);
+});
+
+test("buildDiscoveryAnswers conditional answer BM-04=Yes survives as raw string for engine comparison", () => {
+  const obState = {
+    answers: {
+      "BM-04": { answer: "Yes", deferred: false },
+      "SC-01": { answer: "Yes", deferred: false },
+      "TA-02": { answer: "Yes", deferred: false },
+    },
+  };
+  const result = buildDiscoveryAnswers(obState);
+
+  // These must be raw strings for engine gates like:
+  //   bm04 === "Yes"  (foundation-operation-definitions.js:169)
+  //   sc01 === "Yes"  (domain-activation-engine.js:244)
+  assert.equal(result.answers["BM-04"], "Yes");
+  assert.equal(typeof result.answers["BM-04"], "string");
+  assert.equal(result.answers["SC-01"], "Yes");
+  assert.equal(result.answers["TA-02"], "Yes");
 });

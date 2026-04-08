@@ -1697,103 +1697,110 @@
     },
     "website_ecommerce": {
       "label": "Website / eCommerce",
-      "overview": "Governs customer-facing digital commerce, catalog publication, checkout, and order integration. Coverage gap: website and website_sale models not in governed apply surface — assembler returns empty map.",
+      "overview": "Governs customer-facing digital commerce, catalog publication, checkout, and order integration on website and website_sale models. Coverage gap: website and payment.provider are not in the governed apply surface — the assembler returns an empty operation map. All checkpoints are confirmed through manual implementor review.",
       "checkpoints": {
         "WEB-FOUND-001": {
           "title": "Website scope baseline",
-          "what": "Informational checkpoint confirming website module is activated and baseline configuration is reviewed. No governed write — assembler returns empty map.",
-          "why": "Website decisions affect customer experience, SEO, and order flow. Without a baseline, downstream website configuration lacks context.",
+          "what": "This checkpoint confirms that the website module is installed, the website record exists, and the baseline scope (corporate site, catalog, or full eCommerce) has been explicitly decided. No automated write is performed — the implementor verifies website configuration manually in Settings.",
+          "why": "Every downstream website checkpoint — catalog publication, payment providers, customer access, delivery integration — inherits from this scope decision. A missing baseline means the team builds features without knowing which website purpose they are serving.",
           "confirm_first": [
-            "Is the website module installed?",
-            "Has the website domain and company been configured?",
-            "What is the primary purpose of the website (eCommerce, catalog, corporate)?"
+            "Is the website module installed and is there at least one website record?",
+            "What is the primary purpose: corporate presence, product catalog, or transactional eCommerce?",
+            "Has the website domain name been decided and configured?"
           ],
           "common_mistakes": [
-            "Publishing the website before content and checkout configuration are complete."
+            "Publishing the website publicly before content, checkout, and payment configuration are complete.",
+            "Configuring eCommerce features on a website intended only as a corporate presence."
           ],
           "odoo_docs_hint": "Website > Configuration > Settings"
         },
         "WEB-DREQ-001": {
           "title": "Catalog and product publication baseline",
-          "what": "Configures which products are published on the website and how they appear to customers.",
-          "why": "Published products are visible to anyone. Without publication governance, internal or draft products may appear on the public website.",
+          "what": "This checkpoint confirms that product publication rules are defined — which product.template records are published on the website, how they are categorized for navigation, and whether images and descriptions meet customer-facing standards. No automated write is performed — the implementor manages publication flags on product.template records manually.",
+          "why": "Published products are visible to the public internet. Without explicit publication governance, internal test products, draft items, or incorrectly priced products appear in the storefront and can be ordered.",
           "confirm_first": [
-            "Which products should be published on the website?",
-            "Are product images and descriptions ready for customer viewing?",
-            "Has the product categorization for website navigation been configured?"
+            "Which product categories and specific products should be visible on the website?",
+            "Are product images, descriptions, and SEO metadata ready for public display?",
+            "Has the website navigation category tree been configured to match the catalog structure?"
           ],
           "common_mistakes": [
-            "Publishing all products by default, including internal-use or draft items."
+            "Publishing all products by default — including internal-use or B2B-only items — because the 'Published' flag defaults to true on some product creation flows.",
+            "Not reviewing product descriptions for customer-facing quality before publishing."
           ],
           "odoo_docs_hint": "Website > eCommerce > Products"
         },
         "WEB-DREQ-002": {
           "title": "Payment provider configuration",
-          "what": "Informational checkpoint confirming payment providers are configured for online checkout. No governed write — coverage gap.",
-          "why": "Without payment providers, customers cannot complete purchases on the website. Misconfigured providers cause payment failures.",
+          "what": "This checkpoint confirms that payment.provider records are configured for online checkout — at least one provider is activated, credentials are entered, and the payment flow has been tested in sandbox mode. No automated write is performed — the implementor configures payment providers manually.",
+          "why": "Without at least one active payment provider, customers cannot complete purchases. Misconfigured providers cause silent payment failures, abandoned carts, and lost revenue from the first day the site is live.",
           "confirm_first": [
-            "Which payment providers will be enabled (Stripe, PayPal, etc.)?",
-            "Have payment provider credentials been configured and tested?",
-            "Is the payment flow tested in a sandbox environment?"
+            "Which payment providers will be enabled (Stripe, PayPal, Adyen, wire transfer)?",
+            "Have provider API credentials been entered and validated in sandbox/test mode?",
+            "Has a test transaction been completed end-to-end in sandbox mode?"
           ],
           "common_mistakes": [
-            "Going live with production payment credentials without testing in sandbox mode first."
+            "Going live with production payment credentials without completing a sandbox test transaction.",
+            "Enabling only wire transfer, which creates a poor customer experience for B2C checkout."
           ],
           "odoo_docs_hint": "Website > Configuration > Payment Providers"
         },
         "WEB-DREQ-003": {
           "title": "Customer account and access configuration",
-          "what": "Configures customer portal access rules — whether customers can browse as guests, must register, or use B2B portal features.",
-          "why": "Customer access rules affect conversion rates and data capture. Too restrictive = lost sales; too open = no customer data for CRM.",
+          "what": "This checkpoint confirms that the customer account model is decided — guest checkout vs. mandatory registration, portal access scope, and B2B account features. No automated write is performed — the implementor configures these settings in Website Settings.",
+          "why": "The customer access model directly affects conversion rates, data capture for CRM, and whether B2B customers can view order history, invoices, and delivery tracking through the portal.",
           "confirm_first": [
-            "Can customers browse and purchase as guests?",
-            "Is customer registration required before checkout?",
-            "Are there B2B customers who need portal access to order history and invoices?"
+            "Can customers browse and purchase as guests, or is registration mandatory?",
+            "Will B2B customers use the portal for order history, invoice downloads, and reordering?",
+            "Has the sign-up/login flow been tested from the customer's perspective?"
           ],
           "common_mistakes": [
-            "Requiring registration for all customers, creating friction that reduces conversions."
+            "Requiring registration for all customers when the business is primarily B2C, creating checkout friction that increases cart abandonment.",
+            "Not enabling portal access for B2B customers who need it for self-service."
           ],
           "odoo_docs_hint": "Website > Configuration > Settings > Customer Account"
         },
         "WEB-DREQ-004": {
           "title": "Website-inventory delivery integration",
-          "what": "Conditional checkpoint (OP-01=Yes). Configures delivery methods and shipping cost computation for eCommerce orders.",
-          "why": "Delivery methods determine shipping options and costs at checkout. Without configuration, customers cannot select delivery or see shipping costs.",
+          "what": "Conditional checkpoint (OP-01=Yes). This checkpoint confirms that delivery.carrier records are configured for eCommerce — shipping methods are linked, rates are computed correctly, and customers see accurate delivery options at checkout. Depends on INV-FOUND-001. No automated write is performed.",
+          "why": "Delivery methods determine shipping options and costs at checkout. Missing or misconfigured delivery carriers cause the checkout shipping step to fail, show zero-cost shipping incorrectly, or offer options the warehouse cannot fulfill.",
           "confirm_first": [
-            "Which delivery methods are available for online orders?",
-            "Are shipping rates computed by carrier integration or flat rate?",
-            "Has a test order been placed and fulfilled end-to-end?"
+            "Which delivery methods should appear at eCommerce checkout (flat rate, carrier-computed, free above threshold)?",
+            "Are carrier integrations configured with correct credentials and rate tables?",
+            "Has a test order been placed and fulfilled end-to-end with each delivery method?"
           ],
           "common_mistakes": [
-            "Not configuring delivery methods, causing checkout to fail at the shipping step."
+            "Not configuring any delivery carrier, causing the checkout shipping step to show no options.",
+            "Offering carrier-computed rates without testing that the rate API returns correct values for the business's typical order profiles."
           ],
           "odoo_docs_hint": "Inventory > Configuration > Delivery Methods"
         },
         "WEB-DREQ-005": {
           "title": "Website-sales quotation template integration",
-          "what": "Conditional checkpoint (SC-03=Yes). Configures quotation templates for online sales proposals and B2B portal quotes.",
-          "why": "Quotation templates create consistent online sales proposals. Without integration, online quotes may differ from sales team quotes.",
+          "what": "Conditional checkpoint (SC-03=Yes). This checkpoint confirms that quotation templates (sale.order.template) are configured for online proposals — B2B customers can view, accept, and sign quotes through the portal. Depends on SAL-DREQ-004. No automated write is performed.",
+          "why": "Online quotation templates enable self-service B2B workflows. Without integration, portal customers cannot review proposals or accept quotes online, forcing manual email-based workflows.",
           "confirm_first": [
-            "Will online quotations use the same templates as direct sales?",
-            "Are optional products configured on website quotation templates?",
-            "Has the online quotation signing flow been tested?"
+            "Will online quotations use the same templates as direct sales, or are separate web templates needed?",
+            "Are optional products configured on website quotation templates for upselling?",
+            "Has the online quotation acceptance and signature flow been tested from the customer portal?"
           ],
           "common_mistakes": [
-            "Having different quotation templates online vs. offline, creating customer confusion."
+            "Maintaining different quotation templates for online vs. offline channels, causing pricing and product inconsistencies.",
+            "Not testing the portal signature flow, which may fail if Sign module integration is incomplete."
           ],
           "odoo_docs_hint": "Sales > Configuration > Quotation Templates"
         },
         "WEB-GL-001": {
           "title": "Website/eCommerce go-live readiness",
-          "what": "Go-live checkpoint confirming the website and eCommerce configuration is finalized for public launch.",
-          "why": "Website launch exposes the business to customers. Errors in checkout, pricing, or delivery create immediate revenue and reputation impact.",
+          "what": "Go-live checkpoint confirming the website and eCommerce configuration is complete and the site is ready for public access. This covers catalog accuracy, payment flow, delivery integration, and customer access — all verified end-to-end. No automated write is performed.",
+          "why": "Website launch immediately exposes the business to customers. Pricing errors, broken checkout, missing delivery options, or payment failures create direct revenue loss and reputation damage from the first visitor.",
           "confirm_first": [
-            "Has the full purchase flow been tested (browse, cart, checkout, payment, delivery)?",
-            "Are all product prices, descriptions, and images correct?",
-            "Has the website been tested on mobile devices?"
+            "Has the full purchase flow been tested end-to-end: browse, add to cart, checkout, payment, order confirmation, delivery?",
+            "Are all product prices, images, descriptions, and stock availability correct for the published catalog?",
+            "Has the website been tested on mobile devices and across major browsers?"
           ],
           "common_mistakes": [
-            "Launching the website without testing the complete customer journey end-to-end."
+            "Launching the website without completing a full end-to-end test purchase with real payment sandbox credentials.",
+            "Not testing mobile checkout, where layout and payment form issues are most common."
           ],
           "odoo_docs_hint": "Website > Dashboard"
         }
@@ -1801,91 +1808,97 @@
     },
     "projects": {
       "label": "Projects",
-      "overview": "Governs project delivery structures, task flow, billing linkage, and ownership. Coverage gap: project.project and project.task.type are not in the governed apply surface.",
+      "overview": "Governs project delivery structures, task stages, billing linkage, and service execution tracking on project.project and project.task.type. Coverage gap: both models are outside the governed apply surface — the assembler returns an empty operation map. All checkpoints are confirmed through manual implementor review.",
       "checkpoints": {
         "PRJ-FOUND-001": {
           "title": "Project structure foundation",
-          "what": "Establishes the project structure baseline — project types, task stages, and organizational context. Coverage gap: project.project not in governed apply surface.",
-          "why": "Project structure determines how work is organized, tracked, and billed. Without a baseline, projects are created ad-hoc without consistent governance.",
+          "what": "This checkpoint confirms that the project module is installed and the project structure baseline is decided — project types (internal vs. client-facing), naming conventions, and the relationship between projects and sales orders on project.project. No automated write is performed — the implementor creates and configures project records manually.",
+          "why": "Project structure determines how work is organized, how tasks flow, and whether billing linkage works. Without an explicit baseline, projects are created ad-hoc with inconsistent stages, no billing connection, and no visibility into project health.",
           "confirm_first": [
-            "What types of projects does the business run (internal, client-facing, fixed-price, T&M)?",
-            "Has a task stage workflow been defined?",
-            "Who are the project managers?"
+            "What types of projects does the business run: internal, client-facing fixed-price, time & materials, or a mix?",
+            "Has a naming convention been decided for projects?",
+            "Who are the project managers, and has manager assignment been mapped to Odoo project records?"
           ],
           "common_mistakes": [
-            "Creating projects without defining task stages, losing visibility into project progress."
+            "Creating projects without defining task stages first, leaving every project with default stages that do not match the business workflow.",
+            "Not linking projects to sales orders when billing is required, causing billable work to be untracked."
           ],
-          "odoo_docs_hint": "Project > Configuration > Stages"
+          "odoo_docs_hint": "Project > Configuration > Settings"
         },
         "PRJ-DREQ-001": {
           "title": "Task flow and stage configuration",
-          "what": "Configures task stages and workflow rules. Coverage gap: project.task.type not in governed apply surface.",
-          "why": "Task stages drive Kanban views, automation rules, and project reporting. Without defined stages, project tracking is unstructured.",
+          "what": "This checkpoint confirms that task stages are defined on project.task.type — stage names, sequences, fold settings, and whether stages are shared across projects or project-specific. No automated write is performed — the implementor configures stages manually.",
+          "why": "Task stages drive the Kanban board, automation rules, and project reporting. If stages do not match the actual work process, teams skip stages or create workarounds, and management reporting becomes unreliable.",
           "confirm_first": [
-            "What are the task stages for each project type?",
-            "Are there automation rules for stage transitions?",
-            "Has the Kanban view been configured for the project team's workflow?"
+            "What are the task stages for each project type (e.g., New, In Progress, Review, Done)?",
+            "Should stages be shared across all projects or unique per project type?",
+            "Are there automation rules needed for stage transitions (e.g., auto-assign on stage change)?"
           ],
           "common_mistakes": [
-            "Using default stages that do not match the client's project management methodology."
+            "Keeping the default Odoo stages without renaming them to match the team's actual workflow.",
+            "Creating too many stages, causing team members to skip intermediate stages and breaking Kanban-based reporting."
           ],
           "odoo_docs_hint": "Project > Configuration > Stages"
         },
         "PRJ-DREQ-002": {
           "title": "Project billing linkage",
-          "what": "Configures the linkage between projects and sales/invoicing. Depends on SAL-DREQ-001 (sales baseline).",
-          "why": "Project billing determines how time and materials or fixed-price projects generate invoices. Without linkage, billable work is not invoiced.",
+          "what": "This checkpoint confirms that the linkage between project.project records and sales invoicing is configured — service products have the correct invoicing policy (ordered vs. delivered/timesheet), and sales orders are linked to projects. Depends on SAL-DREQ-001. No automated write is performed.",
+          "why": "Without billing linkage, time and effort spent on client projects is never invoiced. For fixed-price projects, missing linkage means milestones do not trigger invoice creation. Both scenarios directly affect revenue recognition.",
           "confirm_first": [
-            "Are projects billed as time & materials or fixed price?",
-            "Has the service product been configured with the correct invoicing policy?",
-            "Has a test project been billed to verify the invoice flow?"
+            "Are projects billed as time & materials (timesheet-based) or fixed price (milestone-based)?",
+            "Has the service product been configured with the correct invoicing policy on product.template?",
+            "Has a test project been created, worked on, and billed to verify the full invoice flow?"
           ],
           "common_mistakes": [
-            "Configuring project billing without testing that timesheets correctly feed into invoices."
+            "Setting the service product invoicing policy to 'Ordered Quantities' when the business needs timesheet-based billing, causing the full amount to be invoiced immediately instead of as time is logged.",
+            "Not testing the project-to-invoice flow before go-live, discovering billing gaps after real client work begins."
           ],
           "odoo_docs_hint": "Project > Configuration > Settings > Time Management"
         },
         "PRJ-DREQ-003": {
           "title": "Project timesheet integration",
-          "what": "Conditional checkpoint (RM-02=Yes). Configures timesheet integration with projects for time tracking and billing.",
-          "why": "Timesheets provide the data for T&M billing and project profitability analysis. Without integration, time data cannot be converted to invoices.",
+          "what": "Conditional checkpoint (RM-02=Yes). This checkpoint confirms that timesheet integration is configured — employees can log time against project tasks, timesheet approval workflows are defined, and time data feeds into billing. Depends on SAL-DREQ-001. No automated write is performed.",
+          "why": "Timesheets are the source data for T&M billing and project profitability analysis. Without integration, hours worked are not captured against projects, making invoicing manual and profitability invisible.",
           "confirm_first": [
-            "Which projects require timesheet tracking?",
-            "Will timesheets be used for billing, tracking, or both?",
-            "Has the timesheet approval workflow been defined?"
+            "Which projects and task types require timesheet tracking?",
+            "Will timesheets be used for billing, internal tracking, or both?",
+            "Has the timesheet approval workflow been defined — who approves, and what is the approval cadence?"
           ],
           "common_mistakes": [
-            "Enabling timesheets without configuring the hourly rate on the service product."
+            "Enabling timesheets without setting the hourly rate on the service product, causing invoices to generate with zero-value lines.",
+            "Not defining a timesheet approval workflow, allowing unreviewed time entries to flow directly into invoices."
           ],
           "odoo_docs_hint": "Timesheets > Configuration > Settings"
         },
         "PRJ-DREQ-004": {
           "title": "Project analytic accounting linkage",
-          "what": "Conditional checkpoint (FC-05=Yes). Configures analytic accounting linkage for project cost tracking. Depends on ACCT-REC-001.",
-          "why": "Analytic accounts enable project-level profitability analysis. Without linkage, project costs cannot be tracked against revenue.",
+          "what": "Conditional checkpoint (FC-05=Yes). This checkpoint confirms that analytic accounting is linked to projects — each project creates or uses an analytic account for cost and revenue tracking. Depends on ACCT-REC-001. No automated write is performed.",
+          "why": "Analytic accounts enable project-level profitability analysis by tagging both revenue (from invoices) and costs (from timesheets, purchases, expenses) to the same analytic account. Without this linkage, project P&L reporting is not possible.",
           "confirm_first": [
-            "Should each project automatically create an analytic account?",
-            "Has the analytic plan been configured for project costing?",
-            "Will analytic accounts be used for both revenue and cost tracking?"
+            "Should each project automatically create an analytic account, or will accounts be pre-created?",
+            "Has the analytic plan been configured to support project-level granularity?",
+            "Will analytic accounts capture both revenue and cost entries for full profitability?"
           ],
           "common_mistakes": [
-            "Not enabling automatic analytic account creation on projects, requiring manual setup for each project."
+            "Not enabling automatic analytic account creation on projects, requiring manual setup that is easily forgotten.",
+            "Configuring analytic accounts for costs only, missing the revenue side and making profitability analysis incomplete."
           ],
           "odoo_docs_hint": "Project > Configuration > Settings > Analytics"
         },
         "PRJ-GL-001": {
           "title": "Projects go-live readiness",
-          "what": "Go-live checkpoint confirming project configuration is finalized for operational use.",
-          "why": "Project configuration errors after go-live affect billing accuracy, time tracking, and resource visibility.",
+          "what": "Go-live checkpoint confirming that project structure, task stages, billing linkage, and timesheet integration (if applicable) are finalized and tested. This is a manual readiness review — no automated write is performed.",
+          "why": "Project configuration errors after go-live affect billing accuracy, time tracking, and resource planning. Fixing project structures with active tasks and timesheets is significantly harder than getting it right before go-live.",
           "confirm_first": [
-            "Has a complete project lifecycle been tested (create, tasks, timesheets, billing)?",
-            "Are all task stages and project templates finalized?",
-            "Has the project team been trained?"
+            "Has a complete project lifecycle been tested end-to-end: create project, create tasks, log timesheets, generate invoice?",
+            "Are all task stages, project templates, and billing configurations finalized?",
+            "Has the project team been trained on task management, timesheet logging, and the billing workflow?"
           ],
           "common_mistakes": [
-            "Going live with projects without testing the billing-to-invoice flow."
+            "Treating go-live readiness as automatic because projects exist — without testing the billing-to-invoice flow, revenue leakage is discovered only after real client work begins.",
+            "Not training project managers on how task stages map to reporting and billing triggers."
           ],
-          "odoo_docs_hint": "Project > My Projects"
+          "odoo_docs_hint": "Project > All Projects"
         }
       }
     },
@@ -1953,123 +1966,131 @@
     },
     "maintenance": {
       "label": "Maintenance",
-      "overview": "Governs equipment maintenance planning and service execution. Maintenance depends on manufacturing work centers being configured.",
+      "overview": "Governs equipment maintenance planning, preventive scheduling, and maintenance team configuration on maintenance.equipment and maintenance.request. Coverage gap: both models are outside the governed apply surface — the assembler returns an empty operation map. All checkpoints are confirmed through manual implementor review.",
       "checkpoints": {
         "MNT-FOUND-001": {
           "title": "Maintenance module foundation",
-          "what": "Informational checkpoint confirming maintenance module is activated and equipment register baseline is reviewed. Depends on MRP-DREQ-005 (work centers).",
-          "why": "Maintenance planning requires an equipment register. Without it, preventive maintenance cannot be scheduled and reactive maintenance is untracked.",
+          "what": "This checkpoint confirms that the Maintenance module is installed, the maintenance.equipment register has been populated with at least the critical assets, and equipment categories are defined. Depends on MRP-DREQ-005 (work center capacity). No automated write is performed — the implementor creates equipment records and categories manually.",
+          "why": "The equipment register is the foundation for all maintenance activity. Without registered equipment, preventive schedules cannot be created, maintenance requests cannot be assigned to assets, and there is no visibility into equipment reliability or downtime history.",
           "confirm_first": [
             "Is the Maintenance module installed?",
-            "Has the equipment register been populated?",
-            "Are equipment categories defined?"
+            "Has the equipment register been populated with at least production-critical assets?",
+            "Are equipment categories defined (e.g., CNC Machines, Conveyors, HVAC) to group assets for reporting and scheduling?"
           ],
           "common_mistakes": [
-            "Installing maintenance without first registering equipment."
+            "Installing the Maintenance module without registering any equipment, leaving it as an empty shell that no one uses.",
+            "Not linking equipment records to work centers, which breaks the connection between maintenance downtime and production scheduling."
           ],
-          "odoo_docs_hint": "Maintenance > Configuration > Equipment Categories"
+          "odoo_docs_hint": "Maintenance > Equipment > Machines"
         },
         "MNT-DREQ-001": {
           "title": "Preventive maintenance schedule",
-          "what": "Configures preventive maintenance schedules — frequency, responsible teams, and maintenance types.",
-          "why": "Preventive maintenance reduces unplanned downtime. Without schedules, maintenance is reactive only, increasing costs and production disruption.",
+          "what": "This checkpoint confirms that preventive maintenance schedules are configured on maintenance.request — frequency, responsible maintenance team, expected duration, and maintenance type per equipment. No automated write is performed — the implementor creates preventive maintenance requests manually.",
+          "why": "Preventive maintenance reduces unplanned downtime and extends asset life. Without schedules, all maintenance is reactive — discovered only when equipment fails, causing production stops and emergency repair costs.",
           "confirm_first": [
-            "Which equipment requires preventive maintenance?",
-            "What are the maintenance frequencies (daily, weekly, monthly)?",
-            "Who is responsible for each type of maintenance?"
+            "Which equipment requires preventive maintenance, and at what frequency (daily, weekly, monthly, usage-based)?",
+            "Has each preventive request been assigned to a responsible maintenance team?",
+            "Are expected maintenance durations set so production scheduling can account for planned downtime?"
           ],
           "common_mistakes": [
-            "Creating maintenance schedules without assigning responsible teams."
+            "Creating preventive schedules without assigning a responsible team, causing generated requests to sit unassigned.",
+            "Setting overly aggressive maintenance frequencies that the team cannot sustain, leading to a backlog of overdue requests that undermines trust in the system."
           ],
           "odoo_docs_hint": "Maintenance > Maintenance > Maintenance Requests > Preventive"
         },
         "MNT-DREQ-002": {
           "title": "Maintenance team configuration",
-          "what": "Configures maintenance teams and assigns team members. Depends on USR-DREQ-001 (role baseline).",
-          "why": "Maintenance requests are routed to teams. Without team configuration, maintenance requests have no assignee and remain unresolved.",
+          "what": "This checkpoint confirms that maintenance teams are configured — team name, members, and team leader — and that maintenance requests are routed to the correct team. Depends on USR-DREQ-001 (role baseline). No automated write is performed — the implementor creates maintenance teams manually.",
+          "why": "Maintenance requests are routed to teams for execution. Without team configuration, requests have no assignee, notifications are not sent, and maintenance work falls through the cracks. Team structure also drives reporting on team workload and response times.",
           "confirm_first": [
-            "How many maintenance teams are needed?",
-            "Who are the team members and team leaders?",
-            "Are teams specialized (electrical, mechanical) or generalist?"
+            "How many maintenance teams are needed, and are they specialized (electrical, mechanical, general) or generalist?",
+            "Who are the team members and designated team leader for each team?",
+            "Have team members been granted the correct Maintenance User or Manager access rights?"
           ],
           "common_mistakes": [
-            "Creating only one maintenance team when specialized teams are needed for proper routing."
+            "Creating a single generic maintenance team when the business has specialized technicians, causing routing confusion and incorrect skill-to-task matching.",
+            "Not setting a team leader, which prevents the escalation and notification workflow from functioning."
           ],
           "odoo_docs_hint": "Maintenance > Configuration > Maintenance Teams"
         },
         "MNT-REC-001": {
           "title": "Maintenance-equipment linkage readiness",
-          "what": "Recommended checkpoint confirming equipment records are linked to work centers, locations, and maintenance schedules.",
-          "why": "Equipment linked to work centers enables maintenance impact analysis — if a work center is down for maintenance, production scheduling adjusts.",
+          "what": "This checkpoint confirms that maintenance.equipment records are linked to work centers (mrp.workcenter), physical locations, and active preventive schedules — forming the complete asset-maintenance graph. No automated write is performed — the implementor verifies linkage manually.",
+          "why": "Equipment linked to work centers enables maintenance impact analysis: when a work center is scheduled for maintenance, production scheduling can account for the downtime. Without this linkage, production plans are made assuming 100% equipment availability.",
           "confirm_first": [
-            "Are equipment records linked to the correct work centers?",
-            "Is the equipment location set correctly?",
-            "Has the maintenance history import been considered?"
+            "Are all production-critical equipment records linked to the correct mrp.workcenter?",
+            "Is the physical location set correctly on each equipment record for dispatch and tracking?",
+            "Does existing maintenance history need to be imported, or will tracking start from go-live?"
           ],
           "common_mistakes": [
-            "Not linking equipment to work centers, losing the connection between maintenance and production."
+            "Not linking equipment to work centers, losing the ability to assess production impact when maintenance is scheduled.",
+            "Skipping this linkage review and discovering during production scheduling that maintenance windows are not reflected in capacity planning."
           ],
-          "odoo_docs_hint": "Maintenance > Equipment > [Equipment] > Work Center"
+          "odoo_docs_hint": "Maintenance > Equipment > [Equipment] > Work Center field"
         }
       }
     },
     "repairs": {
       "label": "Repairs",
-      "overview": "Governs controlled repair workflows for repair operations. Repairs depends on inventory and master data for parts tracking and billing. Coverage gap: repair.order not in governed apply surface.",
+      "overview": "Governs controlled repair order workflows, parts consumption tracking, and repair billing on repair.order. Coverage gap: repair.order is outside the governed apply surface — the assembler returns an empty operation map. All checkpoints are confirmed through manual implementor review. This domain covers Odoo's official Repairs module for product repair operations, not historical correction activity.",
       "checkpoints": {
         "REP-FOUND-001": {
           "title": "Repairs module foundation",
-          "what": "Informational checkpoint confirming the repair module is activated and baseline repair workflow is reviewed. Depends on INV-FOUND-003.",
-          "why": "Repair operations consume parts from inventory and may generate invoices. Without foundation, repairs are untracked and parts consumption is unmanaged.",
+          "what": "This checkpoint confirms that the Repairs module is installed, the repair workflow concept is understood, and the relationship between repairs, inventory (parts consumption), and sales (billing) is mapped. Depends on INV-FOUND-003 (operation types). No automated write is performed — the implementor verifies module installation and reviews baseline configuration manually.",
+          "why": "Repair orders consume parts from inventory and may generate customer invoices. Without the module foundation, repair work happens outside the system — parts are consumed without tracking, labor is unrecorded, and repair costs are invisible.",
           "confirm_first": [
             "Is the Repairs module installed?",
-            "What types of repairs does the business perform?",
-            "Are repair operations linked to specific product categories?"
+            "What types of repairs does the business perform (warranty, customer-billable, internal refurbishment)?",
+            "Are the products that will be repaired tracked as storable products with serial or lot numbers?"
           ],
           "common_mistakes": [
-            "Activating repairs without inventory foundation, causing parts consumption failures."
+            "Activating the Repairs module before inventory operation types are configured, causing parts consumption stock moves to fail or use incorrect source locations.",
+            "Not distinguishing repair types early, leading to a single undifferentiated repair workflow that cannot separate warranty from billable work."
           ],
           "odoo_docs_hint": "Repairs > Repair Orders"
         },
         "REP-DREQ-001": {
           "title": "Repair order workflow and parts management",
-          "what": "Configures repair order workflow including parts consumption, labor tracking, and repair status flow. Depends on MAS-DREQ-001.",
-          "why": "Repair orders consume inventory parts. Without proper configuration, parts are consumed without tracking or cost allocation.",
+          "what": "This checkpoint confirms that repair.order workflow is configured — repair status flow (draft, confirmed, under repair, repaired, done), parts consumption from inventory, and labor tracking. Depends on MAS-DREQ-001 (product readiness) and REP-FOUND-001. No automated write is performed — the implementor configures repair order settings and tests a sample repair manually.",
+          "why": "Repair orders consume inventory parts and track labor. Without a configured workflow, parts are either consumed from the wrong location or not consumed at all, making inventory quantities unreliable and repair cost tracking impossible.",
           "confirm_first": [
-            "Are repair parts stocked and tracked in inventory?",
-            "Is labor time tracked on repair orders?",
-            "Has the repair status workflow been defined (draft, confirmed, in progress, done)?"
+            "Are repair parts stocked and tracked in inventory as storable products?",
+            "Is labor time tracked on repair orders, and if so, is it billable?",
+            "Has a test repair order been created and completed to verify parts consumption and status transitions?"
           ],
           "common_mistakes": [
-            "Not configuring parts consumption routes, causing repairs to not affect inventory."
+            "Not configuring the repair source location, causing parts to be consumed from the default stock location instead of the repair-specific location.",
+            "Skipping the test repair order, then discovering in production that parts consumption does not update stock quantities."
           ],
-          "odoo_docs_hint": "Repairs > Repair Orders > [Order] > Parts"
+          "odoo_docs_hint": "Repairs > Repair Orders > [Order] > Operations / Parts tabs"
         },
         "REP-DREQ-002": {
           "title": "Repair billing configuration",
-          "what": "Configures repair billing — whether repairs are billable to customers, warranty-covered, or internal. Depends on SAL-DREQ-001.",
-          "why": "Repair billing determines whether costs are recovered from customers or absorbed internally. Without configuration, billable repairs may not generate invoices.",
+          "what": "This checkpoint confirms that repair billing is configured — invoice method (before repair, after repair, or no invoice), warranty policy, and the linkage between repair.order and sales invoicing. Depends on SAL-DREQ-001 (sales baseline). No automated write is performed — the implementor configures invoice method settings and tests billing manually.",
+          "why": "Without billing configuration, billable repairs do not generate invoices and revenue is lost. Conversely, warranty repairs may be billed incorrectly, creating customer disputes and accounting errors.",
           "confirm_first": [
-            "Are repairs billable to external customers?",
-            "Is there a warranty policy that affects billing?",
-            "Has the repair invoicing flow been tested?"
+            "Are repairs billable to external customers, covered by warranty, or purely internal?",
+            "Is there a warranty policy that determines billing eligibility based on product age or serial number?",
+            "Has the repair-to-invoice flow been tested end-to-end for both billable and warranty scenarios?"
           ],
           "common_mistakes": [
-            "Not distinguishing between warranty repairs (free) and billable repairs."
+            "Not distinguishing between warranty repairs (no invoice) and billable repairs (invoice after repair), causing either unbilled work or incorrect warranty charges.",
+            "Choosing 'Before Repair' invoice method for customer-facing repairs where the final cost is unknown until parts are consumed."
           ],
-          "odoo_docs_hint": "Repairs > Repair Orders > [Order] > Invoice Method"
+          "odoo_docs_hint": "Repairs > Repair Orders > [Order] > Invoice Method field"
         },
         "REP-REC-001": {
           "title": "Repair reporting readiness",
-          "what": "Recommended checkpoint confirming repair reporting and analytics are configured for operational insights.",
-          "why": "Repair data reveals product quality issues, warranty costs, and customer satisfaction trends. Without reporting, this data is not actionable.",
+          "what": "This checkpoint confirms that repair categories, tags, and reporting structures are configured so repair data is actionable — failure analysis, warranty cost tracking, and turnaround time metrics. Depends on REP-DREQ-001 and REP-DREQ-002. No automated write is performed.",
+          "why": "Repair data reveals product quality issues, warranty cost trends, and service turnaround performance. Without structured reporting, this data exists but cannot be analyzed, and recurring product defects go undetected.",
           "confirm_first": [
-            "What repair metrics does management want to track?",
-            "Are repair categories configured for meaningful reporting?",
-            "Has the repair reporting dashboard been reviewed?"
+            "What repair metrics does management want to track (turnaround time, warranty cost, repeat repair rate)?",
+            "Are repair categories or tags configured for grouping repairs by type, product, or root cause?",
+            "Has the repair reporting view been reviewed with the operations or service team?"
           ],
           "common_mistakes": [
-            "Not configuring repair categories, making it impossible to analyze repair trends by type."
+            "Not configuring repair categories, making it impossible to analyze trends by failure type or product line.",
+            "Treating this checkpoint as optional when the business performs high-volume repairs — without reporting, costly patterns remain hidden."
           ],
           "odoo_docs_hint": "Repairs > Reporting"
         }
@@ -2077,47 +2098,50 @@
     },
     "documents": {
       "label": "Documents",
-      "overview": "Governs structured document storage, retrieval, and operational document workflows. Documents domain has Safe write class. Coverage gap: documents.document not in governed apply surface.",
+      "overview": "Governs structured document storage, workspace governance, and operational document workflows on documents.folder and documents.share. Coverage gap: both models are outside the governed apply surface — the assembler returns an empty operation map. All checkpoints are confirmed through manual implementor review. The domain write class is Safe.",
       "checkpoints": {
         "DOC-FOUND-001": {
           "title": "Document workspace foundation",
-          "what": "Establishes document workspace structure — workspaces, folder hierarchy, and base access rules.",
-          "why": "Workspaces organize documents by business function. Without structure, documents are stored in a flat list with no governance.",
+          "what": "This checkpoint confirms that the Documents module is installed and the workspace structure is defined — documents.folder records are created for each business function (HR, Contracts, Finance, Projects), with a clear folder hierarchy and naming convention. No automated write is performed — the implementor creates workspaces manually.",
+          "why": "Workspaces are the primary organizational structure for documents. Without defined workspaces, all documents land in a flat list with no functional grouping, making retrieval slow and access control impossible at the workspace level.",
           "confirm_first": [
-            "What workspace categories does the business need (HR, Contracts, Projects)?",
-            "Who should have access to each workspace?",
-            "Will documents be linked to operational records (invoices, purchase orders)?"
+            "What workspace categories does the business need (HR, Contracts, Finance, Projects, Legal)?",
+            "Has a folder hierarchy been designed — are sub-workspaces needed within top-level categories?",
+            "Will documents be linked to operational records (invoices, purchase orders, contracts) via workflow actions?"
           ],
           "common_mistakes": [
-            "Creating too many workspaces without a clear naming convention."
+            "Creating workspaces without a naming convention, leading to duplicate or overlapping categories as different teams add their own.",
+            "Not planning the workspace structure before users start uploading documents, making reorganization difficult after the fact."
           ],
           "odoo_docs_hint": "Documents > Configuration > Workspaces"
         },
         "DOC-DREQ-001": {
           "title": "Document access control and workflow rules",
-          "what": "Configures document access control and workflow automation rules. Depends on USR-DREQ-002 (access rights configuration).",
-          "why": "Document access rules protect sensitive information. Without them, all users can access all documents regardless of sensitivity.",
+          "what": "This checkpoint confirms that workspace access rules are configured — which user groups can read, write, or manage documents in each workspace — and that workflow automation rules (auto-tagging, auto-routing) are defined. Depends on USR-DREQ-002 (access rights groups). No automated write is performed — the implementor configures access and workflow rules manually.",
+          "why": "Without access controls, all internal users can view all documents regardless of sensitivity. HR documents, contracts, and financial records are exposed to the entire organization. Workflow rules automate document handling — without them, every document must be manually tagged, sorted, and routed.",
           "confirm_first": [
-            "Are there documents with restricted access requirements (contracts, HR records)?",
-            "Are workflow automation rules needed (e.g., auto-tag invoices)?",
-            "Has the access policy been reviewed with the document owner?"
+            "Are there workspaces with restricted access requirements (HR records, contracts, legal documents)?",
+            "Are workflow automation rules needed (e.g., vendor bills auto-filed to Finance workspace, signed contracts auto-tagged)?",
+            "Has the access policy for each workspace been reviewed with the workspace owner?"
           ],
           "common_mistakes": [
-            "Leaving all documents accessible to all internal users."
+            "Leaving all workspaces with default 'all internal users' access, exposing sensitive HR or financial documents.",
+            "Not configuring workflow actions, negating the main automation benefit of the Documents module over simple file shares."
           ],
-          "odoo_docs_hint": "Documents > Configuration > Workspaces > [Workspace] > Access"
+          "odoo_docs_hint": "Documents > Configuration > Workspaces > [Workspace] > Access Rights"
         },
         "DOC-REC-001": {
           "title": "Document operational linkage",
-          "what": "Recommended checkpoint confirming documents are linked to operational records for traceability.",
-          "why": "Linking documents to records (invoices, orders, contracts) provides audit trail and reduces time spent searching for supporting documentation.",
+          "what": "This checkpoint confirms that documents are linked to operational records — invoices, purchase orders, contracts, and project deliverables — using document tags and workflow actions for automatic filing and retrieval. No automated write is performed — the implementor configures linkage rules manually.",
+          "why": "Linking documents to their originating records creates an audit trail and eliminates time spent searching for supporting documentation. During audits, the ability to trace from a journal entry to its source document is critical.",
           "confirm_first": [
-            "Which record types should have document linkage?",
-            "Are document tags configured for search and filtering?",
-            "Has the document upload process been tested?"
+            "Which record types should have automatic document linkage (vendor bills, customer invoices, signed contracts)?",
+            "Are document tags configured for consistent search and filtering across workspaces?",
+            "Has the document upload and auto-filing process been tested with a sample invoice or contract?"
           ],
           "common_mistakes": [
-            "Not configuring automatic document actions, missing the automation benefits of the Documents module."
+            "Not configuring workflow actions for automatic document creation from Odoo records, requiring users to manually upload and tag every document.",
+            "Skipping this checkpoint because document management seems low-priority, then struggling with audit traceability at year-end."
           ],
           "odoo_docs_hint": "Documents > Configuration > Workflow Actions"
         }
@@ -2125,165 +2149,176 @@
     },
     "sign": {
       "label": "Sign",
-      "overview": "Governs signature workflows, signer roles, and document approval execution. Coverage gap: sign.template not in governed apply surface.",
+      "overview": "Governs electronic signature workflows, signer roles, template governance, and signed document traceability on sign.template. Coverage gap: sign.template is outside the governed apply surface — the assembler returns an empty operation map. All checkpoints are confirmed through manual implementor review.",
       "checkpoints": {
         "SGN-FOUND-001": {
           "title": "Signature template foundation",
-          "what": "Establishes the signature template baseline — template types, field placement, and foundational signing workflow.",
-          "why": "Signature templates define how documents are presented for signing. Without templates, every signature request must be configured from scratch.",
+          "what": "This checkpoint confirms that the Sign module is installed, at least one sign.template has been created, and signature field placements (signature, date, name, initials) are correctly positioned on the template PDF. No automated write is performed — the implementor creates and configures templates manually.",
+          "why": "Signature templates define how documents are presented to signers and what fields they must complete. Without templates, every signature request requires manual setup — field placement, signer assignment, and document upload — creating inconsistency and delays.",
           "confirm_first": [
-            "What types of documents will be sent for signature (contracts, NDAs, approvals)?",
-            "Has the template library been designed?",
-            "Are signature field placements (name, date, signature) defined?"
+            "What types of documents will be sent for signature (employment contracts, NDAs, vendor agreements, client proposals)?",
+            "Has the template library been designed with one template per document type?",
+            "Are signature field placements tested — does the signer see fields in the correct locations on the PDF?"
           ],
           "common_mistakes": [
-            "Creating templates without testing the signing experience from the signer's perspective."
+            "Creating templates without testing the signing experience from the signer's perspective — field overlaps, missing required fields, or confusing signer order.",
+            "Uploading low-quality PDF source documents where signature fields do not align with printed field locations."
           ],
           "odoo_docs_hint": "Sign > Templates"
         },
         "SGN-DREQ-001": {
           "title": "Signer role and access configuration",
-          "what": "Configures who can send, sign, and manage signature requests. Depends on USR-DREQ-001 (role baseline).",
-          "why": "Signer roles control who can initiate and complete signature workflows. Without configuration, signature requests may not reach the right people.",
+          "what": "This checkpoint confirms that signer roles are configured — who can send signature requests, who are the designated signers, and whether multi-signer templates have the correct signing order. Depends on USR-DREQ-001 (role baseline). No automated write is performed — the implementor assigns Sign access rights and configures signer roles manually.",
+          "why": "Signer roles control who can initiate and complete signature workflows. Without proper configuration, unauthorized users may send documents for signature on behalf of the company, or signature requests may be sent to the wrong recipients, creating legal and compliance risk.",
           "confirm_first": [
-            "Who is authorized to send signature requests?",
-            "Are there multi-signer templates that require specific role ordering?",
-            "Has the signature request-to-completion flow been tested?"
+            "Who is authorized to send signature requests on behalf of the organization?",
+            "Are there multi-signer templates that require a specific signing order (e.g., employee signs first, then manager countersigns)?",
+            "Has the email notification flow been tested for both internal and external signers?"
           ],
           "common_mistakes": [
-            "Not testing the email notification flow for external signers."
+            "Not testing the email notification flow for external signers — emails may land in spam, or the signing link may not work outside the corporate network.",
+            "Configuring multi-signer templates without specifying the signing order, causing both signers to receive the request simultaneously when sequential signing is required."
           ],
-          "odoo_docs_hint": "Sign > Templates > [Template] > Signers"
+          "odoo_docs_hint": "Sign > Templates > [Template] > Signers tab"
         },
         "SGN-DREQ-002": {
           "title": "Signature traceability and record linkage",
-          "what": "Configures how signed documents are stored, linked to records, and made available for audit.",
-          "why": "Signed documents have legal significance. Without traceability, signed documents may be lost or disconnected from the records they support.",
+          "what": "This checkpoint confirms that signed documents are stored with full audit traceability — completion timestamps, signer identity, IP address — and linked to their originating records (contracts, HR documents, vendor agreements). No automated write is performed — the implementor verifies storage and linkage configuration manually.",
+          "why": "Signed documents have legal significance. Without traceability, the organization cannot prove who signed what and when. Without record linkage, signed documents become orphaned files disconnected from the business transactions they support.",
           "confirm_first": [
-            "Where will signed documents be stored (Documents module, attached to records)?",
-            "Is there a retention policy for signed documents?",
-            "Has the audit trail for completed signatures been reviewed?"
+            "Where are signed documents stored — in the Documents module workspace, attached to the originating record, or both?",
+            "Is there a retention policy for signed documents that meets legal requirements?",
+            "Has the completed signature audit trail been reviewed to confirm it captures signer identity, timestamp, and IP?"
           ],
           "common_mistakes": [
-            "Not linking signed documents to the originating record (contract, agreement)."
+            "Not linking signed documents to the originating record (contract, purchase agreement), making it impossible to find the signed version from the business record.",
+            "Assuming the Sign module automatically files signed documents into the Documents module — this requires explicit workflow action configuration."
           ],
-          "odoo_docs_hint": "Sign > Completed Documents"
+          "odoo_docs_hint": "Sign > Signed Documents"
         }
       }
     },
     "approvals": {
       "label": "Approvals",
-      "overview": "Governs formal approval requests outside individual module approval rules. Depends on Users/Roles approval design. Coverage gap: approval.category not in governed apply surface.",
+      "overview": "Governs formal approval requests that sit outside individual module-specific approval workflows on approval.category. Coverage gap: approval.category is outside the governed apply surface — the assembler returns an empty operation map. All checkpoints are confirmed through manual implementor review. Depends on Users/Roles approval design.",
       "checkpoints": {
         "APR-FOUND-001": {
           "title": "Approval structure foundation",
-          "what": "Establishes the approval module baseline — approval categories, minimum approvers, and general approval workflow. Depends on USR-DREQ-003 (privileged access review).",
-          "why": "The Approvals module centralizes requests that do not fit into module-specific approval workflows (e.g., budget requests, special expenditures).",
+          "what": "This checkpoint confirms that the Approvals module is installed and the baseline approval structure is defined — which approval categories (approval.category) exist, how many approvals are required per category, and the general approval workflow. Depends on USR-DREQ-003 (privileged access review). No automated write is performed — the implementor creates approval categories manually.",
+          "why": "The Approvals module centralizes requests that do not fit into module-specific workflows — budget requests, special expenditures, office supply orders, travel requests. Without this foundation, these requests are handled via email or ad-hoc channels with no traceability or governance.",
           "confirm_first": [
-            "What types of approval requests does the business need beyond module-specific approvals?",
-            "Who are the approvers for each category?",
-            "What is the minimum number of approvals required?"
+            "What types of approval requests does the business need beyond module-specific approvals (purchase orders already have their own)?",
+            "Who are the approvers for each category, and is the minimum number of approvals per category defined?",
+            "Has the distinction between module-specific approvals (e.g., PO approval) and Approvals module requests been documented to avoid duplication?"
           ],
           "common_mistakes": [
-            "Creating approval categories that duplicate module-specific approvals (e.g., purchase approval)."
+            "Creating approval categories that duplicate module-specific approval workflows — for example, creating a 'Purchase Approval' category when PO approval is already handled in the Purchase module.",
+            "Not defining a minimum approver count, allowing single-approver categories to be approved by anyone with access."
           ],
           "odoo_docs_hint": "Approvals > Configuration > Approval Types"
         },
         "APR-DREQ-001": {
           "title": "Approval category and approver configuration",
-          "what": "Configures specific approval categories and assigns approvers for each category.",
-          "why": "Each approval category needs designated approvers. Without them, approval requests cannot be processed.",
+          "what": "This checkpoint confirms that each approval.category has at least one designated approver, notification settings are configured, and the request-to-approval flow works end-to-end. No automated write is performed — the implementor assigns approvers and tests the workflow manually.",
+          "why": "Approval categories without designated approvers create dead-end requests — employees submit requests that sit unapproved because no one is notified. This erodes trust in the system and drives users back to informal channels.",
           "confirm_first": [
-            "Has each approval category been assigned at least one approver?",
-            "Are there backup approvers for each category?",
-            "Has the approval notification flow been tested?"
+            "Has each approval category been assigned at least one approver with the correct Odoo user account?",
+            "Are backup approvers configured for categories where the primary approver may be unavailable?",
+            "Has the approval email notification flow been tested end-to-end — does the approver receive the notification and can they approve from the email or portal?"
           ],
           "common_mistakes": [
-            "Creating approval categories without assigning approvers."
+            "Creating approval categories without assigning any approvers, causing all submitted requests to remain in 'Pending' state indefinitely.",
+            "Not testing the notification flow, assuming email alerts work out of the box without verifying the outgoing mail server configuration."
           ],
           "odoo_docs_hint": "Approvals > Configuration > Approval Types > [Type] > Approvers"
         },
         "APR-DREQ-002": {
           "title": "Approval authority and traceability",
-          "what": "Configures approval authority controls and audit traceability for approval decisions.",
-          "why": "Approval decisions must be traceable for compliance. Without authority controls, anyone could approve any request.",
+          "what": "This checkpoint confirms that approval authority levels are defined — who can approve what, at what thresholds — and that the approval audit trail captures approver identity, decision timestamp, and any comments. No automated write is performed — the implementor configures authority controls and verifies traceability manually.",
+          "why": "Approval decisions must be traceable for compliance and internal audit. Without authority controls, any user with Approvals access could approve any request. Without an audit trail, there is no evidence of who approved what and when.",
           "confirm_first": [
-            "Are approval authority levels defined (e.g., department manager, director, VP)?",
-            "Is there an escalation path for delayed approvals?",
-            "Has the approval audit trail been verified?"
+            "Are approval authority levels defined (e.g., team lead up to $5K, department manager up to $25K, director above)?",
+            "Is there an escalation path for approvals that are not acted on within a defined timeframe?",
+            "Has the approval audit trail been reviewed to confirm it captures approver identity, timestamp, and decision rationale?"
           ],
           "common_mistakes": [
-            "Not configuring escalation, causing approval requests to stall indefinitely."
+            "Not configuring escalation paths, causing approval requests to stall indefinitely when the designated approver is on leave or unresponsive.",
+            "Relying on informal authority assumptions without encoding them in the approval category configuration."
           ],
           "odoo_docs_hint": "Approvals > Configuration > Approval Types"
         },
         "APR-DREQ-003": {
           "title": "Inventory adjustment approval",
-          "what": "Conditional checkpoint (TA-03 includes Inventory adjustments). Configures approval requirements for inventory adjustment requests.",
-          "why": "Inventory adjustments directly affect stock values and accounting. Without approval controls, unauthorized adjustments can hide shrinkage or errors.",
+          "what": "Conditional checkpoint (TA-03 includes Inventory adjustments). This checkpoint confirms that an approval category exists for inventory adjustment requests, with designated approvers who have inventory management authority. No automated write is performed.",
+          "why": "Inventory adjustments directly affect stock values and, when automated valuation is active, the general ledger. Without an approval requirement, unauthorized adjustments can hide shrinkage, mask counting errors, or manipulate stock values without oversight.",
           "confirm_first": [
-            "Who can request inventory adjustments?",
-            "Who must approve them?",
-            "Is there a threshold below which adjustments do not require approval?"
+            "Who can request inventory adjustments, and who must approve them?",
+            "Is there a value or quantity threshold below which adjustments do not require approval?",
+            "Has the adjustment request been tested — does the approver receive the request and can they review the affected product and quantity?"
           ],
           "common_mistakes": [
-            "Allowing inventory adjustments without any approval requirement."
+            "Allowing inventory adjustments without any approval, then discovering unexplained stock discrepancies during physical counts.",
+            "Setting the approval threshold too low, creating a bottleneck that slows down routine cycle count corrections."
           ],
           "odoo_docs_hint": "Approvals > Configuration > Approval Types"
         },
         "APR-DREQ-004": {
           "title": "Expense approval configuration",
-          "what": "Conditional checkpoint (TA-03 includes Expenses). Configures approval requirements for expense reports.",
-          "why": "Expense approvals are a fundamental financial control. Without them, expenses are reimbursed without review.",
+          "what": "Conditional checkpoint (TA-03 includes Expenses). This checkpoint confirms that an approval category exists for expense reports, with the correct approval chain (direct manager, then finance if above threshold). No automated write is performed.",
+          "why": "Expense approvals are a fundamental financial control. Without them, employees submit expense reports that are reimbursed without review, creating fraud risk and uncontrolled spending.",
           "confirm_first": [
-            "Who approves expense reports (direct manager, finance)?",
-            "Are there expense thresholds that require additional approval?",
-            "Has the expense-to-reimbursement flow been tested?"
+            "Who approves expense reports — direct manager, finance team, or both?",
+            "Are there expense value thresholds that require additional approval (e.g., expenses above $500 require finance sign-off)?",
+            "Has the expense submission-to-reimbursement flow been tested end-to-end?"
           ],
           "common_mistakes": [
-            "Not defining expense categories, making expense analysis impossible."
+            "Not defining expense categories in the Expenses module, making expense analysis by type (travel, meals, supplies) impossible.",
+            "Duplicating expense approval in both the Expenses module and the Approvals module, confusing employees about where to submit."
           ],
-          "odoo_docs_hint": "Expenses > Configuration > Settings"
+          "odoo_docs_hint": "Expenses > Configuration > Expense Categories"
         },
         "APR-DREQ-005": {
           "title": "Manufacturing order approval",
-          "what": "Conditional checkpoint (TA-03 includes Manufacturing order). Configures approval requirements for manufacturing orders.",
-          "why": "Manufacturing order approval ensures production capacity and material availability are confirmed before committing to production.",
+          "what": "Conditional checkpoint (TA-03 includes Manufacturing order). This checkpoint confirms that an approval category exists for manufacturing order requests, ensuring material availability and production capacity are verified before committing to production. No automated write is performed.",
+          "why": "Manufacturing orders commit raw materials and production capacity. Without approval, production planners or shop floor users can create MOs that consume materials needed for higher-priority orders or exceed available capacity.",
           "confirm_first": [
-            "Do all manufacturing orders require approval or only above certain quantities?",
-            "Who approves manufacturing orders?",
-            "Has the MO approval workflow been tested?"
+            "Do all manufacturing orders require approval, or only those above a certain quantity or value threshold?",
+            "Who approves manufacturing orders — production manager, planning team, or both?",
+            "Has the MO approval workflow been tested with a realistic production scenario?"
           ],
           "common_mistakes": [
-            "Requiring approval on all MOs when only large or non-standard orders need oversight."
+            "Requiring approval on all manufacturing orders regardless of size, creating a bottleneck that slows production of routine items.",
+            "Not coordinating MO approval with material availability checks, leading to approved MOs that cannot be started due to missing components."
           ],
           "odoo_docs_hint": "Approvals > Configuration > Approval Types"
         },
         "APR-DREQ-006": {
           "title": "HR leave approval configuration",
-          "what": "Conditional checkpoint (TA-03 includes HR leave). Configures approval requirements for leave requests through the Approvals module.",
-          "why": "Leave approval ensures adequate staffing and prevents scheduling conflicts.",
+          "what": "Conditional checkpoint (TA-03 includes HR leave). This checkpoint confirms that leave request approval is properly routed — either through the Time Off module's built-in approval or through the Approvals module, but not both. No automated write is performed.",
+          "why": "Leave approval ensures adequate staffing coverage and prevents scheduling conflicts. Misconfigured approval routing causes leave requests to either bypass review entirely or get stuck in duplicate approval workflows.",
           "confirm_first": [
-            "Are leave requests approved by the direct manager?",
-            "Are there leave types that require HR approval in addition to manager approval?",
-            "Has the leave request notification flow been tested?"
+            "Are leave requests approved through the Time Off module's native approval chain or through the Approvals module?",
+            "Are there leave types that require HR approval in addition to direct manager approval (e.g., extended unpaid leave)?",
+            "Has the leave request-to-approval notification flow been tested?"
           ],
           "common_mistakes": [
-            "Duplicating leave approval in both HR module and Approvals module."
+            "Duplicating leave approval in both the Time Off module and the Approvals module, causing employees to receive double approval requests and confusion about which one is authoritative.",
+            "Not testing the manager notification — if the employee's manager is not set in the HR record, approval requests are not routed."
           ],
-          "odoo_docs_hint": "Approvals > Configuration > Approval Types"
+          "odoo_docs_hint": "Time Off > Configuration > Leave Types > Approval"
         },
         "APR-DREQ-007": {
           "title": "Document signing approval",
-          "what": "Conditional checkpoint (TA-03 includes Document signing). Configures approval requirements for document signing requests.",
-          "why": "Document signing approval ensures that documents sent for signature have been reviewed and authorized before committing the organization.",
+          "what": "Conditional checkpoint (TA-03 includes Document signing). This checkpoint confirms that an approval category exists for document signing requests — ensuring documents are reviewed and authorized before being sent for signature via the Sign module. No automated write is performed.",
+          "why": "Documents sent for signature may create legal commitments. Without pre-signing approval, contracts, NDAs, or vendor agreements can be sent for signature without legal or management review, exposing the organization to unauthorized commitments.",
           "confirm_first": [
-            "Which document types require pre-signing approval?",
-            "Who approves signing requests?",
-            "Has the approval-to-signing flow been tested?"
+            "Which document types require pre-signing approval (contracts above a certain value, employment agreements, vendor terms)?",
+            "Who approves signing requests — legal, department manager, or both?",
+            "Has the approval-to-signing flow been tested: submit approval request, get approved, then send via Sign module?"
           ],
           "common_mistakes": [
-            "Not linking signing approval to the Sign module workflow."
+            "Not connecting the Approvals workflow to the Sign module workflow, creating two disconnected steps where a user can skip approval and send documents for signature directly.",
+            "Requiring pre-signing approval for all documents including low-risk templates, creating unnecessary delays for routine signatures."
           ],
           "odoo_docs_hint": "Approvals > Configuration > Approval Types"
         }
@@ -2291,75 +2326,80 @@
     },
     "subscriptions": {
       "label": "Subscriptions",
-      "overview": "Governs recurring revenue models, renewal policy, and recurring invoicing. Subscriptions depends on sales configuration for baseline commercial policy. Coverage gap: sale.order.template and sale.order not in governed apply surface.",
+      "overview": "Governs recurring revenue models, subscription plans, renewal policy, and recurring invoicing on sale.subscription.plan and product.template. Coverage gap: both models are outside the governed apply surface — the assembler returns an empty operation map. All checkpoints are confirmed through manual implementor review. Depends on sales configuration for baseline commercial policy.",
       "checkpoints": {
         "SUB-FOUND-001": {
           "title": "Subscription module foundation",
-          "what": "Establishes the subscription module baseline — confirms subscription plans, recurring periods, and renewal settings are available. Depends on SAL-DREQ-001.",
-          "why": "Subscriptions automate recurring revenue. Without foundation, recurring invoices are not generated and renewal management is manual.",
+          "what": "This checkpoint confirms that the Subscriptions module is installed, at least one subscription plan (sale.subscription.plan) exists, and the recurring billing concept — plan types, recurrence periods, and the relationship between subscriptions and sales orders — is understood. Depends on SAL-DREQ-001 (sales baseline). No automated write is performed — the implementor creates plans and configures settings manually.",
+          "why": "Subscriptions automate recurring revenue through periodic invoice generation. Without the module foundation, recurring billing does not happen automatically, renewal management is manual, and the business has no visibility into MRR (monthly recurring revenue) or churn.",
           "confirm_first": [
             "Is the Subscriptions module installed?",
-            "What are the subscription plan types (monthly, annual)?",
-            "Has the recurring billing cycle been defined?"
+            "What subscription plan types does the business need (monthly, quarterly, annual)?",
+            "Has the recurring billing cycle been defined — when are invoices generated relative to the subscription period?"
           ],
           "common_mistakes": [
-            "Starting subscription sales before the billing cycle and renewal policy are configured."
+            "Starting subscription sales before billing cycle and renewal policy are configured, causing the first batch of recurring invoices to generate with incorrect amounts or timing.",
+            "Not understanding that Odoo 19 subscriptions are built on top of sales orders — subscription plans need correctly configured products with recurring pricing."
           ],
           "odoo_docs_hint": "Subscriptions > Configuration > Subscription Plans"
         },
         "SUB-DREQ-001": {
           "title": "Subscription plan and pricing configuration",
-          "what": "Configures subscription plans with pricing, recurrence periods, and auto-renewal settings.",
-          "why": "Subscription plans drive the recurring billing engine. Incorrect plan configuration causes wrong invoice amounts or billing frequencies.",
+          "what": "This checkpoint confirms that subscription plans are configured with correct pricing, recurrence periods (monthly, quarterly, annual), and auto-renewal settings on sale.subscription.plan. Product.template records used in subscriptions must have recurring pricing set. No automated write is performed — the implementor configures plans and products manually.",
+          "why": "Subscription plans drive the recurring billing engine. An incorrect recurrence period, wrong price, or missing auto-renewal setting directly affects every invoice generated for every subscriber on that plan.",
           "confirm_first": [
-            "What are the subscription pricing tiers?",
-            "Are there different plans for different customer segments?",
-            "Is auto-renewal enabled and at what terms?"
+            "What are the subscription pricing tiers, and do they differ by plan duration (monthly vs. annual discount)?",
+            "Are there different plans for different customer segments (starter, professional, enterprise)?",
+            "Is auto-renewal enabled by default, and at what terms does it renew?"
           ],
           "common_mistakes": [
-            "Not testing the full subscription lifecycle (create, renew, cancel, invoice)."
+            "Not testing the full subscription lifecycle — create subscription, generate first invoice, advance to next period, generate renewal invoice, test cancellation — before onboarding real customers.",
+            "Setting the wrong recurrence period on the plan, causing invoices to generate at the wrong frequency."
           ],
           "odoo_docs_hint": "Subscriptions > Configuration > Subscription Plans"
         },
         "SUB-DREQ-002": {
           "title": "Subscription renewal and lifecycle policy",
-          "what": "Configures subscription renewal, cancellation, and lifecycle management rules.",
-          "why": "Renewal policy affects revenue recognition and customer retention. Without lifecycle rules, subscriptions may auto-renew or cancel unexpectedly.",
+          "what": "This checkpoint confirms that subscription lifecycle rules are configured — renewal notification timing, cancellation handling (immediate vs. end of period), and what happens when a subscription is not renewed. No automated write is performed — the implementor configures lifecycle settings manually.",
+          "why": "Renewal policy directly affects customer retention and revenue recognition. Without explicit lifecycle rules, subscriptions may silently lapse without customer notification, or auto-renew unexpectedly, creating billing disputes.",
           "confirm_first": [
-            "What is the renewal notification period?",
-            "How are cancellations handled (immediate, end of period)?",
-            "Are there early termination penalties?"
+            "What is the renewal notification period — how far in advance should customers be notified of upcoming renewal?",
+            "How are cancellations handled: immediately upon request, or at the end of the current billing period?",
+            "Are there early termination penalties or prorated refund policies?"
           ],
           "common_mistakes": [
-            "Not configuring renewal reminders, causing subscriptions to lapse without customer notification."
+            "Not configuring renewal reminder emails, causing subscriptions to lapse because neither the customer nor the account manager was notified.",
+            "Allowing immediate cancellation when the business policy requires end-of-period cancellation, causing revenue recognition issues."
           ],
           "odoo_docs_hint": "Subscriptions > Configuration > Settings"
         },
         "SUB-DREQ-003": {
           "title": "Subscription-accounting journal linkage",
-          "what": "Conditional checkpoint (FC-01=Full accounting). Informational confirmation that subscription invoicing is linked to the correct accounting journals and revenue recognition settings.",
-          "why": "Subscription revenue may require deferred revenue recognition. Without journal linkage, recurring invoices may post to incorrect accounts.",
+          "what": "Conditional checkpoint (FC-01=Full accounting). This checkpoint confirms that subscription invoicing is linked to the correct accounting journals, and that deferred revenue recognition is configured if subscriptions are billed in advance. Depends on ACCT-DREQ-003 (account code structure). No automated write is performed — the implementor verifies journal linkage manually.",
+          "why": "Subscription revenue billed in advance (e.g., annual subscriptions paid upfront) may require deferred revenue recognition under accrual accounting. Without correct journal linkage, recurring invoices post to wrong revenue accounts or fail to defer revenue, misstating financial statements.",
           "confirm_first": [
-            "Is deferred revenue recognition needed for subscriptions?",
-            "Has the subscription invoice journal been configured?",
-            "Has finance reviewed the subscription accounting flow?"
+            "Is deferred revenue recognition needed for subscriptions billed in advance (annual plans paid upfront)?",
+            "Has the subscription invoice journal been linked to the correct revenue and deferred revenue accounts?",
+            "Has finance reviewed and approved the subscription revenue recognition approach?"
           ],
           "common_mistakes": [
-            "Not configuring deferred revenue accounts for annual subscriptions billed upfront."
+            "Not configuring deferred revenue accounts for annual subscriptions billed upfront, recognizing 12 months of revenue in the billing month.",
+            "Assuming subscription invoicing automatically handles revenue deferral — it requires explicit account configuration on the product or category."
           ],
           "odoo_docs_hint": "Accounting > Configuration > Journals"
         },
         "SUB-GL-001": {
           "title": "Subscriptions go-live readiness",
-          "what": "Go-live checkpoint confirming subscription configuration is finalized for production billing.",
-          "why": "Subscription billing errors affect recurring revenue and customer relationships. Configuration must be correct before the first billing cycle.",
+          "what": "Go-live checkpoint confirming that subscription plans, pricing, renewal policy, and accounting linkage are finalized and tested. This is a manual readiness review — no automated write is performed.",
+          "why": "Subscription billing errors are multiplied across every subscriber on every billing cycle. A wrong price, incorrect recurrence, or broken renewal flow affects recurring revenue and customer trust from the very first billing run.",
           "confirm_first": [
-            "Has a full subscription lifecycle been tested (create, invoice, renew)?",
-            "Are all plans and pricing finalized?",
-            "Has the subscription team been trained?"
+            "Has a full subscription lifecycle been tested end-to-end: create subscription, generate invoice, advance period, renew, cancel?",
+            "Are all plans, pricing tiers, and renewal settings finalized?",
+            "Has the subscription management team been trained on handling renewals, cancellations, and plan changes?"
           ],
           "common_mistakes": [
-            "Going live with subscriptions without testing the automatic invoice generation."
+            "Going live with subscriptions without testing the automatic recurring invoice generation — discovering on the first billing date that invoices are not created or have wrong amounts.",
+            "Not testing the cancellation flow, leading to cancelled subscriptions that continue generating invoices."
           ],
           "odoo_docs_hint": "Subscriptions > Subscriptions"
         }
@@ -2367,61 +2407,65 @@
     },
     "rental": {
       "label": "Rental",
-      "overview": "Governs rental inventory, reservations, pricing periods, and return handling. Rental depends on master data and inventory for product tracking. Coverage gap: sale.order and product.template not in governed apply surface.",
+      "overview": "Governs rental product configuration, time-based pricing, reservation management, and return handling on sale.order and product.template (rental extensions). Coverage gap: both models are outside the governed apply surface — the assembler returns an empty operation map. All checkpoints are confirmed through manual implementor review. Depends on master data and inventory for product tracking.",
       "checkpoints": {
         "RNT-FOUND-001": {
           "title": "Rental module foundation",
-          "what": "Establishes rental module baseline — confirms rental products, pricing periods, and availability tracking are available. Depends on MAS-DREQ-001.",
-          "why": "Rental operations require products configured for rental with period-based pricing and availability tracking. Without foundation, rental orders cannot be processed.",
+          "what": "This checkpoint confirms that the Rental module is installed, rental products are configured as storable products on product.template with serial tracking enabled, and the rental pricing structure (daily, weekly, monthly rates) is defined. Depends on MAS-DREQ-001 (product readiness). No automated write is performed — the implementor creates rental products and configures pricing manually.",
+          "why": "Rental operations require products specifically configured for rental — storable type for availability tracking, serial numbers for individual asset identification, and period-based pricing for time-based charges. Without this foundation, rental orders cannot track which specific asset is rented, when it is due back, or what to charge.",
           "confirm_first": [
             "Is the Rental module installed?",
-            "Are rental products configured with correct product type (storable)?",
-            "Has the rental pricing structure been defined (daily, weekly, monthly)?"
+            "Are rental products configured as storable products with serial tracking enabled for individual asset identification?",
+            "Has the rental pricing structure been defined — what are the rates for daily, weekly, and monthly rental periods?"
           ],
           "common_mistakes": [
-            "Configuring rental products as consumable instead of storable, losing individual asset tracking."
+            "Configuring rental products as consumable instead of storable, losing the ability to track individual asset availability and rental history.",
+            "Not enabling serial tracking on rental products, making it impossible to identify which specific unit was rented to which customer."
           ],
           "odoo_docs_hint": "Rental > Products"
         },
         "RNT-DREQ-001": {
           "title": "Rental pricing and order configuration",
-          "what": "Configures rental pricing periods, order workflow, and pickup/return procedures. Depends on SAL-DREQ-001.",
-          "why": "Rental pricing must account for time-based charges. Without configuration, rental orders use standard sales pricing instead of period-based rates.",
+          "what": "This checkpoint confirms that rental pricing periods are configured on product.template, the rental order workflow (reserve, pickup, return, invoice) is defined, and the pickup/return procedures are documented. Depends on SAL-DREQ-001 (sales baseline) and RNT-FOUND-001. No automated write is performed — the implementor configures rental pricing and tests the order workflow manually.",
+          "why": "Rental pricing is time-based — daily, weekly, and monthly rates replace standard sales pricing. Without correct configuration, rental orders use the base product sale price regardless of rental duration, resulting in incorrect charges.",
           "confirm_first": [
-            "What are the rental pricing periods (hourly, daily, weekly)?",
-            "Are there different pricing tiers for different durations?",
-            "Has the pickup and return workflow been defined?"
+            "What are the rental pricing periods and rates (hourly, daily, weekly, monthly)?",
+            "Are there duration-based pricing tiers (e.g., weekly rate is less than 7x daily rate)?",
+            "Has the pickup and return workflow been defined — who processes pickups, who handles returns, and what documentation is required?"
           ],
           "common_mistakes": [
-            "Not configuring rental-specific pricing, causing all rentals to use the base product price."
+            "Not configuring rental-specific pricing on the product, causing all rental orders to use the standard sale price instead of time-based rates.",
+            "Not testing a multi-day rental to verify that the pricing calculation correctly applies the period rate rather than multiplying the daily rate."
           ],
           "odoo_docs_hint": "Rental > Configuration > Settings"
         },
         "RNT-DREQ-002": {
           "title": "Rental-inventory return flow",
-          "what": "Informational checkpoint confirming rental return flow is configured in inventory. Depends on INV-FOUND-003. Coverage gap: sale.order not in governed apply surface.",
-          "why": "Rental returns must update availability and condition tracking. Without the return flow, returned assets do not become available for re-rental.",
+          "what": "This checkpoint confirms that the rental return flow is configured in inventory — the return operation type exists, returned assets are checked back into available stock, and condition assessment procedures are defined. Depends on INV-FOUND-003 (operation types). No automated write is performed — the implementor verifies the return operation type and tests the return flow manually.",
+          "why": "Rental returns must update asset availability so returned items can be re-rented. Without a configured return flow, returned assets remain in 'rented out' status, reducing apparent inventory availability and causing double-bookings.",
           "confirm_first": [
-            "Is the rental return operation type configured?",
-            "Are condition checks performed on return?",
-            "How are damaged returns handled?"
+            "Is the rental return operation type configured in inventory?",
+            "Are condition checks performed on return (functional, damaged, requires maintenance)?",
+            "How are damaged returns handled — quarantine location, maintenance request, or write-off?"
           ],
           "common_mistakes": [
-            "Not creating a return operation type, causing returned rental assets to disappear from availability."
+            "Not configuring a return operation type, causing returned rental assets to not re-enter available inventory.",
+            "Not defining a process for damaged returns — assets come back damaged but are checked into available stock without inspection, then rented to the next customer in poor condition."
           ],
           "odoo_docs_hint": "Inventory > Configuration > Operation Types"
         },
         "RNT-GL-001": {
           "title": "Rental go-live readiness",
-          "what": "Go-live checkpoint confirming rental configuration is finalized for operational rental orders.",
-          "why": "Rental errors after go-live affect asset utilization, pricing accuracy, and customer experience.",
+          "what": "Go-live checkpoint confirming that rental products, pricing, order workflow, and return flow are finalized and tested end-to-end. This is a manual readiness review — no automated write is performed.",
+          "why": "Rental errors after go-live directly affect asset utilization (assets stuck in wrong status), pricing accuracy (wrong charges per period), and customer experience (double-bookings, lost returns). The full rental cycle must work before the first customer order.",
           "confirm_first": [
-            "Has a complete rental cycle been tested (reserve, pickup, return, invoice)?",
-            "Are all rental products and pricing finalized?",
-            "Has the rental team been trained?"
+            "Has a complete rental cycle been tested end-to-end: reserve asset, process pickup, track rental period, process return, generate invoice?",
+            "Are all rental products, serial numbers, and period-based pricing finalized?",
+            "Has the rental team been trained on the pickup, return, and condition-check procedures?"
           ],
           "common_mistakes": [
-            "Going live without testing the return-and-reinventory flow."
+            "Going live without testing the return-and-reinventory flow, discovering that returned assets do not become available for re-rental.",
+            "Not testing the invoicing for multi-period rentals, where the charge calculation depends on correct period-rate configuration."
           ],
           "odoo_docs_hint": "Rental > Rental Orders"
         }

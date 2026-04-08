@@ -300,6 +300,142 @@ const DOMAIN_SUPPORT = {
     executeSupport: false,
     moduleNames: ["knowledge"],
     summary: "Knowledge inspection with article/setup preview only."
+  },
+  discuss: {
+    targetLevel: 2,
+    inspectModels: ["mail.channel"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["mail"],
+    summary: "Discuss inspection with channel/messaging preview only."
+  },
+  "outgoing-mail": {
+    targetLevel: 2,
+    inspectModels: ["ir.mail_server"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["base"],
+    summary: "Outgoing Mail inspection with SMTP/sender preview only."
+  },
+  "incoming-mail": {
+    targetLevel: 2,
+    inspectModels: ["fetchmail.server"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["fetchmail"],
+    summary: "Incoming Mail inspection with IMAP/POP3 preview only."
+  },
+  "accounting-reports": {
+    targetLevel: 2,
+    inspectModels: ["account.report"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["account_reports"],
+    summary: "Accounting Reports inspection with report structure preview only."
+  },
+  spreadsheet: {
+    targetLevel: 2,
+    inspectModels: ["spreadsheet.template"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["spreadsheet"],
+    summary: "Spreadsheet inspection with template/setup preview only."
+  },
+  "live-chat": {
+    targetLevel: 2,
+    inspectModels: ["im_livechat.channel"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["im_livechat"],
+    summary: "Live Chat inspection with channel/operator preview only."
+  },
+  whatsapp: {
+    targetLevel: 2,
+    inspectModels: ["whatsapp.template"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["whatsapp"],
+    summary: "WhatsApp inspection with template/account preview only."
+  },
+  "sms-marketing": {
+    targetLevel: 2,
+    inspectModels: ["sms.sms"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["sms"],
+    summary: "SMS Marketing inspection with provider/campaign preview only."
+  },
+  calendar: {
+    targetLevel: 2,
+    inspectModels: ["calendar.event"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["calendar"],
+    summary: "Calendar inspection with event/sync preview only."
+  },
+  iot: {
+    targetLevel: 2,
+    inspectModels: ["iot.device"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["iot"],
+    summary: "IoT inspection with device/box preview only."
+  },
+  studio: {
+    targetLevel: 2,
+    inspectModels: ["ir.model"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["web_studio"],
+    summary: "Studio inspection with customisation/setup preview only."
+  },
+  consolidation: {
+    targetLevel: 2,
+    inspectModels: ["consolidation.company"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["account_consolidation"],
+    summary: "Consolidation inspection with company/period preview only."
+  },
+  lunch: {
+    targetLevel: 2,
+    inspectModels: ["lunch.supplier"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["lunch"],
+    summary: "Lunch inspection with supplier/product preview only."
+  },
+  referrals: {
+    targetLevel: 2,
+    inspectModels: ["hr.referral.stage"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["hr_referral"],
+    summary: "Referrals inspection with stage/reward preview only."
+  },
+  loyalty: {
+    targetLevel: 2,
+    inspectModels: ["loyalty.program"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["loyalty"],
+    summary: "Loyalty inspection with program/reward preview only."
+  },
+  appraisals: {
+    targetLevel: 2,
+    inspectModels: ["hr.appraisal"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["hr_appraisal"],
+    summary: "Appraisals inspection with cycle/goal preview only."
+  },
+  voip: {
+    targetLevel: 2,
+    inspectModels: ["voip.provider"],
+    previewSupport: true,
+    executeSupport: false,
+    moduleNames: ["voip"],
+    summary: "VoIP inspection with provider/extension preview only."
   }
 };
 

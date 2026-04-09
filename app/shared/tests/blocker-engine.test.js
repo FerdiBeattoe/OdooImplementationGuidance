@@ -374,7 +374,7 @@ describe("owner_confirmation_missing blocker", () => {
       checkpoint_class: "Foundational",
       validation_source: "User_Confirmed",
       status: "Not_Started",
-      dependencies: [],
+      dependencies: ["FND-FOUND-001"],
     });
     const vr = makeValidationRecord({
       checkpoint_id: "FND-FOUND-004",
@@ -391,6 +391,23 @@ describe("owner_confirmation_missing blocker", () => {
 
   it("produces owner_confirmation_missing for Both with Pending_User_Input", () => {
     const cp = makeCheckpoint({
+      checkpoint_id: "FND-FOUND-002",
+      validation_source: "Both",
+      status: "Not_Started",
+      dependencies: ["FND-FOUND-001"],
+    });
+    const vr = makeValidationRecord({
+      checkpoint_id: "FND-FOUND-002",
+      validation_source: "Both",
+      validation_pass: false,
+      validation_status: "Pending_User_Input",
+    });
+    const result = computeBlockers([cp], makeValidatedCheckpoints([vr]));
+    assert.equal(findBlocker(result, "FND-FOUND-002").blocker_type, BLOCKER_TYPE.OWNER_CONFIRMATION_MISSING);
+  });
+
+  it("does NOT produce owner_confirmation_missing for dependency-free root checkpoints on first run", () => {
+    const cp = makeCheckpoint({
       checkpoint_id: "FND-FOUND-001",
       validation_source: "Both",
       status: "Not_Started",
@@ -401,9 +418,10 @@ describe("owner_confirmation_missing blocker", () => {
       validation_source: "Both",
       validation_pass: false,
       validation_status: "Pending_User_Input",
+      missing_answer_refs: [],
     });
     const result = computeBlockers([cp], makeValidatedCheckpoints([vr]));
-    assert.equal(findBlocker(result, "FND-FOUND-001").blocker_type, BLOCKER_TYPE.OWNER_CONFIRMATION_MISSING);
+    assert.equal(findBlocker(result, "FND-FOUND-001"), null);
   });
 
   it("does NOT produce owner_confirmation_missing when validation passes", () => {
@@ -501,24 +519,24 @@ describe("owner_confirmation_missing blocker", () => {
   // -------------------------------------------------------------------------
 
   it("unconditional Both + no answer refs: blocked_reason names evidence submission, not discovery answers", () => {
-    // Simulates FND-FOUND-001: validation_source Both, no discovery-question mapping,
+    // Simulates FND-DREQ-001: validation_source Both, no discovery-question mapping,
     // missing_answer_refs is empty. The message must NOT say "discovery answers".
     const cp = makeCheckpoint({
-      checkpoint_id: "FND-FOUND-001",
+      checkpoint_id: "FND-DREQ-001",
       validation_source: "Both",
       status: "Not_Started",
-      dependencies: [],
+      dependencies: ["FND-FOUND-002"],
     });
     const vr = makeValidationRecord({
-      checkpoint_id: "FND-FOUND-001",
+      checkpoint_id: "FND-DREQ-001",
       validation_source: "Both",
       validation_pass: false,
       validation_status: "Pending_User_Input",
       missing_answer_refs: [],
     });
     const result = computeBlockers([cp], makeValidatedCheckpoints([vr]));
-    const blocker = findBlocker(result, "FND-FOUND-001");
-    assert.ok(blocker !== null, "FND-FOUND-001 must remain blocked");
+    const blocker = findBlocker(result, "FND-DREQ-001");
+    assert.ok(blocker !== null, "FND-DREQ-001 must remain blocked");
     assert.equal(blocker.blocker_type, BLOCKER_TYPE.OWNER_CONFIRMATION_MISSING);
     assert.ok(
       !blocker.blocked_reason.includes("discovery answers"),
@@ -541,7 +559,7 @@ describe("owner_confirmation_missing blocker", () => {
       checkpoint_id: "FND-DREQ-002",
       validation_source: "Both",
       status: "Not_Started",
-      dependencies: [],
+      dependencies: ["FND-FOUND-002", "FND-FOUND-005"],
     });
     const vr = makeValidationRecord({
       checkpoint_id: "FND-DREQ-002",
@@ -566,28 +584,6 @@ describe("owner_confirmation_missing blocker", () => {
       blocker.resolution_action.includes("discovery answers"),
       `resolution_action must name discovery answers when refs are missing; got: "${blocker.resolution_action}"`
     );
-  });
-
-  it("FND-FOUND-001 remains blocked after message truthfulness fix", () => {
-    // Confirm the fix does not accidentally unblock FND-FOUND-001.
-    const cp = makeCheckpoint({
-      checkpoint_id: "FND-FOUND-001",
-      validation_source: "Both",
-      status: "Not_Started",
-      dependencies: [],
-    });
-    const vr = makeValidationRecord({
-      checkpoint_id: "FND-FOUND-001",
-      validation_source: "Both",
-      validation_pass: false,
-      validation_status: "Pending_User_Input",
-      missing_answer_refs: [],
-    });
-    const result = computeBlockers([cp], makeValidatedCheckpoints([vr]));
-    const blocker = findBlocker(result, "FND-FOUND-001");
-    assert.ok(blocker !== null, "FND-FOUND-001 must still produce an active blocker");
-    assert.equal(blocker.blocker_type, BLOCKER_TYPE.OWNER_CONFIRMATION_MISSING);
-    assert.equal(result.active_blockers.length, 1);
   });
 });
 

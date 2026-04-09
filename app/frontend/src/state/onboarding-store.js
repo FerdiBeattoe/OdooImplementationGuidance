@@ -646,12 +646,14 @@ export function createOnboardingStore({ persist = false } = {}) {
 
     try {
       const token = state.sessionToken || "";
+      const headers = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      };
+
       const res = await fetch("/api/pipeline/connection/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
+        headers,
         body: JSON.stringify({
           project_id: projectId,
           credentials: { url, database, username, password },

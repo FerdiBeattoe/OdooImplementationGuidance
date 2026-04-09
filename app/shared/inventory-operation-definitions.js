@@ -25,9 +25,8 @@
 //       apply surface. "stock.location" is a documented coverage gap.
 //   R3  method is always "write". target_operation mirrors method for governed
 //       preview/apply compatibility.
-//   R4  intended_changes is null for all checkpoints. Inventory warehouse,
-//       operation-type, and route specifics are not derivable from checkpoint
-//       metadata or discovery answers alone. Null is honest.
+//   R4  intended_changes defaults to null. Wizard captures may supply explicit
+//       values for executable checkpoints (e.g. reception/delivery step plans).
 //   R5  INV-GL-001 and INV-GL-002 are non-Executable (execution_relevance: None,
 //       safety_class: Not_Applicable). Intentionally excluded.
 //   R6  INV-DREQ-003 is conditional: only assembled when OP-02 >= 2.
@@ -58,6 +57,10 @@ import {
 import { CHECKPOINT_IDS } from "./checkpoint-engine.js";
 
 export const INVENTORY_OP_DEFS_VERSION = "1.0.0";
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
 
 export const INVENTORY_WAREHOUSE_MODEL = "stock.warehouse";
 export const INVENTORY_PICKING_TYPE_MODEL = "stock.picking.type";
@@ -159,14 +162,17 @@ export const INVENTORY_CHECKPOINT_METADATA = Object.freeze({
   }),
 });
 
-function addInventoryDefinition(map, checkpoint_id) {
+function addInventoryDefinition(map, checkpoint_id, overrides = {}) {
   const metadata = INVENTORY_CHECKPOINT_METADATA[checkpoint_id];
   if (!metadata) return;
   map[checkpoint_id] = createOperationDefinition({
     checkpoint_id,
     target_model: metadata.target_model,
     method: INVENTORY_TARGET_METHOD,
-    intended_changes: null,
+    intended_changes:
+      overrides && Object.prototype.hasOwnProperty.call(overrides, "intended_changes")
+        ? overrides.intended_changes
+        : null,
     safety_class: metadata.safety_class,
     execution_relevance: metadata.execution_relevance,
     validation_source: metadata.validation_source,
@@ -175,7 +181,8 @@ function addInventoryDefinition(map, checkpoint_id) {
 
 export function assembleInventoryOperationDefinitions(
   target_context = null,
-  discovery_answers = null
+  discovery_answers = null,
+  wizard_captures = null
 ) {
   const map = createOperationDefinitionsMap();
 
@@ -191,12 +198,21 @@ export function assembleInventoryOperationDefinitions(
     addInventoryDefinition(map, CHECKPOINT_IDS.INV_DREQ_003);
   }
 
+  const wizardData = extractInventoryWizardData(wizard_captures);
   const pi03 = answers["PI-03"];
   if (pi03 === "2 steps") {
-    addInventoryDefinition(map, CHECKPOINT_IDS.INV_DREQ_004);
+    addInventoryDefinition(
+      map,
+      CHECKPOINT_IDS.INV_DREQ_004,
+      buildDefinitionOptions(wizardData, "two_steps")
+    );
   }
   if (pi03 === "3 steps") {
-    addInventoryDefinition(map, CHECKPOINT_IDS.INV_DREQ_005);
+    addInventoryDefinition(
+      map,
+      CHECKPOINT_IDS.INV_DREQ_005,
+      buildDefinitionOptions(wizardData, "three_steps")
+    );
   }
 
   const pi05 = answers["PI-05"];
@@ -220,4 +236,54 @@ export function assembleInventoryOperationDefinitions(
   }
 
   return map;
+}
+
+function extractInventoryWizardData(wizardSource) {
+  if (!isPlainObject(wizardSource)) {
+    return null;
+  }
+  if (isPlainObject(wizardSource.inventory)) {
+    return wizardSource.inventory;
+  }
+  return wizardSource;
+}
+
+function buildDefinitionOptions(wizardData, expectedReceptionSteps) {
+  const intendedChanges = buildReceptionIntendedChanges(
+    wizardData,
+    expectedReceptionSteps
+  );
+  return intendedChanges ? { intended_changes: intendedChanges } : undefined;
+}
+
+function buildReceptionIntendedChanges(wizardData, expectedReceptionSteps) {
+  if (!isPlainObject(wizardData)) {
+    return null;
+  }
+  if (typeof expectedReceptionSteps === "string") {
+    if (wizardData.reception_steps !== expectedReceptionSteps) {
+      return null;
+    }
+  }
+
+  const changes = {};
+  if (typeof wizardData.reception_steps === "string") {
+    changes.reception_steps = wizardData.reception_steps;
+  }
+  if (typeof wizardData.delivery_steps === "string") {
+    changes.delivery_steps = wizardData.delivery_steps;
+  } else if (
+    expectedReceptionSteps === "three_steps" &&
+    !changes.delivery_steps
+  ) {
+    changes.delivery_steps = "pick_pack_ship";
+  }
+  if (
+    typeof wizardData.warehouse_name === "string" &&
+    wizardData.warehouse_name.trim() !== ""
+  ) {
+    changes.warehouse_name = wizardData.warehouse_name.trim();
+  }
+
+  return Object.keys(changes).length > 0 ? changes : null;
 }

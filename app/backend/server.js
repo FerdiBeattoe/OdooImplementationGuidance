@@ -1392,21 +1392,19 @@ async function handleCheckpointConfirm(req, res) {
     return sendJson(res, 400, { ok: false, error: loadResult.error });
   }
 
-  const runtime_state = loadResult.runtime_state;
+  let runtime_state = loadResult.runtime_state;
 
   // ── Locate checkpoint record ────────────────────────────────────────────────
-  // Search in checkpoints.records (persisted container) then fall back to the
-  // top-level checkpoints array if the state was stored with a flat shape.
-  let checkpointRecord = null;
+  let checkpointRecord = findCheckpointRecord(runtime_state, checkpoint_id);
 
-  const checkpointsContainer = runtime_state.checkpoints;
-  if (checkpointsContainer !== null && typeof checkpointsContainer === "object" && !Array.isArray(checkpointsContainer)) {
-    // Standard shape: { records: [...], engine_version, generated_at }
-    const records = Array.isArray(checkpointsContainer.records) ? checkpointsContainer.records : [];
-    checkpointRecord = records.find((r) => r && r.checkpoint_id === checkpoint_id) ?? null;
-  } else if (Array.isArray(checkpointsContainer)) {
-    // Flat array shape (legacy / direct save)
-    checkpointRecord = checkpointsContainer.find((r) => r && r.checkpoint_id === checkpoint_id) ?? null;
+  if (!checkpointRecord) {
+    const regenerated = await regenerateRuntimeStateForCheckpoint(project_id, runtime_state);
+    if (regenerated && regenerated.ok) {
+      runtime_state = regenerated.runtime_state;
+      checkpointRecord = findCheckpointRecord(runtime_state, checkpoint_id);
+    } else if (regenerated && regenerated.error) {
+      return sendJson(res, 400, { ok: false, error: regenerated.error });
+    }
   }
 
   if (!checkpointRecord) {
@@ -1453,6 +1451,151 @@ async function handleCheckpointConfirm(req, res) {
   }
 
   return sendJson(res, 200, { ok: true, runtime_state });
+}
+
+function findCheckpointRecord(runtimeState, checkpointId) {
+  if (!runtimeState || typeof runtimeState !== "object") {
+    return null;
+  }
+  if (typeof checkpointId !== "string" || checkpointId.trim() === "") {
+    return null;
+  }
+  const checkpointsContainer = runtimeState.checkpoints;
+  if (checkpointsContainer !== null && typeof checkpointsContainer === "object" && !Array.isArray(checkpointsContainer)) {
+    const records = Array.isArray(checkpointsContainer.records) ? checkpointsContainer.records : [];
+    return records.find((r) => r && r.checkpoint_id === checkpointId) ?? null;
+  }
+  if (Array.isArray(checkpointsContainer)) {
+    return checkpointsContainer.find((r) => r && r.checkpoint_id === checkpointId) ?? null;
+  }
+  return null;
+}
+
+async function regenerateRuntimeStateForCheckpoint(projectId, currentRuntimeState) {
+  if (typeof projectId !== "string" || projectId.trim() === "") {
+    return { ok: false, error: "Unable to regenerate checkpoint data: invalid project_id." };
+  }
+
+  const pipelinePayload = buildPipelinePayloadFromRuntimeState(projectId, currentRuntimeState);
+  if (!pipelinePayload) {
+    return {
+      ok: false,
+      error: "Unable to regenerate checkpoint data: discovery_answers missing from persisted state.",
+    };
+  }
+
+  const pipelineResult = runPipelineService(pipelinePayload);
+  if (!pipelineResult.ok) {
+    return {
+      ok: false,
+      error: pipelineResult.error || "Unable to regenerate checkpoint data: pipeline run failed.",
+    };
+  }
+
+  const saveResult = await saveRuntimeState(pipelineResult.runtime_state);
+  if (!saveResult.ok) {
+    return {
+      ok: false,
+      error: saveResult.error || "Unable to regenerate checkpoint data: save failed.",
+    };
+  }
+
+  const reloadResult = await loadRuntimeState(projectId);
+  if (!reloadResult.ok) {
+    return {
+      ok: false,
+      error: reloadResult.error || "Unable to regenerate checkpoint data: reload failed.",
+    };
+  }
+
+  return { ok: true, runtime_state: reloadResult.runtime_state };
+}
+
+const PIPELINE_REGEN_OPTIONAL_KEYS = [
+  "environment_context",
+  "target_context",
+  "connection_state",
+  "workflow_state",
+  "training_state",
+  "decision_links",
+  "approval_context",
+  "execution_result",
+  "checkpoint_statuses",
+];
+
+function buildPipelinePayloadFromRuntimeState(projectId, runtimeState) {
+  const normalizedProjectId =
+    typeof projectId === "string" && projectId.trim() !== "" ? projectId.trim() : null;
+  if (
+    !normalizedProjectId ||
+    !isPlainObject(runtimeState) ||
+    !isPlainObject(runtimeState.discovery_answers)
+  ) {
+    return null;
+  }
+
+  const identity =
+    isPlainObject(runtimeState.project_identity) &&
+    typeof runtimeState.project_identity.project_id === "string" &&
+    runtimeState.project_identity.project_id.trim() !== ""
+      ? runtimeState.project_identity
+      : { project_id: normalizedProjectId };
+
+  const payload = {
+    project_identity: identity,
+    discovery_answers: runtimeState.discovery_answers,
+  };
+
+  for (const key of PIPELINE_REGEN_OPTIONAL_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(runtimeState, key)) {
+      payload[key] = runtimeState[key];
+    }
+  }
+
+  if (
+    isPlainObject(runtimeState.operation_definitions) &&
+    Object.keys(runtimeState.operation_definitions).length > 0
+  ) {
+    payload.operation_definitions = runtimeState.operation_definitions;
+  } else {
+    payload.operation_definitions = buildOperationDefinitionsFromRuntimeState(runtimeState);
+  }
+
+  return payload;
+}
+
+function buildOperationDefinitionsFromRuntimeState(runtimeState) {
+  const targetContext = runtimeState?.target_context ?? null;
+  const discoveryAnswers = runtimeState?.discovery_answers ?? null;
+  const wizardCaptures = isPlainObject(runtimeState?.wizard_captures)
+    ? runtimeState.wizard_captures
+    : null;
+
+  return {
+    ...assembleFoundationOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleUsersRolesOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleAccountingOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleMasterDataOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleCrmOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleSalesOperationDefinitions(targetContext, discoveryAnswers),
+    ...assemblePurchaseOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleInventoryOperationDefinitions(targetContext, discoveryAnswers, wizardCaptures),
+    ...assembleManufacturingOperationDefinitions(targetContext, discoveryAnswers),
+    ...assemblePlmOperationDefinitions(targetContext, discoveryAnswers),
+    ...assemblePosOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleWebsiteEcommerceOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleProjectsOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleHrOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleQualityOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleMaintenanceOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleRepairsOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleDocumentsOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleSignOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleApprovalsOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleSubscriptionsOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleRentalOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleFieldServiceOperationDefinitions(targetContext, discoveryAnswers),
+  };
 }
 
 // ---------------------------------------------------------------------------

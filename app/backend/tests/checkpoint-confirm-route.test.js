@@ -633,6 +633,65 @@ describe("round-trip: confirm then loadRuntimeState shows status persisted", () 
 });
 
 // ---------------------------------------------------------------------------
+// Industry select -> pipeline run -> checkpoint confirm flow
+// ---------------------------------------------------------------------------
+
+describe("industry select -> pipeline run -> checkpoint confirm", () => {
+  test("checkpoint confirmation no longer fails with not-found errors after industry select", async () => {
+    const projectId = makeProjectId("industry_flow_success");
+    _createdProjectIds.add(projectId);
+
+    const industryRes = await postJson("/api/pipeline/industry/select", {
+      project_id:  projectId,
+      industry_id: "manufacturing",
+    });
+    assert.strictEqual(industryRes.status, 200, "industry select must succeed");
+    assert.strictEqual(industryRes.body.ok, true);
+
+    const runRes = await postJson("/api/pipeline/run", { project_id: projectId });
+    assert.strictEqual(runRes.status, 200, "pipeline run must succeed");
+    assert.strictEqual(runRes.body.ok, true);
+
+    const confirmFnd001 = await postJson("/api/pipeline/checkpoint/confirm", {
+      project_id:    projectId,
+      checkpoint_id: "FND-FOUND-001",
+      status:        "Complete",
+      evidence:      "Implementation lead confirmed foundational scope.",
+      actor:         "lead@example.com",
+    });
+    assert.strictEqual(
+      confirmFnd001.status,
+      400,
+      "FND-FOUND-001 remains Both-sourced and must fail the validation_source gate"
+    );
+    assert.ok(
+      String(confirmFnd001.body?.error || "").includes("validation_source"),
+      "error must reference the governance restriction"
+    );
+    assert.ok(
+      !String(confirmFnd001.body?.error || "").includes(
+        'checkpoint_id "FND-FOUND-001" not found'
+      ),
+      "checkpoint lookup must succeed even when governance blocks confirmation"
+    );
+
+    const confirmFnd005 = await postJson("/api/pipeline/checkpoint/confirm", {
+      project_id:    projectId,
+      checkpoint_id: "FND-FOUND-005",
+      status:        "Complete",
+      evidence:      "Implementation lead confirmed multi-company readiness.",
+      actor:         "lead@example.com",
+    });
+    assert.strictEqual(confirmFnd005.status, 200, "User_Confirmed checkpoint must succeed");
+    assert.strictEqual(confirmFnd005.body.ok, true);
+    assert.strictEqual(
+      confirmFnd005.body.runtime_state.checkpoint_statuses["FND-FOUND-005"],
+      "Complete"
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // 11. Confirm then pipeline run shows carry-over
 // ---------------------------------------------------------------------------
 

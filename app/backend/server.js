@@ -84,6 +84,10 @@ import {
 } from "../shared/domain-activation-engine.js";
 import { getIndustryTemplate } from "../shared/industry-templates.js";
 
+const WIZARD_DOMAIN_ASSEMBLERS = Object.freeze({
+  inventory: assembleInventoryOperationDefinitions,
+});
+
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 100; // 100 requests per minute
@@ -629,6 +633,12 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
         return await handlePipelineStateSave(req, res);
       }
 
+      if (pathname === "/api/pipeline/wizard-capture" && req.method === "POST") {
+        const _authUser = await jwtMiddleware(req, res);
+        if (!_authUser) return;
+        return await handlePipelineWizardCapture(req, res);
+      }
+
       if (pathname === "/api/pipeline/connection/register" && req.method === "POST") {
         const _authUser = await jwtMiddleware(req, res);
         if (!_authUser) return;
@@ -1084,6 +1094,16 @@ async function handlePipelineRun(req, res) {
     }
   }
 
+  const wizardCapturesFromPayload =
+    payloadIsPlainObject && isPlainObject(payload.wizard_captures)
+      ? payload.wizard_captures
+      : null;
+  const wizardCaptures =
+    wizardCapturesFromPayload ||
+    (persistedState && isPlainObject(persistedState.wizard_captures)
+      ? persistedState.wizard_captures
+      : null);
+
   // Inject all domain operation definitions when not caller-supplied.
   // Unblocks Gate 6 in governed-preview-engine for all Executable checkpoints
   // across all governed domain assemblers currently registered on the server.
@@ -1101,7 +1121,7 @@ async function handlePipelineRun(req, res) {
         ...assembleCrmOperationDefinitions(tc, da),
         ...assembleSalesOperationDefinitions(tc, da),
         ...assemblePurchaseOperationDefinitions(tc, da),
-        ...assembleInventoryOperationDefinitions(tc, da),
+        ...assembleInventoryOperationDefinitions(tc, da, wizardCaptures),
         ...assembleManufacturingOperationDefinitions(tc, da),
         ...assemblePlmOperationDefinitions(tc, da),
         ...assemblePosOperationDefinitions(tc, da),
@@ -1218,6 +1238,88 @@ async function handlePipelineStateSave(req, res) {
 
   const result = await saveRuntimeState(payload);
   return sendJson(res, result.ok ? 200 : 400, result);
+}
+
+async function handlePipelineWizardCapture(req, res) {
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (parseError) {
+    return sendJson(res, 400, {
+      error: parseError instanceof Error ? parseError.message : "Invalid request payload.",
+    });
+  }
+
+  if (!isPlainObject(payload)) {
+    return sendJson(res, 400, { error: "Request body must be a non-null object." });
+  }
+
+  const projectId =
+    typeof payload.project_id === "string" && payload.project_id.trim()
+      ? payload.project_id.trim()
+      : "";
+  if (!projectId) {
+    return sendJson(res, 400, { error: "project_id must be a non-empty string." });
+  }
+
+  const domainId = normalizeDomainId(payload.domain);
+  if (!domainId) {
+    return sendJson(res, 400, { error: "domain must be provided." });
+  }
+
+  const wizardData = payload.wizard_data;
+  if (!isPlainObject(wizardData)) {
+    return sendJson(res, 400, { error: "wizard_data must be a non-null object." });
+  }
+
+  const assembler = WIZARD_DOMAIN_ASSEMBLERS[domainId];
+  if (!assembler) {
+    return sendJson(res, 400, { error: `Wizard capture unsupported for domain "${domainId}".` });
+  }
+
+  const runtimeResult = await resumeRuntimeState(projectId);
+  if (!runtimeResult.ok) {
+    if (runtimeResult.not_found) {
+      return sendJson(res, 404, { error: runtimeResult.error || "Persisted state not found." });
+    }
+    return sendJson(res, 400, { error: runtimeResult.error || "Failed to load runtime state." });
+  }
+
+  const runtimeState = runtimeResult.runtime_state || {};
+  const currentCaptures = isPlainObject(runtimeState.wizard_captures)
+    ? runtimeState.wizard_captures
+    : {};
+  const nextWizardCaptures = {
+    ...currentCaptures,
+    [domainId]: wizardData,
+  };
+
+  const runtimeStateForSave = {
+    ...runtimeState,
+    wizard_captures: nextWizardCaptures,
+  };
+
+  const saveResult = await saveRuntimeState(runtimeStateForSave);
+  if (!saveResult.ok) {
+    return sendJson(res, 400, {
+      error: saveResult.error || "Failed to persist wizard capture.",
+    });
+  }
+
+  const domainOperationDefinitions = assembler(
+    runtimeStateForSave.target_context ?? null,
+    runtimeStateForSave.discovery_answers ?? null,
+    nextWizardCaptures
+  );
+  const checkpoints = Object.values(domainOperationDefinitions || {});
+
+  return sendJson(res, 200, {
+    ok: true,
+    project_id: projectId,
+    domain: domainId,
+    wizard_captures: nextWizardCaptures[domainId],
+    checkpoints,
+  });
 }
 
 async function handlePipelineConnectionRegister(req, res) {

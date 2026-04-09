@@ -12,6 +12,7 @@ import { createInspectionRecord } from "../shared/inspection-model.js";
 import { generateDomainPreview } from "../shared/preview-engine.js";
 import { ODOO_VERSION } from "../shared/constants.js";
 import { OdooClient, OdooRpcError, detectInstalledModules, detectVersion } from "./odoo-client.js";
+import supabase from "./supabase-client.js";
 
 const __filename_engine = fileURLToPath(import.meta.url);
 const __dirname_engine = path.dirname(__filename_engine);
@@ -22,25 +23,63 @@ const connectionRegistry = new Map();
 // ── Connection registry persistence ─────────────────────────────
 async function loadConnectionRegistry() {
   try {
+    // Load from Supabase if available
+    if (supabase) {
+      const { data, error } = await supabase
+        .from("odoo_connections")
+        .select("project_id, base_url, database, updated_at");
+      if (!error && data) {
+        const now = Date.now();
+        for (const row of data) {
+          if (!row?.project_id) continue;
+          const timestamp = new Date(row.updated_at).getTime();
+          if (now - timestamp <= CONNECTION_TTL_MS) {
+            connectionRegistry.set(row.project_id, {
+              baseUrl: row.base_url,
+              database: row.database,
+              timestamp,
+              sessionId: "",
+              uid: 0
+            });
+          }
+        }
+        return;
+      }
+    }
+    // Fallback to local file if Supabase unavailable
     const raw = await readFile(connectionRegistryPath, "utf8");
     const data = JSON.parse(raw);
     const now = Date.now();
     for (const [key, value] of Object.entries(data.connections || {})) {
-      // Only restore connections that haven't exceeded TTL
       if (now - (value.timestamp || 0) <= CONNECTION_TTL_MS) {
         connectionRegistry.set(key, value);
       }
     }
   } catch {
-    // No saved connections — start fresh
+    // Start fresh on any error
   }
 }
 
 async function saveConnectionRegistry() {
   try {
-    // Strip session credentials before writing to disk — only persist
-    // baseUrl + database so returning users get pre-filled fields.
-    // sessionId and uid are runtime-only (session auth, never stored).
+    if (supabase) {
+      // Upsert each connection to Supabase
+      for (const [projectId, value] of connectionRegistry.entries()) {
+        await supabase
+          .from("odoo_connections")
+          .upsert(
+            {
+              project_id: projectId,
+              base_url: value.baseUrl,
+              database: value.database,
+              updated_at: new Date().toISOString()
+            },
+            { onConflict: "project_id" }
+          );
+      }
+      return;
+    }
+    // Fallback to local file
     const safeConnections = {};
     for (const [key, value] of connectionRegistry.entries()) {
       safeConnections[key] = {
@@ -49,13 +88,19 @@ async function saveConnectionRegistry() {
         timestamp: value.timestamp
       };
     }
-    const data = {
-      connections: safeConnections,
-      savedAt: new Date().toISOString()
-    };
-    await writeFile(connectionRegistryPath, JSON.stringify(data, null, 2));
+    await writeFile(
+      connectionRegistryPath,
+      JSON.stringify(
+        {
+          connections: safeConnections,
+          savedAt: new Date().toISOString()
+        },
+        null,
+        2
+      )
+    );
   } catch {
-    // Best-effort persistence — don't crash on write failure
+    // Best-effort — don't crash
   }
 }
 
@@ -186,7 +231,14 @@ export async function connectProject(project, payload, fetchImpl = fetch) {
 }
 
 export async function disconnectProject(project) {
-  connectionRegistry.delete(project?.projectIdentity?.projectId);
+  const projectId = project?.projectIdentity?.projectId;
+  connectionRegistry.delete(projectId);
+  if (supabase && projectId) {
+    await supabase
+      .from("odoo_connections")
+      .delete()
+      .eq("project_id", projectId);
+  }
   await saveConnectionRegistry();
   return normalizeConnectionState(createInitialConnectionState(), project?.projectIdentity);
 }

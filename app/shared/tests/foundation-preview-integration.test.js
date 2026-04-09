@@ -82,6 +82,12 @@ function proofAnswers() {
   return da;
 }
 
+function unconfirmedProofAnswers() {
+  const da = proofAnswers();
+  da.confirmed_by = null;
+  return da;
+}
+
 /**
  * Target context with deployment_type "on_premise".
  * Satisfies Gate 3 (target_context non-null, deployment_type non-null).
@@ -128,6 +134,22 @@ function proofOperationDefinitions() {
 // ---------------------------------------------------------------------------
 
 describe("Foundation preview integration proof", () => {
+  it("produces a root foundation preview on fresh project without confirmed_by", () => {
+    const result = runPipeline({
+      discovery_answers: unconfirmedProofAnswers(),
+      target_context: proofTargetContext(),
+      operation_definitions: proofOperationDefinitions(),
+    });
+
+    const hasFoundationPreview = result.previews.some(
+      (p) => p.checkpoint_id === "FND-FOUND-001"
+    );
+    assert.ok(
+      hasFoundationPreview,
+      "Expected FND-FOUND-001 preview when dependencies are empty and owner confirmation is pending."
+    );
+  });
+
   it("produces at least one preview when confirmed_by and on_premise target are supplied with operation_definitions", () => {
     const result = runPipeline({
       discovery_answers: proofAnswers(),

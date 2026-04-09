@@ -877,27 +877,57 @@ async function handleConnectionValidate(req, res) {
   } catch (parseError) {
     return sendJson(res, 400, { error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
   }
-  const project = normalizeProjectState(payload.project);
+
+  const normalizedProject = payload?.project ? normalizeProjectState(payload.project) : null;
+  const explicitProjectId =
+    typeof payload?.project_id === "string" && payload.project_id.trim()
+      ? payload.project_id.trim()
+      : typeof payload?.projectId === "string" && payload.projectId.trim()
+        ? payload.projectId.trim()
+        : "";
+  const derivedProjectId =
+    !explicitProjectId && normalizedProject?.projectIdentity?.projectId
+      ? normalizedProject.projectIdentity.projectId.trim()
+      : "";
+  const projectId = explicitProjectId || derivedProjectId;
+
+  if (!projectId) {
+    return sendJson(res, 400, { error: "project_id is required." });
+  }
 
   try {
-    const result = await validateConnection(project);
+    const result = await validateConnection(projectId);
     if (result.valid) {
-      return sendJson(res, 200, { valid: true, project });
-    } else {
-      // Connection is stale — return disconnected state
-      const nextProject = normalizeProjectState({
-        ...project,
-        connectionState: {
-          ...project.connectionState,
-          status: "not_connected",
-          capabilityLevel: "manual-only",
-          lastError: result.reason,
-          lastErrorAt: new Date().toISOString(),
-          availableFeatures: { inspect: false, preview: false, execute: false }
-        }
-      });
-      return sendJson(res, 200, { valid: false, reason: result.reason, project: nextProject });
+      const response = { valid: true, project_id: projectId };
+      if (normalizedProject) {
+        response.project = normalizedProject;
+      }
+      return sendJson(res, 200, response);
     }
+
+    const nextProject = normalizedProject
+      ? normalizeProjectState({
+          ...normalizedProject,
+          connectionState: {
+            ...normalizedProject.connectionState,
+            status: "not_connected",
+            capabilityLevel: "manual-only",
+            lastError: result.reason,
+            lastErrorAt: new Date().toISOString(),
+            availableFeatures: { inspect: false, preview: false, execute: false }
+          }
+        })
+      : null;
+
+    const response = {
+      valid: false,
+      reason: result.reason || "Validation failed.",
+      project_id: projectId
+    };
+    if (nextProject) {
+      response.project = nextProject;
+    }
+    return sendJson(res, 200, response);
   } catch (error) {
     return sendJson(res, 400, { error: error instanceof Error ? error.message : "Validation failed." });
   }

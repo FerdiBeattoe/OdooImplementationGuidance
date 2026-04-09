@@ -401,8 +401,18 @@ export async function previewDomain(project, domainId, fetchImpl = fetch) {
  * Returns { valid: true } or { valid: false, reason: "..." }.
  * If invalid, removes the stale entry from the registry.
  */
-export async function validateConnection(project, fetchImpl = fetch) {
-  const projectId = project?.projectIdentity?.projectId;
+export async function validateConnection(projectOrProjectId, fetchImpl = fetch) {
+  const projectId =
+    typeof projectOrProjectId === "string"
+      ? projectOrProjectId.trim()
+      : typeof projectOrProjectId?.projectIdentity?.projectId === "string"
+        ? projectOrProjectId.projectIdentity.projectId.trim()
+        : "";
+
+  if (!projectId) {
+    return { valid: false, reason: "project_id is required." };
+  }
+
   const stored = connectionRegistry.get(projectId);
 
   if (!stored) {

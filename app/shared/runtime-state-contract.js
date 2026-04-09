@@ -602,6 +602,7 @@ export function createPersistedProjectState() {
     project_identity: createProjectIdentity(),
     target_context: createTargetContext(),
     discovery_answers: createDiscoveryAnswers(),
+    wizard_captures: {},
     activated_domains: createActivatedDomains(),
     checkpoints: [],
     decisions: createDecisionsArray(),

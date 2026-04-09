@@ -36,6 +36,7 @@
 // ---------------------------------------------------------------------------
 
 import { ODOO_VERSION } from "./constants.js";
+import { CHECKPOINT_IDS } from "./checkpoint-engine.js";
 
 if (ODOO_VERSION !== "19") {
   throw new Error(
@@ -71,6 +72,7 @@ export const BLOCKER_SEVERITY = Object.freeze({
 // Statuses that indicate a checkpoint is actively being worked on and should
 // have its evidence evaluated. Not_Started is excluded: no evidence is expected yet.
 const ACTIVE_EVIDENCE_STATUSES = new Set(["In_Progress", "Ready_For_Review"]);
+const PREVIEW_ENTRY_POINT_IDS = new Set([CHECKPOINT_IDS.FND_FOUND_001]);
 
 // Statuses that satisfy an upstream dependency requirement.
 const DEPENDENCY_PASSING_STATUSES = new Set(["Complete", "Deferred"]);
@@ -180,6 +182,30 @@ export function createBlockers({
 // Returns a blocker_record or null.
 // ---------------------------------------------------------------------------
 
+function isRootCheckpoint(checkpoint) {
+  if (!checkpoint) return false;
+  const deps = Array.isArray(checkpoint.dependencies) ? checkpoint.dependencies : [];
+  return deps.length === 0;
+}
+
+function isFirstRunStatus(status) {
+  if (typeof status !== "string" || status.trim() === "") return true;
+  return status === "Not_Started";
+}
+
+function shouldBypassOwnerConfirmation(checkpoint, validationRecord) {
+  if (!PREVIEW_ENTRY_POINT_IDS.has(checkpoint?.checkpoint_id)) return false;
+  if (!isRootCheckpoint(checkpoint)) return false;
+  if (!isFirstRunStatus(checkpoint?.status)) return false;
+  if (!validationRecord || validationRecord.validation_status !== "Pending_User_Input") {
+    return false;
+  }
+  const missingRefs = Array.isArray(validationRecord.missing_answer_refs)
+    ? validationRecord.missing_answer_refs
+    : [];
+  return missingRefs.length === 0;
+}
+
 function deriveBlocker(checkpoint, validationRecord, checkpointsById, createdAt) {
   const {
     checkpoint_id,
@@ -214,6 +240,10 @@ function deriveBlocker(checkpoint, validationRecord, checkpointsById, createdAt)
     validationRecord !== undefined &&
     validationRecord.validation_status === "Pending_User_Input"
   ) {
+    if (shouldBypassOwnerConfirmation(checkpoint, validationRecord)) {
+      // Root checkpoints on their first pipeline run may preview before confirmation.
+      return null;
+    }
     const missingRefs = validationRecord.missing_answer_refs ?? [];
     const missing = missingRefs.slice(0, 3).join(", ");
 

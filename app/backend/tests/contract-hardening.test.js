@@ -91,6 +91,10 @@ async function trackedSave(runtimeState) {
   return saveRuntimeState(runtimeState);
 }
 
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
@@ -1214,5 +1218,94 @@ describe("POST /api/pipeline/run — discovery_answers fallback from persisted s
     // Confirm no regression: runtime_state is a non-null plain object
     const rs = res.body.runtime_state;
     assert.ok(rs !== null && typeof rs === "object" && !Array.isArray(rs));
+  });
+
+  test("T5: payload with discovery_answers.answers overrides persisted answers per key", async () => {
+    const project_id = makeProjectId("da_override_t5");
+    _createdProjectIds.add(project_id);
+
+    const selectRes = await postJson("/api/pipeline/industry/select", {
+      project_id,
+      industry_id: "manufacturing",
+    });
+    assert.strictEqual(selectRes.status, 200);
+    assert.strictEqual(selectRes.body.ok, true);
+
+    const submittedAnswers = {
+      "BM-01": "Services only",
+      "TA-04": "Override owner",
+    };
+
+    const runRes = await postJson("/api/pipeline/run", {
+      project_identity: { project_id },
+      discovery_answers: {
+        framework_version: "1.0",
+        answers: submittedAnswers,
+      },
+    });
+
+    assert.strictEqual(runRes.status, 200, `Expected 200, got ${runRes.status}: ${JSON.stringify(runRes.body)}`);
+    assert.strictEqual(runRes.body.ok, true);
+
+    const merged =
+      runRes.body?.runtime_state?.discovery_answers?.answers ?? null;
+    assert.ok(isPlainObject(merged), "merged answers must be a plain object");
+    assert.strictEqual(merged["BM-01"], "Services only");
+    assert.strictEqual(merged["MF-01"], "Yes", "persisted manufacturing answer must be preserved");
+    assert.strictEqual(merged["TA-04"], "Override owner");
+  });
+});
+
+describe("POST /api/pipeline/run — persisted target_context handling", () => {
+  test("T6: persisted target_context is used when request omits target_context", async () => {
+    const state = makeBaseRuntimeState("target_ctx_fallback_t6");
+    state.target_context = {
+      ...state.target_context,
+      deployment_type: "odoosh",
+      odoosh_branch_target: "feature-123",
+    };
+    await trackedSave(state);
+
+    const res = await postJson("/api/pipeline/run", {
+      project_identity: { project_id: state.project_identity.project_id },
+      discovery_answers: state.discovery_answers,
+    });
+
+    assert.strictEqual(res.status, 200, `Expected 200, got ${res.status}: ${JSON.stringify(res.body)}`);
+    assert.strictEqual(res.body.ok, true);
+    const targetContext = res.body.runtime_state?.target_context ?? null;
+    assert.ok(isPlainObject(targetContext), "target_context must be present");
+    assert.strictEqual(targetContext.deployment_type, "odoosh");
+    assert.strictEqual(targetContext.odoosh_branch_target, "feature-123");
+  });
+
+  test("T7: explicit target_context overrides persisted target_context", async () => {
+    const state = makeBaseRuntimeState("target_ctx_override_t7");
+    state.target_context = {
+      ...state.target_context,
+      deployment_type: "odoosh",
+      odoosh_branch_target: "feature-main",
+    };
+    await trackedSave(state);
+
+    const overrideContext = {
+      odoo_version: "19",
+      edition: "enterprise",
+      deployment_type: "on_premise",
+      primary_country: "ZA",
+    };
+
+    const res = await postJson("/api/pipeline/run", {
+      project_identity: { project_id: state.project_identity.project_id },
+      discovery_answers: state.discovery_answers,
+      target_context: overrideContext,
+    });
+
+    assert.strictEqual(res.status, 200, `Expected 200, got ${res.status}: ${JSON.stringify(res.body)}`);
+    assert.strictEqual(res.body.ok, true);
+    const targetContext = res.body.runtime_state?.target_context ?? null;
+    assert.ok(isPlainObject(targetContext), "target_context must be present");
+    assert.strictEqual(targetContext.deployment_type, "on_premise");
+    assert.strictEqual(targetContext.odoosh_branch_target ?? null, null, "submitted context should replace persisted branch");
   });
 });

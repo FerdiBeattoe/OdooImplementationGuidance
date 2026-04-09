@@ -495,6 +495,8 @@ export async function ensureProjectLeadMembership(supabaseClient, user, projectI
 }
 
 async function assertProjectMember(supabaseClient, userId, projectId, res) {
+  if (!supabase) return true; // dev mode  no membership check
+
   const member = await getProjectMemberForUser(supabaseClient, userId, projectId);
   if (!member) {
     sendJson(res, 403, { error: "Insufficient permissions" });
@@ -505,6 +507,8 @@ async function assertProjectMember(supabaseClient, userId, projectId, res) {
 }
 
 async function assertProjectLead(supabaseClient, userId, projectId, res) {
+  if (!supabase) return true; // dev mode  no membership check
+
   const member = await getProjectMemberForUser(supabaseClient, userId, projectId);
   if (!member || member.role !== "project_lead") {
     sendJson(res, 403, { error: "Insufficient permissions" });

@@ -141,12 +141,27 @@ function isAnswered(answers, questionId) {
 
 /**
  * Returns the numeric answer, or NaN if missing / non-numeric.
+ * Normalizes common range-string answers (e.g. "> 10", "1-10", "< 5")
+ * to representative numeric values at read time without mutating the
+ * stored answer.
  */
 function getNumericAnswer(answers, questionId) {
   const answer = getAnswer(answers, questionId);
   if (answer === undefined || answer === null) return NaN;
   const n = Number(answer);
-  return n;
+  if (!isNaN(n)) return n;
+  // Normalize range strings to representative numbers
+  if (typeof answer === "string") {
+    const trimmed = answer.trim();
+    if (trimmed === "> 50") return 51;
+    if (trimmed === "> 10") return 11;
+    if (trimmed === "1-10") return 5;
+    if (trimmed === "< 5") return 4;
+    // Try parseInt as a last resort for other numeric strings
+    const parsed = parseInt(trimmed, 10);
+    if (!isNaN(parsed)) return parsed;
+  }
+  return NaN;
 }
 
 // ---------------------------------------------------------------------------

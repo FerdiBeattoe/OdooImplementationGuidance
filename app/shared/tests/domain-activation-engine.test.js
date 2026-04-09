@@ -1193,3 +1193,52 @@ describe("sales domain activates on natural-language RM-01 string answers", () =
   });
 });
 
+// ---------------------------------------------------------------------------
+// BM-05 string normalization (Gap #6)
+// ---------------------------------------------------------------------------
+
+describe("BM-05 string answers normalized to numeric at read time", () => {
+  test('BM-05="> 10" activates hr domain', () => {
+    const da = minimalAnswers();
+    da.answers["BM-05"] = "> 10";
+    da.answers["RM-02"] = "Yes";
+    const result = computeActivatedDomains(da);
+    const hr = getDomainRecord(result, DOMAIN_IDS.HR);
+    assert.strictEqual(hr.activated, true, 'BM-05="> 10" must normalize to 11 and activate HR');
+    assert.ok(hr.activation_question_refs.includes("BM-05"));
+  });
+
+  test('BM-05="> 50" activates documents domain', () => {
+    const da = minimalAnswers();
+    da.answers["BM-05"] = "> 50";
+    da.answers["MF-05"] = "No";
+    da.answers["TA-03"] = ["None — standard module approvals are sufficient"];
+    const result = computeActivatedDomains(da);
+    const doc = getDomainRecord(result, DOMAIN_IDS.DOCUMENTS);
+    assert.strictEqual(doc.activated, true, 'BM-05="> 50" must normalize to 51 and activate documents');
+  });
+
+  test('BM-05="1-10" does not activate HR (normalizes to 5, not > 10)', () => {
+    const da = minimalAnswers();
+    da.answers["BM-05"] = "1-10";
+    const result = computeActivatedDomains(da);
+    const hr = getDomainRecord(result, DOMAIN_IDS.HR);
+    assert.strictEqual(hr.activated, false);
+  });
+
+  test('BM-05="< 5" does not activate HR (normalizes to 4)', () => {
+    const da = minimalAnswers();
+    da.answers["BM-05"] = "< 5";
+    const result = computeActivatedDomains(da);
+    const hr = getDomainRecord(result, DOMAIN_IDS.HR);
+    assert.strictEqual(hr.activated, false);
+  });
+
+  test("BM-05 numeric value still works", () => {
+    const da = minimalAnswers();
+    da.answers["BM-05"] = 15;
+    const result = computeActivatedDomains(da);
+    const hr = getDomainRecord(result, DOMAIN_IDS.HR);
+    assert.strictEqual(hr.activated, true);
+  });
+});

@@ -1142,7 +1142,28 @@ async function handlePipelineRun(req, res) {
   }
 
   const result = runPipelineService(payload);
-  return sendJson(res, result.ok ? 200 : 400, result);
+  if (!result.ok) {
+    return sendJson(res, 400, result);
+  }
+
+  const runtimeState = result.runtime_state;
+  const resultProjectId =
+    runtimeState?.project_identity?.project_id &&
+    typeof runtimeState.project_identity.project_id === "string"
+      ? runtimeState.project_identity.project_id.trim()
+      : "";
+
+  if (resultProjectId) {
+    const saveResult = await saveRuntimeState(runtimeState);
+    if (!saveResult.ok) {
+      return sendJson(res, 400, {
+        ok: false,
+        error: saveResult.error || "Failed to persist runtime state.",
+      });
+    }
+  }
+
+  return sendJson(res, 200, result);
 }
 
 function mergeDiscoveryAnswersPayload(persistedDiscovery, submittedDiscovery) {

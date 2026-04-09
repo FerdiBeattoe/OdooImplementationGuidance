@@ -20,7 +20,7 @@ import { describe, test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { request as httpRequest } from "node:http";
 import path from "node:path";
-import { rm } from "node:fs/promises";
+import { rm, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { createAppServer } from "../server.js";
@@ -93,6 +93,14 @@ async function cleanupTestFiles() {
       // Ignore cleanup errors
     }
   }
+}
+
+async function readPersistedRuntimeEnvelope(projectId) {
+  const storeDir = path.resolve(__dirname, "..", "data", "runtime-states");
+  const safe = projectId.replace(/[^a-zA-Z0-9\-_]/g, "_");
+  const filePath = path.join(storeDir, `${safe}.json`);
+  const raw = await readFile(filePath, "utf8");
+  return JSON.parse(raw);
 }
 
 async function trackedSave(runtimeState) {
@@ -195,6 +203,22 @@ function makeDiscoveryAnswers() {
     confirmed_by: null,
     confirmed_at: null,
   };
+}
+
+function buildSeventyAnswerSet() {
+  const answers = {
+    "BM-04": true,
+    "PI-02": "All orders",
+    "RM-01": "Products and services",
+    "TS-01": "Enable advanced timesheets",
+  };
+
+  for (let i = 1; i <= 66; i++) {
+    const key = `QA-${String(i).padStart(3, "0")}`;
+    answers[key] = `value-${i}`;
+  }
+
+  return answers;
 }
 
 // Run the pipeline via the real HTTP route and track the project_id for cleanup
@@ -833,20 +857,24 @@ describe("missing record lifecycle requests fail truthfully", () => {
     assert.ok(!("runtime_state" in res.body));
   });
 
-  test("load after run but without save returns HTTP 404", async () => {
-    // Run pipeline but deliberately skip save — load must fail truthfully
-    const projectId = makeProjectId("run_no_save_then_load");
-    _createdProjectIds.add(projectId); // register for cleanup even though nothing saved
-    await postJson("/api/pipeline/run", {
+  test("load after run succeeds because the route now persists automatically", async () => {
+    const projectId = makeProjectId("run_persists_then_load");
+    _createdProjectIds.add(projectId);
+
+    const runRes = await postJson("/api/pipeline/run", {
       project_identity: makeProjectIdentity(projectId),
       discovery_answers: makeDiscoveryAnswers(),
     });
+    assert.strictEqual(runRes.status, 200);
+    assert.strictEqual(runRes.body.ok, true);
 
-    // Do not save — load must return 404
     const loadRes = await postJson("/api/pipeline/state/load", { project_id: projectId });
-    assert.strictEqual(loadRes.status, 404);
-    assert.strictEqual(loadRes.body.ok, false);
-    assert.strictEqual(loadRes.body.not_found, true);
+    assert.strictEqual(loadRes.status, 200);
+    assert.strictEqual(loadRes.body.ok, true);
+    assert.ok(
+      loadRes.body.runtime_state?.discovery_answers,
+      "load response must include runtime_state when run auto-persists"
+    );
   });
 });
 
@@ -966,5 +994,77 @@ describe("deterministic repeated lifecycle runs", () => {
     const resume2 = await postJson("/api/pipeline/state/resume", { project_id: projectId });
 
     assert.deepStrictEqual(resume1.body.runtime_state, resume2.body.runtime_state);
+  });
+});
+
+describe("pipeline run persistence after merged discovery answers", () => {
+  test("persisted runtime state retains all submitted answers", async () => {
+    const projectId = makeProjectId("persist_answers");
+    _createdProjectIds.add(projectId);
+
+    const deleteBeforeRun = path.resolve(
+      __dirname,
+      "..",
+      "data",
+      "runtime-states",
+      `${projectId.replace(/[^a-zA-Z0-9\-_]/g, "_")}.json`
+    );
+    try {
+      await rm(deleteBeforeRun, { force: true });
+    } catch {
+      // Ignore delete errors
+    }
+
+    const industryRes = await postJson("/api/pipeline/industry/select", {
+      project_id: projectId,
+      industry_id: "manufacturing",
+    });
+    assert.strictEqual(industryRes.status, 200, "industry select must succeed");
+    assert.strictEqual(industryRes.body.ok, true);
+
+    const submittedAnswers = buildSeventyAnswerSet();
+    const discoveryAnswers = {
+      ...makeDiscoveryAnswers(),
+      answers: submittedAnswers,
+    };
+
+    const runRes = await postJson("/api/pipeline/run", {
+      project_identity: makeProjectIdentity(projectId),
+      discovery_answers: discoveryAnswers,
+    });
+    assert.strictEqual(runRes.status, 200, "pipeline run must succeed");
+    assert.strictEqual(runRes.body.ok, true, "pipeline run response ok");
+
+    const persistedEnvelope = await readPersistedRuntimeEnvelope(projectId);
+    const savedAnswers =
+      persistedEnvelope?.runtime_state?.discovery_answers?.answers ?? {};
+
+    assert.strictEqual(savedAnswers["BM-04"], true, "BM-04 answer persisted");
+    assert.strictEqual(
+      savedAnswers["PI-02"],
+      "All orders",
+      "PI-02 answer persisted"
+    );
+    assert.strictEqual(
+      savedAnswers["RM-01"],
+      "Products and services",
+      "RM-01 answer persisted"
+    );
+    assert.strictEqual(
+      savedAnswers["TS-01"],
+      "Enable advanced timesheets",
+      "TS-01 answer persisted"
+    );
+    assert.strictEqual(
+      savedAnswers["QA-050"],
+      "value-50",
+      "filler QA-050 answer persisted"
+    );
+
+    const savedCount = Object.keys(savedAnswers).length;
+    assert.ok(
+      savedCount >= Object.keys(submittedAnswers).length,
+      `Expected at least ${Object.keys(submittedAnswers).length} answers, got ${savedCount}`
+    );
   });
 });

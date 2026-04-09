@@ -1741,6 +1741,31 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     const dbArea = el("div", { style: "margin-bottom: 14px;" });
     const userInput = el("input", { type: "email", className: "ee-input", placeholder: "admin@mycompany.com" });
     const passInput = el("input", { type: "password", className: "ee-input", placeholder: "Password" });
+    let passwordVisible = false;
+    const togglePasswordButton = el("button", {
+      type: "button",
+      style: "position: absolute; top: 50%; right: 12px; transform: translateY(-50%); background: none; border: none; padding: 0; cursor: pointer; color: #92400e; display: flex; align-items: center; justify-content: center;",
+    });
+    const passwordFieldWrapper = el("div", { style: "position: relative;" }, [
+      passInput,
+      togglePasswordButton,
+    ]);
+
+    function syncPasswordToggle() {
+      passInput.type = passwordVisible ? "text" : "password";
+      togglePasswordButton.setAttribute("aria-label", passwordVisible ? "Hide password" : "Show password");
+      while (togglePasswordButton.firstChild) togglePasswordButton.removeChild(togglePasswordButton.firstChild);
+      const icon = lucideIcon(passwordVisible ? "eye-off" : "eye", 18);
+      icon.style.color = "#92400e";
+      togglePasswordButton.append(icon);
+    }
+
+    togglePasswordButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      passwordVisible = !passwordVisible;
+      syncPasswordToggle();
+    });
+    syncPasswordToggle();
 
     function renderDbArea() {
       // Clear and re-render dbArea based on dbUiState
@@ -1925,7 +1950,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       el("div", { style: fieldStyle }, [el("label", { style: labelStyle }, "Username (email)"), userInput]),
       el("div", { style: fieldStyle }, [
         el("label", { style: labelStyle }, "Password"),
-        passInput,
+        passwordFieldWrapper,
         el("p", { style: "font-size: 11px; color: #94a3b8; margin-top: 4px;" }, "Your password is used to connect and is never stored."),
       ]),
     );

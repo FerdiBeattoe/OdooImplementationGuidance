@@ -8,16 +8,17 @@ import { lucideIcon } from "../lib/icons.js";
 import {
   pushCompanySetup, pushUsersAccess, pushChartOfAccounts, pushSalesConfig,
   pushCrmConfig, pushInventoryConfig, pushAccountingConfig, pushPurchaseConfig,
-  pushManufacturingConfig, pushHrPayroll, pushWebsiteEcommerce, pushPosConfig,
+  pushManufacturingConfig, pushMasterDataConfig, pushPlmConfig, pushQualityConfig,
+  pushHrPayroll, pushWebsiteEcommerce, pushPosConfig,
   pushFieldServiceConfig, pushMaintenanceConfig, pushRentalConfig, pushRepairsConfig,
   pushSubscriptionsConfig, pushTimesheetsConfig, pushExpensesConfig, pushAttendanceConfig,
   pushRecruitmentConfig, pushFleetConfig, pushEventsConfig, pushEmailMarketingConfig,
   pushHelpdeskConfig, pushPayrollConfig, pushPlanningConfig, pushKnowledgeConfig,
-  pushDiscussConfig, pushOutgoingMailConfig, pushIncomingMailConfig,
+  pushDocumentsConfig, pushSignConfig, pushDiscussConfig, pushOutgoingMailConfig, pushIncomingMailConfig,
   pushAccountingReportsConfig, pushSpreadsheetConfig, pushLiveChatConfig,
   pushWhatsappConfig, pushSmsMarketingConfig, pushCalendarConfig, pushIotConfig,
   pushStudioConfig, pushConsolidationConfig, pushLunchConfig, pushReferralsConfig,
-  pushLoyaltyConfig, pushAppraisalsConfig, pushVoipConfig
+  pushLoyaltyConfig, pushAppraisalsConfig, pushVoipConfig, pushApprovalsConfig
 } from "./wizard-push.js";
 import {
   setWizardData, getWizardData, addActivityLog,
@@ -3616,6 +3617,371 @@ export function renderVoipWizard({ onComplete, onCancel }) {
   return shell.render();
 }
 
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// WIZARD 46 â€” Master Data
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export function renderMasterDataWizard({ onComplete, onCancel }) {
+  const existing = getWizardData("masterDataConfig") || {};
+  const shell = createWizardShell({
+    title: "Master Data",
+    subtitle: "Configure foundational products, contacts, and prices",
+    icon: "database",
+    onComplete: (data) => {
+      const merged = Object.assign({}, ...data);
+      setWizardData("masterDataConfig", merged);
+      addActivityLog({ action: "Master Data completed", module: "Master Data" });
+      onComplete(merged);
+    },
+    onCancel,
+    steps: [
+      {
+        label: "Products",
+        render: ({ data, setData }) => {
+          const categories = formInput({ placeholder: "Finished Goods, Components, Services", value: data.productCategories || existing.productCategories || "" });
+          const units = formInput({ placeholder: "Units, Dozens, Kilograms", value: data.unitMeasures || existing.unitMeasures || "" });
+          categories.addEventListener("input", e => setData({ productCategories: e.target.value }));
+          units.addEventListener("input", e => setData({ unitMeasures: e.target.value }));
+          return formSection("Products", [
+            formField("Product Categories", categories, "Comma-separated list"),
+            formField("Units of Measure", units, "Comma-separated list")
+          ]);
+        }
+      },
+      {
+        label: "Contacts",
+        render: ({ data, setData }) => {
+          const contactType = formSelect(["Customer", "Vendor", "Both"], data.contactType || existing.contactType || "");
+          const addressFormat = formInput({ placeholder: "Company, Street, City, Country", value: data.addressFormat || existing.addressFormat || "" });
+          contactType.addEventListener("change", e => setData({ contactType: e.target.value }));
+          addressFormat.addEventListener("input", e => setData({ addressFormat: e.target.value }));
+          return formSection("Contacts", [
+            formField("Default Contact Type", contactType),
+            formField("Address Format", addressFormat, "Describe the format to apply (line order, separators, etc.)")
+          ]);
+        }
+      },
+      {
+        label: "Pricelists",
+        render: ({ data, setData }) => {
+          const multiplePricelists = formSelect(["Yes", "No"], data.multiplePricelists || existing.multiplePricelists || "");
+          const currencyNotes = formInput({ placeholder: "Retail: USD / Wholesale: EUR", value: data.pricelistCurrencies || existing.pricelistCurrencies || "" });
+          multiplePricelists.addEventListener("change", e => setData({ multiplePricelists: e.target.value }));
+          currencyNotes.addEventListener("input", e => setData({ pricelistCurrencies: e.target.value }));
+          return formSection("Pricelists", [
+            formField("Multiple Pricelists", multiplePricelists),
+            formField("Currency per Pricelist", currencyNotes)
+          ]);
+        }
+      },
+      {
+        label: "Review",
+        render: ({ allData }) => pushSummaryStep("Master Data", Object.assign({}, ...allData), pushMasterDataConfig)
+      }
+    ]
+  });
+  return shell.render();
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// WIZARD 47 â€” Product Lifecycle (PLM)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export function renderPlmWizard({ onComplete, onCancel }) {
+  const existing = getWizardData("plmConfig") || {};
+  const shell = createWizardShell({
+    title: "PLM",
+    subtitle: "Capture ECO types, approvals, and BOM linkage",
+    icon: "git-branch",
+    onComplete: (data) => {
+      const merged = Object.assign({}, ...data);
+      setWizardData("plmConfig", merged);
+      addActivityLog({ action: "PLM completed", module: "PLM" });
+      onComplete(merged);
+    },
+    onCancel,
+    steps: [
+      {
+        label: "ECO Types",
+        render: ({ data, setData }) => {
+          const types = formInput({ placeholder: "Prototype, Production, Fast Track", value: data.ecoTypes || existing.ecoTypes || "" });
+          const approvalLevels = formInput({ placeholder: "Level 1 â€” Engineering Manager", value: data.approvalLevels || existing.approvalLevels || "" });
+          types.addEventListener("input", e => setData({ ecoTypes: e.target.value }));
+          approvalLevels.addEventListener("input", e => setData({ approvalLevels: e.target.value }));
+          return formSection("Engineering Change Order Types", [
+            formField("Type Names", types, "Comma-separated list"),
+            formField("Approval Levels", approvalLevels)
+          ]);
+        }
+      },
+      {
+        label: "Approval",
+        render: ({ data, setData }) => {
+          const approverRoles = formInput({ placeholder: "Engineering Lead, Quality Manager", value: data.approverRoles || existing.approverRoles || "" });
+          const approvalStages = formInput({ placeholder: "Draft â†’ Technical Review â†’ Approved", value: data.approvalStages || existing.approvalStages || "" });
+          approverRoles.addEventListener("input", e => setData({ approverRoles: e.target.value }));
+          approvalStages.addEventListener("input", e => setData({ approvalStages: e.target.value }));
+          return formSection("Approval Flow", [
+            formField("Approver Roles", approverRoles),
+            formField("Approval Stages", approvalStages)
+          ]);
+        }
+      },
+      {
+        label: "BOM Integration",
+        render: ({ data, setData }) => {
+          const linkToBom = formSelect(["Yes", "No"], data.linkToBom || existing.linkToBom || "");
+          linkToBom.addEventListener("change", e => setData({ linkToBom: e.target.value }));
+          return formSection("Bill of Materials Integration", [
+            formField("Link ECOs to BOMs", linkToBom)
+          ]);
+        }
+      },
+      {
+        label: "Review",
+        render: ({ allData }) => pushSummaryStep("PLM", Object.assign({}, ...allData), pushPlmConfig)
+      }
+    ]
+  });
+  return shell.render();
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// WIZARD 48 â€” Quality
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export function renderQualityWizard({ onComplete, onCancel }) {
+  const existing = getWizardData("qualityConfig") || {};
+  const shell = createWizardShell({
+    title: "Quality",
+    subtitle: "Define control points, failure reasons, and alerts",
+    icon: "shield-check",
+    onComplete: (data) => {
+      const merged = Object.assign({}, ...data);
+      setWizardData("qualityConfig", merged);
+      addActivityLog({ action: "Quality completed", module: "Quality" });
+      onComplete(merged);
+    },
+    onCancel,
+    steps: [
+      {
+        label: "Control Points",
+        render: ({ data, setData }) => {
+          const controlPoints = formInput({ placeholder: "Receipt - Supplier A, Manufacturing - Line 1", value: data.controlPoints || existing.controlPoints || "" });
+          controlPoints.addEventListener("input", e => setData({ controlPoints: e.target.value }));
+          return formSection("Quality Control Points", [
+            formField("Control Points", controlPoints, "List by process: Receipt, Manufacturing, Delivery, etc.")
+          ]);
+        }
+      },
+      {
+        label: "Failure Reasons",
+        render: ({ data, setData }) => {
+          const failureReasons = formInput({ placeholder: "Damaged Packaging, Missing Parts", value: data.failureReasons || existing.failureReasons || "" });
+          failureReasons.addEventListener("input", e => setData({ failureReasons: e.target.value }));
+          return formSection("Failure Reasons", [
+            formField("Reason Categories", failureReasons, "Comma-separated list")
+          ]);
+        }
+      },
+      {
+        label: "Alerts",
+        render: ({ data, setData }) => {
+          const alertWorkflow = formInput({ placeholder: "Notify Quality Team, escalate after 24h", value: data.alertWorkflow || existing.alertWorkflow || "" });
+          const responsibleTeam = formInput({ placeholder: "Quality Team / Manufacturing Lead", value: data.responsibleTeam || existing.responsibleTeam || "" });
+          alertWorkflow.addEventListener("input", e => setData({ alertWorkflow: e.target.value }));
+          responsibleTeam.addEventListener("input", e => setData({ responsibleTeam: e.target.value }));
+          return formSection("Alerts", [
+            formField("Alert Workflow", alertWorkflow),
+            formField("Responsible Team", responsibleTeam)
+          ]);
+        }
+      },
+      {
+        label: "Review",
+        render: ({ allData }) => pushSummaryStep("Quality", Object.assign({}, ...allData), pushQualityConfig)
+      }
+    ]
+  });
+  return shell.render();
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// WIZARD 49 â€” Documents
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export function renderDocumentsWizard({ onComplete, onCancel }) {
+  const existing = getWizardData("documentsConfig") || {};
+  const shell = createWizardShell({
+    title: "Documents",
+    subtitle: "Plan workspace structure, access, and tags",
+    icon: "folder",
+    onComplete: (data) => {
+      const merged = Object.assign({}, ...data);
+      setWizardData("documentsConfig", merged);
+      addActivityLog({ action: "Documents completed", module: "Documents" });
+      onComplete(merged);
+    },
+    onCancel,
+    steps: [
+      {
+        label: "Workspace Structure",
+        render: ({ data, setData }) => {
+          const workspaces = formInput({ placeholder: "HR, Finance, Legal, Operations", value: data.workspaceNames || existing.workspaceNames || "" });
+          workspaces.addEventListener("input", e => setData({ workspaceNames: e.target.value }));
+          return formSection("Workspace Structure", [
+            formField("Top-Level Workspace Names", workspaces, "Comma-separated list")
+          ]);
+        }
+      },
+      {
+        label: "Access Rights",
+        render: ({ data, setData }) => {
+          const access = formSelect(["All Employees", "Internal Users", "Managers Only"], data.workspaceAccess || existing.workspaceAccess || "");
+          const accessNotes = formInput({ placeholder: "HR: Managers only, Finance: Controllers", value: data.accessNotes || existing.accessNotes || "" });
+          access.addEventListener("change", e => setData({ workspaceAccess: e.target.value }));
+          accessNotes.addEventListener("input", e => setData({ accessNotes: e.target.value }));
+          return formSection("Access Rights", [
+            formField("Default Access Level", access),
+            formField("Access Notes", accessNotes, "Describe workspace-specific exceptions")
+          ]);
+        }
+      },
+      {
+        label: "Tags",
+        render: ({ data, setData }) => {
+          const tags = formInput({ placeholder: "Contracts, Policies, Templates", value: data.documentTags || existing.documentTags || "" });
+          tags.addEventListener("input", e => setData({ documentTags: e.target.value }));
+          return formSection("Document Tags", [
+            formField("Tag Categories", tags, "Comma-separated list")
+          ]);
+        }
+      },
+      {
+        label: "Review",
+        render: ({ allData }) => pushSummaryStep("Documents", Object.assign({}, ...allData), pushDocumentsConfig)
+      }
+    ]
+  });
+  return shell.render();
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// WIZARD 50 â€” Sign
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export function renderSignWizard({ onComplete, onCancel }) {
+  const existing = getWizardData("signConfig") || {};
+  const shell = createWizardShell({
+    title: "Sign",
+    subtitle: "Define templates, signatories, and reminders",
+    icon: "pen-tool",
+    onComplete: (data) => {
+      const merged = Object.assign({}, ...data);
+      setWizardData("signConfig", merged);
+      addActivityLog({ action: "Sign completed", module: "Sign" });
+      onComplete(merged);
+    },
+    onCancel,
+    steps: [
+      {
+        label: "Templates",
+        render: ({ data, setData }) => {
+          const templates = formInput({ placeholder: "NDA, Employment Contract", value: data.templateNames || existing.templateNames || "" });
+          const documentTypes = formInput({ placeholder: "Sales, HR, Operations", value: data.documentTypes || existing.documentTypes || "" });
+          templates.addEventListener("input", e => setData({ templateNames: e.target.value }));
+          documentTypes.addEventListener("input", e => setData({ documentTypes: e.target.value }));
+          return formSection("Templates", [
+            formField("Template Names", templates, "Comma-separated list"),
+            formField("Document Types", documentTypes)
+          ]);
+        }
+      },
+      {
+        label: "Signatories",
+        render: ({ data, setData }) => {
+          const roles = formInput({ placeholder: "Customer, Employee, Manager, Witness", value: data.signatoryRoles || existing.signatoryRoles || "" });
+          roles.addEventListener("input", e => setData({ signatoryRoles: e.target.value }));
+          return formSection("Signatories", [
+            formField("Signatory Roles", roles)
+          ]);
+        }
+      },
+      {
+        label: "Reminders",
+        render: ({ data, setData }) => {
+          const reminderDays = formInput({ type: "number", placeholder: "3", value: data.reminderDays || existing.reminderDays || "" });
+          reminderDays.addEventListener("input", e => setData({ reminderDays: e.target.value }));
+          return formSection("Reminders", [
+            formCheckbox("Send Automatic Reminders", data.automaticReminder ?? existing.automaticReminder ?? true, v => setData({ automaticReminder: v })),
+            formField("Reminder Days Before Expiry", reminderDays)
+          ]);
+        }
+      },
+      {
+        label: "Review",
+        render: ({ allData }) => pushSummaryStep("Sign", Object.assign({}, ...allData), pushSignConfig)
+      }
+    ]
+  });
+  return shell.render();
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// WIZARD 51 â€” Approvals
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export function renderApprovalsWizard({ onComplete, onCancel }) {
+  const existing = getWizardData("approvalsConfig") || {};
+  const shell = createWizardShell({
+    title: "Approvals",
+    subtitle: "Map approval types, approvers, and escalation",
+    icon: "check-circle",
+    onComplete: (data) => {
+      const merged = Object.assign({}, ...data);
+      setWizardData("approvalsConfig", merged);
+      addActivityLog({ action: "Approvals completed", module: "Approvals" });
+      onComplete(merged);
+    },
+    onCancel,
+    steps: [
+      {
+        label: "Approval Types",
+        render: ({ data, setData }) => {
+          const approvalTypes = formInput({ placeholder: "Purchase, HR, IT, Travel", value: data.approvalTypes || existing.approvalTypes || "" });
+          approvalTypes.addEventListener("input", e => setData({ approvalTypes: e.target.value }));
+          return formSection("Approval Types", [
+            formField("Approval Categories", approvalTypes, "Comma-separated list")
+          ]);
+        }
+      },
+      {
+        label: "Approvers",
+        render: ({ data, setData }) => {
+          const approverAssignments = formInput({ placeholder: "Purchase â€” CFO, HR â€” People Director", value: data.approverAssignments || existing.approverAssignments || "" });
+          approverAssignments.addEventListener("input", e => setData({ approverAssignments: e.target.value }));
+          return formSection("Approvers", [
+            formField("Approver Assignment per Category", approverAssignments)
+          ]);
+        }
+      },
+      {
+        label: "Escalation",
+        render: ({ data, setData }) => {
+          const escalationPolicy = formInput({ placeholder: "Escalate to COO after 3 days", value: data.escalationPolicy || existing.escalationPolicy || "" });
+          const maxDays = formInput({ type: "number", placeholder: "3", value: data.maximumWaitDays || existing.maximumWaitDays || "" });
+          escalationPolicy.addEventListener("input", e => setData({ escalationPolicy: e.target.value }));
+          maxDays.addEventListener("input", e => setData({ maximumWaitDays: e.target.value }));
+          return formSection("Escalation", [
+            formField("Escalation Policy", escalationPolicy),
+            formField("Maximum Wait Days", maxDays)
+          ]);
+        }
+      },
+      {
+        label: "Review",
+        render: ({ allData }) => pushSummaryStep("Approvals", Object.assign({}, ...allData), pushApprovalsConfig)
+      }
+    ]
+  });
+  return shell.render();
+}
+
+
 // ─────────────────────────────────────────────────────────────
 // Module Setup View — router for all wizards
 // ─────────────────────────────────────────────────────────────
@@ -3624,6 +3990,7 @@ export function renderModuleSetupView({ wizardId, onComplete, onCancel, onNaviga
 
   const WIZARD_MAP = {
     "company-setup":           () => renderCompanySetupWizard(props),
+    "master-data-setup":       () => renderMasterDataWizard(props),
     "users-access":            () => renderUsersAccessWizard(props),
     "chart-of-accounts":       () => renderChartOfAccountsWizard(props),
     "sales-setup":             () => renderSalesConfigWizard(props),
@@ -3632,6 +3999,8 @@ export function renderModuleSetupView({ wizardId, onComplete, onCancel, onNaviga
     "accounting-setup":        () => renderAccountingConfigWizard(props),
     "purchase-setup":          () => renderPurchaseConfigWizard(props),
     "manufacturing-setup":     () => renderManufacturingConfigWizard(props),
+    "plm-setup":               () => renderPlmWizard(props),
+    "quality-setup":           () => renderQualityWizard(props),
     "hr-setup":                () => renderHrPayrollWizard(props),
     "website-setup":           () => renderWebsiteEcommerceWizard(props),
     "pos-setup":               () => renderPosWizard(props),
@@ -3650,7 +4019,10 @@ export function renderModuleSetupView({ wizardId, onComplete, onCancel, onNaviga
     "helpdesk-setup":          () => renderHelpdeskWizard(props),
     "payroll-setup":           () => renderPayrollWizard(props),
     "planning-setup":          () => renderPlanningWizard(props),
+    "approvals-setup":         () => renderApprovalsWizard(props),
     "knowledge-setup":         () => renderKnowledgeWizard(props),
+    "documents-setup":         () => renderDocumentsWizard(props),
+    "sign-setup":              () => renderSignWizard(props),
     "discuss-setup":           () => renderDiscussWizard(props),
     "outgoing-mail-setup":     () => renderOutgoingMailWizard(props),
     "incoming-mail-setup":     () => renderIncomingMailWizard(props),
@@ -3680,6 +4052,7 @@ export function renderModuleSetupView({ wizardId, onComplete, onCancel, onNaviga
 function renderWizardLauncher(onNavigate) {
   const WIZARD_CARDS = [
     { id: "company-setup",           label: "Company Setup",       icon: "building-2",       desc: "Name, address, currency, fiscal year" },
+    { id: "master-data-setup",       label: "Master Data",         icon: "database",         desc: "Products, contacts, pricelists" },
     { id: "users-access",            label: "Users & Access",      icon: "users",            desc: "Add team members and roles" },
     { id: "chart-of-accounts",       label: "Chart of Accounts",   icon: "landmark",         desc: "Load standard accounts for your country" },
     { id: "sales-setup",             label: "Sales",               icon: "tag",              desc: "Teams, pricelists, payment terms" },
@@ -3688,6 +4061,8 @@ function renderWizardLauncher(onNavigate) {
     { id: "accounting-setup",        label: "Accounting",          icon: "calculator",       desc: "Banks, journals, taxes" },
     { id: "purchase-setup",          label: "Purchase",            icon: "shopping-cart",    desc: "PO rules, approval workflows" },
     { id: "manufacturing-setup",     label: "Manufacturing",       icon: "factory",          desc: "Workcenters, BOM routes" },
+    { id: "plm-setup",               label: "PLM",                 icon: "git-branch",       desc: "ECO types, approvals, BOM link" },
+    { id: "quality-setup",           label: "Quality",             icon: "shield-check",     desc: "Control points, failures, alerts" },
     { id: "hr-setup",                label: "HR & Payroll",        icon: "user-check",       desc: "Departments, positions, payroll" },
     { id: "website-setup",           label: "Website",             icon: "globe",            desc: "Online store, payment providers" },
     { id: "pos-setup",               label: "Point of Sale",       icon: "monitor",          desc: "POS terminals, payment methods" },
@@ -3706,7 +4081,10 @@ function renderWizardLauncher(onNavigate) {
     { id: "helpdesk-setup",          label: "Helpdesk",            icon: "headphones",       desc: "Teams, SLA, support channels" },
     { id: "payroll-setup",           label: "Payroll",             icon: "dollar-sign",      desc: "Structures, salary rules, accounting" },
     { id: "planning-setup",          label: "Planning",            icon: "layout",           desc: "Roles, shifts, publication" },
+    { id: "approvals-setup",         label: "Approvals",           icon: "check-circle",     desc: "Types, approvers, escalation" },
     { id: "knowledge-setup",         label: "Knowledge",           icon: "book-open",        desc: "Articles, access, templates" },
+    { id: "documents-setup",         label: "Documents",           icon: "folder",           desc: "Workspaces, access, tags" },
+    { id: "sign-setup",              label: "Sign",                icon: "pen-tool",         desc: "Templates, signatories, reminders" },
     { id: "discuss-setup",           label: "Discuss",             icon: "message-circle",   desc: "Channels, policies, notifications" },
     { id: "outgoing-mail-setup",     label: "Outgoing Mail",       icon: "send",             desc: "SMTP server, sender identity" },
     { id: "incoming-mail-setup",     label: "Incoming Mail",       icon: "inbox",            desc: "IMAP/POP3, catchall, aliases" },
@@ -3763,6 +4141,7 @@ function renderWizardLauncher(onNavigate) {
 function toCamelKey(id) {
   const map = {
     "company-setup": "companySetup",
+    "master-data-setup": "masterDataConfig",
     "users-access": "usersAccess",
     "chart-of-accounts": "chartOfAccounts",
     "sales-setup": "salesConfig",
@@ -3771,6 +4150,8 @@ function toCamelKey(id) {
     "accounting-setup": "accountingConfig",
     "purchase-setup": "purchaseConfig",
     "manufacturing-setup": "manufacturingConfig",
+    "plm-setup": "plmConfig",
+    "quality-setup": "qualityConfig",
     "hr-setup": "hrPayrollConfig",
     "website-setup": "websiteEcommerce",
     "pos-setup": "posConfig",
@@ -3789,7 +4170,10 @@ function toCamelKey(id) {
     "helpdesk-setup": "helpdeskConfig",
     "payroll-setup": "payrollConfig",
     "planning-setup": "planningConfig",
+    "approvals-setup": "approvalsConfig",
     "knowledge-setup": "knowledgeConfig",
+    "documents-setup": "documentsConfig",
+    "sign-setup": "signConfig",
     "discuss-setup": "discussConfig",
     "outgoing-mail-setup": "outgoingMailConfig",
     "incoming-mail-setup": "incomingMailConfig",

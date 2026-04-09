@@ -1125,9 +1125,124 @@ export async function pushVoipConfig(data) {
   return pushResult(results);
 }
 
+// â”€â”€ WIZARD 46: Master Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export async function pushMasterDataConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("master-data-setup", data);
+    if (isConnected()) {
+      const governed = await governedPush("master-data", "Master Data");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Master Data", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Master Data Configuration completed", module: "Master Data", status: results.every(r => r.success) ? "success" : "partial" });
+  } catch (err) {
+    results.push({ field: "Master Data", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// â”€â”€ WIZARD 47: PLM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export async function pushPlmConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("plm-setup", data);
+    if (isConnected()) {
+      const governed = await governedPush("plm", "PLM");
+      results.push(...governed);
+    } else {
+      results.push({ field: "PLM", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "PLM Configuration completed", module: "PLM", status: results.every(r => r.success) ? "success" : "partial" });
+  } catch (err) {
+    results.push({ field: "PLM", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// â”€â”€ WIZARD 48: Quality â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export async function pushQualityConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("quality-setup", data);
+    if (isConnected()) {
+      const governed = await governedPush("quality", "Quality");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Quality", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Quality Configuration completed", module: "Quality", status: results.every(r => r.success) ? "success" : "partial" });
+  } catch (err) {
+    results.push({ field: "Quality", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// â”€â”€ WIZARD 49: Documents â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export async function pushDocumentsConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("documents-setup", data);
+    if (isConnected()) {
+      const governed = await governedPush("documents", "Documents");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Documents", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Documents Configuration completed", module: "Documents", status: results.every(r => r.success) ? "success" : "partial" });
+  } catch (err) {
+    results.push({ field: "Documents", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// â”€â”€ WIZARD 50: Sign â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export async function pushSignConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("sign-setup", data);
+    if (isConnected()) {
+      const governed = await governedPush("sign", "Sign");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Sign", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Sign Configuration completed", module: "Sign", status: results.every(r => r.success) ? "success" : "partial" });
+  } catch (err) {
+    results.push({ field: "Sign", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
+// â”€â”€ WIZARD 51: Approvals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export async function pushApprovalsConfig(data) {
+  const results = [];
+  try {
+    setWizardCapture("approvals-setup", data);
+    if (isConnected()) {
+      const governed = await governedPush("approvals", "Approvals");
+      results.push(...governed);
+    } else {
+      results.push({ field: "Approvals", success: true, detail: "Configuration captured." });
+    }
+    await persistActiveProject();
+    addActivityLog({ action: "Approvals Configuration completed", module: "Approvals", status: results.every(r => r.success) ? "success" : "partial" });
+  } catch (err) {
+    results.push({ field: "Approvals", success: false, detail: err.message });
+  }
+  return pushResult(results);
+}
+
 // ── PUSH MAP ─────────────────────────────────────────────────────
 export const WIZARD_PUSH_MAP = {
   "company-setup": pushCompanySetup,
+  "master-data-setup": pushMasterDataConfig,
   "users-access": pushUsersAccess,
   "chart-of-accounts": pushChartOfAccounts,
   "sales-setup": pushSalesConfig,
@@ -1136,6 +1251,8 @@ export const WIZARD_PUSH_MAP = {
   "accounting-setup": pushAccountingConfig,
   "purchase-setup": pushPurchaseConfig,
   "manufacturing-setup": pushManufacturingConfig,
+  "plm-setup": pushPlmConfig,
+  "quality-setup": pushQualityConfig,
   "hr-setup": pushHrPayroll,
   "website-setup": pushWebsiteEcommerce,
   "pos-setup": pushPosConfig,
@@ -1154,7 +1271,10 @@ export const WIZARD_PUSH_MAP = {
   "helpdesk-setup": pushHelpdeskConfig,
   "payroll-setup": pushPayrollConfig,
   "planning-setup": pushPlanningConfig,
+  "approvals-setup": pushApprovalsConfig,
   "knowledge-setup": pushKnowledgeConfig,
+  "documents-setup": pushDocumentsConfig,
+  "sign-setup": pushSignConfig,
   "discuss-setup": pushDiscussConfig,
   "outgoing-mail-setup": pushOutgoingMailConfig,
   "incoming-mail-setup": pushIncomingMailConfig,

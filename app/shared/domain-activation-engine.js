@@ -266,6 +266,7 @@ function activateSales(answers) {
   //   RM-01 includes "Online store"
   //   RM-01 includes "Recurring subscriptions or contracts"
   //   RM-01 includes "Rental of assets or equipment"
+  //   RM-01 is a string containing "product" or "service" (natural-language match)
   //   PI-05 = "Yes"
   // PI-05=Yes activates Sales independently of RM-01 being answered.
   //
@@ -276,6 +277,9 @@ function activateSales(answers) {
   const triggeringRefs = [];
 
   if (isAnswered(answers, "RM-01")) {
+    const rm01 = getAnswer(answers, "RM-01");
+
+    // Standard array-based matching
     if (multiSelectIncludes(answers, "RM-01", "One-time product sales")) triggeringRefs.push("RM-01");
     if (multiSelectIncludes(answers, "RM-01", "One-time service delivery")) {
       if (!triggeringRefs.includes("RM-01")) triggeringRefs.push("RM-01");
@@ -288,6 +292,15 @@ function activateSales(answers) {
     }
     if (multiSelectIncludes(answers, "RM-01", "Rental of assets or equipment")) {
       if (!triggeringRefs.includes("RM-01")) triggeringRefs.push("RM-01");
+    }
+
+    // Natural-language string matching: activate when RM-01 is a plain string
+    // containing "product" or "service" (case-insensitive)
+    if (!triggeringRefs.includes("RM-01") && typeof rm01 === "string") {
+      const lower = rm01.toLowerCase();
+      if (lower.includes("product") || lower.includes("service")) {
+        triggeringRefs.push("RM-01");
+      }
     }
   }
 

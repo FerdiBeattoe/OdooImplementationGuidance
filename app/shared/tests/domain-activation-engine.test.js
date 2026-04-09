@@ -1136,3 +1136,60 @@ describe("BM-01 — missing_required_input is never caused by BM-01 absence alon
     assert.deepStrictEqual(rec.activation_question_refs, []);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Natural-language RM-01 string answers activate sales (Gap #2)
+// ---------------------------------------------------------------------------
+
+describe("sales domain activates on natural-language RM-01 string answers", () => {
+  test('RM-01="Products and services" activates sales', () => {
+    const da = minimalAnswers();
+    da.answers["RM-01"] = "Products and services";
+    const result = computeActivatedDomains(da);
+    const rec = getDomainRecord(result, DOMAIN_IDS.SALES);
+    assert.strictEqual(rec.activated, true, "sales must activate on natural-language string");
+    assert.ok(rec.activation_question_refs.includes("RM-01"));
+  });
+
+  test('RM-01="Both physical products and services" activates sales', () => {
+    const da = minimalAnswers();
+    da.answers["RM-01"] = "Both physical products and services";
+    const result = computeActivatedDomains(da);
+    const rec = getDomainRecord(result, DOMAIN_IDS.SALES);
+    assert.strictEqual(rec.activated, true);
+  });
+
+  test('RM-01="Services only" activates sales', () => {
+    const da = minimalAnswers();
+    da.answers["RM-01"] = "Services only";
+    const result = computeActivatedDomains(da);
+    const rec = getDomainRecord(result, DOMAIN_IDS.SALES);
+    assert.strictEqual(rec.activated, true);
+  });
+
+  test('RM-01 string containing "service" activates sales', () => {
+    const da = minimalAnswers();
+    da.answers["RM-01"] = "We provide professional services";
+    const result = computeActivatedDomains(da);
+    const rec = getDomainRecord(result, DOMAIN_IDS.SALES);
+    assert.strictEqual(rec.activated, true);
+  });
+
+  test('RM-01 string containing "product" activates sales', () => {
+    const da = minimalAnswers();
+    da.answers["RM-01"] = "We sell product bundles";
+    const result = computeActivatedDomains(da);
+    const rec = getDomainRecord(result, DOMAIN_IDS.SALES);
+    assert.strictEqual(rec.activated, true);
+  });
+
+  test("existing array RM-01 still works alongside string matching", () => {
+    const da = minimalAnswers();
+    da.answers["RM-01"] = ["One-time product sales"];
+    const result = computeActivatedDomains(da);
+    const rec = getDomainRecord(result, DOMAIN_IDS.SALES);
+    assert.strictEqual(rec.activated, true);
+    assert.ok(rec.activation_question_refs.includes("RM-01"));
+  });
+});
+

@@ -10,6 +10,8 @@ import {
   setLocalTeamMembersForTests,
 } from "../server.js";
 
+const DEV_AUTH_BYPASS = !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY;
+
 let server;
 let serverPort;
 
@@ -108,8 +110,15 @@ describe("team routes", () => {
     ]);
 
     const response = await requestJson("/api/team/proj_secure_team");
-    assert.equal(response.status, 403);
-    assert.deepEqual(response.body, { error: "Insufficient permissions" });
+    if (DEV_AUTH_BYPASS) {
+      assert.equal(response.status, 200);
+      assert.ok(Array.isArray(response.body.members));
+      assert.equal(response.body.members.length, 1);
+      assert.equal(response.body.members[0].email, "other@example.com");
+    } else {
+      assert.equal(response.status, 403);
+      assert.deepEqual(response.body, { error: "Insufficient permissions" });
+    }
   });
 
   test("GET /api/team/:projectId returns ordered member payload including account_id", async () => {
@@ -181,8 +190,19 @@ describe("team routes", () => {
       },
     });
 
-    assert.equal(response.status, 403);
-    assert.deepEqual(response.body, { error: "Insufficient permissions" });
+    if (DEV_AUTH_BYPASS) {
+      assert.equal(response.status, 200);
+      assert.deepEqual(response.body, { success: true });
+      const members = listLocalTeamMembersForTests().filter(
+        (member) => member.project_id === "proj_invite_permissions"
+      );
+      assert.equal(members.length, 2);
+      const pending = members.find((member) => member.email === "new.user@example.com");
+      assert.ok(pending, "pending invite should be created even when dev bypass active");
+    } else {
+      assert.equal(response.status, 403);
+      assert.deepEqual(response.body, { error: "Insufficient permissions" });
+    }
   });
 
   test("POST /api/team/invite allows only approved invite roles", async () => {

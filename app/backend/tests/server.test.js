@@ -443,3 +443,20 @@ describe("URL normaliser — additional edge cases", () => {
   });
 
 });
+
+// ---------------------------------------------------------------------------
+// SECTION 9: Dev-mode membership bypass
+// ---------------------------------------------------------------------------
+
+describe("POST /api/odoo/scan — dev-mode membership bypass", () => {
+
+  test("dev stub user can call scan without team membership", async () => {
+    const result = await post("/api/odoo/scan", {
+      projectId: "proj_devscan",
+    });
+    assert.equal(result.statusCode, 400, "missing database validation triggered");
+    assert.notEqual(result.statusCode, 403, "must not block dev mode with membership check");
+    assert.equal(result.body.error, "database is required.");
+  });
+
+});

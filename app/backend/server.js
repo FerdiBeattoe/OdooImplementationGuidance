@@ -31,6 +31,7 @@ import {
 } from "./engine.js";
 import { OdooClient, OdooRpcError } from "./odoo-client.js";
 import { runPipelineService } from "./pipeline-service.js";
+import { generateGoLiveReport } from "./go-live-report-service.js";
 import { assembleFoundationOperationDefinitions } from "../shared/foundation-operation-definitions.js";
 import { assembleUsersRolesOperationDefinitions } from "../shared/users-roles-operation-definitions.js";
 import { assembleAccountingOperationDefinitions } from "../shared/accounting-operation-definitions.js";
@@ -56,7 +57,18 @@ import { assembleRentalOperationDefinitions } from "../shared/rental-operation-d
 import { assembleFieldServiceOperationDefinitions } from "../shared/field-service-operation-definitions.js";
 import { applyGoverned } from "./governed-odoo-apply-service.js";
 import * as authService from "./auth-service.js";
-import writeAudit from "./audit-service.js";
+import writeAudit, {
+  logPipelineRunStarted,
+  logDiscoveryAnswersSubmitted,
+  logDomainActivated,
+  logCheckpointConfirmed,
+  logGovernedWriteAttempted,
+  logGovernedWriteSucceeded,
+  logGovernedWriteFailed,
+  logWizardCompleted,
+  logScanCompleted,
+  logGoLiveReached,
+} from "./audit-service.js";
 import { validateInviteCode, consumeInviteCode } from "./invite-service.js";
 import supabase from "./supabase-client.js";
 import {
@@ -112,6 +124,9 @@ const AUDIT_ACTIONS = new Set([
   "checkpoint_confirmed",
   "checkpoint_executed",
   "pipeline_run",
+  "pipeline_run_started",
+  "discovery_answers_submitted",
+  "domain_activated",
   "member_invited",
   "member_removed",
   "member_role_changed",
@@ -119,6 +134,12 @@ const AUDIT_ACTIONS = new Set([
   "commit_cancelled",
   "report_generated",
   "module_installed",
+  "governed_write_attempted",
+  "governed_write_succeeded",
+  "governed_write_failed",
+  "wizard_completed",
+  "scan_completed",
+  "go_live_reached",
 ]);
 const localTeamMembers = new Map();
 
@@ -384,6 +405,40 @@ async function getProjectMemberByEmail(supabaseClient, projectId, email) {
   return member ? buildTeamMemberResponse(member) : null;
 }
 
+async function buildAuditContext(user, projectIdInput) {
+  const normalizedProjectId =
+    typeof projectIdInput === "string" && projectIdInput.trim() !== ""
+      ? projectIdInput.trim()
+      : null;
+
+  const actorName =
+    (typeof user?.user_metadata?.full_name === "string" && user.user_metadata.full_name.trim()) ||
+    user?.email ||
+    "";
+
+  const context = {
+    projectId: normalizedProjectId,
+    accountId: user?.id || null,
+    actorName,
+    actorRole: user ? "project_member" : "system",
+  };
+
+  if (!user || !normalizedProjectId || !supabase || !user.id) {
+    return context;
+  }
+
+  try {
+    const member = await getProjectMemberForUser(supabase, user.id, normalizedProjectId);
+    if (member?.role) {
+      context.actorRole = member.role;
+    }
+  } catch {
+    context.actorRole = "project_member";
+  }
+
+  return context;
+}
+
 async function createProjectTeamMember(supabaseClient, record) {
   const normalized = normalizeTeamMemberRecord(record);
   if (!normalized) {
@@ -606,13 +661,13 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
       if (pathname === "/api/pipeline/run" && req.method === "POST") {
         const _authUser = await jwtMiddleware(req, res);
         if (!_authUser) return;
-        return await handlePipelineRun(req, res);
+        return await handlePipelineRun(req, res, _authUser);
       }
 
       if (pathname === "/api/pipeline/apply" && req.method === "POST") {
         const _authUser = await jwtMiddleware(req, res);
         if (!_authUser) return;
-        return await handlePipelineApply(req, res);
+        return await handlePipelineApply(req, res, _authUser);
       }
 
       if (pathname === "/api/pipeline/state/load" && req.method === "POST") {
@@ -636,7 +691,7 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
       if (pathname === "/api/pipeline/wizard-capture" && req.method === "POST") {
         const _authUser = await jwtMiddleware(req, res);
         if (!_authUser) return;
-        return await handlePipelineWizardCapture(req, res);
+        return await handlePipelineWizardCapture(req, res, _authUser);
       }
 
       if (pathname === "/api/pipeline/connection/register" && req.method === "POST") {
@@ -648,13 +703,13 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
       if (pathname === "/api/pipeline/checkpoint/confirm" && req.method === "POST") {
         const _authUser = await jwtMiddleware(req, res);
         if (!_authUser) return;
-        return await handleCheckpointConfirm(req, res);
+        return await handleCheckpointConfirm(req, res, _authUser);
       }
 
       if (pathname === "/api/pipeline/industry/select" && req.method === "POST") {
         const _authUser = await jwtMiddleware(req, res);
         if (!_authUser) return;
-        return await handleIndustrySelect(req, res);
+        return await handleIndustrySelect(req, res, _authUser);
       }
 
       if (pathname === "/api/licence/pricing" && req.method === "GET") {
@@ -757,6 +812,12 @@ export function createAppServer({ rateLimitMaxRequests = RATE_LIMIT_MAX_REQUESTS
         const authUser = await jwtMiddleware(req, res);
         if (!authUser) return;
         return await handleAuditWrite(req, res, authUser);
+      }
+
+      if (pathname === "/api/report/go-live" && req.method === "GET") {
+        const authUser = await jwtMiddleware(req, res);
+        if (!authUser) return;
+        return await handleGoLiveReport(req, res, authUser);
       }
 
       if (pathname === "/data/checkpoint-guidance.json" && req.method === "GET") {
@@ -1009,12 +1070,16 @@ async function handleDomainPreview(req, res) {
   }
 }
 
-async function handlePipelineRun(req, res) {
+async function handlePipelineRun(req, res, user) {
   let payload;
   try {
     payload = await readJsonBody(req);
   } catch (parseError) {
     return sendJson(res, 400, { ok: false, error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
+  }
+
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+    return sendJson(res, 400, { ok: false, error: "Request body must be a non-null object." });
   }
 
   const projectIdDirect =
@@ -1027,6 +1092,7 @@ async function handlePipelineRun(req, res) {
       ? payload.project_identity.project_id.trim()
       : null;
   const projectId = projectIdDirect || projectIdFromIdentity || null;
+  let auditContext = await buildAuditContext(user, projectId);
 
   let persistedState = null;
   let persistedLoadAttempted = false;
@@ -1104,6 +1170,19 @@ async function handlePipelineRun(req, res) {
       ? persistedState.wizard_captures
       : null);
 
+  const answerCount = countDiscoveryAnswers(payload.discovery_answers);
+  let submittedActivatedDomains = [];
+  if (answerCount > 0) {
+    try {
+      const activationPreview = computeActivatedDomains(payload.discovery_answers);
+      submittedActivatedDomains = activationPreview.domains
+        .filter((record) => record?.activated === true)
+        .map((record) => record.domain_id);
+    } catch {
+      submittedActivatedDomains = [];
+    }
+  }
+
   // Inject all domain operation definitions when not caller-supplied.
   // Unblocks Gate 6 in governed-preview-engine for all Executable checkpoints
   // across all governed domain assemblers currently registered on the server.
@@ -1141,6 +1220,20 @@ async function handlePipelineRun(req, res) {
     };
   }
 
+  const domainCount = Object.keys(payload.operation_definitions || {}).length;
+  if (answerCount > 0) {
+    logDiscoveryAnswersSubmitted(supabase, auditContext, {
+      answerCount,
+      domainsActivated: submittedActivatedDomains,
+    });
+  }
+  logPipelineRunStarted(supabase, auditContext, {
+    domainCount,
+    answerCount,
+  });
+
+  const previousActivatedDomains = getActivatedDomainIdSet(persistedState?.activated_domains);
+
   const result = runPipelineService(payload);
   if (!result.ok) {
     return sendJson(res, 400, result);
@@ -1153,12 +1246,27 @@ async function handlePipelineRun(req, res) {
       ? runtimeState.project_identity.project_id.trim()
       : "";
 
+  const finalProjectId = resultProjectId || auditContext.projectId;
+  if (finalProjectId && finalProjectId !== auditContext.projectId) {
+    auditContext = await buildAuditContext(user, finalProjectId);
+  }
+
   if (resultProjectId) {
     const saveResult = await saveRuntimeState(runtimeState);
     if (!saveResult.ok) {
       return sendJson(res, 400, {
         ok: false,
         error: saveResult.error || "Failed to persist runtime state.",
+      });
+    }
+  }
+
+  const activatedRecords = getActivatedDomainRecordsList(runtimeState?.activated_domains);
+  for (const record of activatedRecords) {
+    if (!previousActivatedDomains.has(record.domain_id)) {
+      logDomainActivated(supabase, auditContext, {
+        domainId: record.domain_id,
+        triggerQuestion: resolveActivationTrigger(record),
       });
     }
   }
@@ -1261,7 +1369,7 @@ async function handlePipelineStateSave(req, res) {
   return sendJson(res, result.ok ? 200 : 400, result);
 }
 
-async function handlePipelineWizardCapture(req, res) {
+async function handlePipelineWizardCapture(req, res, user) {
   let payload;
   try {
     payload = await readJsonBody(req);
@@ -1282,6 +1390,7 @@ async function handlePipelineWizardCapture(req, res) {
   if (!projectId) {
     return sendJson(res, 400, { error: "project_id must be a non-empty string." });
   }
+  const auditContext = await buildAuditContext(user, projectId);
 
   const domainId = normalizeDomainId(payload.domain);
   if (!domainId) {
@@ -1327,6 +1436,11 @@ async function handlePipelineWizardCapture(req, res) {
     });
   }
 
+  logWizardCompleted(supabase, auditContext, {
+    domainId,
+    wizardDataKeys: Object.keys(wizardData),
+  });
+
   const domainOperationDefinitions = assembler(
     runtimeStateForSave.target_context ?? null,
     runtimeStateForSave.discovery_answers ?? null,
@@ -1369,7 +1483,7 @@ async function handlePipelineConnectionRegister(req, res) {
   }
 }
 
-async function handleCheckpointConfirm(req, res) {
+async function handleCheckpointConfirm(req, res, user) {
   let payload;
   try {
     payload = await readJsonBody(req);
@@ -1391,6 +1505,7 @@ async function handleCheckpointConfirm(req, res) {
   if (!project_id) {
     return sendJson(res, 400, { ok: false, error: "project_id is required." });
   }
+  const auditContext = await buildAuditContext(user, project_id);
   if (!checkpoint_id) {
     return sendJson(res, 400, { ok: false, error: "checkpoint_id is required." });
   }
@@ -1465,10 +1580,26 @@ async function handleCheckpointConfirm(req, res) {
     confirmed_at: new Date().toISOString(),
   };
 
+  const goLiveEvaluation = markGoLiveIfEligible(runtime_state);
+
   // ── Persist updated state ───────────────────────────────────────────────────
   const saveResult = await saveRuntimeState(runtime_state);
   if (!saveResult.ok) {
     return sendJson(res, 400, { ok: false, error: saveResult.error });
+  }
+
+  logCheckpointConfirmed(supabase, auditContext, {
+    checkpointId: checkpoint_id,
+    confirmedBy: actor,
+    evidence,
+    domain: checkpointRecord.domain,
+  });
+
+  if (goLiveEvaluation.reached) {
+    logGoLiveReached(supabase, auditContext, {
+      totalCheckpoints: goLiveEvaluation.total,
+      durationDays: goLiveEvaluation.durationDays,
+    });
   }
 
   return sendJson(res, 200, { ok: true, runtime_state });
@@ -1748,7 +1879,7 @@ function buildDeferredQuestions(industryId, populatedAnswers) {
   return ALL_GATE_QUESTIONS.filter((q) => !(q in populatedAnswers));
 }
 
-async function handleIndustrySelect(req, res) {
+async function handleIndustrySelect(req, res, user) {
   // ── Parse request body ─────────────────────────────────────────────────────
   let payload;
   try {
@@ -1769,6 +1900,7 @@ async function handleIndustrySelect(req, res) {
   if (!project_id) {
     return sendJson(res, 400, { ok: false, error: "project_id is required and must be a non-empty string." });
   }
+  const auditContext = await buildAuditContext(user, project_id);
 
   // ── Validate industry_id ───────────────────────────────────────────────────
   const industry_id = typeof payload.industry_id === "string" ? payload.industry_id.trim() : null;
@@ -1793,6 +1925,9 @@ async function handleIndustrySelect(req, res) {
 
   // ── Load existing runtime state (if any) ──────────────────────────────────
   const loadResult = await loadRuntimeState(project_id);
+  const previouslyActivated = loadResult.ok
+    ? getActivatedDomainIdSet(loadResult.runtime_state?.activated_domains)
+    : new Set();
 
   let runtime_state;
 
@@ -1857,18 +1992,32 @@ async function handleIndustrySelect(req, res) {
     };
   }
 
-  // ── Persist updated runtime state ──────────────────────────────────────────
-  const saveResult = await saveRuntimeState(runtime_state);
-  if (!saveResult.ok) {
-    return sendJson(res, 400, { ok: false, error: saveResult.error });
-  }
-
   // ── Compute activated_domains_preview ─────────────────────────────────────
   const finalAnswers = runtime_state.discovery_answers;
   const activatedDomainsResult = computeActivatedDomains(finalAnswers);
   const activated_domains_preview = activatedDomainsResult.domains
     .filter((d) => d.activated === true)
     .map((d) => d.domain_id);
+
+  const runtimeStateForSave = {
+    ...runtime_state,
+    activated_domains: activatedDomainsResult,
+  };
+
+  const saveResult = await saveRuntimeState(runtimeStateForSave);
+  if (!saveResult.ok) {
+    return sendJson(res, 400, { ok: false, error: saveResult.error });
+  }
+
+  const activatedRecords = getActivatedDomainRecordsList(activatedDomainsResult);
+  for (const record of activatedRecords) {
+    if (!previouslyActivated.has(record.domain_id)) {
+      logDomainActivated(supabase, auditContext, {
+        domainId: record.domain_id,
+        triggerQuestion: resolveActivationTrigger(record),
+      });
+    }
+  }
 
   // ── Return response ────────────────────────────────────────────────────────
   return sendJson(res, 200, {
@@ -1882,7 +2031,7 @@ async function handleIndustrySelect(req, res) {
   });
 }
 
-async function handlePipelineApply(req, res) {
+async function handlePipelineApply(req, res, user) {
   let payload;
   try {
     payload = await readJsonBody(req);
@@ -1909,12 +2058,40 @@ async function handlePipelineApply(req, res) {
     return sendJson(res, 402, licenceRequiredResponse);
   }
 
+  const projectIdForAudit =
+    typeof payload.connection_context?.project_id === "string"
+      ? payload.connection_context.project_id.trim()
+      : null;
+  const auditContext = await buildAuditContext(user, projectIdForAudit);
+
+  logGovernedWriteAttempted(supabase, auditContext, {
+    checkpointId: approvalCheckpointId,
+    approvalId: payload.approval_id,
+    operation: payload.operation,
+  });
+
   const result = await applyGoverned({
     approval_id: payload.approval_id,
     runtime_state: payload.runtime_state,
     operation: payload.operation,
     connection_context: payload.connection_context,
   });
+
+  if (result.ok) {
+    logGovernedWriteSucceeded(supabase, auditContext, {
+      checkpointId: approvalCheckpointId,
+      approvalId: payload.approval_id,
+      executionInputs: result.execution_source_inputs || null,
+      executedAt: result.executed_at || null,
+    });
+  } else {
+    logGovernedWriteFailed(supabase, auditContext, {
+      checkpointId: approvalCheckpointId,
+      approvalId: payload.approval_id,
+      error: result.error || "Apply failed",
+      executionInputs: result.execution_source_inputs || null,
+    });
+  }
 
   return sendJson(res, result.ok ? 200 : 400, result);
 }
@@ -2298,6 +2475,7 @@ async function handleOdooScan(req, res, user) {
 
   const memberAllowed = await assertProjectMember(supabase, user?.id, projectId, res);
   if (!memberAllowed) return;
+  const auditContext = await buildAuditContext(user, projectId);
 
   const database = trimString(payload.database);
   const username = trimString(payload.username);
@@ -2357,7 +2535,7 @@ async function handleOdooScan(req, res, user) {
     }
 
     const company = companyRows[0] || {};
-    return sendJson(res, 200, {
+    const responsePayload = {
       company: {
         name: String(company.name || ""),
         currency: formatOdooRelation(company.currency_id),
@@ -2373,7 +2551,13 @@ async function handleOdooScan(req, res, user) {
       })),
       data_counts: dataCounts,
       scanned_at: new Date().toISOString(),
+    };
+
+    logScanCompleted(supabase, auditContext, {
+      modulesDetected: installedModules.map((module) => String(module.name || "")),
     });
+
+    return sendJson(res, 200, responsePayload);
   } catch (error) {
     return sendOdooScanError(res, error);
   }
@@ -3043,6 +3227,106 @@ async function handleAuditExport(req, res, pathname, user) {
   }
 }
 
+async function handleGoLiveReport(req, res, user) {
+  const projectId = parseGoLiveReportProjectId(req.url);
+  if (!projectId) {
+    return sendJson(res, 400, { error: "project_id query parameter is required." });
+  }
+
+  const memberAllowed = await assertProjectMember(supabase, user.id, projectId, res);
+  if (!memberAllowed) {
+    return;
+  }
+
+  let auditEntries = [];
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("audit_log")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        throw new Error(error.message || "Failed to load audit log for report.");
+      }
+
+      auditEntries = Array.isArray(data) ? data : [];
+    } catch (loadError) {
+      return sendJson(res, 400, {
+        error: loadError instanceof Error
+          ? loadError.message
+          : "Failed to load audit log for report.",
+      });
+    }
+  }
+
+  const runtimeStateResult = await loadRuntimeState(projectId);
+  if (!runtimeStateResult.ok) {
+    const status = runtimeStateResult.not_found ? 404 : 400;
+    return sendJson(res, status, {
+      error: runtimeStateResult.error || "Failed to load runtime state.",
+    });
+  }
+
+  const runtimeState = runtimeStateResult.runtime_state || {};
+  const reportResult = await generateGoLiveReport({
+    projectId,
+    auditEntries,
+    runtimeState,
+  });
+
+  if (!reportResult.ok) {
+    return sendJson(res, 500, {
+      error: reportResult.error || "Failed to generate go-live report.",
+    });
+  }
+
+  res.writeHead(200, {
+    "Content-Type": reportResult.contentType,
+    "Content-Disposition": `attachment; filename="${reportResult.filename}"`,
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "Access-Control-Allow-Origin": CORS_ORIGIN,
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, Stripe-Signature",
+  });
+  res.end(reportResult.buffer);
+
+  const auditContext = await buildAuditContext(user, projectId);
+  if (auditContext.projectId) {
+    writeAudit(supabase, {
+      projectId: auditContext.projectId,
+      accountId: auditContext.accountId,
+      actorName: auditContext.actorName,
+      actorRole: auditContext.actorRole,
+      action: "report_generated",
+      details: {
+        report_type: "go_live",
+        filename: reportResult.filename,
+        audit_entry_count: auditEntries.length,
+        generated_at: new Date().toISOString(),
+      },
+    });
+  }
+}
+
+function parseGoLiveReportProjectId(urlValue = "") {
+  try {
+    const parsed = new URL(urlValue || "", "http://localhost");
+    const value = parsed.searchParams.get("project_id");
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed) {
+        return trimmed;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function generateProjectId() {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let id = 'proj_';
@@ -3334,6 +3618,122 @@ function sendJson(res, status, payload) {
     "Access-Control-Allow-Headers": "Content-Type, Authorization, Stripe-Signature"
   });
   res.end(JSON.stringify(payload, null, 2));
+}
+
+function countDiscoveryAnswers(discoveryAnswers) {
+  if (!isPlainObject(discoveryAnswers)) {
+    return 0;
+  }
+  const answers = isPlainObject(discoveryAnswers.answers) ? discoveryAnswers.answers : {};
+  return Object.keys(answers).length;
+}
+
+function getActivatedDomainRecordsList(activatedDomains) {
+  if (!activatedDomains || !Array.isArray(activatedDomains.domains)) {
+    return [];
+  }
+  return activatedDomains.domains.filter(
+    (record) => record && record.activated === true && typeof record.domain_id === "string"
+  );
+}
+
+function getActivatedDomainIdSet(activatedDomains) {
+  const set = new Set();
+  for (const record of getActivatedDomainRecordsList(activatedDomains)) {
+    set.add(record.domain_id);
+  }
+  return set;
+}
+
+function resolveActivationTrigger(record) {
+  const refs = Array.isArray(record?.activation_question_refs)
+    ? record.activation_question_refs
+    : [];
+  if (refs.length > 0) {
+    return refs[0];
+  }
+  return "unconditional";
+}
+
+function collectCheckpointRecords(runtimeState) {
+  if (!runtimeState) {
+    return [];
+  }
+  if (Array.isArray(runtimeState.checkpoints)) {
+    return runtimeState.checkpoints.filter(Boolean);
+  }
+  if (
+    runtimeState.checkpoints &&
+    Array.isArray(runtimeState.checkpoints.records)
+  ) {
+    return runtimeState.checkpoints.records.filter(Boolean);
+  }
+  return [];
+}
+
+function areAllCheckpointsComplete(runtimeState) {
+  const records = collectCheckpointRecords(runtimeState);
+  if (records.length === 0) {
+    return { complete: false, total: 0 };
+  }
+  const statuses = isPlainObject(runtimeState?.checkpoint_statuses)
+    ? runtimeState.checkpoint_statuses
+    : {};
+  for (const checkpoint of records) {
+    const id = checkpoint?.checkpoint_id;
+    if (!id || statuses[id] !== "Complete") {
+      return { complete: false, total: records.length };
+    }
+  }
+  return { complete: true, total: records.length };
+}
+
+function computeGoLiveDurationDays(runtimeState) {
+  const confirmations = runtimeState?.checkpoint_confirmations;
+  const timestamps = [];
+  if (isPlainObject(confirmations)) {
+    for (const entry of Object.values(confirmations)) {
+      const confirmedAt = typeof entry?.confirmed_at === "string" ? entry.confirmed_at : null;
+      const parsed = confirmedAt ? Date.parse(confirmedAt) : NaN;
+      if (!Number.isNaN(parsed)) {
+        timestamps.push(parsed);
+      }
+    }
+  }
+
+  if (
+    typeof runtimeState?.industry_selection?.selected_at === "string" &&
+    !Number.isNaN(Date.parse(runtimeState.industry_selection.selected_at))
+  ) {
+    timestamps.push(Date.parse(runtimeState.industry_selection.selected_at));
+  }
+
+  if (
+    typeof runtimeState?.orchestrated_at === "string" &&
+    !Number.isNaN(Date.parse(runtimeState.orchestrated_at))
+  ) {
+    timestamps.push(Date.parse(runtimeState.orchestrated_at));
+  }
+
+  const start = timestamps.length > 0 ? Math.min(...timestamps) : Date.now();
+  const durationMs = Math.max(0, Date.now() - start);
+  return Math.round(durationMs / (1000 * 60 * 60 * 24));
+}
+
+function markGoLiveIfEligible(runtimeState) {
+  if (!runtimeState || runtimeState.go_live_reached_at) {
+    return { reached: false };
+  }
+  const evaluation = areAllCheckpointsComplete(runtimeState);
+  if (!evaluation.complete) {
+    return { reached: false };
+  }
+  runtimeState.go_live_reached_at = new Date().toISOString();
+  return {
+    reached: true,
+    total: evaluation.total,
+    durationDays: computeGoLiveDurationDays(runtimeState),
+  };
 }
 
 function isPlainObject(value) {

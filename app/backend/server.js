@@ -973,35 +973,80 @@ async function handlePipelineRun(req, res) {
     return sendJson(res, 400, { ok: false, error: parseError instanceof Error ? parseError.message : "Invalid request payload." });
   }
 
+  const projectIdDirect =
+    typeof payload?.project_id === "string" && payload.project_id.trim() !== ""
+      ? payload.project_id.trim()
+      : null;
+  const projectIdFromIdentity =
+    typeof payload?.project_identity?.project_id === "string" &&
+    payload.project_identity.project_id.trim() !== ""
+      ? payload.project_identity.project_id.trim()
+      : null;
+  const projectId = projectIdDirect || projectIdFromIdentity || null;
+
+  let persistedState = null;
+  let persistedLoadAttempted = false;
+
+  async function loadPersistedStateIfNeeded() {
+    if (persistedLoadAttempted || !projectId) {
+      return;
+    }
+    persistedLoadAttempted = true;
+    const persistedResult = await loadRuntimeState(projectId);
+    if (persistedResult.ok) {
+      persistedState = persistedResult.runtime_state;
+    }
+  }
+
   // Fallback: if discovery_answers is absent from the payload (not present as a key),
   // attempt to load it from persisted runtime state for the project_id.
   // If neither source has discovery_answers, return 400.
-  if (
-    payload !== null &&
-    typeof payload === "object" &&
-    !Array.isArray(payload) &&
-    !Object.prototype.hasOwnProperty.call(payload, "discovery_answers")
-  ) {
-    const projectId =
-      payload.project_id ??
-      payload.project_identity?.project_id ??
-      null;
-    if (projectId) {
-      const persistedResult = await loadRuntimeState(projectId);
+  const payloadIsPlainObject = isPlainObject(payload);
+  const hasDiscoveryAnswersKey =
+    payloadIsPlainObject &&
+    Object.prototype.hasOwnProperty.call(payload, "discovery_answers");
+
+  if (!hasDiscoveryAnswersKey) {
+    if (projectId && payloadIsPlainObject) {
+      await loadPersistedStateIfNeeded();
       if (
-        persistedResult.ok &&
-        persistedResult.runtime_state &&
-        persistedResult.runtime_state.discovery_answers !== undefined
+        persistedState &&
+        persistedState.discovery_answers !== undefined
       ) {
-        payload = { ...payload, discovery_answers: persistedResult.runtime_state.discovery_answers };
+        payload = { ...payload, discovery_answers: persistedState.discovery_answers };
       }
     }
     // If still no discovery_answers after fallback attempt, return 400.
-    if (!Object.prototype.hasOwnProperty.call(payload, "discovery_answers")) {
+    const nowHasDiscoveryKey =
+      payloadIsPlainObject &&
+      Object.prototype.hasOwnProperty.call(payload, "discovery_answers");
+
+    if (payloadIsPlainObject && !nowHasDiscoveryKey) {
       return sendJson(res, 400, {
         ok: false,
         error: "discovery_answers required: not in payload and not in persisted state",
       });
+    }
+  } else if (projectId) {
+    await loadPersistedStateIfNeeded();
+  }
+
+  if (
+    persistedState &&
+    isPlainObject(payload.discovery_answers)
+  ) {
+    const mergedDiscovery = mergeDiscoveryAnswersPayload(
+      persistedState.discovery_answers,
+      payload.discovery_answers
+    );
+    if (mergedDiscovery !== payload.discovery_answers) {
+      payload = { ...payload, discovery_answers: mergedDiscovery };
+    }
+    const hasTargetContextKey =
+      payloadIsPlainObject &&
+      Object.prototype.hasOwnProperty.call(payload, "target_context");
+    if (!hasTargetContextKey && Object.prototype.hasOwnProperty.call(persistedState, "target_context")) {
+      payload = { ...payload, target_context: persistedState.target_context };
     }
   }
 
@@ -1044,6 +1089,27 @@ async function handlePipelineRun(req, res) {
 
   const result = runPipelineService(payload);
   return sendJson(res, result.ok ? 200 : 400, result);
+}
+
+function mergeDiscoveryAnswersPayload(persistedDiscovery, submittedDiscovery) {
+  if (!isPlainObject(persistedDiscovery) || !isPlainObject(submittedDiscovery)) {
+    return submittedDiscovery;
+  }
+  if (!isPlainObject(submittedDiscovery.answers)) {
+    return submittedDiscovery;
+  }
+  const persistedAnswers = isPlainObject(persistedDiscovery.answers)
+    ? persistedDiscovery.answers
+    : {};
+
+  return {
+    ...persistedDiscovery,
+    ...submittedDiscovery,
+    answers: {
+      ...persistedAnswers,
+      ...submittedDiscovery.answers,
+    },
+  };
 }
 
 async function handlePipelineStateLoad(req, res) {
@@ -2968,6 +3034,10 @@ function sendJson(res, status, payload) {
     "Access-Control-Allow-Headers": "Content-Type, Authorization, Stripe-Signature"
   });
   res.end(JSON.stringify(payload, null, 2));
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function normalizeDomainId(domainId) {

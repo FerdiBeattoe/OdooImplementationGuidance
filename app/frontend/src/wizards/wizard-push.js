@@ -36,6 +36,8 @@ import {
   addMasterDataConfiguration,
   updateMasterDataConfiguration
 } from "../state/app-store.js";
+import { pipelineStore } from "../state/pipeline-store.js";
+import { deriveInventoryWizardCapturePayload } from "./helpers/inventory-capture.js";
 
 function pushResult(items) {
   const errors = items.filter(i => !i.success);
@@ -79,6 +81,63 @@ async function governedPush(domainId, label) {
 
   results.push({ field: label, success: true, detail: "Configuration captured. Governed execution is handled through the pipeline." });
   return results;
+}
+
+async function syncInventoryWizardCaptureToPipeline(wizardData) {
+  const runtimeState = pipelineStore.getState().runtime_state;
+  const projectId = runtimeState?.project_identity?.project_id;
+  if (!projectId) {
+    return { ok: false, error: "Pipeline project_id unavailable. Run the pipeline and retry." };
+  }
+
+  const discoveryAnswers = runtimeState?.discovery_answers?.answers || {};
+  const pi03Answer = discoveryAnswers["PI-03"];
+  const capture = deriveInventoryWizardCapturePayload(wizardData, pi03Answer);
+
+  if (!capture.payload) {
+    if (capture.reason === "not_applicable") {
+      return { ok: true, detail: "PI-03 indicates single-step receipts. No governed capture recorded." };
+    }
+    const error =
+      capture.reason === "pi03_missing"
+        ? "PI-03 answer missing from runtime state. Re-run discovery to capture it."
+        : "Unable to derive reception steps from PI-03 answer.";
+    return { ok: false, error };
+  }
+
+  let response;
+  try {
+    response = await fetch("/api/pipeline/wizard-capture", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        project_id: projectId,
+        domain: "inventory",
+        wizard_data: capture.payload,
+      }),
+    });
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to reach wizard capture endpoint.",
+    };
+  }
+
+  let body;
+  try {
+    body = await response.json();
+  } catch {
+    return { ok: false, error: "Wizard capture response malformed." };
+  }
+
+  if (!response.ok || !body?.ok) {
+    return { ok: false, error: body?.error || "Wizard capture save failed." };
+  }
+
+  return {
+    ok: true,
+    detail: `Governed wizard capture recorded for ${capture.payload.reception_steps}.`,
+  };
 }
 
 // ── WIZARD 1: Company Setup ──────────────────────────────────────
@@ -273,9 +332,16 @@ export async function pushInventoryConfig(data) {
       for (const ot of data.operationTypes) {
         addInventoryConfiguration("operation-types");
         updateInventoryConfiguration("operation-types", `ot-${ot.name}`, { name: ot.name, code: ot.code });
-        results.push({ field: `Op Type: ${ot.name}`, success: true, detail: `Code: ${ot.code}` });
-      }
+      results.push({ field: `Op Type: ${ot.name}`, success: true, detail: `Code: ${ot.code}` });
     }
+    }
+
+    const captureResult = await syncInventoryWizardCaptureToPipeline(data);
+    results.push({
+      field: "Inventory wizard capture",
+      success: captureResult.ok,
+      detail: captureResult.ok ? captureResult.detail : captureResult.error,
+    });
 
     if (isConnected()) {
       const governed = await governedPush("inventory", "Inventory");

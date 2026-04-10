@@ -567,6 +567,27 @@ export async function registerPipelineConnection(projectId, credentials, fetchIm
   return { ok: true, registered_at: new Date().toISOString() };
 }
 
+/**
+ * FOR TESTS ONLY. Seeds a connection registry entry without network auth.
+ * Call _forTestOnly_clearConnection to clean up after each test.
+ * Do not call from production code.
+ *
+ * @param {string} projectId
+ * @param {{ baseUrl: string, database: string, sessionId: string, uid: number }} entry
+ */
+export function _forTestOnly_seedConnection(projectId, entry) {
+  connectionRegistry.set(projectId.trim(), { ...entry, timestamp: Date.now() });
+}
+
+/**
+ * FOR TESTS ONLY. Removes a seeded connection registry entry.
+ *
+ * @param {string} projectId
+ */
+export function _forTestOnly_clearConnection(projectId) {
+  connectionRegistry.delete(projectId.trim());
+}
+
 function safeOrigin(value) {
   try {
     return new URL(value).origin;

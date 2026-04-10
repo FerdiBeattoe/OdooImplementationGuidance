@@ -56,6 +56,7 @@ import { assembleSubscriptionsOperationDefinitions } from "../shared/subscriptio
 import { assembleRentalOperationDefinitions } from "../shared/rental-operation-definitions.js";
 import { assembleFieldServiceOperationDefinitions } from "../shared/field-service-operation-definitions.js";
 import { applyGoverned } from "./governed-odoo-apply-service.js";
+import { getClientForProject } from "./engine.js";
 import * as authService from "./auth-service.js";
 import writeAudit, {
   logPipelineRunStarted,
@@ -2578,9 +2579,6 @@ async function handleOdooInstallModule(req, res, user) {
   }
 
   const projectId = trimString(payload.projectId);
-  const database = trimString(payload.database);
-  const username = trimString(payload.username);
-  const password = typeof payload.password === "string" ? payload.password : "";
   const moduleName = trimString(payload.moduleName);
 
   if (!projectId) {
@@ -2592,18 +2590,6 @@ async function handleOdooInstallModule(req, res, user) {
     return;
   }
 
-  if (!database) {
-    return sendJson(res, 400, { error: "database is required." });
-  }
-
-  if (!username) {
-    return sendJson(res, 400, { error: "username is required." });
-  }
-
-  if (!password) {
-    return sendJson(res, 400, { error: "password is required." });
-  }
-
   if (!moduleName) {
     return sendJson(res, 400, { error: "moduleName is required." });
   }
@@ -2612,29 +2598,58 @@ async function handleOdooInstallModule(req, res, user) {
     return sendJson(res, 400, { error: "moduleName must contain only letters, numbers, and underscores." });
   }
 
+  // Attempt to use the live project session first. If no session is registered,
+  // fall back to authenticating with the credentials supplied in the request.
+  let client;
+  let usedLiveSession = false;
   try {
-    payload.url = validateOdooBaseUrl(payload.url);
-  } catch (error) {
-    return sendJson(res, 400, {
-      error: error instanceof Error ? error.message : "url must be a valid URL.",
-    });
+    client = getClientForProject(projectId);
+    usedLiveSession = true;
+  } catch {
+    // No live session — fall back to credential-based auth below.
+  }
+
+  if (!usedLiveSession) {
+    const database = trimString(payload.database);
+    const username = trimString(payload.username);
+    const password = typeof payload.password === "string" ? payload.password : "";
+
+    if (!database) {
+      return sendJson(res, 400, { error: "database is required." });
+    }
+
+    if (!username) {
+      return sendJson(res, 400, { error: "username is required." });
+    }
+
+    if (!password) {
+      return sendJson(res, 400, { error: "password is required." });
+    }
+
+    try {
+      payload.url = validateOdooBaseUrl(payload.url);
+    } catch (error) {
+      return sendJson(res, 400, {
+        error: error instanceof Error ? error.message : "url must be a valid URL.",
+      });
+    }
+
+    payload.database = database;
+    payload.username = username;
+    payload.password = password;
+
+    try {
+      client = await authenticateOdooClient(payload, ODOO_INSTALL_TIMEOUT_MS);
+    } catch (error) {
+      return sendOdooInstallError(res, error);
+    } finally {
+      payload.password = null;
+      payload.username = null;
+    }
   }
 
   payload.projectId = projectId;
-  payload.database = database;
-  payload.username = username;
-  payload.password = password;
   payload.moduleName = moduleName;
-
-  let client;
-  try {
-    client = await authenticateOdooClient(payload, ODOO_INSTALL_TIMEOUT_MS);
-  } catch (error) {
-    return sendOdooInstallError(res, error);
-  } finally {
-    payload.password = null;
-    payload.username = null;
-  }
 
   try {
     const rows = await client.searchRead(

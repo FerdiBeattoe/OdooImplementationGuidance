@@ -81,6 +81,10 @@ function makeDiscoveryAnswers(overrides = {}) {
   };
 }
 
+const PI02_NO_APPROVAL = "No approval required - purchasers can confirm freely";
+const PI02_THRESHOLD = "Approval required above a monetary threshold";
+const PI02_ALL_ORDERS = "All purchase orders require manager approval";
+
 // ---------------------------------------------------------------------------
 // Test suite
 // ---------------------------------------------------------------------------
@@ -128,7 +132,7 @@ describe("assemblePurchaseOperationDefinitions", () => {
   // ── Test 5: PUR-DREQ-003 assembled when PI-02 = "Threshold" ────────────
 
   it('5. PUR-DREQ-003 assembled when PI-02 = "Threshold"', () => {
-    const answers = makeDiscoveryAnswers({ "PI-02": "Threshold" });
+    const answers = makeDiscoveryAnswers({ "PI-02": PI02_THRESHOLD });
     const defs = assemblePurchaseOperationDefinitions(makeTargetContext(), answers);
     assert.ok(defs[CHECKPOINT_IDS.PUR_DREQ_003], 'PUR-DREQ-003 must be assembled when PI-02="Threshold"');
     assert.equal(defs[CHECKPOINT_IDS.PUR_DREQ_003].checkpoint_id, CHECKPOINT_IDS.PUR_DREQ_003);
@@ -137,7 +141,7 @@ describe("assemblePurchaseOperationDefinitions", () => {
   // ── Test 6: PUR-DREQ-003 NOT assembled when PI-02 = "All orders" ────────
 
   it('6. PUR-DREQ-003 NOT assembled when PI-02 = "All orders"', () => {
-    const answers = makeDiscoveryAnswers({ "PI-02": "All orders" });
+    const answers = makeDiscoveryAnswers({ "PI-02": PI02_ALL_ORDERS });
     const defs = assemblePurchaseOperationDefinitions(makeTargetContext(), answers);
     assert.equal(
       defs[CHECKPOINT_IDS.PUR_DREQ_003],
@@ -160,7 +164,7 @@ describe("assemblePurchaseOperationDefinitions", () => {
   // ── Test 8: PUR-DREQ-004 assembled when PI-02 = "All orders" ────────────
 
   it('8. PUR-DREQ-004 assembled when PI-02 = "All orders" with derived intended_changes', () => {
-    const answers = makeDiscoveryAnswers({ "PI-02": "All orders" });
+    const answers = makeDiscoveryAnswers({ "PI-02": PI02_ALL_ORDERS });
     const defs = assemblePurchaseOperationDefinitions(makeTargetContext(), answers);
     assert.ok(defs[CHECKPOINT_IDS.PUR_DREQ_004], 'PUR-DREQ-004 must be assembled when PI-02="All orders"');
     assert.equal(defs[CHECKPOINT_IDS.PUR_DREQ_004].checkpoint_id, CHECKPOINT_IDS.PUR_DREQ_004);
@@ -172,7 +176,7 @@ describe("assemblePurchaseOperationDefinitions", () => {
   });
 
   it('8a. PUR-DREQ-004 intended_changes matches res.company.po_double_validation = "always"', () => {
-    const answers = makeDiscoveryAnswers({ "PI-02": "All orders" });
+    const answers = makeDiscoveryAnswers({ "PI-02": PI02_ALL_ORDERS });
     const defs = assemblePurchaseOperationDefinitions(makeTargetContext(), answers);
     const changes = defs[CHECKPOINT_IDS.PUR_DREQ_004].intended_changes;
 
@@ -191,7 +195,7 @@ describe("assemblePurchaseOperationDefinitions", () => {
   // ── Test 9: PUR-DREQ-004 NOT assembled when PI-02 = "Threshold" ─────────
 
   it('9. PUR-DREQ-004 NOT assembled when PI-02 = "Threshold"', () => {
-    const answers = makeDiscoveryAnswers({ "PI-02": "Threshold" });
+    const answers = makeDiscoveryAnswers({ "PI-02": PI02_THRESHOLD });
     const defs = assemblePurchaseOperationDefinitions(makeTargetContext(), answers);
     assert.equal(
       defs[CHECKPOINT_IDS.PUR_DREQ_004],
@@ -217,7 +221,7 @@ describe("assemblePurchaseOperationDefinitions", () => {
     // Threshold: 003 present, 004 absent
     const defsThreshold = assemblePurchaseOperationDefinitions(
       makeTargetContext(),
-      makeDiscoveryAnswers({ "PI-02": "Threshold" })
+      makeDiscoveryAnswers({ "PI-02": PI02_THRESHOLD })
     );
     assert.ok(defsThreshold[CHECKPOINT_IDS.PUR_DREQ_003], "PUR-DREQ-003 present for Threshold");
     assert.equal(defsThreshold[CHECKPOINT_IDS.PUR_DREQ_004], undefined, "PUR-DREQ-004 absent for Threshold");
@@ -225,10 +229,26 @@ describe("assemblePurchaseOperationDefinitions", () => {
     // All orders: 004 present, 003 absent
     const defsAllOrders = assemblePurchaseOperationDefinitions(
       makeTargetContext(),
-      makeDiscoveryAnswers({ "PI-02": "All orders" })
+      makeDiscoveryAnswers({ "PI-02": PI02_ALL_ORDERS })
     );
     assert.equal(defsAllOrders[CHECKPOINT_IDS.PUR_DREQ_003], undefined, "PUR-DREQ-003 absent for All orders");
     assert.ok(defsAllOrders[CHECKPOINT_IDS.PUR_DREQ_004], "PUR-DREQ-004 present for All orders");
+  });
+
+  it("11a. PI-02 short label 'All orders' still assembles PUR-DREQ-004", () => {
+    const defs = assemblePurchaseOperationDefinitions(
+      makeTargetContext(),
+      makeDiscoveryAnswers({ "PI-02": "All orders" })
+    );
+    assert.ok(defs[CHECKPOINT_IDS.PUR_DREQ_004], "short label must assemble PUR-DREQ-004");
+  });
+
+  it("11b. PI-02 short label 'Threshold' still assembles PUR-DREQ-003", () => {
+    const defs = assemblePurchaseOperationDefinitions(
+      makeTargetContext(),
+      makeDiscoveryAnswers({ "PI-02": "Threshold" })
+    );
+    assert.ok(defs[CHECKPOINT_IDS.PUR_DREQ_003], "short label must assemble PUR-DREQ-003");
   });
 
   // ── Test 12: PUR-DREQ-005 assembled when FC-03 = true ───────────────────
@@ -319,7 +339,7 @@ describe("assemblePurchaseOperationDefinitions", () => {
 
   it("21. target_model is res.company for every assembled definition", () => {
     const answers = makeDiscoveryAnswers({
-      "PI-02": "All orders",
+      "PI-02": PI02_ALL_ORDERS,
       "FC-03": true,
       "MF-04": true,
       "PI-05": true,
@@ -338,7 +358,7 @@ describe("assemblePurchaseOperationDefinitions", () => {
 
   it('22. target_operation is "write" for every assembled definition', () => {
     const answers = makeDiscoveryAnswers({
-      "PI-02": "All orders",
+      "PI-02": PI02_ALL_ORDERS,
       "FC-03": "Yes",
       "MF-04": "Yes",
       "PI-05": "Yes",
@@ -357,7 +377,7 @@ describe("assemblePurchaseOperationDefinitions", () => {
 
   it("23. intended_changes is null for all assembled definitions — honest missing-input behavior", () => {
     const answers = makeDiscoveryAnswers({
-      "PI-02": "Threshold",
+      "PI-02": PI02_THRESHOLD,
       "FC-03": true,
       "MF-04": true,
       "PI-05": true,
@@ -384,7 +404,7 @@ describe("assemblePurchaseOperationDefinitions", () => {
 
   it("24. non-PUR checkpoint IDs are not in the assembled map", () => {
     const answers = makeDiscoveryAnswers({
-      "PI-02": "Threshold",
+      "PI-02": PI02_THRESHOLD,
       "FC-03": true,
       "MF-04": true,
       "PI-05": true,
@@ -431,7 +451,7 @@ describe("assemblePurchaseOperationDefinitions", () => {
   it("27. all conditionals assembled when all applicable gates active (max 6 total — PUR-DREQ-003/004 mutually exclusive)", () => {
     // Using PI-02="Threshold": activates DREQ-003, blocks DREQ-004
     const answers = makeDiscoveryAnswers({
-      "PI-02": "Threshold",
+      "PI-02": PI02_THRESHOLD,
       "FC-03": true,
       "MF-04": true,
       "PI-05": true,

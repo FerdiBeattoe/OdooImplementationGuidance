@@ -33,6 +33,11 @@
 // ---------------------------------------------------------------------------
 
 import { ODOO_VERSION } from "./constants.js";
+import {
+  isPi02AllOrders,
+  isPi02NoApproval,
+  isPi02Threshold,
+} from "./purchase-question-helpers.js";
 
 if (ODOO_VERSION !== "19") {
   throw new Error(
@@ -514,6 +519,7 @@ function generateUsersRolesCheckpoints(answers) {
   const D = "users_roles";
   const C = CHECKPOINT_IDS;
 
+  const pi02Answer = getAnswer(answers, "PI-02");
   const records = [];
 
   // Unconditional checkpoints
@@ -621,7 +627,7 @@ function generateUsersRolesCheckpoints(answers) {
   }
 
   // Conditional: PI-02 != No approval
-  if (isAnswered(answers, "PI-02") && !answerEquals(answers, "PI-02", "No approval")) {
+  if (isAnswered(answers, "PI-02") && !isPi02NoApproval(pi02Answer)) {
     records.push(createCheckpointRecord({
       checkpoint_id: C.USR_DREQ_008,
       domain: D,
@@ -1003,6 +1009,7 @@ function generatePurchaseCheckpoints(answers) {
   const D = "purchase";
   const C = CHECKPOINT_IDS;
 
+  const pi02Answer = getAnswer(answers, "PI-02");
   const records = [];
 
   records.push(createCheckpointRecord({
@@ -1045,8 +1052,8 @@ function generatePurchaseCheckpoints(answers) {
     dependencies: [C.PUR_DREQ_001, C.PUR_DREQ_002],
   }));
 
-  // Conditional: PI-02 = Threshold
-  if (isAnswered(answers, "PI-02") && answerEquals(answers, "PI-02", "Threshold")) {
+  // Conditional: PI-02 indicates threshold approval
+  if (isAnswered(answers, "PI-02") && isPi02Threshold(pi02Answer)) {
     records.push(createCheckpointRecord({
       checkpoint_id: C.PUR_DREQ_003,
       domain: D,
@@ -1058,8 +1065,8 @@ function generatePurchaseCheckpoints(answers) {
     }));
   }
 
-  // Conditional: PI-02 = All orders
-  if (isAnswered(answers, "PI-02") && answerEquals(answers, "PI-02", "All orders")) {
+  // Conditional: PI-02 indicates all purchase orders require approval
+  if (isAnswered(answers, "PI-02") && isPi02AllOrders(pi02Answer)) {
     records.push(createCheckpointRecord({
       checkpoint_id: C.PUR_DREQ_004,
       domain: D,

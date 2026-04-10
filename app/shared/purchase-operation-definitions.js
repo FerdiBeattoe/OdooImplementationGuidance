@@ -25,7 +25,7 @@
 //       target_context or discovery_answers with a confirmed Odoo 19 field
 //       reference already present in repo evidence. Currently only
 //       PUR-DREQ-004 qualifies:
-//       - PI-02 = "All orders" → res.company.po_double_validation = "always"
+//       - PI-02 indicates all purchase orders require approval → res.company.po_double_validation = "always"
 //         (field name confirmed in this file; value token confirmed by
 //          app/frontend/src/wizards/operations/PurchaseWizard.js purchaseTerms.double_validation)
 //       All other Purchase checkpoints remain null — required business values are
@@ -35,12 +35,13 @@
 //       apply to Informational checkpoints.
 //   R6  PUR-GL-001 is non-Executable (execution_relevance: None,
 //       safety_class: Not_Applicable). Intentionally excluded.
-//   R7  PUR-DREQ-003 is conditional: only assembled when PI-02 = "Threshold"
-//       (exact string match). Gate confirmed in checkpoint-engine.js
+//   R7  PUR-DREQ-003 is conditional: only assembled when PI-02 indicates the
+//       threshold approval policy (long-form onboarding answer or short
+//       pipeline label). Gate confirmed in checkpoint-engine.js
 //       generatePurchaseCheckpoints.
-//   R8  PUR-DREQ-004 is conditional: only assembled when PI-02 = "All orders"
-//       (exact string match). Gate confirmed in checkpoint-engine.js
-//       generatePurchaseCheckpoints.
+//   R8  PUR-DREQ-004 is conditional: only assembled when PI-02 indicates all
+//       purchase orders require approval (long-form or short label). Gate
+//       confirmed in checkpoint-engine.js generatePurchaseCheckpoints.
 //   R9  PUR-DREQ-003 and PUR-DREQ-004 are MUTUALLY EXCLUSIVE — PI-02 can only
 //       hold one value. Both can never be assembled simultaneously.
 //   R10 PUR-DREQ-005 is conditional: only assembled when FC-03 = true or "Yes".
@@ -68,6 +69,10 @@ import {
 } from "./runtime-state-contract.js";
 
 import { CHECKPOINT_IDS } from "./checkpoint-engine.js";
+import {
+  isPi02AllOrders,
+  isPi02Threshold,
+} from "./purchase-question-helpers.js";
 
 // ---------------------------------------------------------------------------
 // Module version — increment on any rule change
@@ -90,16 +95,16 @@ export const PURCHASE_TARGET_OPERATION = "write";
 // Purchase Executable checkpoint IDs covered by this assembler (unconditional only).
 // PUR-FOUND-001 intentionally excluded (Informational / Not_Applicable — R5).
 // PUR-GL-001 intentionally excluded (execution_relevance: None — R6).
-// PUR-DREQ-003 added conditionally (PI-02="Threshold" — R7).
-// PUR-DREQ-004 added conditionally (PI-02="All orders" — R8).
+// PUR-DREQ-003 added conditionally (PI-02 threshold policy — R7).
+// PUR-DREQ-004 added conditionally (PI-02 all-orders policy — R8).
 // PUR-DREQ-005 added conditionally (FC-03=Yes — R10).
 // PUR-DREQ-006 added conditionally (MF-04=Yes — R11).
 // PUR-DREQ-007 added conditionally (PI-05=Yes — R12).
 export const PURCHASE_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([
   CHECKPOINT_IDS.PUR_DREQ_001, // Unconditional, Conditional
   CHECKPOINT_IDS.PUR_DREQ_002, // Unconditional, Safe
-  // PUR_DREQ_003 added conditionally when PI-02="Threshold" (R7)
-  // PUR_DREQ_004 added conditionally when PI-02="All orders" (R8)
+  // PUR_DREQ_003 added conditionally when PI-02 indicates threshold policy (R7)
+  // PUR_DREQ_004 added conditionally when PI-02 indicates all orders policy (R8)
   // PUR_DREQ_005 added conditionally when FC-03=Yes (R10)
   // PUR_DREQ_006 added conditionally when MF-04=Yes (R11)
   // PUR_DREQ_007 added conditionally when PI-05=Yes (R12)
@@ -117,8 +122,8 @@ export const PURCHASE_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([
  *   PUR-DREQ-002  Vendor terms and pricing policy settings  target_model: res.company
  *
  * Conditional definitions:
- *   PUR-DREQ-003  Purchase approval threshold settings  target_model: res.company  (PI-02="Threshold")
- *   PUR-DREQ-004  Purchase approval all-orders setting  target_model: res.company  (PI-02="All orders")
+ *   PUR-DREQ-003  Purchase approval threshold settings  target_model: res.company  (PI-02 threshold policy)
+ *   PUR-DREQ-004  Purchase approval all-orders setting  target_model: res.company  (PI-02 all-orders policy)
  *   PUR-DREQ-005  Purchase-accounting linkage settings  target_model: res.company  (FC-03=Yes)
  *   PUR-DREQ-006  Subcontracting purchase settings      target_model: res.company  (MF-04=Yes)
  *   PUR-DREQ-007  Dropship purchase settings            target_model: res.company  (PI-05=Yes)
@@ -129,8 +134,8 @@ export const PURCHASE_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([
  *   PUR-GL-001     Non-Executable (execution_relevance: None,
  *                  safety_class: Not_Applicable) — definition intentionally withheld (R6)
  *
- * PUR-DREQ-003 and PUR-DREQ-004 are mutually exclusive (R9) — PI-02 can only be
- * "Threshold" or "All orders", never both.
+ * PUR-DREQ-003 and PUR-DREQ-004 are mutually exclusive (R9) — PI-02 can only
+ * describe one approval policy (threshold or all orders), never both.
  *
  * intended_changes remains null unless directly derivable from discovery answers
  * with a confirmed Odoo 19 field reference already present in repo evidence.
@@ -181,12 +186,12 @@ export function assemblePurchaseOperationDefinitions(
 
   const answers = discovery_answers?.answers ?? {};
 
-  // ── PUR-DREQ-003: Purchase approval threshold (Conditional, PI-02="Threshold") ──
+  // ── PUR-DREQ-003: Purchase approval threshold (Conditional, PI-02 threshold) ──
   // Configures po_double_validation and po_double_validation_amount on res.company.
   // Only assembled when PI-02 (purchase approval policy) is exactly "Threshold" (R7).
   // PUR-DREQ-003 and PUR-DREQ-004 are mutually exclusive — PI-02 has a single value (R9).
   const pi02 = answers["PI-02"];
-  if (pi02 === "Threshold") {
+  if (isPi02Threshold(pi02)) {
     map[CHECKPOINT_IDS.PUR_DREQ_003] = createOperationDefinition({
       checkpoint_id:    CHECKPOINT_IDS.PUR_DREQ_003,
       target_model:     PURCHASE_COMPANY_MODEL,
@@ -195,7 +200,7 @@ export function assemblePurchaseOperationDefinitions(
     });
   }
 
-  // ── PUR-DREQ-004: Purchase approval all orders (Conditional, PI-02="All orders") ──
+  // ── PUR-DREQ-004: Purchase approval all orders (Conditional, PI-02 all-orders) ──
   // Configures po_double_validation for all purchase orders on res.company.
   // Only assembled when PI-02 (purchase approval policy) is exactly "All orders" (R8).
   // PUR-DREQ-003 and PUR-DREQ-004 are mutually exclusive — PI-02 has a single value (R9).
@@ -203,7 +208,7 @@ export function assemblePurchaseOperationDefinitions(
   //   - discovery_answers["PI-02"] = "All orders"
   //   - res.company field name "po_double_validation" confirmed in this file
   //   - value token "always" confirmed by PurchaseWizard purchaseTerms.double_validation
-  if (pi02 === "All orders") {
+  if (isPi02AllOrders(pi02)) {
     map[CHECKPOINT_IDS.PUR_DREQ_004] = createOperationDefinition({
       checkpoint_id:    CHECKPOINT_IDS.PUR_DREQ_004,
       target_model:     PURCHASE_COMPANY_MODEL,

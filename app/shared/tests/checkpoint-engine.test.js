@@ -70,6 +70,10 @@ function makeDiscoveryAnswers(answersMap = {}) {
   };
 }
 
+const PI02_NO_APPROVAL = "No approval required - purchasers can confirm freely";
+const PI02_THRESHOLD = "Approval required above a monetary threshold";
+const PI02_ALL_ORDERS = "All purchase orders require manager approval";
+
 /**
  * Returns the record with the given checkpoint_id from the result, or null.
  */
@@ -486,6 +490,14 @@ describe("Conditional checkpoints — missing trigger answer", () => {
   it("does NOT generate USR-DREQ-008 when PI-02 = No approval", () => {
     const result = computeCheckpoints(
       makeActivatedDomains(["foundation", "users_roles"]),
+      makeDiscoveryAnswers({ "PI-02": PI02_NO_APPROVAL })
+    );
+    assert.equal(findRecord(result, CHECKPOINT_IDS.USR_DREQ_008), null);
+  });
+
+  it("does NOT generate USR-DREQ-008 when PI-02 short label is No approval", () => {
+    const result = computeCheckpoints(
+      makeActivatedDomains(["foundation", "users_roles"]),
       makeDiscoveryAnswers({ "PI-02": "No approval" })
     );
     assert.equal(findRecord(result, CHECKPOINT_IDS.USR_DREQ_008), null);
@@ -561,12 +573,28 @@ describe("Conditional checkpoints — trigger answer present", () => {
   it("generates USR-DREQ-008 when PI-02 = Threshold", () => {
     const result = computeCheckpoints(
       makeActivatedDomains(["foundation", "users_roles"]),
+      makeDiscoveryAnswers({ "PI-02": PI02_THRESHOLD })
+    );
+    assert.ok(findRecord(result, CHECKPOINT_IDS.USR_DREQ_008) !== null);
+  });
+
+  it("generates USR-DREQ-008 when PI-02 short label is Threshold", () => {
+    const result = computeCheckpoints(
+      makeActivatedDomains(["foundation", "users_roles"]),
       makeDiscoveryAnswers({ "PI-02": "Threshold" })
     );
     assert.ok(findRecord(result, CHECKPOINT_IDS.USR_DREQ_008) !== null);
   });
 
   it("generates USR-DREQ-008 when PI-02 = All orders", () => {
+    const result = computeCheckpoints(
+      makeActivatedDomains(["foundation", "users_roles"]),
+      makeDiscoveryAnswers({ "PI-02": PI02_ALL_ORDERS })
+    );
+    assert.ok(findRecord(result, CHECKPOINT_IDS.USR_DREQ_008) !== null);
+  });
+
+  it("generates USR-DREQ-008 when PI-02 short label is All orders", () => {
     const result = computeCheckpoints(
       makeActivatedDomains(["foundation", "users_roles"]),
       makeDiscoveryAnswers({ "PI-02": "All orders" })

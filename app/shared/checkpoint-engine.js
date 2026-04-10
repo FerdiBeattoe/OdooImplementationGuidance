@@ -1019,7 +1019,7 @@ function generatePurchaseCheckpoints(answers) {
     checkpoint_id: C.PUR_DREQ_001,
     domain: D,
     checkpoint_class: "Domain_Required",
-    validation_source: "User_Confirmed",
+    validation_source: "Both",
     execution_relevance: "Executable",
     safety_class: "Conditional",
     dependencies: [C.PUR_FOUND_001],

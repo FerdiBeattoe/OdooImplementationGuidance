@@ -26,11 +26,15 @@
 //   20. SAL-DREQ-007 NOT assembled when PI-05 absent
 //   21. target_model is product.pricelist for every definition
 //   22. target_operation is "write" for every definition
-//   23. intended_changes is null for all definitions — honest missing-input behavior
+//   23. all definitions except SAL-FOUND-002 have null intended_changes
 //   24. Non-SAL checkpoint IDs not in the map
 //   25. Return is plain object — never null, never array
 //   26. null inputs: only unconditionals returned (3 definitions)
 //   27. All conditionals assembled when all gates are true (3 unconditional + 5 conditional = 8 total)
+//   28. SAL-FOUND-002 intended_changes.currency_id sourced from primary_currency ("USD")
+//   29. SAL-FOUND-002 intended_changes.currency_id sourced from primary_currency ("EUR")
+//   30. SAL-FOUND-002 intended_changes.currency_id is null when primary_currency is null
+//   31. all other SAL definitions still have null intended_changes when primary_currency is known
 // ---------------------------------------------------------------------------
 
 import { describe, it } from "node:test";
@@ -322,9 +326,10 @@ describe("assembleSalesOperationDefinitions", () => {
     }
   });
 
-  // ── Test 23: intended_changes is null for all definitions ───────────────
+  // ── Test 23: all definitions except SAL-FOUND-002 have null intended_changes ──
+  // SAL-FOUND-002 emits { currency_id } from primary_currency — see tests 28–31.
 
-  it("23. intended_changes is null for all assembled definitions — honest missing-input behavior", () => {
+  it("23. all SAL definitions except SAL-FOUND-002 have null intended_changes", () => {
     const answers = makeDiscoveryAnswers({
       "SC-02": true,
       "SC-03": true,
@@ -334,6 +339,7 @@ describe("assembleSalesOperationDefinitions", () => {
     });
     const defs = assembleSalesOperationDefinitions(makeTargetContext(), answers);
     for (const key of Object.keys(defs)) {
+      if (key === CHECKPOINT_IDS.SAL_FOUND_002) continue;
       assert.equal(
         defs[key].intended_changes,
         null,
@@ -406,6 +412,55 @@ describe("assembleSalesOperationDefinitions", () => {
     assert.ok(defs[CHECKPOINT_IDS.SAL_DREQ_006],  "SAL-DREQ-006 must be present");
     assert.ok(defs[CHECKPOINT_IDS.SAL_DREQ_007],  "SAL-DREQ-007 must be present");
     assert.equal(Object.keys(defs).length, 8, "exactly 8 definitions when all gates are true");
+  });
+
+  // ── Test 28: SAL-FOUND-002 currency_id from "USD" ────────────────────────
+
+  it('28. SAL-FOUND-002 intended_changes is { currency_id: "USD" } when primary_currency="USD"', () => {
+    const ctx = makeTargetContext({ primary_currency: "USD" });
+    const defs = assembleSalesOperationDefinitions(ctx, makeDiscoveryAnswers());
+    assert.deepEqual(
+      defs[CHECKPOINT_IDS.SAL_FOUND_002].intended_changes,
+      { currency_id: "USD" }
+    );
+  });
+
+  // ── Test 29: SAL-FOUND-002 currency_id from "EUR" ────────────────────────
+
+  it('29. SAL-FOUND-002 intended_changes is { currency_id: "EUR" } when primary_currency="EUR"', () => {
+    const ctx = makeTargetContext({ primary_currency: "EUR" });
+    const defs = assembleSalesOperationDefinitions(ctx, makeDiscoveryAnswers());
+    assert.deepEqual(
+      defs[CHECKPOINT_IDS.SAL_FOUND_002].intended_changes,
+      { currency_id: "EUR" }
+    );
+  });
+
+  // ── Test 30: SAL-FOUND-002 currency_id is null when primary_currency null ─
+
+  it("30. SAL-FOUND-002 intended_changes.currency_id is null when primary_currency is null", () => {
+    const ctx = makeTargetContext({ primary_currency: null });
+    const defs = assembleSalesOperationDefinitions(ctx, makeDiscoveryAnswers());
+    assert.deepEqual(
+      defs[CHECKPOINT_IDS.SAL_FOUND_002].intended_changes,
+      { currency_id: null }
+    );
+  });
+
+  // ── Test 31: other SAL definitions null even with known currency ──────────
+
+  it("31. all other SAL definitions still have null intended_changes when primary_currency is known", () => {
+    const ctx = makeTargetContext({ primary_currency: "USD" });
+    const answers = makeDiscoveryAnswers({ "SC-02": true, "BM-02": true });
+    const defs = assembleSalesOperationDefinitions(ctx, answers);
+    for (const key of Object.keys(defs)) {
+      if (key === CHECKPOINT_IDS.SAL_FOUND_002) continue;
+      assert.equal(
+        defs[key].intended_changes,
+        null,
+        `${key} intended_changes must remain null`
+      );
+    }
   });
 
 });

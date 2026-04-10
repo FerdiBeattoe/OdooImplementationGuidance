@@ -21,10 +21,14 @@
 //       Only one Sales model is present in governed-odoo-apply-service.js
 //       ALLOWED_APPLY_MODELS. Confirmed present.
 //   R3  target_operation is always "write" — no create, unlink, or other operations.
-//   R4  intended_changes is null for all checkpoints — Sales configuration data
-//       (pricelist names, pricing rules, quotation templates) is not available in
-//       target_context or discovery_answers at assembly time. Null is honest (no
-//       fabrication).
+//   R4  intended_changes is null for all checkpoints except SAL-FOUND-002.
+//       Exception: SAL-FOUND-002 emits { currency_id } sourced directly from
+//       target_context.primary_currency — the pricelist currency must match the
+//       company primary currency. Same derivation pattern as FND-DREQ-002
+//       (res.company.currency_id). Null when primary_currency is not supplied.
+//       All other checkpoints remain null — pricelist names, pricing rules, and
+//       quotation templates are not available in target_context or discovery_answers
+//       at assembly time. Null is honest (no fabrication).
 //   R5  SAL-FOUND-001 is Informational (execution_relevance: Informational,
 //       safety_class: Not_Applicable). Intentionally excluded — Gate 6 does not
 //       apply to Informational checkpoints.
@@ -65,7 +69,7 @@ import { CHECKPOINT_IDS } from "./checkpoint-engine.js";
 // Module version — increment on any rule change
 // ---------------------------------------------------------------------------
 
-export const SALES_OP_DEFS_VERSION = "1.0.0";
+export const SALES_OP_DEFS_VERSION = "1.1.0";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -106,9 +110,9 @@ export const SALES_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([
  * Assembles the operation_definitions map for Sales Executable checkpoints.
  *
  * Unconditional definitions returned (keyed by checkpoint_id):
- *   SAL-FOUND-002  Sales module configuration foundation      target_model: product.pricelist
- *   SAL-DREQ-001   Quotation-to-order baseline / commercial policy  target_model: product.pricelist
- *   SAL-DREQ-002   Pricing baseline                           target_model: product.pricelist
+ *   SAL-FOUND-002  Sales module configuration foundation      intended_changes: { currency_id }
+ *   SAL-DREQ-001   Quotation-to-order baseline / commercial policy  intended_changes: null
+ *   SAL-DREQ-002   Pricing baseline                           intended_changes: null
  *
  * Conditional definitions:
  *   SAL-DREQ-003   Pricelist discount rules                   target_model: product.pricelist  (SC-02=Yes)
@@ -121,7 +125,8 @@ export const SALES_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([
  *   SAL-FOUND-001  Informational (execution_relevance: Informational, safety_class: Not_Applicable) — R5
  *   SAL-GL-001     Non-Executable (execution_relevance: None, safety_class: Not_Applicable) — R6
  *
- * intended_changes is null for all entries — Sales configuration data is not
+ * SAL-FOUND-002 emits { currency_id } sourced from target_context.primary_currency.
+ * All other checkpoints have null intended_changes — Sales configuration data is not
  * available in target_context or discovery_answers at assembly time (R4).
  *
  * @param {object|null} target_context      — createTargetContext() shape or null
@@ -134,18 +139,24 @@ export function assembleSalesOperationDefinitions(
 ) {
   const map = createOperationDefinitionsMap();
 
+  // Extract truthful currency input — null when unavailable (R4).
+  const primaryCurrency = target_context?.primary_currency ?? null;
+
   // ── SAL-FOUND-001: Intentionally excluded (R5) ───────────────────────────────────────
   // Informational (execution_relevance: Informational, safety_class: Not_Applicable).
   // Gate 6 does not apply to Informational checkpoints.
 
   // ── SAL-FOUND-002: Sales module configuration foundation (Safe, unconditional) ────────
   // Establishes the sales module foundational pricelist configuration.
-  // intended_changes is null — pricelist configuration data not available at assembly time (R4).
+  // intended_changes: { currency_id } sourced from target_context.primary_currency.
+  // The default pricelist currency must match the company primary currency.
+  // Derivation pattern: identical to FND-DREQ-002 (res.company.currency_id).
+  // Null when primary_currency is not supplied — honest (R4).
   map[CHECKPOINT_IDS.SAL_FOUND_002] = createOperationDefinition({
     checkpoint_id:    CHECKPOINT_IDS.SAL_FOUND_002,
     target_model:     SALES_PRICELIST_MODEL,
     target_operation: SALES_TARGET_OPERATION,
-    intended_changes: null,
+    intended_changes: { currency_id: primaryCurrency },
   });
 
   // ── SAL-DREQ-001: Quotation-to-order baseline / commercial policy (Conditional, unconditional) ──

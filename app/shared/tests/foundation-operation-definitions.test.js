@@ -15,7 +15,7 @@
 //   9.  target_operation is "write" for every assembled definition
 //   10. intended_changes sourced from target_context.primary_country (FND-FOUND-001)
 //   11. intended_changes sourced from target_context.primary_country (FND-FOUND-002)
-//   12. intended_changes is null for FND-DREQ-001 (fiscal year data not in target_context)
+//   12. intended_changes is null for FND-DREQ-001 when no wizard captures supplied
 //   13. intended_changes sourced from target_context.primary_currency (FND-DREQ-002)
 //   14. null target_context produces honest null intended_changes
 //   15. Non-Foundation checkpoint IDs not added to the map
@@ -23,6 +23,13 @@
 //   17. Preview generation for Foundation Executable checkpoints unblocked by supplied defs
 //   18. Non-Foundation checkpoints unaffected when Foundation defs supplied
 //   19. Missing Foundation inputs handled honestly — no fabrication
+//   20. FND-DREQ-001 intended_changes populated from valid wizard capture (Dec 31)
+//   21. FND-DREQ-001 intended_changes populated from valid wizard capture (Mar 31)
+//   22. FND-DREQ-001 intended_changes is null when fiscal_year_end_month is invalid
+//   23. FND-DREQ-001 intended_changes is null when fiscal_year_end_day is out of range
+//   24. FND-DREQ-001 intended_changes is null when wizard_captures.foundation is absent
+//   25. FND-DREQ-001 intended_changes is null when fiscal_year_end_day is not an integer
+//   26. Other Foundation definitions unaffected when wizard captures supplied
 // ---------------------------------------------------------------------------
 
 import { describe, it } from "node:test";
@@ -229,14 +236,14 @@ describe("assembleFoundationOperationDefinitions", () => {
     );
   });
 
-  // ── Test 12: intended_changes is null for FND-DREQ-001 ──────────────────
+  // ── Test 12: intended_changes is null for FND-DREQ-001 when no wizard captures ──
 
-  it("12. FND-DREQ-001 intended_changes is null — fiscal year data not in target_context", () => {
+  it("12. FND-DREQ-001 intended_changes is null when no wizard captures supplied", () => {
     const defs = assembleFoundationOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers());
     assert.equal(
       defs[CHECKPOINT_IDS.FND_DREQ_001].intended_changes,
       null,
-      "FND-DREQ-001 intended_changes must be null (fiscal year data unavailable)"
+      "FND-DREQ-001 intended_changes must be null when wizard captures are absent"
     );
   });
 
@@ -413,6 +420,164 @@ describe("assembleFoundationOperationDefinitions", () => {
       defs[CHECKPOINT_IDS.FND_DREQ_003],
       undefined,
       "FND-DREQ-003 must not be assembled when BM-04 is absent"
+    );
+  });
+
+  // ── Tests 20–26: Wizard capture — FND-DREQ-001 fiscal year write ─────────
+
+  // ── Test 20: Valid wizard capture Dec 31 ────────────────────────────────
+
+  it("20. FND-DREQ-001 intended_changes populated from valid wizard capture (Dec 31)", () => {
+    const wizardCaptures = {
+      foundation: {
+        fiscal_year_end_month: "12",
+        fiscal_year_end_day: 31,
+      },
+    };
+    const defs = assembleFoundationOperationDefinitions(
+      makeTargetContext(),
+      makeDiscoveryAnswers(),
+      wizardCaptures
+    );
+    assert.deepEqual(
+      defs[CHECKPOINT_IDS.FND_DREQ_001].intended_changes,
+      { fiscalyear_last_month: "12", fiscalyear_last_day: 31 },
+      "FND-DREQ-001 must have intended_changes from valid Dec 31 capture"
+    );
+  });
+
+  // ── Test 21: Valid wizard capture Mar 31 ────────────────────────────────
+
+  it("21. FND-DREQ-001 intended_changes populated from valid wizard capture (Mar 31)", () => {
+    const wizardCaptures = {
+      foundation: {
+        fiscal_year_end_month: "3",
+        fiscal_year_end_day: 31,
+      },
+    };
+    const defs = assembleFoundationOperationDefinitions(
+      makeTargetContext(),
+      makeDiscoveryAnswers(),
+      wizardCaptures
+    );
+    assert.deepEqual(
+      defs[CHECKPOINT_IDS.FND_DREQ_001].intended_changes,
+      { fiscalyear_last_month: "3", fiscalyear_last_day: 31 },
+      "FND-DREQ-001 must have intended_changes from valid Mar 31 capture"
+    );
+  });
+
+  // ── Test 22: Invalid month rejected — intended_changes null ─────────────
+
+  it("22. FND-DREQ-001 intended_changes is null when fiscal_year_end_month is invalid", () => {
+    const wizardCaptures = {
+      foundation: {
+        fiscal_year_end_month: "13",  // out of range
+        fiscal_year_end_day: 31,
+      },
+    };
+    const defs = assembleFoundationOperationDefinitions(
+      makeTargetContext(),
+      makeDiscoveryAnswers(),
+      wizardCaptures
+    );
+    assert.equal(
+      defs[CHECKPOINT_IDS.FND_DREQ_001].intended_changes,
+      null,
+      "FND-DREQ-001 intended_changes must be null for invalid month '13'"
+    );
+  });
+
+  // ── Test 23: Day out of range rejected — intended_changes null ──────────
+
+  it("23. FND-DREQ-001 intended_changes is null when fiscal_year_end_day is out of range", () => {
+    const wizardCaptures = {
+      foundation: {
+        fiscal_year_end_month: "12",
+        fiscal_year_end_day: 32,  // out of range
+      },
+    };
+    const defs = assembleFoundationOperationDefinitions(
+      makeTargetContext(),
+      makeDiscoveryAnswers(),
+      wizardCaptures
+    );
+    assert.equal(
+      defs[CHECKPOINT_IDS.FND_DREQ_001].intended_changes,
+      null,
+      "FND-DREQ-001 intended_changes must be null for day 32"
+    );
+  });
+
+  // ── Test 24: Missing foundation key — intended_changes null ─────────────
+
+  it("24. FND-DREQ-001 intended_changes is null when wizard_captures.foundation is absent", () => {
+    const wizardCaptures = {
+      inventory: { reception_steps: "two_steps" },  // wrong domain
+    };
+    const defs = assembleFoundationOperationDefinitions(
+      makeTargetContext(),
+      makeDiscoveryAnswers(),
+      wizardCaptures
+    );
+    assert.equal(
+      defs[CHECKPOINT_IDS.FND_DREQ_001].intended_changes,
+      null,
+      "FND-DREQ-001 intended_changes must be null when wizard_captures.foundation is absent"
+    );
+  });
+
+  // ── Test 25: Non-integer day rejected — intended_changes null ───────────
+
+  it("25. FND-DREQ-001 intended_changes is null when fiscal_year_end_day is not an integer", () => {
+    const wizardCaptures = {
+      foundation: {
+        fiscal_year_end_month: "12",
+        fiscal_year_end_day: 31.5,  // float, not integer
+      },
+    };
+    const defs = assembleFoundationOperationDefinitions(
+      makeTargetContext(),
+      makeDiscoveryAnswers(),
+      wizardCaptures
+    );
+    assert.equal(
+      defs[CHECKPOINT_IDS.FND_DREQ_001].intended_changes,
+      null,
+      "FND-DREQ-001 intended_changes must be null for non-integer day"
+    );
+  });
+
+  // ── Test 26: Other Foundation definitions unaffected by wizard captures ──
+
+  it("26. other Foundation definitions unaffected when wizard captures supplied", () => {
+    const wizardCaptures = {
+      foundation: {
+        fiscal_year_end_month: "12",
+        fiscal_year_end_day: 31,
+      },
+    };
+    const defs = assembleFoundationOperationDefinitions(
+      makeTargetContext({ primary_country: "US", primary_currency: "USD" }),
+      makeDiscoveryAnswers(),
+      wizardCaptures
+    );
+    // FND-FOUND-001 and FND-FOUND-002 still derive from target_context
+    assert.deepEqual(
+      defs[CHECKPOINT_IDS.FND_FOUND_001].intended_changes,
+      { country_id: "US" },
+      "FND-FOUND-001 country_id must still come from target_context"
+    );
+    assert.deepEqual(
+      defs[CHECKPOINT_IDS.FND_DREQ_002].intended_changes,
+      { currency_id: "USD" },
+      "FND-DREQ-002 currency_id must still come from target_context"
+    );
+    // FND-DREQ-001 now has non-null intended_changes
+    assert.deepEqual(
+      defs[CHECKPOINT_IDS.FND_DREQ_001].intended_changes,
+      { fiscalyear_last_month: "12", fiscalyear_last_day: 31 },
+      "FND-DREQ-001 intended_changes must be populated from wizard capture"
     );
   });
 

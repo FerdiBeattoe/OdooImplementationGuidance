@@ -18,9 +18,9 @@
 //   R1  Only Foundation domain checkpoints are assembled here. Never other domains.
 //   R2  target_model is always "res.company" for Foundation Executable checkpoints.
 //   R3  target_operation is always "write" — no create, unlink, or other operations.
-//   R4  intended_changes is sourced exclusively from target_context and
-//       discovery_answers inputs. No inferred, guessed, or fabricated values.
-//       Fields not available in the supplied inputs are represented as null.
+//   R4  intended_changes is sourced exclusively from target_context,
+//       discovery_answers, and wizard_captures inputs. No inferred, guessed, or
+//       fabricated values. Fields not available in the supplied inputs are null.
 //   R5  FND-FOUND-003 (Informational / User_Confirmed / Not_Applicable after DL-016)
 //       NEVER receives an operation definition. No governed write is appropriate —
 //       FND-DREQ-002 completed the actual currency write; FND-FOUND-003 evidence
@@ -32,6 +32,12 @@
 //   R8  The returned map is always a plain object (createOperationDefinitionsMap
 //       shape). Never null, never an array.
 //   R9  Non-Foundation checkpoint IDs are never added to the returned map.
+//   R10 FND-DREQ-001 fiscal year intended_changes sourced from
+//       wizard_captures.foundation.fiscal_year_end_month and
+//       wizard_captures.foundation.fiscal_year_end_day. Both must be present and
+//       valid to produce non-null intended_changes. fiscal_year_end_month must be
+//       a string "1".."12"; fiscal_year_end_day must be an integer 1..31.
+//       Partial or invalid captures produce null (honest — R4). No fabrication.
 // ---------------------------------------------------------------------------
 
 import { ODOO_VERSION } from "./constants.js";
@@ -53,7 +59,46 @@ import { CHECKPOINT_IDS } from "./checkpoint-engine.js";
 // Module version — increment on any rule change
 // ---------------------------------------------------------------------------
 
-export const FOUNDATION_OP_DEFS_VERSION = "1.0.0";
+export const FOUNDATION_OP_DEFS_VERSION = "1.1.0";
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+// Valid fiscalyear_last_month selection values (Odoo 19 res.company confirmed).
+// Source: scripts/odoo-confirmed-fields.json — fiscalyear_last_month selection.
+const VALID_FISCAL_MONTHS = new Set(["1","2","3","4","5","6","7","8","9","10","11","12"]);
+
+/**
+ * Extracts fiscal year end intended_changes from wizard_captures.
+ *
+ * Returns { fiscalyear_last_month, fiscalyear_last_day } when both are valid,
+ * or null when captures are absent, partial, or invalid (R4, R10).
+ *
+ * @param {object|null} wizard_captures — full wizard_captures map or null
+ * @returns {{ fiscalyear_last_month: string, fiscalyear_last_day: number }|null}
+ */
+function extractFiscalYearChanges(wizard_captures) {
+  if (!isPlainObject(wizard_captures)) return null;
+
+  const foundationCapture = wizard_captures.foundation;
+  if (!isPlainObject(foundationCapture)) return null;
+
+  const month = foundationCapture.fiscal_year_end_month;
+  const day   = foundationCapture.fiscal_year_end_day;
+
+  // Validate month: must be a string in "1".."12" (Odoo selection values — R10).
+  if (typeof month !== "string" || !VALID_FISCAL_MONTHS.has(month)) return null;
+
+  // Validate day: must be an integer 1..31 (R10).
+  if (typeof day !== "number" || !Number.isInteger(day) || day < 1 || day > 31) return null;
+
+  return { fiscalyear_last_month: month, fiscalyear_last_day: day };
+}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -86,7 +131,9 @@ export const FOUNDATION_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([
  * Unconditional definitions returned (keyed by checkpoint_id):
  *   FND-FOUND-001  Company country configuration      intended_changes: { country_id }
  *   FND-FOUND-002  Localization configuration          intended_changes: { country_id }
- *   FND-DREQ-001   Fiscal year configuration           intended_changes: null (data unavailable)
+ *   FND-DREQ-001   Fiscal year configuration           intended_changes: { fiscalyear_last_month, fiscalyear_last_day }
+ *                  when wizard_captures.foundation provides valid fiscal_year_end_month and
+ *                  fiscal_year_end_day; null otherwise (honest — R4, R10)
  *   FND-DREQ-002   Currency configuration              intended_changes: { currency_id }
  *
  * Conditional definition (added only when BM-04 = true or "Yes"):
@@ -98,11 +145,13 @@ export const FOUNDATION_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([
  *
  * @param {object|null} target_context      — createTargetContext() shape or null
  * @param {object|null} discovery_answers   — createDiscoveryAnswers() shape or null
+ * @param {object|null} wizard_captures     — wizard_captures map from runtime state, or null
  * @returns {{ [checkpoint_id: string]: object }} operation_definitions map (never null)
  */
 export function assembleFoundationOperationDefinitions(
   target_context = null,
-  discovery_answers = null
+  discovery_answers = null,
+  wizard_captures = null
 ) {
   // Extract truthful inputs — null where unavailable (R4, R7).
   const primaryCountry  = target_context?.primary_country  ?? null;
@@ -140,14 +189,23 @@ export function assembleFoundationOperationDefinitions(
   // because execution_relevance is now Informational — but no definition is provided.
 
   // ── FND-DREQ-001: Fiscal year configuration (Safe, unconditional) ────────────
-  // Configures the company fiscal year (start/end dates, reporting calendar).
-  // Fiscal year dates are not available in target_context or discovery_answers
-  // at this stage — intended_changes is null (honest missing-input behavior, R4).
+  // Configures the company fiscal year end (fiscalyear_last_month, fiscalyear_last_day)
+  // on res.company.
+  //
+  // Fiscal year end data is collected via wizard capture (wizard_captures.foundation).
+  // Fields confirmed from live Odoo 19 instance (scripts/odoo-confirmed-fields.json):
+  //   fiscalyear_last_month — selection "1".."12" (required)
+  //   fiscalyear_last_day   — integer 1..31
+  //
+  // intended_changes is non-null only when wizard_captures supplies valid
+  // fiscal_year_end_month and fiscal_year_end_day (R4, R10).
+  // null when captures are absent, partial, or invalid — honest (R4).
+  const fiscalYearChanges = extractFiscalYearChanges(wizard_captures);
   map[CHECKPOINT_IDS.FND_DREQ_001] = createOperationDefinition({
     checkpoint_id:    CHECKPOINT_IDS.FND_DREQ_001,
     target_model:     FOUNDATION_TARGET_MODEL,
     target_operation: FOUNDATION_TARGET_OPERATION,
-    intended_changes: null,
+    intended_changes: fiscalYearChanges,
   });
 
   // ── FND-DREQ-002: Currency configuration (Safe, unconditional) ───────────────

@@ -1228,6 +1228,7 @@ describe("POST /api/pipeline/run — discovery_answers fallback from persisted s
       project_id,
       industry_id: "manufacturing",
     });
+
     assert.strictEqual(selectRes.status, 200);
     assert.strictEqual(selectRes.body.ok, true);
 
@@ -1254,10 +1255,26 @@ describe("POST /api/pipeline/run — discovery_answers fallback from persisted s
     assert.strictEqual(merged["MF-01"], "Yes", "persisted manufacturing answer must be preserved");
     assert.strictEqual(merged["TA-04"], "Override owner");
   });
+
+  test("T6: BM-05 string answers normalize to numeric before runtime state emission", async () => {
+    const da = makeMinimalAnswers();
+    da.answers["BM-05"] = "> 10";
+
+    const res = await postJson("/api/pipeline/run", {
+      discovery_answers: da,
+    });
+
+    assert.strictEqual(res.status, 200, `Expected 200, got ${res.status}: ${JSON.stringify(res.body)}`);
+    assert.strictEqual(res.body.ok, true);
+    const storedAnswers = res.body.runtime_state?.discovery_answers?.answers ?? {};
+    assert.ok(isPlainObject(storedAnswers), "stored answers must be an object");
+    assert.strictEqual(storedAnswers["BM-05"], 11, "BM-05 must normalize to 11 for '> 10'");
+    assert.strictEqual(typeof storedAnswers["BM-05"], "number");
+  });
 });
 
 describe("POST /api/pipeline/run — persisted target_context handling", () => {
-  test("T6: persisted target_context is used when request omits target_context", async () => {
+  test("T7: persisted target_context is used when request omits target_context", async () => {
     const state = makeBaseRuntimeState("target_ctx_fallback_t6");
     state.target_context = {
       ...state.target_context,
@@ -1279,7 +1296,7 @@ describe("POST /api/pipeline/run — persisted target_context handling", () => {
     assert.strictEqual(targetContext.odoosh_branch_target, "feature-123");
   });
 
-  test("T7: explicit target_context overrides persisted target_context", async () => {
+  test("T8: explicit target_context overrides persisted target_context", async () => {
     const state = makeBaseRuntimeState("target_ctx_override_t7");
     state.target_context = {
       ...state.target_context,

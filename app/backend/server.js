@@ -1160,6 +1160,15 @@ async function handlePipelineRun(req, res, user) {
     }
   }
 
+  if (payloadIsPlainObject && isPlainObject(payload.discovery_answers)) {
+    const normalizedDiscovery = normalizeDiscoveryAnswersPayload(
+      payload.discovery_answers
+    );
+    if (normalizedDiscovery !== payload.discovery_answers) {
+      payload = { ...payload, discovery_answers: normalizedDiscovery };
+    }
+  }
+
   const wizardCapturesFromPayload =
     payloadIsPlainObject && isPlainObject(payload.wizard_captures)
       ? payload.wizard_captures
@@ -1293,6 +1302,58 @@ function mergeDiscoveryAnswersPayload(persistedDiscovery, submittedDiscovery) {
       ...submittedDiscovery.answers,
     },
   };
+}
+
+function normalizeDiscoveryAnswersPayload(discovery) {
+  if (!isPlainObject(discovery)) {
+    return discovery;
+  }
+  const answers = isPlainObject(discovery.answers) ? discovery.answers : null;
+  if (!answers) {
+    return discovery;
+  }
+  const normalizedAnswers = normalizeBm05AnswerInMap(answers);
+  if (normalizedAnswers === answers) {
+    return discovery;
+  }
+  return { ...discovery, answers: normalizedAnswers };
+}
+
+function normalizeBm05AnswerInMap(answers) {
+  if (!Object.prototype.hasOwnProperty.call(answers, "BM-05")) {
+    return answers;
+  }
+  const current = answers["BM-05"];
+  const normalized = normalizeBm05Answer(current);
+  if (normalized === current) {
+    return answers;
+  }
+  return {
+    ...answers,
+    "BM-05": normalized,
+  };
+}
+
+function normalizeBm05Answer(value) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  if (typeof value === "number") {
+    return value;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed === "") return value;
+    if (trimmed === "> 50") return 51;
+    if (trimmed === "> 10") return 11;
+    if (trimmed === "1-10") return 5;
+    if (trimmed === "< 5") return 4;
+    const numeric = Number(trimmed);
+    if (!Number.isNaN(numeric)) {
+      return numeric;
+    }
+  }
+  return value;
 }
 
 async function handlePipelineStateLoad(req, res) {

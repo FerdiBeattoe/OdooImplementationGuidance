@@ -40,17 +40,61 @@
 //       operation.method must equal preview.target_operation (when non-null/non-undefined).
 //       Fail closed on mismatch. Skip cross-check when preview fields are null/undefined
 //       (non-Executable checkpoints or previews without operation_definitions).
+//   S13 Each key in operation.values must be a confirmed Odoo 19 field name for the
+//       target model, as recorded in scripts/odoo-confirmed-fields.json (generated
+//       from live fields_get() on test236). Fail closed on any unknown field name.
+//       Skip validation for models not present in the confirmed-fields JSON —
+//       no false refusals for unverified models.
 // ---------------------------------------------------------------------------
 
+import { createRequire } from "module";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
 import { getClientForProject } from "./engine.js";
 import { computeExecutionRecords } from "../shared/governed-execution-record-engine.js";
 import { appendExecution } from "../shared/runtime-state-contract.js";
 
 // ---------------------------------------------------------------------------
+// Confirmed Odoo 19 fields — loaded once at module init (S13)
+// Source: scripts/odoo-confirmed-fields.json (generated from live Odoo 19 fields_get())
+// Used to validate operation.values keys against known Odoo 19 field names.
+// Models absent from this JSON are skipped (no false refusals for unverified models).
+// ---------------------------------------------------------------------------
+
+const _require = createRequire(import.meta.url);
+const _confirmedFieldsPath = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../scripts/odoo-confirmed-fields.json"
+);
+
+let _confirmedFieldsData;
+try {
+  _confirmedFieldsData = _require(_confirmedFieldsPath);
+} catch {
+  _confirmedFieldsData = null;
+}
+
+/**
+ * Map from model name → Set of confirmed Odoo 19 field names.
+ * Only populated for models present in odoo-confirmed-fields.json.
+ * Models absent from the JSON are not in this map — field validation is skipped for them.
+ */
+export const CONFIRMED_FIELDS_BY_MODEL = Object.freeze(
+  _confirmedFieldsData?.models
+    ? Object.fromEntries(
+        Object.entries(_confirmedFieldsData.models).map(([model, data]) => [
+          model,
+          Object.freeze(new Set(Object.keys(data.fields ?? {}))),
+        ])
+      )
+    : {}
+);
+
+// ---------------------------------------------------------------------------
 // Service version — increment on any rule change
 // ---------------------------------------------------------------------------
 
-export const GOVERNED_APPLY_SERVICE_VERSION = "2.1.0";
+export const GOVERNED_APPLY_SERVICE_VERSION = "2.2.0";
 
 // ---------------------------------------------------------------------------
 // Bounded target surface (S4 — safe config models only)
@@ -309,6 +353,23 @@ export async function applyGoverned({
     Array.isArray(operation.values)
   ) {
     return failClosed("operation.values must be a non-null plain object.");
+  }
+
+  // ── S13: Validate field names against confirmed Odoo 19 fields ───────────
+  // Only applied when the model is present in CONFIRMED_FIELDS_BY_MODEL.
+  // Unknown field names on a verified model → fail closed (prevents silent
+  // Odoo failures from typos or invented fields).
+  {
+    const confirmedFields = CONFIRMED_FIELDS_BY_MODEL[operation.model];
+    if (confirmedFields) {
+      for (const fieldName of Object.keys(operation.values)) {
+        if (!confirmedFields.has(fieldName)) {
+          return failClosed(
+            `Field '${fieldName}' is not a confirmed Odoo 19 field on model '${operation.model}'. Apply refused (S13).`
+          );
+        }
+      }
+    }
   }
 
   // ── S6: write requires non-empty positive integer ids ────────────────────

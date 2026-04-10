@@ -40,6 +40,7 @@ import {
   applyGoverned,
   ALLOWED_APPLY_MODELS,
   ALLOWED_APPLY_METHODS,
+  CONFIRMED_FIELDS_BY_MODEL,
   GOVERNED_APPLY_SERVICE_VERSION,
 } from "../governed-odoo-apply-service.js";
 
@@ -1654,5 +1655,199 @@ describe("applyGoverned — checkpoint_statuses population", () => {
     // Only the one entry — no phantom keys
     assert.strictEqual(Object.keys(statuses).length, 1,
       "checkpoint_statuses must contain exactly one entry when initialised from absent state");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 25. CONFIRMED_FIELDS_BY_MODEL — S13 field name validation
+// ---------------------------------------------------------------------------
+
+describe("CONFIRMED_FIELDS_BY_MODEL — S13 confirmed Odoo 19 field index", () => {
+  it("is a plain object (not null, not array)", () => {
+    assert.ok(CONFIRMED_FIELDS_BY_MODEL !== null);
+    assert.ok(!Array.isArray(CONFIRMED_FIELDS_BY_MODEL));
+    assert.strictEqual(typeof CONFIRMED_FIELDS_BY_MODEL, "object");
+  });
+
+  it("contains res.company with confirmed field sets", () => {
+    const fields = CONFIRMED_FIELDS_BY_MODEL["res.company"];
+    assert.ok(fields instanceof Set, "res.company fields must be a Set");
+    assert.ok(fields.size > 0, "res.company must have confirmed fields");
+  });
+
+  it("res.company includes po_double_validation (the only current non-null write target)", () => {
+    const fields = CONFIRMED_FIELDS_BY_MODEL["res.company"];
+    assert.ok(fields.has("po_double_validation"),
+      "po_double_validation must be a confirmed Odoo 19 field on res.company");
+  });
+
+  it("res.company includes name (used in existing test fixtures)", () => {
+    const fields = CONFIRMED_FIELDS_BY_MODEL["res.company"];
+    assert.ok(fields.has("name"), "name must be a confirmed field on res.company");
+  });
+
+  it("stock.warehouse is present with confirmed fields", () => {
+    const fields = CONFIRMED_FIELDS_BY_MODEL["stock.warehouse"];
+    assert.ok(fields instanceof Set, "stock.warehouse fields must be a Set");
+    assert.ok(fields.size > 0, "stock.warehouse must have confirmed fields");
+  });
+
+  it("res.users is present with confirmed fields", () => {
+    const fields = CONFIRMED_FIELDS_BY_MODEL["res.users"];
+    assert.ok(fields instanceof Set, "res.users fields must be a Set");
+    assert.ok(fields.has("lang"), "lang must be a confirmed field on res.users");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 26. applyGoverned — S13 field name validation (fail closed on unknown fields)
+// ---------------------------------------------------------------------------
+
+describe("applyGoverned — S13 field name validation", () => {
+  it("refuses when operation.values contains an unknown field name on a verified model", async () => {
+    const client = makeMockClient();
+    const result = await applyGoverned({
+      approval_id: "approval-001",
+      runtime_state: makeRuntimeState(),
+      operation: makeOperation({
+        model: "res.company",
+        values: { nonexistent_field_xyz_abc: "value" },
+      }),
+      connection_context: makeConnectionContext(),
+      _getClient: makeGetClient(client),
+    });
+    assert.strictEqual(result.ok, false);
+    assert.strictEqual(result.result_status, "failure");
+    assert.ok(
+      result.error.includes("nonexistent_field_xyz_abc"),
+      "error must name the unknown field"
+    );
+    assert.ok(
+      result.error.includes("res.company"),
+      "error must name the model"
+    );
+    assert.ok(
+      result.error.includes("S13"),
+      "error must cite S13"
+    );
+    assert.strictEqual(client._calls.write.length, 0, "Odoo must not be called");
+  });
+
+  it("refuses when operation.values contains a typo of a known field (po_double_validaton vs po_double_validation)", async () => {
+    const client = makeMockClient();
+    const result = await applyGoverned({
+      approval_id: "approval-001",
+      runtime_state: makeRuntimeState(),
+      operation: makeOperation({
+        model: "res.company",
+        // deliberate typo: missing 'i' in validation
+        values: { po_double_validaton: "always" },
+      }),
+      connection_context: makeConnectionContext(),
+      _getClient: makeGetClient(client),
+    });
+    assert.strictEqual(result.ok, false);
+    assert.strictEqual(result.result_status, "failure");
+    assert.ok(result.error.includes("po_double_validaton"), "error must name the misspelled field");
+    assert.strictEqual(client._calls.write.length, 0, "Odoo must not be called on typo");
+  });
+
+  it("passes when operation.values contains only confirmed Odoo 19 field names", async () => {
+    const client = makeMockClient();
+    const result = await applyGoverned({
+      approval_id: "approval-001",
+      runtime_state: makeRuntimeState(),
+      operation: makeOperation({
+        model: "res.company",
+        values: { po_double_validation: "always" },
+      }),
+      connection_context: makeConnectionContext(),
+      _getClient: makeGetClient(client),
+    });
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.result_status, "success");
+    assert.strictEqual(client._calls.write.length, 1, "Odoo write must proceed for confirmed field");
+    assert.deepStrictEqual(client._calls.write[0].values, { po_double_validation: "always" });
+  });
+
+  it("skips S13 validation for models absent from confirmed-fields JSON (no false refusals)", async () => {
+    // uom.category is in ALLOWED_APPLY_MODELS but absent from confirmed-fields JSON
+    const client = makeMockClient();
+    const result = await applyGoverned({
+      approval_id: "approval-001",
+      runtime_state: makeRuntimeState(),
+      operation: makeOperation({
+        model: "uom.category",
+        values: { some_unknown_field: "value" },
+      }),
+      connection_context: makeConnectionContext(),
+      _getClient: makeGetClient(client),
+    });
+    // Should NOT be refused by S13 — uom.category has no confirmed field set
+    // May succeed or fail for other reasons (Odoo call result), but not S13
+    assert.ok(
+      CONFIRMED_FIELDS_BY_MODEL["uom.category"] === undefined,
+      "test precondition: uom.category must be absent from CONFIRMED_FIELDS_BY_MODEL"
+    );
+    // S13 did not fire — Odoo call was made
+    assert.strictEqual(client._calls.write.length, 1, "Odoo must be called for unverified model");
+  });
+
+  it("refuses when multiple fields are submitted and at least one is unknown", async () => {
+    const client = makeMockClient();
+    const result = await applyGoverned({
+      approval_id: "approval-001",
+      runtime_state: makeRuntimeState(),
+      operation: makeOperation({
+        model: "res.company",
+        values: {
+          name: "ACME Corp",        // valid field
+          invented_config_x: "y",   // unknown field
+        },
+      }),
+      connection_context: makeConnectionContext(),
+      _getClient: makeGetClient(client),
+    });
+    assert.strictEqual(result.ok, false);
+    assert.ok(result.error.includes("invented_config_x"), "error must name the unknown field");
+    assert.strictEqual(client._calls.write.length, 0, "Odoo must not be called");
+  });
+
+  it("passes for stock.warehouse with a confirmed field (reception_steps)", async () => {
+    const client = makeMockClient();
+    const result = await applyGoverned({
+      approval_id: "approval-001",
+      runtime_state: makeRuntimeState(),
+      operation: makeOperation({
+        model: "stock.warehouse",
+        method: "write",
+        ids: [1],
+        values: { reception_steps: "two_steps" },
+      }),
+      connection_context: makeConnectionContext(),
+      _getClient: makeGetClient(client),
+    });
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.result_status, "success");
+    assert.strictEqual(client._calls.write.length, 1);
+  });
+
+  it("refuses for stock.warehouse with an unknown field", async () => {
+    const client = makeMockClient();
+    const result = await applyGoverned({
+      approval_id: "approval-001",
+      runtime_state: makeRuntimeState(),
+      operation: makeOperation({
+        model: "stock.warehouse",
+        method: "write",
+        ids: [1],
+        values: { not_a_real_warehouse_field: "value" },
+      }),
+      connection_context: makeConnectionContext(),
+      _getClient: makeGetClient(client),
+    });
+    assert.strictEqual(result.ok, false);
+    assert.ok(result.error.includes("not_a_real_warehouse_field"));
+    assert.strictEqual(client._calls.write.length, 0);
   });
 });

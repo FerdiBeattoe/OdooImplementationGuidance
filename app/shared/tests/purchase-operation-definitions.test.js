@@ -27,11 +27,18 @@
 //   20. PUR-DREQ-007 NOT assembled when PI-05 is absent
 //   21. target_model is res.company for every assembled definition
 //   22. target_operation is "write" for every assembled definition
-//   23. intended_changes stays null except for truthful PUR-DREQ-004 derivation
+//   23. intended_changes stays null except for PUR-DREQ-001 (wizard capture) and PUR-DREQ-004 (discovery)
 //   24. Non-PUR checkpoint IDs not added to the map
 //   25. Return is a plain object — never null, never array
 //   26. null inputs: only unconditionals returned (2 definitions)
 //   27. All conditionals assembled when all applicable gates active (max 6 total)
+//   28. PUR-DREQ-001 intended_changes = { po_lock: "edit" } from wizard_captures
+//   29. PUR-DREQ-001 intended_changes = { po_lock: "lock" } from wizard_captures
+//   30. PUR-DREQ-001 intended_changes is null when wizard_captures is null
+//   31. PUR-DREQ-001 intended_changes is null when wizard_captures.purchase absent
+//   32. PUR-DREQ-001 intended_changes is null for invalid po_lock value
+//   33. PUR-DREQ-001 intended_changes is null when po_lock is non-string
+//   34. PUR-DREQ-002..007 unaffected by valid wizard_captures.purchase.po_lock
 // ---------------------------------------------------------------------------
 
 import { describe, it } from "node:test";
@@ -449,6 +456,85 @@ describe("assemblePurchaseOperationDefinitions", () => {
     assert.ok(defs[CHECKPOINT_IDS.PUR_DREQ_006], "PUR-DREQ-006 must be present (MF-04=true)");
     assert.ok(defs[CHECKPOINT_IDS.PUR_DREQ_007], "PUR-DREQ-007 must be present (PI-05=true)");
     assert.equal(Object.keys(defs).length, 6, "exactly 6 definitions when all applicable gates active");
+  });
+
+  // ── Tests 28–34: PUR-DREQ-001 po_lock wizard_captures derivation ─────────
+
+  it('28. PUR-DREQ-001 intended_changes = { po_lock: "edit" } when wizard_captures.purchase.po_lock = "edit"', () => {
+    const captures = { purchase: { po_lock: "edit" } };
+    const defs = assemblePurchaseOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers(), captures);
+    assert.deepEqual(
+      defs[CHECKPOINT_IDS.PUR_DREQ_001].intended_changes,
+      { po_lock: "edit" },
+      'PUR-DREQ-001 must derive { po_lock: "edit" } from wizard_captures'
+    );
+  });
+
+  it('29. PUR-DREQ-001 intended_changes = { po_lock: "lock" } when wizard_captures.purchase.po_lock = "lock"', () => {
+    const captures = { purchase: { po_lock: "lock" } };
+    const defs = assemblePurchaseOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers(), captures);
+    assert.deepEqual(
+      defs[CHECKPOINT_IDS.PUR_DREQ_001].intended_changes,
+      { po_lock: "lock" },
+      'PUR-DREQ-001 must derive { po_lock: "lock" } from wizard_captures'
+    );
+  });
+
+  it("30. PUR-DREQ-001 intended_changes is null when wizard_captures is null", () => {
+    const defs = assemblePurchaseOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers(), null);
+    assert.equal(
+      defs[CHECKPOINT_IDS.PUR_DREQ_001].intended_changes,
+      null,
+      "PUR-DREQ-001 intended_changes must be null when wizard_captures is null"
+    );
+  });
+
+  it("31. PUR-DREQ-001 intended_changes is null when wizard_captures.purchase is absent", () => {
+    const captures = { foundation: { fiscal_year_end_month: "12", fiscal_year_end_day: 31 } };
+    const defs = assemblePurchaseOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers(), captures);
+    assert.equal(
+      defs[CHECKPOINT_IDS.PUR_DREQ_001].intended_changes,
+      null,
+      "PUR-DREQ-001 intended_changes must be null when wizard_captures.purchase is absent"
+    );
+  });
+
+  it("32. PUR-DREQ-001 intended_changes is null when wizard_captures.purchase.po_lock is an invalid value", () => {
+    const captures = { purchase: { po_lock: "never" } };
+    const defs = assemblePurchaseOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers(), captures);
+    assert.equal(
+      defs[CHECKPOINT_IDS.PUR_DREQ_001].intended_changes,
+      null,
+      "PUR-DREQ-001 intended_changes must be null for invalid po_lock value"
+    );
+  });
+
+  it("33. PUR-DREQ-001 intended_changes is null when wizard_captures.purchase.po_lock is a non-string", () => {
+    const captures = { purchase: { po_lock: true } };
+    const defs = assemblePurchaseOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers(), captures);
+    assert.equal(
+      defs[CHECKPOINT_IDS.PUR_DREQ_001].intended_changes,
+      null,
+      "PUR-DREQ-001 intended_changes must be null when po_lock is a non-string"
+    );
+  });
+
+  it("34. PUR-DREQ-002 through PUR-DREQ-007 intended_changes unaffected by valid wizard_captures.purchase.po_lock", () => {
+    // Verify that supplying a valid po_lock capture does not contaminate other definitions
+    const answers = makeDiscoveryAnswers({ "PI-02": "All orders", "FC-03": true, "MF-04": true, "PI-05": true });
+    const captures = { purchase: { po_lock: "lock" } };
+    const defs = assemblePurchaseOperationDefinitions(makeTargetContext(), answers, captures);
+
+    // PUR-DREQ-001 derives po_lock
+    assert.deepEqual(defs[CHECKPOINT_IDS.PUR_DREQ_001].intended_changes, { po_lock: "lock" });
+    // PUR-DREQ-002 remains null
+    assert.equal(defs[CHECKPOINT_IDS.PUR_DREQ_002].intended_changes, null, "PUR-DREQ-002 must remain null");
+    // PUR-DREQ-004 retains its discovery-derived value
+    assert.deepEqual(defs[CHECKPOINT_IDS.PUR_DREQ_004].intended_changes, { po_double_validation: "always" });
+    // PUR-DREQ-005, 006, 007 remain null
+    assert.equal(defs[CHECKPOINT_IDS.PUR_DREQ_005].intended_changes, null, "PUR-DREQ-005 must remain null");
+    assert.equal(defs[CHECKPOINT_IDS.PUR_DREQ_006].intended_changes, null, "PUR-DREQ-006 must remain null");
+    assert.equal(defs[CHECKPOINT_IDS.PUR_DREQ_007].intended_changes, null, "PUR-DREQ-007 must remain null");
   });
 
 });

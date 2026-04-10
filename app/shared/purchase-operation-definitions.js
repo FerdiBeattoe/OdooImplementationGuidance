@@ -22,14 +22,21 @@
 //       purchase_receipt_reminder). res.company is confirmed in ALLOWED_APPLY_MODELS.
 //   R3  target_operation is always "write" — no create, unlink, or other operations.
 //   R4  intended_changes remains null unless a value is directly derivable from
-//       target_context or discovery_answers with a confirmed Odoo 19 field
-//       reference already present in repo evidence. Currently only
-//       PUR-DREQ-004 qualifies:
-//       - PI-02 = "All orders" → res.company.po_double_validation = "always"
-//         (field name confirmed in this file; value token confirmed by
-//          app/frontend/src/wizards/operations/PurchaseWizard.js purchaseTerms.double_validation)
+//       target_context, discovery_answers, or wizard_captures with a confirmed
+//       Odoo 19 field reference already present in repo evidence. Currently:
+//       - PUR-DREQ-001 qualifies via wizard_captures.purchase.po_lock:
+//           "edit"  → res.company.po_lock = "edit"
+//           "lock"  → res.company.po_lock = "lock"
+//           (field confirmed in scripts/odoo-confirmed-fields.json — res.company
+//            po_lock selection with exactly two values: "edit" and "lock")
+//       - PUR-DREQ-004 qualifies via discovery_answers:
+//           PI-02 = "All orders" → res.company.po_double_validation = "always"
 //       All other Purchase checkpoints remain null — required business values are
 //       not present at assembly time.
+//   R15 PUR-DREQ-001 po_lock intended_changes sourced from
+//       wizard_captures.purchase.po_lock. Value must be exactly "edit" or "lock"
+//       (the two confirmed Odoo 19 selection tokens). Any other value or absent
+//       capture produces null (honest — R4). No fabrication.
 //   R5  PUR-FOUND-001 is Informational (execution_relevance: Informational,
 //       safety_class: Not_Applicable). Intentionally excluded — Gate 6 does not
 //       apply to Informational checkpoints.
@@ -73,7 +80,40 @@ import { CHECKPOINT_IDS } from "./checkpoint-engine.js";
 // Module version — increment on any rule change
 // ---------------------------------------------------------------------------
 
-export const PURCHASE_OP_DEFS_VERSION = "1.1.0";
+export const PURCHASE_OP_DEFS_VERSION = "1.2.0";
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+// Valid po_lock selection values — confirmed from scripts/odoo-confirmed-fields.json
+// res.company.po_lock selection: ["edit", "lock"].
+const VALID_PO_LOCK_VALUES = new Set(["edit", "lock"]);
+
+/**
+ * Extracts po_lock intended_changes from wizard_captures.
+ *
+ * Returns { po_lock: value } when wizard_captures.purchase.po_lock is exactly
+ * "edit" or "lock"; null otherwise (R4, R15).
+ *
+ * @param {object|null} wizard_captures — full wizard_captures map or null
+ * @returns {{ po_lock: string }|null}
+ */
+function extractPoLockChanges(wizard_captures) {
+  if (!isPlainObject(wizard_captures)) return null;
+
+  const purchaseCapture = wizard_captures.purchase;
+  if (!isPlainObject(purchaseCapture)) return null;
+
+  const value = purchaseCapture.po_lock;
+  if (typeof value !== "string" || !VALID_PO_LOCK_VALUES.has(value)) return null;
+
+  return { po_lock: value };
+}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -132,18 +172,20 @@ export const PURCHASE_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([
  * PUR-DREQ-003 and PUR-DREQ-004 are mutually exclusive (R9) — PI-02 can only be
  * "Threshold" or "All orders", never both.
  *
- * intended_changes remains null unless directly derivable from discovery answers
- * with a confirmed Odoo 19 field reference already present in repo evidence.
- * Currently only PUR-DREQ-004 qualifies:
- *   PUR-DREQ-004  intended_changes: { po_double_validation: "always" }
+ * intended_changes is non-null for:
+ *   PUR-DREQ-001  { po_lock: "edit"|"lock" }  when wizard_captures.purchase.po_lock
+ *                 is a valid selection value (R15); null otherwise (honest R4)
+ *   PUR-DREQ-004  { po_double_validation: "always" }  when PI-02 = "All orders"
  *
  * @param {object|null} target_context      — createTargetContext() shape or null
  * @param {object|null} discovery_answers   — createDiscoveryAnswers() shape or null
+ * @param {object|null} wizard_captures     — full wizard_captures map or null
  * @returns {{ [checkpoint_id: string]: object }} operation_definitions map (never null)
  */
 export function assemblePurchaseOperationDefinitions(
   target_context = null,
-  discovery_answers = null
+  discovery_answers = null,
+  wizard_captures = null
 ) {
   const map = createOperationDefinitionsMap();
 
@@ -152,14 +194,17 @@ export function assemblePurchaseOperationDefinitions(
   // Gate 6 does not apply to Informational checkpoints.
 
   // ── PUR-DREQ-001: RFQ-to-PO purchase policy settings (Conditional, unconditional) ──
-  // Configures purchase order policy settings on the company record via res.config.settings.
-  // intended_changes is null — purchase policy configuration data not available at
-  // assembly time (R4).
+  // Configures res.company.po_lock via wizard_captures.purchase.po_lock.
+  // Valid selection values: "edit" (allow editing confirmed POs) or
+  // "lock" (confirmed POs are not editable).
+  // Sourced exclusively from wizard_captures — no discovery answer maps to this
+  // field. null when captures absent, partial, or invalid (R4, R15).
+  // Field confirmed: scripts/odoo-confirmed-fields.json res.company.po_lock.
   map[CHECKPOINT_IDS.PUR_DREQ_001] = createOperationDefinition({
     checkpoint_id:    CHECKPOINT_IDS.PUR_DREQ_001,
     target_model:     PURCHASE_COMPANY_MODEL,
     target_operation: PURCHASE_TARGET_OPERATION,
-    intended_changes: null,
+    intended_changes: extractPoLockChanges(wizard_captures),
   });
 
   // ── PUR-DREQ-002: Vendor terms and pricing policy settings (Safe, unconditional) ──

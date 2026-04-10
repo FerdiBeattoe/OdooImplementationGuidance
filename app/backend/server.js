@@ -99,6 +99,7 @@ import { getIndustryTemplate } from "../shared/industry-templates.js";
 const WIZARD_DOMAIN_ASSEMBLERS = Object.freeze({
   foundation: assembleFoundationOperationDefinitions,
   inventory:  assembleInventoryOperationDefinitions,
+  purchase:   assemblePurchaseOperationDefinitions,
 });
 
 // Rate limiting configuration
@@ -1200,7 +1201,7 @@ async function handlePipelineRun(req, res, user) {
         ...assembleMasterDataOperationDefinitions(tc, da),
         ...assembleCrmOperationDefinitions(tc, da),
         ...assembleSalesOperationDefinitions(tc, da),
-        ...assemblePurchaseOperationDefinitions(tc, da),
+        ...assemblePurchaseOperationDefinitions(tc, da, wizardCaptures),
         ...assembleInventoryOperationDefinitions(tc, da, wizardCaptures),
         ...assembleManufacturingOperationDefinitions(tc, da),
         ...assemblePlmOperationDefinitions(tc, da),
@@ -1731,7 +1732,7 @@ function buildOperationDefinitionsFromRuntimeState(runtimeState) {
     ...assembleMasterDataOperationDefinitions(targetContext, discoveryAnswers),
     ...assembleCrmOperationDefinitions(targetContext, discoveryAnswers),
     ...assembleSalesOperationDefinitions(targetContext, discoveryAnswers),
-    ...assemblePurchaseOperationDefinitions(targetContext, discoveryAnswers),
+    ...assemblePurchaseOperationDefinitions(targetContext, discoveryAnswers, wizardCaptures),
     ...assembleInventoryOperationDefinitions(targetContext, discoveryAnswers, wizardCaptures),
     ...assembleManufacturingOperationDefinitions(targetContext, discoveryAnswers),
     ...assemblePlmOperationDefinitions(targetContext, discoveryAnswers),

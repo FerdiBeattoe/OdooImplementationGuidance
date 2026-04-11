@@ -64,7 +64,7 @@ This means:
 
 - Odoo version scope is Odoo 19 only.
 - Supported editions are Community and Enterprise only.
-- Supported deployment types are Odoo Online, Odoo.sh, and On-Premise only.
+- Supported deployment types are Odoo Online, Odoo.sh Enterprise, and On-Premise only.
 - The platform must not introduce historical correction logic.
 - The platform must not perform transactional data surgery.
 - The platform must not generate best-guess business logic on behalf of users.

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the first-pass domain structure covered by the implementation control platform. It is intentionally expandable, but already operational as a governance baseline.
+This document defines the governed domain structure for the human-guided Odoo self-implementation platform. It is intentionally expandable, but already operational as a governance baseline.
 
 This document does not claim exhaustive checkpoint completeness for every official Odoo 19 domain. It defines the current governed domain structure. Any official domain not listed here is not yet governed by this framework and must not be treated as covered until added with the same control fields.
 

@@ -2,130 +2,411 @@
 
 ## Project Identity
 
-This repository defines an Odoo 19 Implementation Control Platform with bounded implementation-engine capability.
+Project Odoo is the first vertical of Project ERP (PTY) Ltd. It is a
+production SaaS platform for governed Odoo 19 implementation. It is live
+at https://project-odoo.onrender.com.
 
-The product is a guided implementation platform that takes a business from scoped setup through a truthful, usable Odoo 19 implementation by:
+The product takes a business from scoped discovery through a truthful,
+governed Odoo 19 implementation by:
 
 - gathering user answers to determine what must be configured
 - determining activated domains and required implementation scope
 - previewing intended implementation actions before execution
-- requiring approval before any execution
-- safely applying REAL Odoo application-layer writes through governed bounded execution
-- recording truthful execution results with audit traceability
-- supporting enough domain coverage, data setup, and workflow completion to reach a usable implementation state
+- requiring approval before any governed write executes
+- safely applying real Odoo application-layer writes through bounded execution
+- recording truthful execution results with full audit traceability
+- supporting enough domain coverage, data setup, and workflow completion
+  to reach a usable implementation state
 
 The platform supports:
 
 - fresh Odoo 19 implementations
 - forward-safe expansion of existing Odoo 19 implementations
-- guided setup of currently unused modules or features within an Odoo 19 implementation
+- guided setup of currently unused modules within an Odoo 19 instance
 - governed live connection to supported Odoo environments
-- read-only environment inspection
+- read-only environment inspection and module installation
 
-It does not serve as a remediation, repair, migration-fix, unrestricted administration, or developer diagnostic tool.
+It does not serve as a remediation, repair, migration-fix, unrestricted
+administration, or developer diagnostic tool.
+
+---
 
 ## End Goal
 
-The governing end goal of this platform is: **a usable guided implementation with real Odoo writes through governed application-layer execution.**
+The governing end goal of this platform is: a usable guided implementation
+with real Odoo writes through governed application-layer execution,
+delivered as a production SaaS product.
 
 This means:
 
-- Every in-scope wizard/domain must be able to truthfully write to Odoo through the governed execution path, or be explicitly classified as manual/out-of-scope with an exact reason.
-- Frontend, shell, dashboard, and UI work are subordinate to implementation write capability — they exist to expose governed execution, not as ends in themselves.
-- Preview, approval, and execution recording are means to reaching real implementation outcomes, not the end product.
-- "Usable implementation" requires more than isolated writes — it requires enough domain coverage for the project scope, enough data setup paths, truthful checkpoint/blocker/readiness state, and a stable resume/use flow.
-- A wizard or domain is not "done" until it can produce a truthful preview, require approval, perform a real Odoo application-layer write, and record a truthful result — or is explicitly marked manual/out-of-scope with a documented reason.
+- Every in-scope domain must truthfully write to Odoo through the governed
+  execution path, or be explicitly classified as manual/out-of-scope with
+  an exact reason.
+- Frontend, shell, dashboard, and UI work are subordinate to implementation
+  write capability — they exist to expose governed execution, not as ends
+  in themselves.
+- Preview, approval, and execution recording are means to reaching real
+  implementation outcomes, not the end product.
+- A wizard or domain is not done until it can produce a truthful preview,
+  require approval, perform a real Odoo application-layer write, and record
+  a truthful result — or is explicitly marked manual/out-of-scope with a
+  documented reason.
+
+---
 
 ## Hard Scope Boundaries
-
-The following boundaries are non-negotiable:
 
 - Odoo version scope is Odoo 19 only.
 - Supported editions are Community and Enterprise only.
 - Supported deployment types are Odoo Online, Odoo.sh, and On-Premise only.
-- The platform is for guided implementation through answer-driven discovery, validation, checkpoint enforcement, preview, approval, and bounded application-layer execution that reaches usable implementation outcomes.
 - The platform must not introduce historical correction logic.
 - The platform must not perform transactional data surgery.
 - The platform must not generate best-guess business logic on behalf of users.
 - The platform must not permit skipping critical checkpoints.
-- Training is opt-in by default unless a project owner explicitly marks training as required.
-- Odoo.sh Enterprise work must be branch-aware whenever a change target or deployment path is relevant.
-- Coding tasks may improve execution, structure, and clarity, but may not redefine product direction beyond the governed execution model.
-- Frontend, shell, and dashboard work must not be prioritized over implementation write capability. UI exists to expose governed execution, not as an end in itself.
-- A wizard, domain, or implementation surface is not considered complete until it can truthfully write through governed execution, or is explicitly marked manual/out-of-scope with exact justification.
+- The platform must not expose unrestricted database, shell, or admin-console access.
+- The platform must not execute writes without preview, safety classification,
+  checkpoint eligibility, and audit logging.
+- The platform must not promise rollback unless a specific action explicitly
+  defines a tested reversal path.
+- Odoo.sh Enterprise work must be branch-aware wherever relevant.
+- Coding tasks may improve execution, structure, and clarity, but may not
+  redefine product direction beyond the governed execution model.
+- Frontend and dashboard work must not be prioritized over implementation
+  write capability.
 
-## Authority Order Of Documents
+---
 
-Agents must treat repository authority in the following order:
+## Repository Structure
 
-1. `AGENTS.md`
-2. `docs/00_Product_Constitution.md`
-3. `docs/01_Scope_Boundaries.md`
-4. `docs/02_Target_Matrix.md`
-5. `docs/05_Validation_Checkpoint_Rules.md`
-6. `docs/03_Implementation_Master_Map.md`
-7. `docs/04_Domain_Coverage_Map.md`
-8. `docs/08_Project_State_Model.md`
-9. `docs/07_Information_Architecture.md`
-10. `docs/06_Guidance_Content_Framework.md`
-11. `docs/09_Decision_Log.md`
-12. `docs/10_Working_LLM_Rules.md`
+C:/tmp/OdooImplementationGuidance/
+  app/
+    backend/
+      server.js              - Main server, all API routes
+      auth-service.js        - Supabase auth
+      invite-service.js      - Invite code validation
+      engine.js              - Connection registry, governed writes
+      audit-service.js       - Fire-and-forget audit helper
+      data/
+        connections.json     - Gitignored, URL+DB only, no passwords
+        checkpoint-guidance.json - F5 content (Opus generated)
+      migrations/            - SQL migration files (repo-tracked)
+      tests/                 - Test suite — never break these
+    frontend/
+      index.html             - SPA entry point
+      src/
+        app.js               - Router, view orchestration
+        views/
+          pages/             - Marketing pages
+          onboarding-wizard.js
+          connection-wizard-view.js
+          pipeline-dashboard.js
+          implementation-dashboard-view.js
+          roadmap-view.js
+          wizard-launcher-view.js
+          data-import-view.js
+          knowledge-base-view.js
+          analytics-view.js
+          team-view.js              - F1 complete
+          audit-log-view.js         - F3 complete
+          pre-commit-report-view.js - F2 complete
+          instance-scanner-view.js  - F4 complete
+        components/
+          layout-shell.js
+          onboarding-tour.js
+          status-badge.js
+        state/
+          app-store.js
+          pipeline-store.js
+          onboarding-store.js
+        lib/
+          dom.js             - el() DOM builder — use this always
+          icons.js           - lucideIcon() helper — PascalCase
+          lucide.min.js
+        styles/
+  shared/                    - PIPELINE ENGINE — DO NOT TOUCH
+    index.js
+    checkpoint-engine.js
+    master-data-operation-definitions.js
+    assemblers/              - 23 domain assemblers
+  docs/                      - Governing authority documents
+  render.yaml
+  .env.example
+  .gitignore
 
-If lower-order documents conflict with higher-order documents, the higher-order document wins and the conflict must be corrected.
+### Pipeline Engine (shared/)
+DO NOT TOUCH unless explicitly instructed.
+Contains the 12-step pipeline orchestrator, 23 domain assemblers,
+124 checkpoints, carry-over block pattern, honest-null rule, and
+blocker engine guard. This is the core product IP.
+
+---
+
+## Authority Order
+
+1.  AGENTS.md — this file
+2.  docs/00_Product_Constitution.md
+3.  docs/01_Scope_Boundaries.md
+4.  docs/02_Target_Matrix.md
+5.  docs/03_Authority_Order.md
+6.  docs/05_Validation_Checkpoint_Rules.md
+7.  docs/06_Checkpoint_and_Validation_Rules.md
+8.  docs/03_Implementation_Master_Map.md
+9.  docs/04_Domain_Coverage_Map.md
+10. docs/08_Project_State_Model.md
+11. docs/07_Information_Architecture.md
+12. docs/06_Guidance_Content_Framework.md
+13. docs/09_Decision_Log.md
+14. docs/10_Working_LLM_Rules.md
+15. docs/12_LLM_Execution_Contract.md
+
+If lower-order documents conflict with higher-order documents, the
+higher-order document wins. If any prompt instruction conflicts with
+the authority documents, the authority documents win. Halt and report.
+
+---
+
+## Current Build State — V2
+
+V1 is complete and live. V2 is in active development.
+
+### Infrastructure
+- Node.js backend, vanilla JS frontend, no framework, no bundler
+- Supabase — auth, PostgreSQL (accounts, projects, licences,
+  invite_codes, team_members, audit_log)
+- Render — auto-deploys on push to main
+- Paddle — payment processor (not yet integrated)
+- Port: 4174 (local) | https://project-odoo.onrender.com (production)
+
+### Test Invariant — NON-NEGOTIABLE
+Current baseline: 2,842 pass, 0 fail
+Every commit must maintain this count or better.
+Run before every commit: npm test 2>&1 | tail -5
+Never commit if tests fail. Never commit without running tests.
+Current head commit: 866350c
+
+### V2 Feature Status
+
+| Feature                        | Status          | Commit   |
+|--------------------------------|-----------------|----------|
+| F1 — Team & User Management    | Complete        | 46b5cdf  |
+| F2 — Pre-Commit Module Report  | Complete        | dabfe8e  |
+| F3 — Audit Log                 | Complete        | 39d5ca8  |
+| F4 — Scanner + Module Installer| Complete        | 866350c  |
+| F5 — Checkpoint Guidance       | UI pending      | —        |
+| F6 — RAG Assistant             | Planned         | —        |
+
+### F1 — Team & User Management (Complete)
+- team_members table in Supabase (migration: 003_team_members.sql)
+- Four roles: project_lead, implementor, reviewer, stakeholder
+- Auto-assign project_lead on project creation
+- Backend routes: GET, POST invite, DELETE, PATCH role
+- assertProjectLead helper in server.js
+- Last-project-lead protection on DELETE and PATCH
+- audit-service.js — fire-and-forget helper
+- team-view.js — full UI with invite modal, role badges, empty state
+- Read-only banner for reviewer and stakeholder
+- Sidebar: Team after Analytics, before Pipeline
+- Deferred: invite acceptance/account-link reconciliation
+
+### F2 — Pre-Commit Module Report (Complete)
+- /api/audit/write route in server.js (JWT protected, action whitelist)
+- Review & Commit button in pipeline-dashboard.js (project_lead only)
+- pre-commit-report-view.js — grouped by domain, em dash for unknown
+  values, COMMIT confirmation modal (exact string, case sensitive)
+- PDF export via pdfmake — client header, PO footer, page numbers
+- pdfmake served as static files from node_modules
+
+### F3 — Audit Log (Complete)
+- audit-log-view.js — filters, timeline feed, details toggle,
+  pagination, CSV export trigger
+- Audit Log in sidebar after Analytics, before Team
+- GET /api/audit/:projectId — JWT protected, membership check
+- GET /api/audit/:projectId/export — CSV streams all entries
+- audit-log route wired in app.js
+- Deferred: audit_log migration file not yet tracked in repo
+
+### F4 — Scanner + Module Installer (Complete)
+- POST /api/odoo/scan — ephemeral credential scan
+- POST /api/odoo/install-module — button_immediate_install
+- instance-scanner-view.js — scan form, results, module installer
+- Route wired in app.js
+- Scan Instance entry point in pipeline-dashboard.js
+- Credentials never stored, never logged, never returned
+- module_installed in audit whitelist
+
+### F5 — Checkpoint Guidance (In Progress)
+- checkpoint-guidance.json generated — 167 checkpoints, 23 domains
+- Output: app/backend/data/checkpoint-guidance.json
+- 167/167 checkpoint IDs verified against engine
+- Pending human review of coverage-gap domains before commit
+- Coverage gap domains: Projects, Website/eCommerce, Documents,
+  Sign, Approvals, Repairs, Maintenance, Subscriptions, Rental
+- UI pending: expandable guidance panel per checkpoint
+- Feeds F6 RAG corpus
+
+### F6 — RAG Assistant (Planned)
+- Supabase pgvector
+- Scoped to methodology content only — no internet access
+- Corpus: F5 guidance content + methodology docs
+- No general Odoo knowledge — only Project Odoo methodology
+
+---
+
+## Sidebar Navigation — Final V2 Order
+
+1. New Project
+2. Dashboard
+3. Implementation Roadmap
+4. Module Setup
+5. Data Import
+6. Knowledge Base
+7. Analytics
+8. Audit Log       (F3)
+9. Team            (F1)
+10. Pipeline
+
+---
+
+## Supabase
+
+Project ID: bywbaytwhpvznjmaklzp
+Tables: accounts, projects, licences, invite_codes,
+        team_members, audit_log
+Schema changes via SQL editor only.
+Never call Supabase admin methods from frontend.
+Migrations tracked in app/backend/migrations/
+
+---
+
+## Render Deployment
+
+Service: project-odoo
+URL: https://project-odoo.onrender.com
+Repo: FerdiBeattoe/OdooImplementationGuidance
+Branch: main — auto-deploys on push
+Environment variables: SUPABASE_URL, SUPABASE_ANON_KEY,
+  SUPABASE_SERVICE_ROLE_KEY, NODE_ENV, SITE_URL
+
+---
+
+## Design System — No Deviations
+
+Navy: #0c1a30 | Amber: #f59e0b
+Faded amber button:
+  background rgba(245,158,11,0.12)
+  border 1px solid rgba(245,158,11,0.3)
+  color #92400e | border-radius 6px
+Secondary button:
+  background rgba(12,26,48,0.06)
+  border 1px solid rgba(12,26,48,0.15)
+  color #0c1a30 | border-radius 6px
+Cards: white | 1px solid #e2e8f0 | border-radius 10px
+Font: Inter, sans-serif
+Icons: lucideIcon(name, size) PascalCase from lib/icons.js
+No solid orange. No purple. No border-radius > 8px on buttons.
+
+---
+
+## Architecture Rules
+
+- Passwords NEVER stored anywhere on disk
+- connections.json stores URL + database only
+- JWT middleware required on all protected routes
+- sessionToken lives in onboardingStore state
+- Cold load always shows home view
+- onNavigate("dashboard") for all authenticated exits
+- All DOM built with el() from lib/dom.js — no innerHTML ever
+- No framework, no bundler — vanilla JS only
+
+---
+
+## Git Discipline
+
+- git add [specific files] — never git add -A
+- Descriptive commit messages
+- Always push to main
+- Never commit without running tests first
+- Never commit scratch files, CLAUDE.md, *.agent.md, or memory files
+
+## .gitignore must include:
+- *.agent.md
+- *.memory.md
+- CLAUDE.md
+- .claude/
+- RUFLO_*.md
+- docs/agents/
+- app/backend/data/connections.json
+
+---
+
+## Tool Division
+
+- Codex: surgical single-file fixes, sequential shared-file work
+- Ruflo: parallel multi-file feature builds, non-overlapping files
+- Opus + Ruflo: content generation, copy, guidance, polish
+- Never use Ruflo for parallel work on shared files
+- Codex preferred when features touch server.js + app.js sequentially
+
+---
+
+## PowerShell Specifics
+
+- Use Invoke-WebRequest not curl
+- Kill Node: taskkill /IM node.exe /F
+- Restart server after adding routes
+- Path: C:/tmp/OdooImplementationGuidance
+
+---
+
+## Every Task Pattern
+
+1. Read AGENTS.md and relevant authority docs first
+2. Read the specific files for the task
+3. Report what you found
+4. Make surgical changes only — one file per phase
+5. Run tests — confirm current baseline, 0 fail
+6. git add [specific file]
+7. Commit with descriptive message
+8. Push to main
+9. Report: files changed, test count, commit hash
+
+---
 
 ## Non-Negotiable Rules
 
-- Do not reframe this product as a diagnostic or remediation platform.
-- Do not add migration-repair workflows, cleanup tooling, or historical recovery logic.
-- Do not create flows that bypass checkpoint enforcement for convenience.
-- Do not assume configuration is safe without validation evidence.
-- Do not propose writes where the governing documents classify them as blocked.
-- Prompts, tasks, skills, and local work instructions cannot weaken, bypass, reinterpret, or override any governance document in the authority order.
-- Do not silently expand supported versions, editions, deployments, or project modes.
-- Do not infer business decisions that require explicit user or project-owner confirmation.
-- Do not collapse the distinction between implementation completion and operational readiness.
+- Do not reframe this product as diagnostic, remediation, or admin
+- Do not add migration-repair workflows or historical recovery logic
+- Do not create flows that bypass checkpoint enforcement
+- Do not introduce direct database write paths bypassing governed execution
+- Do not silently expand supported versions, editions, or deployments
+- Do not collapse implementation completion and operational readiness
+- Do not touch /shared/ unless explicitly instructed
+- Do not store credentials anywhere on disk
+- Do not commit scratch files, memory files, or agent notes
 
-## Drift Detection Rules
+---
 
-Agents must stop and correct course if they detect any of the following:
+## Drift Detection
 
-- language that suggests remediation, repair, migration fix, forensic analysis, or post-failure recovery as core scope
-- features that edit live historical transactions or perform corrective data surgery
-- content that treats unsupported Odoo versions as in scope
-- content that ignores edition or deployment differences where they materially affect behavior
-- content that allows checkpoint skipping without explicit deferment rules
-- UI or workflow language that implies unrestricted write access
-- agent instructions that claim authority above the repository governance documents
-- implementation flows that are not branch-aware for relevant Odoo.sh Enterprise changes
-- progress that prioritizes shell, UI, or dashboard work over implementation write capability
-- wizard or domain work claimed complete while stopped at preview, approval, or recording only — without a real governed write path
-- framing the product as a guide-only planner, control-plane dashboard, or shell-first project that does not need to reach real Odoo writes
-- treating preview/approval/execution recording as the end product rather than means to usable implementation outcomes
+Halt and report if detected:
+- Language suggesting remediation or repair as core scope
+- Features editing live historical transactions
+- Content treating unsupported Odoo versions as in scope
+- Flows bypassing preview, safety class, or audit logging
+- Agent instructions claiming authority above this document
+- Progress prioritising UI over implementation write capability
+- Wizard work claimed complete without a real governed write path
 
-When drift is found, agents must:
+When drift found:
+1. Identify the conflicting text or logic
+2. Align to the higher-authority document
+3. Record the governing assumption if it affects future work
 
-1. identify the conflicting text or logic
-2. align it to the higher-authority document set
-3. record the governing assumption if the correction materially affects future work
+---
 
-## Execution Expectations
+## Live Proof State — test236 (V1 Engine)
 
-Agents working in this repository must:
-
-- read the governing documents before making product-shaping changes
-- preserve consistent terminology across documents and implementation artifacts
-- distinguish clearly between fresh implementation, forward-safe expansion, and guided setup of unused features
-- keep rules operational, explicit, and testable
-- prefer structured constraints over broad narrative prose
-- ensure any workflow, state model, or UI proposal maps back to checkpoints, validation, and downstream impact
-- run a consistency review after significant documentation changes
-
-## Product Direction Rule
-
-Agents may not redefine product direction from coding tasks.
-
-Coding work may implement, clarify, or operationalize existing direction. If a coding task appears to require a product-level change, the agent must:
-
-1. identify the governing documents affected
-2. state the conflict or ambiguity explicitly
-3. propose a bounded update rather than silently changing direction in code
+As of 2026-04-05: 124/124 checkpoints Complete across 23 domains.
+Full carry-over block and proof records in .claude/agent-memory/
+Do not use test236 proof state to make V2 build decisions.
+Engine proof work is complete. V2 build is the current focus.

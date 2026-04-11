@@ -41,17 +41,25 @@ Users may not advance through critical implementation stages without checkpoint 
 
 Guidance must explain downstream impact, reversibility, and decision ownership. It must not function as generic help text.
 
+### Preview Before Execution
+
+The platform must show intended implementation actions before any live execution is allowed.
+
+### Bounded Execution Only
+
+The platform may execute only approved safe implementation actions within explicit deployment, checkpoint, and audit constraints.
+
 ### Forward-Safe Expansion Only
 
 Expansion is permitted only when it can be introduced without relying on repair logic, historical correction, or unsafe retroactive changes.
 
 ### Explicit Boundaries
 
-Supported versions, editions, deployments, and project modes must be stated directly and enforced consistently.
+Supported versions, editions, deployments, connection methods, execution classes, and project modes must be stated directly and enforced consistently.
 
 ### Human Decision Ownership
 
-The platform may structure decisions and highlight implications, but it may not invent business policy or best-guess operating logic.
+The platform may structure decisions, inspect system state, and execute approved safe actions, but it may not invent business policy or best-guess operating logic.
 
 ### Operational Readiness Is Separate From Configuration Completion
 
@@ -82,6 +90,7 @@ The product is not:
 - a developer diagnostic workbench
 - a transactional correction engine
 - an unrestricted configuration automation tool
+- a generic Odoo admin console
 - a raw database writer
 - a shell-first dashboard project that does not need to reach real Odoo writes
 - a guide-only planner that stops at advice without governed execution
@@ -99,6 +108,8 @@ The product is successful when it enables teams to:
 - move through implementation stages in a governed order
 - complete critical checkpoints with appropriate validation evidence
 - understand downstream impact before making consequential configuration decisions
+- inspect supported live Odoo environments without drifting into unrestricted diagnostics
+- preview intended implementation actions with explicit safety class before execution
 - require and obtain approval before any governed execution
 - execute real Odoo application-layer writes through governed bounded execution with audit traceability
 - record truthful success/failure execution results
@@ -108,3 +119,28 @@ The product is successful when it enables teams to:
 - maintain clean scope boundaries without drifting into remediation, diagnostics, or unrestricted administration
 
 A wizard or domain surface is not "done" until it can produce a truthful preview, require approval, perform a real governed Odoo application-layer write, and record a truthful result — or is explicitly marked manual/out-of-scope with documented justification.
+
+## Onboarding Wizard Governing Rules
+
+### Rule 1 — Irreversible Decision Warning Pattern
+
+Questions flagged as irreversible in the discovery framework (currently BM-03 and MF-01) must surface a warning screen before the user confirms their answer. The warning must:
+
+- Name every domain that will be activated or excluded as a result of the answer
+- Explain what that activation or exclusion means for the implementation sequence (which domains are unblocked, which are blocked, and which become go-live priority)
+- Require explicit user acknowledgement before proceeding
+- Never proceed silently on an irreversible answer
+
+Silence on an irreversible answer is a platform integrity failure. This rule cannot be waived, deferred, or bypassed under any framing.
+
+### Rule 2 — Deferred Answer Pattern
+
+If a user skips or defers any discovery question:
+
+- The wizard treats the unanswered question as "activate all domains this question could have triggered"
+- The implementation surface will be larger than necessary but never smaller than necessary
+- A warning is shown at the summary screen listing every domain activated by default due to unanswered questions
+- The user must explicitly acknowledge the defaulted activations before the pipeline run is triggered
+- Deferred questions are recorded in the runtime state as `deferred: true` so they can be revisited in a later session
+
+The principle underlying this rule is conservative scope expansion: an implementation that includes unnecessary domains can have those domains deactivated through a scope change; an implementation that omits required domains cannot be corrected without a governed rebuild.

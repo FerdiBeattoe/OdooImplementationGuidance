@@ -44,7 +44,7 @@ Drift indicators include:
 - absence of branch-aware handling for relevant Odoo.sh Enterprise changes
 - progress that prioritizes shell, UI, or dashboard work over implementation write capability
 - wizard or domain work claimed complete while stopped at preview, approval, or recording only
-- framing the product as a guide-only planner or control-plane that does not need real Odoo writes
+- framing the product as a guide-only planner or control-plane that does not need to reach real Odoo writes
 - treating preview/approval/execution recording as the end product rather than means to usable implementation
 
 ## Conflict Resolution Between Files

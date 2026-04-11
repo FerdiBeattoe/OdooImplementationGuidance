@@ -11,7 +11,7 @@
 - Supported editions:
   - Odoo 19 Community
   - Odoo 19 Enterprise
-- Edition-specific guidance is required wherever capability, licensing, hosting, or module availability differs
+- Edition-specific guidance and execution rules are required wherever capability, licensing, hosting, or module availability differs
 - The platform must not imply Enterprise capabilities are available in Community
 
 ## Deployment Scope
@@ -33,6 +33,35 @@ The platform supports only the following project types:
 3. Guided setup of unused modules or features
    - Structured activation and setup of modules or features that are not currently in operational use within an Odoo 19 implementation.
 
+## Supported Connection Scope
+
+The platform may connect only through governed supported methods.
+
+Initial supported connection methods:
+
+- authenticated Odoo application-layer session access through supported web or API endpoints
+- deployment-aware environment targeting metadata where relevant
+
+Connection methods remain blocked unless explicitly approved:
+
+- direct database write access
+- shell-level server control
+- unrestricted SSH administration
+- filesystem mutation outside approved deployment-aware execution workflows
+
+Odoo Online:
+- direct database access is blocked
+- application-layer connection may be used only where the platform truthfully supports it
+
+Odoo.sh Enterprise:
+- application-layer connection may be used
+- branch or environment target is mandatory for deployment-sensitive execution
+- production and non-production targets must not be treated as interchangeable
+
+On-Premise:
+- application-layer connection may be used
+- direct database access remains blocked unless a future governance update explicitly authorizes a bounded read-only inspection path
+
 ## Out-Of-Scope Items
 
 The following are out of scope:
@@ -48,23 +77,34 @@ The following are out of scope:
 - unsupported Odoo versions
 - unsupported editions or custom forks treated as official scope
 - broad software development tooling unrelated to implementation control
+- unrestricted Odoo administration
+- mass-write automation without preview and per-action safety governance
 
-## Write-Permission Boundaries
+## Execution Boundaries
 
-The platform may classify potential writes only within these boundaries:
+The platform may inspect, preview, and execute implementation actions only within these boundaries:
 
 - `safe`
-  - writes that are forward-safe, low-risk, and compatible with checkpoint completion rules
+  - low-risk, forward-safe implementation actions with satisfied prerequisites and explicit supported target context
 - `conditional`
-  - writes that require prerequisites, explicit decision confirmation, or environment constraints
+  - actions that may be acceptable but require additional confirmations, approvals, or target constraints
 - `blocked`
-  - writes that are unsafe, out of scope, deployment-incompatible, or dependent on remediation logic
+  - actions that are unsafe, unsupported, out of scope, deployment-incompatible, remediation-shaped, or checkpoint-ineligible
 
-The platform must never imply universal permission to write configuration changes. Every write path must be constrained by checkpoint state, deployment context, and safety class.
+The platform must never imply universal permission to write configuration changes. Every execution path must be constrained by checkpoint state, deployment context, target context, safety class, and audit logging.
+
+## Preview And Execution Rules
+
+- Every executable action must be previewed before execution.
+- Preview must identify target model or setting, intended change, safety class, prerequisites, and downstream impact summary.
+- `safe` actions may execute only after explicit operator confirmation.
+- `conditional` actions may not execute until the required additional confirmations are satisfied.
+- `blocked` actions must not execute.
+- Automatic rollback is not assumed. A rollback path exists only when a specific action explicitly defines a tested reversal model.
 
 ## Clarification Of All Modules
 
-"All modules" in this project means all official Odoo 19 functional domains that may reasonably appear in implementation planning or controlled activation for Community or Enterprise across the supported deployments.
+"All modules" in this project means all official Odoo 19 functional domains that may reasonably appear in implementation planning, controlled activation, inspection, preview, or bounded execution for Community or Enterprise across the supported deployments.
 
 This includes:
 
@@ -88,5 +128,6 @@ When a project runs on Odoo.sh and the relevant functionality depends on Enterpr
 - avoid treating production and non-production targets as interchangeable
 - require branch-aware validation evidence before marking deployment-sensitive checkpoints complete
 - separate decision approval from branch execution
+- keep execution blocked or conditional until target context is known
 
 If branch target is unknown for an Odoo.sh Enterprise change, the change must remain conditional or blocked until the target is identified.

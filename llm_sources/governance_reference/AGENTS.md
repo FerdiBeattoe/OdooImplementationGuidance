@@ -324,7 +324,8 @@ No solid orange. No purple. No border-radius > 8px on buttons.
 
 - git add [specific files] — never git add -A
 - Descriptive commit messages
-- Always push to main
+- Work on feature branches; merge to main via reviewed PR
+- Never push directly to main; never force-push to main
 - Never commit without running tests first
 - Never commit scratch files, CLAUDE.md, *.agent.md, or memory files
 
@@ -367,7 +368,7 @@ No solid orange. No purple. No border-radius > 8px on buttons.
 5. Run tests — confirm current baseline, 0 fail
 6. git add [specific file]
 7. Commit with descriptive message
-8. Push to main
+8. Push to current branch
 9. Report: files changed, test count, commit hash
 
 ---

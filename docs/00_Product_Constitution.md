@@ -2,30 +2,44 @@
 
 ## Product Identity
 
-The product is an Odoo 19 Implementation Control Platform with bounded implementation-engine capability.
+The product is a human-facing Odoo 19 self-implementation platform that helps people implement Odoo without consultants.
 
-It is a guided implementation platform that takes a business from scoped setup through a truthful, usable Odoo 19 implementation by gathering user answers, determining required configuration, previewing intended actions, requiring approval, safely applying real Odoo application-layer writes, and recording truthful results — across Community and Enterprise editions and across Odoo Online, Odoo.sh, and On-Premise deployments.
+It takes a business owner, operations lead, or in-house team through a complete, truthful Odoo 19 implementation by:
+
+- asking plain-language questions to understand what the business needs
+- determining which modules and settings are required based on those answers
+- explaining every consequential decision in plain language before it is made
+- writing the configuration it can truthfully write directly to Odoo through governed, approved execution
+- guiding the user through the remaining setup and data import work inside the platform
+
+The three fixed product surfaces are:
+
+- the **Pipeline** — the logic and control layer that sequences implementation, enforces checkpoints, and governs execution
+- the **Module Dashboard** — the module-level workspace that writes configuration to Odoo where truthful writes exist
+- the **Import Wizard** — the data import surface that writes records to Odoo through governed import execution
+
+These surfaces are not interchangeable, optional, or subordinate to one another. They are the product.
+
+The platform operates across Community and Enterprise editions and across Odoo Online, Odoo.sh Enterprise, and On-Premise deployments.
 
 ## Target Users
 
-Primary users:
+The primary user is a person or small team implementing Odoo without an external consultant. This includes:
 
-- implementation leads
-- functional consultants
-- solution architects
-- project owners
-- client-side process owners
-- administrators responsible for controlled configuration
+- business owners setting up Odoo themselves
+- operations leads taking on their own implementation
+- in-house project owners running a self-directed rollout
+- small teams with no dedicated Odoo partner engagement
 
 Secondary users:
 
-- trainers consuming optional guidance outputs
+- implementation leads and project owners managing a structured rollout
 - reviewers approving checkpoint completion
-- technical teams implementing bounded configuration tasks under governed rules
+- team members assigned bounded domain setup tasks under a governed plan
 
 ## Core Promise
 
-The platform will guide a project through correct Odoo 19 setup in the right order, require confirmation at critical checkpoints, explain downstream impact before decisions are locked in, connect to supported environments, preview intended implementation actions before execution, require approval before execution, safely apply real Odoo application-layer writes through governed bounded execution, record truthful execution results, and support enough domain coverage and data setup to reach a usable implementation state. It supports only forward-safe bounded implementation activity.
+The platform will guide a user through correct Odoo 19 setup in plain language, in the right order. It will ask questions, explain the impact of each decision before it is made, connect to the user's Odoo environment, write what it can truthfully write through governed execution, and guide the user through the remaining setup and import work. It will confirm at every critical checkpoint before advancing. It supports only forward-safe bounded implementation activity.
 
 ## Product Principles
 
@@ -67,18 +81,20 @@ A configured system is not automatically ready for go-live. Readiness requires c
 
 ## What The Product Is
 
-The product is:
+The product is a human-guided Odoo self-implementation platform with three fixed surfaces:
 
-- a guided implementation platform that reaches usable Odoo implementation outcomes through governed execution
-- an answer-driven discovery and configuration determination system
-- a checkpoint and validation framework
-- a preview-before-execution and approval-before-execution enforcement layer
-- a bounded application-layer execution surface for real Odoo writes
-- an audit-traceable execution recording system
-- a governed connection and inspection surface for supported Odoo environments
-- a mechanism to support fresh implementations and forward-safe expansion only
+- **Pipeline** — governs implementation sequencing, checkpoint enforcement, discovery, domain activation, and readiness
+- **Module Dashboard** — provides module-level workspaces and writes configuration to Odoo where truthful writes exist
+- **Import Wizard** — guides data preparation and writes records to Odoo through governed import execution
 
-The product is NOT a shell-first dashboard, a guide-only planner, or a control-plane that stops before real apply. Frontend and UI work exist to expose governed execution, not as ends in themselves.
+Together these surfaces:
+
+- ask the user questions in plain language to determine what needs to be configured
+- explain what each decision means and what happens downstream
+- write configuration to Odoo through governed, approved, audited execution
+- guide the user through the setup and import work that cannot be automated
+
+The product is NOT a shell-first dashboard, a guide-only planner, a diagnostic tool, or a control-plane that stops before real Odoo writes. The Pipeline, Module Dashboard, and Import Wizard must all be present and functional. Removing or subordinating any of them breaks the product.
 
 ## What The Product Is Not
 
@@ -94,7 +110,9 @@ The product is not:
 - a raw database writer
 - a shell-first dashboard project that does not need to reach real Odoo writes
 - a guide-only planner that stops at advice without governed execution
+- a connector platform or integration middleware
 - a substitute for business ownership of key implementation decisions
+- a consultant engagement platform — users implement themselves, the platform assists
 
 ## Hard Boundary Rule
 

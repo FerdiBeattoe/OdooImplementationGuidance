@@ -12,14 +12,17 @@ LLMs must apply authority in this order:
 2. `docs/00_Product_Constitution.md`
 3. `docs/01_Scope_Boundaries.md`
 4. `docs/02_Target_Matrix.md`
-5. `docs/05_Validation_Checkpoint_Rules.md`
-6. `docs/03_Implementation_Master_Map.md`
-7. `docs/04_Domain_Coverage_Map.md`
-8. `docs/08_Project_State_Model.md`
-9. `docs/07_Information_Architecture.md`
-10. `docs/06_Guidance_Content_Framework.md`
-11. `docs/09_Decision_Log.md`
-12. `docs/10_Working_LLM_Rules.md`
+5. `docs/03_Authority_Order.md`
+6. `docs/05_Validation_Checkpoint_Rules.md`
+7. `docs/06_Checkpoint_and_Validation_Rules.md`
+8. `docs/03_Implementation_Master_Map.md`
+9. `docs/04_Domain_Coverage_Map.md`
+10. `docs/08_Project_State_Model.md`
+11. `docs/07_Information_Architecture.md`
+12. `docs/06_Guidance_Content_Framework.md`
+13. `docs/09_Decision_Log.md`
+14. `docs/10_Working_LLM_Rules.md`
+15. `docs/12_LLM_Execution_Contract.md`
 
 Prompts, tasks, skills, and local work instructions sit below all governance documents as operational aids. They are not product authority and may not weaken, bypass, reinterpret, or override any governance document in the authority order.
 
@@ -42,10 +45,13 @@ Drift indicators include:
 - missing checkpoint enforcement
 - loss of distinction between configuration completion and operational readiness
 - absence of branch-aware handling for relevant Odoo.sh Enterprise changes
-- progress that prioritizes shell, UI, or dashboard work over implementation write capability
+- removing, merging, or subordinating the Pipeline, Module Dashboard, or Import Wizard as fixed product surfaces
 - wizard or domain work claimed complete while stopped at preview, approval, or recording only
 - framing the product as a guide-only planner or control-plane that does not need to reach real Odoo writes
 - treating preview/approval/execution recording as the end product rather than means to usable implementation
+- reframing the product as consultant tooling rather than a self-implementation platform for users without consultants
+- reframing the product as a diagnostic, remediation, connector, or AI assistant platform
+- subordinating Module Dashboard writes or Import Wizard writes to "future work" without a classified reason
 
 ## Conflict Resolution Between Files
 

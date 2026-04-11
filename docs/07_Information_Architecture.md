@@ -2,18 +2,39 @@
 
 ## Purpose
 
-This document defines the primary navigation and workspace structure for the implementation control and bounded execution platform.
+This document defines the primary navigation and workspace structure for the human-guided Odoo self-implementation platform.
+
+## Fixed Product Surfaces
+
+The platform has three fixed product surfaces. These must be present, navigable, and functional. They are not interchangeable and may not be removed, merged into one surface, or treated as subordinate to each other.
+
+### Pipeline
+
+The Pipeline is the logic and control layer. It sequences implementation stages, drives discovery questions, enforces checkpoints, determines domain activation, governs execution eligibility, and tracks implementation state. Users see their progress, blockers, and next required actions here.
+
+### Module Dashboard
+
+The Module Dashboard is the module-level workspace. It exposes each activated domain's checkpoints, guidance, inspection output, and execution surface. Where truthful governed writes exist, the Module Dashboard writes configuration to Odoo through the governed execution path. Users interact with Odoo here.
+
+### Import Wizard
+
+The Import Wizard is the data import surface. It guides the user through data preparation, template download, validation, and governed import execution that writes records directly to Odoo.
 
 ## Primary Navigation Model
 
-The primary navigation model has four top-level views:
+The primary navigation structure supports access to all three fixed surfaces and their supporting context:
 
-1. Dashboard
-2. Stages
-3. Domains
-4. Decisions and Readiness
+1. Dashboard — project summary, stage progress, domain progress, blockers, next actions
+2. Implementation Roadmap — stage-ordered view of the implementation journey
+3. Module Setup (Module Dashboard) — domain-level workspaces, checkpoints, inspection, preview, execution
+4. Data Import (Import Wizard) — governed data import and template preparation
+5. Pipeline — checkpoint state, domain activation, governed execution layer
+6. Knowledge Base — methodology content and decision reference
+7. Analytics — implementation progress and audit reporting
+8. Audit Log — execution and checkpoint audit trail
+9. Team — team members, roles, and access
 
-This keeps the product centered on governed implementation work rather than a generic settings or admin interface.
+This navigation model keeps the product centered on governed implementation work rather than a generic settings or admin interface.
 
 ## Stage Navigation Vs Domain Navigation
 

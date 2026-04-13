@@ -1,55 +1,47 @@
-// ---------------------------------------------------------------------------
-// PLM Operation Definitions — Odoo 19 Implementation Control Platform
-// ---------------------------------------------------------------------------
-//
-// Purpose:
-//   Assembles caller-supplied operation definitions for PLM domain Executable
-//   checkpoints. PLM currently has no governed-apply operation definitions
-//   because the requested target models are outside the allowed apply surface.
-//
-// Governing constraints:
-//   - specs/runtime_state_contract.md §1 (operation_definition shape)
-//   - governed-preview-engine.js R15 / Gate 6
-//   - governed-odoo-apply-service.js S4 (mrp.eco.type and mrp.eco are not in
-//     ALLOWED_APPLY_MODELS)
-//   - checkpoint-engine.js generatePLMCheckpoints
-//
-// Hard rules:
-//   R1  Only PLM domain checkpoints are considered here. Never other domains.
-//   R2  No PLM operation definitions are emitted. mrp.eco.type and mrp.eco are
-//       documented coverage gaps.
-//   R3  The returned map is always a plain object (createOperationDefinitionsMap
-//       shape). Never null, never an array.
-//   R4  Non-PLM checkpoint IDs are never added to the returned map.
-// ---------------------------------------------------------------------------
-
 import { ODOO_VERSION } from "./constants.js";
-
-if (ODOO_VERSION !== "19") {
-  throw new Error(
-    `plm-operation-definitions: ODOO_VERSION must be "19", got "${ODOO_VERSION}". Halting module init.`
-  );
-}
-
-import { createOperationDefinitionsMap } from "./runtime-state-contract.js";
-
-// COVERAGE GAP: mrp.eco.type not in ALLOWED_APPLY_MODELS
-// Must be added to governed-odoo-apply-service.js before
-// this checkpoint can have governed-apply execution
+if (ODOO_VERSION !== "19") throw new Error(`plm-operation-definitions: ODOO_VERSION must be "19", got "${ODOO_VERSION}".`);
+import { createOperationDefinition, createOperationDefinitionsMap } from "./runtime-state-contract.js";
+import { CHECKPOINT_IDS } from "./checkpoint-engine.js";
+export const PLM_OP_DEFS_VERSION = "1.1.0";
+export const PLM_TARGET_METHOD = "write";
 // COVERAGE GAP: mrp.eco not in ALLOWED_APPLY_MODELS
-// Must be added to governed-odoo-apply-service.js before
-// this checkpoint can have governed-apply execution
-export const PLM_COVERAGE_GAP_MODELS = Object.freeze([
-  "mrp.eco.type",
-  "mrp.eco",
-]);
-
-export const PLM_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([]);
-export const PLM_OP_DEFS_VERSION = "1.0.0";
-
-export function assemblePlmOperationDefinitions(
-  target_context = null,
-  discovery_answers = null
-) {
-  return createOperationDefinitionsMap();
-}
+// Intended changes for this model must remain null until the write gate expands.
+export const PLM_COVERAGE_GAP_MODELS = Object.freeze(["mrp.eco"]);
+export const PLM_CHECKPOINT_METADATA = Object.freeze({
+  [CHECKPOINT_IDS.PLM_FOUND_001]: Object.freeze({
+    target_model: "mrp.eco.type",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Safe",
+  }),
+  [CHECKPOINT_IDS.PLM_DREQ_001]: Object.freeze({
+    target_model: "mrp.eco.type",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Conditional",
+  }),
+  [CHECKPOINT_IDS.PLM_DREQ_002]: Object.freeze({
+    target_model: "mrp.eco.type",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Conditional",
+  }),
+  [CHECKPOINT_IDS.PLM_REC_001]: Object.freeze({
+    target_model: "mrp.eco.type",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Safe",
+  }),
+});
+export const PLM_EXECUTABLE_CHECKPOINT_IDS = Object.freeze(Object.keys(PLM_CHECKPOINT_METADATA));
+function addPlmDefinition(map, checkpoint_id) { const metadata = PLM_CHECKPOINT_METADATA[checkpoint_id]; if (!metadata) return; map[checkpoint_id] = createOperationDefinition({ checkpoint_id, target_model: metadata.target_model, method: PLM_TARGET_METHOD, intended_changes: null, safety_class: metadata.safety_class, execution_relevance: metadata.execution_relevance, validation_source: metadata.validation_source }); }
+export function assemblePlmOperationDefinitions(target_context = null, discovery_answers = null) { const map = createOperationDefinitionsMap(); const answers = discovery_answers?.answers ?? {};
+    // honest-null: truthful intended_changes cannot be derived from target_context, discovery_answers, or wizard_captures without fabrication.
+    addPlmDefinition(map, CHECKPOINT_IDS.PLM_FOUND_001);
+    // honest-null: truthful intended_changes cannot be derived from target_context, discovery_answers, or wizard_captures without fabrication.
+    addPlmDefinition(map, CHECKPOINT_IDS.PLM_DREQ_001);
+    // honest-null: truthful intended_changes cannot be derived from target_context, discovery_answers, or wizard_captures without fabrication.
+    addPlmDefinition(map, CHECKPOINT_IDS.PLM_DREQ_002);
+    // honest-null: truthful intended_changes cannot be derived from target_context, discovery_answers, or wizard_captures without fabrication.
+    addPlmDefinition(map, CHECKPOINT_IDS.PLM_REC_001);
+  return map; }

@@ -1,56 +1,39 @@
-// ---------------------------------------------------------------------------
-// Documents Operation Definitions — Odoo 19 Implementation Control Platform
-// ---------------------------------------------------------------------------
-//
-// Purpose:
-//   Assembles caller-supplied operation definitions for Documents domain
-//   Executable checkpoints. Documents currently has no governed-apply operation
-//   definitions because the requested target models are outside the allowed
-//   apply surface.
-//
-// Governing constraints:
-//   - specs/runtime_state_contract.md §1 (operation_definition shape)
-//   - governed-preview-engine.js R15 / Gate 6
-//   - governed-odoo-apply-service.js S4 (documents.folder and documents.share
-//     are not in ALLOWED_APPLY_MODELS)
-//   - checkpoint-engine.js generateDocumentsCheckpoints
-//
-// Hard rules:
-//   R1  Only Documents domain checkpoints are considered here. Never other domains.
-//   R2  No Documents operation definitions are emitted. documents.folder and
-//       documents.share are documented coverage gaps.
-//   R3  The returned map is always a plain object (createOperationDefinitionsMap
-//       shape). Never null, never an array.
-//   R4  Non-Documents checkpoint IDs are never added to the returned map.
-// ---------------------------------------------------------------------------
-
 import { ODOO_VERSION } from "./constants.js";
-
-if (ODOO_VERSION !== "19") {
-  throw new Error(
-    `documents-operation-definitions: ODOO_VERSION must be "19", got "${ODOO_VERSION}". Halting module init.`
-  );
-}
-
-import { createOperationDefinitionsMap } from "./runtime-state-contract.js";
-
-// COVERAGE GAP: documents.folder not in ALLOWED_APPLY_MODELS
-// Must be added to governed-odoo-apply-service.js before
-// this checkpoint can have governed-apply execution
+if (ODOO_VERSION !== "19") throw new Error(`documents-operation-definitions: ODOO_VERSION must be "19", got "${ODOO_VERSION}".`);
+import { createOperationDefinition, createOperationDefinitionsMap } from "./runtime-state-contract.js";
+import { CHECKPOINT_IDS } from "./checkpoint-engine.js";
+export const DOCUMENTS_OP_DEFS_VERSION = "1.1.0";
+export const DOCUMENTS_TARGET_METHOD = "write";
 // COVERAGE GAP: documents.share not in ALLOWED_APPLY_MODELS
-// Must be added to governed-odoo-apply-service.js before
-// this checkpoint can have governed-apply execution
-export const DOCUMENTS_COVERAGE_GAP_MODELS = Object.freeze([
-  "documents.folder",
-  "documents.share",
-]);
-
-export const DOCUMENTS_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([]);
-export const DOCUMENTS_OP_DEFS_VERSION = "1.0.0";
-
-export function assembleDocumentsOperationDefinitions(
-  target_context = null,
-  discovery_answers = null
-) {
-  return createOperationDefinitionsMap();
-}
+// Intended changes for this model must remain null until the write gate expands.
+export const DOCUMENTS_COVERAGE_GAP_MODELS = Object.freeze(["documents.share"]);
+export const DOCUMENTS_CHECKPOINT_METADATA = Object.freeze({
+  [CHECKPOINT_IDS.DOC_FOUND_001]: Object.freeze({
+    target_model: "documents.folder",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Safe",
+  }),
+  [CHECKPOINT_IDS.DOC_DREQ_001]: Object.freeze({
+    target_model: "documents.folder",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Safe",
+  }),
+  [CHECKPOINT_IDS.DOC_REC_001]: Object.freeze({
+    target_model: "documents.folder",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Safe",
+  }),
+});
+export const DOCUMENTS_EXECUTABLE_CHECKPOINT_IDS = Object.freeze(Object.keys(DOCUMENTS_CHECKPOINT_METADATA));
+function addDocumentsDefinition(map, checkpoint_id) { const metadata = DOCUMENTS_CHECKPOINT_METADATA[checkpoint_id]; if (!metadata) return; map[checkpoint_id] = createOperationDefinition({ checkpoint_id, target_model: metadata.target_model, method: DOCUMENTS_TARGET_METHOD, intended_changes: null, safety_class: metadata.safety_class, execution_relevance: metadata.execution_relevance, validation_source: metadata.validation_source }); }
+export function assembleDocumentsOperationDefinitions(target_context = null, discovery_answers = null) { const map = createOperationDefinitionsMap(); const answers = discovery_answers?.answers ?? {};
+    // honest-null: truthful intended_changes cannot be derived from target_context, discovery_answers, or wizard_captures without fabrication.
+    addDocumentsDefinition(map, CHECKPOINT_IDS.DOC_FOUND_001);
+    // honest-null: truthful intended_changes cannot be derived from target_context, discovery_answers, or wizard_captures without fabrication.
+    addDocumentsDefinition(map, CHECKPOINT_IDS.DOC_DREQ_001);
+    // honest-null: truthful intended_changes cannot be derived from target_context, discovery_answers, or wizard_captures without fabrication.
+    addDocumentsDefinition(map, CHECKPOINT_IDS.DOC_REC_001);
+  return map; }

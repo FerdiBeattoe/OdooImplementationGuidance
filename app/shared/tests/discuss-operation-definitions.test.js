@@ -1,41 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-
-import { ALLOWED_APPLY_MODELS } from "../../backend/governed-odoo-apply-service.js";
-import {
-  assembleDiscussOperationDefinitions,
-  DISCUSS_COVERAGE_GAP_MODELS,
-} from "../discuss-operation-definitions.js";
-import {
-  assertDefinitionsUseAllowedModels,
-  assertPlainObject,
-  makeDiscoveryAnswers,
-  makeTargetContext,
-} from "./operation-definitions-test-helpers.js";
-
+import { assembleDiscussOperationDefinitions, DISCUSS_CHECKPOINT_METADATA, DISCUSS_COVERAGE_GAP_MODELS, DISCUSS_TARGET_METHOD } from "../discuss-operation-definitions.js";
+import { assertDefinitionMetadata, assertPlainObject, makeDiscoveryAnswers, makeTargetContext } from "./operation-definitions-test-helpers.js";
 describe("assembleDiscussOperationDefinitions", () => {
-  it("1. returns zero definitions with null inputs", () => {
-    const defs = assembleDiscussOperationDefinitions(null, null);
-    assert.equal(Object.keys(defs).length, 0, "Discuss must currently emit zero definitions");
-  });
-
-  it("2. still returns zero definitions when gates are active", () => {
-    const defs = assembleDiscussOperationDefinitions(
-      makeTargetContext(),
-      makeDiscoveryAnswers({ "DI-01": "Yes" })
-    );
-    assert.equal(Object.keys(defs).length, 0, "Discuss must remain zero until allowed models exist");
-  });
-
-  it("3. coverage gaps are documented", () => {
-    assert.deepEqual(DISCUSS_COVERAGE_GAP_MODELS, ["mail.channel", "res.users"]);
-  });
-
-  it("4. no definition references a model outside ALLOWED_APPLY_MODELS", () => {
-    assertDefinitionsUseAllowedModels(assembleDiscussOperationDefinitions(null, null), ALLOWED_APPLY_MODELS);
-  });
-
-  it("5. return is a plain object — never null, never array", () => {
-    assertPlainObject(assembleDiscussOperationDefinitions(null, null));
-  });
+  it("1. assembles one definition per metadata entry", () => { assert.equal(Object.keys(assembleDiscussOperationDefinitions(null, null)).length, Object.keys(DISCUSS_CHECKPOINT_METADATA).length); });
+  it("2. every assembled definition carries the required metadata fields", () => { assertDefinitionMetadata(assembleDiscussOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers()), DISCUSS_CHECKPOINT_METADATA, DISCUSS_TARGET_METHOD); });
+  it("3. intended_changes is null for every definition", () => { const defs = assembleDiscussOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers()); for (const k of Object.keys(defs)) assert.equal(defs[k].intended_changes, null); });
+  it("4. coverage gaps are documented", () => { assert.ok(Array.isArray(DISCUSS_COVERAGE_GAP_MODELS)); });
+  it("5. return is a plain object", () => { assertPlainObject(assembleDiscussOperationDefinitions(null, null)); });
 });

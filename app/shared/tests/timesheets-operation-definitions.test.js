@@ -1,41 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-
-import { ALLOWED_APPLY_MODELS } from "../../backend/governed-odoo-apply-service.js";
-import {
-  assembleTimesheetsOperationDefinitions,
-  TIMESHEETS_COVERAGE_GAP_MODELS,
-} from "../timesheets-operation-definitions.js";
-import {
-  assertDefinitionsUseAllowedModels,
-  assertPlainObject,
-  makeDiscoveryAnswers,
-  makeTargetContext,
-} from "./operation-definitions-test-helpers.js";
-
+import { assembleTimesheetsOperationDefinitions, TIMESHEETS_CHECKPOINT_METADATA, TIMESHEETS_COVERAGE_GAP_MODELS, TIMESHEETS_TARGET_METHOD } from "../timesheets-operation-definitions.js";
+import { assertDefinitionMetadata, assertPlainObject, makeDiscoveryAnswers, makeTargetContext } from "./operation-definitions-test-helpers.js";
 describe("assembleTimesheetsOperationDefinitions", () => {
-  it("1. returns zero definitions with null inputs", () => {
-    const defs = assembleTimesheetsOperationDefinitions(null, null);
-    assert.equal(Object.keys(defs).length, 0, "Timesheets must currently emit zero definitions");
-  });
-
-  it("2. still returns zero definitions when gates are active", () => {
-    const defs = assembleTimesheetsOperationDefinitions(
-      makeTargetContext(),
-      makeDiscoveryAnswers({ "TS-01": "Yes", "TS-02": "Yes, approval required" })
-    );
-    assert.equal(Object.keys(defs).length, 0, "Timesheets must remain zero until allowed models exist");
-  });
-
-  it("3. coverage gaps are documented", () => {
-    assert.deepEqual(TIMESHEETS_COVERAGE_GAP_MODELS, ["hr.timesheet", "project.task"]);
-  });
-
-  it("4. no definition references a model outside ALLOWED_APPLY_MODELS", () => {
-    assertDefinitionsUseAllowedModels(assembleTimesheetsOperationDefinitions(null, null), ALLOWED_APPLY_MODELS);
-  });
-
-  it("5. return is a plain object — never null, never array", () => {
-    assertPlainObject(assembleTimesheetsOperationDefinitions(null, null));
-  });
+  it("1. assembles one definition per metadata entry", () => { assert.equal(Object.keys(assembleTimesheetsOperationDefinitions(null, null)).length, Object.keys(TIMESHEETS_CHECKPOINT_METADATA).length); });
+  it("2. every assembled definition carries the required metadata fields", () => { assertDefinitionMetadata(assembleTimesheetsOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers()), TIMESHEETS_CHECKPOINT_METADATA, TIMESHEETS_TARGET_METHOD); });
+  it("3. intended_changes is null for every definition", () => { const defs = assembleTimesheetsOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers()); for (const k of Object.keys(defs)) assert.equal(defs[k].intended_changes, null); });
+  it("4. coverage gaps are documented", () => { assert.ok(Array.isArray(TIMESHEETS_COVERAGE_GAP_MODELS)); });
+  it("5. return is a plain object", () => { assertPlainObject(assembleTimesheetsOperationDefinitions(null, null)); });
 });

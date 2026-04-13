@@ -1,56 +1,38 @@
-// ---------------------------------------------------------------------------
-// Attendance Operation Definitions — Odoo 19 Implementation Control Platform
-// ---------------------------------------------------------------------------
-//
-// Purpose:
-//   Assembles caller-supplied operation definitions for Attendance domain
-//   Executable checkpoints. Attendance currently has no governed-apply
-//   operation definitions because the requested target models are outside the
-//   allowed apply surface.
-//
-// Governing constraints:
-//   - specs/runtime_state_contract.md §1 (operation_definition shape)
-//   - governed-preview-engine.js R15 / Gate 6
-//   - governed-odoo-apply-service.js S4 (hr.attendance and
-//     res.company are not in ALLOWED_APPLY_MODELS for attendance scope)
-//   - checkpoint-engine.js generateAttendanceCheckpoints
-//
-// Hard rules:
-//   R1  Only Attendance domain checkpoints are considered here. Never other domains.
-//   R2  No Attendance operation definitions are emitted. hr.attendance
-//       and res.company are documented coverage gaps.
-//   R3  The returned map is always a plain object (createOperationDefinitionsMap
-//       shape). Never null, never an array.
-//   R4  Non-Attendance checkpoint IDs are never added to the returned map.
-// ---------------------------------------------------------------------------
-
 import { ODOO_VERSION } from "./constants.js";
-
-if (ODOO_VERSION !== "19") {
-  throw new Error(
-    `attendance-operation-definitions: ODOO_VERSION must be "19", got "${ODOO_VERSION}". Halting module init.`
-  );
-}
-
-import { createOperationDefinitionsMap } from "./runtime-state-contract.js";
-
+if (ODOO_VERSION !== "19") throw new Error(`attendance-operation-definitions: ODOO_VERSION must be "19", got "${ODOO_VERSION}".`);
+import { createOperationDefinition, createOperationDefinitionsMap } from "./runtime-state-contract.js";
+export const ATTENDANCE_OP_DEFS_VERSION = "1.1.0";
+export const ATTENDANCE_TARGET_METHOD = "write";
 // COVERAGE GAP: hr.attendance not in ALLOWED_APPLY_MODELS
-// Must be added to governed-odoo-apply-service.js before
-// this checkpoint can have governed-apply execution
-// COVERAGE GAP: res.company not in ALLOWED_APPLY_MODELS for attendance scope
-// Must be added to governed-odoo-apply-service.js before
-// this checkpoint can have governed-apply execution
-export const ATTENDANCE_COVERAGE_GAP_MODELS = Object.freeze([
-  "hr.attendance",
-  "res.company",
-]);
-
-export const ATTENDANCE_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([]);
-export const ATTENDANCE_OP_DEFS_VERSION = "1.0.0";
-
-export function assembleAttendanceOperationDefinitions(
-  target_context = null,
-  discovery_answers = null
-) {
-  return createOperationDefinitionsMap();
-}
+// Intended changes for this model must remain null until the write gate expands.
+export const ATTENDANCE_COVERAGE_GAP_MODELS = Object.freeze(["hr.attendance"]);
+export const ATTENDANCE_CHECKPOINT_METADATA = Object.freeze({
+  ["checkpoint-attendance-mode-setup"]: Object.freeze({
+    target_model: "res.company",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Conditional",
+  }),
+  ["checkpoint-attendance-overtime-policy"]: Object.freeze({
+    target_model: "hr.attendance",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Conditional",
+  }),
+  ["checkpoint-attendance-reporting-baseline"]: Object.freeze({
+    target_model: "hr.attendance",
+    validation_source: "User_Confirmed",
+    execution_relevance: "None",
+    safety_class: "Conditional",
+  }),
+});
+export const ATTENDANCE_EXECUTABLE_CHECKPOINT_IDS = Object.freeze(Object.keys(ATTENDANCE_CHECKPOINT_METADATA));
+function addAttendanceDefinition(map, checkpoint_id) { const metadata = ATTENDANCE_CHECKPOINT_METADATA[checkpoint_id]; if (!metadata) return; map[checkpoint_id] = createOperationDefinition({ checkpoint_id, target_model: metadata.target_model, method: ATTENDANCE_TARGET_METHOD, intended_changes: null, safety_class: metadata.safety_class, execution_relevance: metadata.execution_relevance, validation_source: metadata.validation_source }); }
+export function assembleAttendanceOperationDefinitions(target_context = null, discovery_answers = null) { const map = createOperationDefinitionsMap();
+  // honest-null: truthful intended_changes cannot be derived from target_context, discovery_answers, or wizard_captures without fabrication.
+  addAttendanceDefinition(map, "checkpoint-attendance-mode-setup");
+  // honest-null: target model is outside ALLOWED_APPLY_MODELS.
+  addAttendanceDefinition(map, "checkpoint-attendance-overtime-policy");
+  // honest-null: target model is outside ALLOWED_APPLY_MODELS.
+  addAttendanceDefinition(map, "checkpoint-attendance-reporting-baseline");
+  return map; }

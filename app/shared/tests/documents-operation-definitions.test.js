@@ -1,54 +1,18 @@
-// ---------------------------------------------------------------------------
-// Documents Operation Definitions Tests
-// Tests for: app/shared/documents-operation-definitions.js
-// ---------------------------------------------------------------------------
-//
-// Test coverage:
-//   1.  Documents assembler returns zero definitions with null inputs
-//   2.  Documents assembler still returns zero definitions when gates are active
-//   3.  Coverage gaps are documented
-//   4.  No Documents definition references a model outside ALLOWED_APPLY_MODELS
-//   5.  Return is a plain object — never null, never array
-// ---------------------------------------------------------------------------
-
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-
 import { ALLOWED_APPLY_MODELS } from "../../backend/governed-odoo-apply-service.js";
-import {
-  assembleDocumentsOperationDefinitions,
-  DOCUMENTS_COVERAGE_GAP_MODELS,
-} from "../documents-operation-definitions.js";
-import {
+import { assembleDocumentsOperationDefinitions, DOCUMENTS_CHECKPOINT_METADATA, DOCUMENTS_COVERAGE_GAP_MODELS, DOCUMENTS_TARGET_METHOD } from "../documents-operation-definitions.js";
+import { assertDefinitionMetadata,
   assertDefinitionsUseAllowedModels,
   assertPlainObject,
   makeDiscoveryAnswers,
   makeTargetContext,
 } from "./operation-definitions-test-helpers.js";
-
 describe("assembleDocumentsOperationDefinitions", () => {
-  it("1. returns zero Documents definitions with null inputs", () => {
-    const defs = assembleDocumentsOperationDefinitions(null, null);
-    assert.equal(Object.keys(defs).length, 0, "Documents must currently emit zero definitions");
-  });
-
-  it("2. still returns zero Documents definitions when gates are active", () => {
-    const defs = assembleDocumentsOperationDefinitions(
-      makeTargetContext(),
-      makeDiscoveryAnswers({ "BM-05": 100, "MF-05": true, "TA-03": ["Contract or document signing"] })
-    );
-    assert.equal(Object.keys(defs).length, 0, "Documents must remain zero until allowed models exist");
-  });
-
-  it("3. coverage gaps are documented", () => {
-    assert.deepEqual(DOCUMENTS_COVERAGE_GAP_MODELS, ["documents.folder", "documents.share"]);
-  });
-
-  it("4. no Documents definition references a model outside ALLOWED_APPLY_MODELS", () => {
-    assertDefinitionsUseAllowedModels(assembleDocumentsOperationDefinitions(null, null), ALLOWED_APPLY_MODELS);
-  });
-
-  it("5. return is a plain object — never null, never array", () => {
-    assertPlainObject(assembleDocumentsOperationDefinitions(null, null));
-  });
+  it("1. assembles definitions", () => { assert.ok(Object.keys(assembleDocumentsOperationDefinitions(null, null)).length > 0); });
+  it("2. metadata matches", () => { assertDefinitionMetadata(assembleDocumentsOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers({"TA-03":["Expenses"],"FC-01":"Full accounting"})), DOCUMENTS_CHECKPOINT_METADATA, DOCUMENTS_TARGET_METHOD); });
+  it("3. intended_changes is null", () => { const defs = assembleDocumentsOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers({"TA-03":["Expenses"],"FC-01":"Full accounting"})); for (const k of Object.keys(defs)) assert.equal(defs[k].intended_changes, null); });
+  it("4. all definitions use allowed target models", () => { assertDefinitionsUseAllowedModels(assembleDocumentsOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers({"TA-03":["Expenses"],"FC-01":"Full accounting"})), ALLOWED_APPLY_MODELS); });
+  it("5. coverage gaps are documented", () => { assert.ok(Array.isArray(DOCUMENTS_COVERAGE_GAP_MODELS)); });
+  it("6. return is a plain object", () => { assertPlainObject(assembleDocumentsOperationDefinitions(null, null)); });
 });

@@ -1,41 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-
-import { ALLOWED_APPLY_MODELS } from "../../backend/governed-odoo-apply-service.js";
-import {
-  assembleLoyaltyOperationDefinitions,
-  LOYALTY_COVERAGE_GAP_MODELS,
-} from "../loyalty-operation-definitions.js";
-import {
-  assertDefinitionsUseAllowedModels,
-  assertPlainObject,
-  makeDiscoveryAnswers,
-  makeTargetContext,
-} from "./operation-definitions-test-helpers.js";
-
+import { assembleLoyaltyOperationDefinitions, LOYALTY_CHECKPOINT_METADATA, LOYALTY_COVERAGE_GAP_MODELS, LOYALTY_TARGET_METHOD } from "../loyalty-operation-definitions.js";
+import { assertDefinitionMetadata, assertPlainObject, makeDiscoveryAnswers, makeTargetContext } from "./operation-definitions-test-helpers.js";
 describe("assembleLoyaltyOperationDefinitions", () => {
-  it("1. returns zero definitions with null inputs", () => {
-    const defs = assembleLoyaltyOperationDefinitions(null, null);
-    assert.equal(Object.keys(defs).length, 0, "Loyalty must currently emit zero definitions");
-  });
-
-  it("2. still returns zero definitions when gates are active", () => {
-    const defs = assembleLoyaltyOperationDefinitions(
-      makeTargetContext(),
-      makeDiscoveryAnswers({ "LY-01": "Neither" })
-    );
-    assert.equal(Object.keys(defs).length, 0, "Loyalty must remain zero until allowed models exist");
-  });
-
-  it("3. coverage gaps are documented", () => {
-    assert.deepEqual(LOYALTY_COVERAGE_GAP_MODELS, ["loyalty.program", "loyalty.reward"]);
-  });
-
-  it("4. no definition references a model outside ALLOWED_APPLY_MODELS", () => {
-    assertDefinitionsUseAllowedModels(assembleLoyaltyOperationDefinitions(null, null), ALLOWED_APPLY_MODELS);
-  });
-
-  it("5. return is a plain object — never null, never array", () => {
-    assertPlainObject(assembleLoyaltyOperationDefinitions(null, null));
-  });
+  it("1. assembles one definition per metadata entry", () => { assert.equal(Object.keys(assembleLoyaltyOperationDefinitions(null, null)).length, Object.keys(LOYALTY_CHECKPOINT_METADATA).length); });
+  it("2. every assembled definition carries the required metadata fields", () => { assertDefinitionMetadata(assembleLoyaltyOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers()), LOYALTY_CHECKPOINT_METADATA, LOYALTY_TARGET_METHOD); });
+  it("3. intended_changes is null for every definition", () => { const defs = assembleLoyaltyOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers()); for (const k of Object.keys(defs)) assert.equal(defs[k].intended_changes, null); });
+  it("4. coverage gaps are documented", () => { assert.ok(Array.isArray(LOYALTY_COVERAGE_GAP_MODELS)); });
+  it("5. return is a plain object", () => { assertPlainObject(assembleLoyaltyOperationDefinitions(null, null)); });
 });

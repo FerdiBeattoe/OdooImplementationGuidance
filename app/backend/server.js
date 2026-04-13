@@ -55,6 +55,34 @@ import { assembleApprovalsOperationDefinitions } from "../shared/approvals-opera
 import { assembleSubscriptionsOperationDefinitions } from "../shared/subscriptions-operation-definitions.js";
 import { assembleRentalOperationDefinitions } from "../shared/rental-operation-definitions.js";
 import { assembleFieldServiceOperationDefinitions } from "../shared/field-service-operation-definitions.js";
+import { assembleWhatsappOperationDefinitions } from "../shared/whatsapp-operation-definitions.js";
+import { assembleVoipOperationDefinitions } from "../shared/voip-operation-definitions.js";
+import { assembleTimesheetsOperationDefinitions } from "../shared/timesheets-operation-definitions.js";
+import { assembleStudioOperationDefinitions } from "../shared/studio-operation-definitions.js";
+import { assembleSpreadsheetOperationDefinitions } from "../shared/spreadsheet-operation-definitions.js";
+import { assembleSmsMarketingOperationDefinitions } from "../shared/sms-marketing-operation-definitions.js";
+import { assembleReferralsOperationDefinitions } from "../shared/referrals-operation-definitions.js";
+import { assembleRecruitmentOperationDefinitions } from "../shared/recruitment-operation-definitions.js";
+import { assemblePlanningOperationDefinitions } from "../shared/planning-operation-definitions.js";
+import { assemblePayrollOperationDefinitions } from "../shared/payroll-operation-definitions.js";
+import { assembleOutgoingMailOperationDefinitions } from "../shared/outgoing-mail-operation-definitions.js";
+import { assembleLunchOperationDefinitions } from "../shared/lunch-operation-definitions.js";
+import { assembleLoyaltyOperationDefinitions } from "../shared/loyalty-operation-definitions.js";
+import { assembleLiveChatOperationDefinitions } from "../shared/live-chat-operation-definitions.js";
+import { assembleKnowledgeOperationDefinitions } from "../shared/knowledge-operation-definitions.js";
+import { assembleIotOperationDefinitions } from "../shared/iot-operation-definitions.js";
+import { assembleIncomingMailOperationDefinitions } from "../shared/incoming-mail-operation-definitions.js";
+import { assembleHelpdeskOperationDefinitions } from "../shared/helpdesk-operation-definitions.js";
+import { assembleFleetOperationDefinitions } from "../shared/fleet-operation-definitions.js";
+import { assembleExpensesOperationDefinitions } from "../shared/expenses-operation-definitions.js";
+import { assembleEventsOperationDefinitions } from "../shared/events-operation-definitions.js";
+import { assembleEmailMarketingOperationDefinitions } from "../shared/email-marketing-operation-definitions.js";
+import { assembleDiscussOperationDefinitions } from "../shared/discuss-operation-definitions.js";
+import { assembleConsolidationOperationDefinitions } from "../shared/consolidation-operation-definitions.js";
+import { assembleCalendarOperationDefinitions } from "../shared/calendar-operation-definitions.js";
+import { assembleAttendanceOperationDefinitions } from "../shared/attendance-operation-definitions.js";
+import { assembleAppraisalsOperationDefinitions } from "../shared/appraisals-operation-definitions.js";
+import { assembleAccountingReportsOperationDefinitions } from "../shared/accounting-reports-operation-definitions.js";
 import { applyGoverned } from "./governed-odoo-apply-service.js";
 import * as authService from "./auth-service.js";
 import writeAudit, {
@@ -1217,6 +1245,34 @@ async function handlePipelineRun(req, res, user) {
         ...assembleSubscriptionsOperationDefinitions(tc, da),
         ...assembleRentalOperationDefinitions(tc, da),
         ...assembleFieldServiceOperationDefinitions(tc, da),
+        ...assembleWhatsappOperationDefinitions(tc, da),
+        ...assembleVoipOperationDefinitions(tc, da),
+        ...assembleTimesheetsOperationDefinitions(tc, da),
+        ...assembleStudioOperationDefinitions(tc, da),
+        ...assembleSpreadsheetOperationDefinitions(tc, da),
+        ...assembleSmsMarketingOperationDefinitions(tc, da),
+        ...assembleReferralsOperationDefinitions(tc, da),
+        ...assembleRecruitmentOperationDefinitions(tc, da),
+        ...assemblePlanningOperationDefinitions(tc, da),
+        ...assemblePayrollOperationDefinitions(tc, da),
+        ...assembleOutgoingMailOperationDefinitions(tc, da),
+        ...assembleLunchOperationDefinitions(tc, da),
+        ...assembleLoyaltyOperationDefinitions(tc, da),
+        ...assembleLiveChatOperationDefinitions(tc, da),
+        ...assembleKnowledgeOperationDefinitions(tc, da),
+        ...assembleIotOperationDefinitions(tc, da),
+        ...assembleIncomingMailOperationDefinitions(tc, da),
+        ...assembleHelpdeskOperationDefinitions(tc, da),
+        ...assembleFleetOperationDefinitions(tc, da),
+        ...assembleExpensesOperationDefinitions(tc, da),
+        ...assembleEventsOperationDefinitions(tc, da),
+        ...assembleEmailMarketingOperationDefinitions(tc, da),
+        ...assembleDiscussOperationDefinitions(tc, da),
+        ...assembleConsolidationOperationDefinitions(tc, da),
+        ...assembleCalendarOperationDefinitions(tc, da),
+        ...assembleAttendanceOperationDefinitions(tc, da),
+        ...assembleAppraisalsOperationDefinitions(tc, da),
+        ...assembleAccountingReportsOperationDefinitions(tc, da),
       },
     };
   }
@@ -1748,6 +1804,34 @@ function buildOperationDefinitionsFromRuntimeState(runtimeState) {
     ...assembleSubscriptionsOperationDefinitions(targetContext, discoveryAnswers),
     ...assembleRentalOperationDefinitions(targetContext, discoveryAnswers),
     ...assembleFieldServiceOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleWhatsappOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleVoipOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleTimesheetsOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleStudioOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleSpreadsheetOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleSmsMarketingOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleReferralsOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleRecruitmentOperationDefinitions(targetContext, discoveryAnswers),
+    ...assemblePlanningOperationDefinitions(targetContext, discoveryAnswers),
+    ...assemblePayrollOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleOutgoingMailOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleLunchOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleLoyaltyOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleLiveChatOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleKnowledgeOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleIotOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleIncomingMailOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleHelpdeskOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleFleetOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleExpensesOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleEventsOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleEmailMarketingOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleDiscussOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleConsolidationOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleCalendarOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleAttendanceOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleAppraisalsOperationDefinitions(targetContext, discoveryAnswers),
+    ...assembleAccountingReportsOperationDefinitions(targetContext, discoveryAnswers),
   };
 }
 

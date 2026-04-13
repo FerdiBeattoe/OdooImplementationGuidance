@@ -1,54 +1,47 @@
-// ---------------------------------------------------------------------------
-// Repairs Operation Definitions — Odoo 19 Implementation Control Platform
-// ---------------------------------------------------------------------------
-//
-// Purpose:
-//   Assembles caller-supplied operation definitions for Repairs domain
-//   Executable checkpoints. Repairs currently has no governed-apply operation
-//   definitions because the requested target model is outside the allowed
-//   apply surface.
-//
-// Governing constraints:
-//   - specs/runtime_state_contract.md §1 (operation_definition shape)
-//   - governed-preview-engine.js R15 / Gate 6
-//   - governed-odoo-apply-service.js S4 (repair.order is not in
-//     ALLOWED_APPLY_MODELS)
-//   - checkpoint-engine.js generateRepairsCheckpoints
-//
-// Hard rules:
-//   R1  Only Repairs domain checkpoints are considered here. Never other domains.
-//   R2  No Repairs operation definitions are emitted. repair.order is a
-//       documented coverage gap.
-//   R3  REP-FOUND-001 is Informational (execution_relevance: Informational,
-//       safety_class: Not_Applicable). Intentionally excluded.
-//   R4  REP-REC-001 is non-Executable (execution_relevance: None,
-//       safety_class: Not_Applicable). Intentionally excluded.
-//   R5  The returned map is always a plain object (createOperationDefinitionsMap
-//       shape). Never null, never an array.
-//   R6  Non-Repairs checkpoint IDs are never added to the returned map.
-// ---------------------------------------------------------------------------
-
 import { ODOO_VERSION } from "./constants.js";
-
-if (ODOO_VERSION !== "19") {
-  throw new Error(
-    `repairs-operation-definitions: ODOO_VERSION must be "19", got "${ODOO_VERSION}". Halting module init.`
-  );
-}
-
-import { createOperationDefinitionsMap } from "./runtime-state-contract.js";
-
+if (ODOO_VERSION !== "19") throw new Error(`repairs-operation-definitions: ODOO_VERSION must be "19", got "${ODOO_VERSION}".`);
+import { createOperationDefinition, createOperationDefinitionsMap } from "./runtime-state-contract.js";
+import { CHECKPOINT_IDS } from "./checkpoint-engine.js";
+export const REPAIRS_OP_DEFS_VERSION = "1.1.0";
+export const REPAIRS_TARGET_METHOD = "write";
 // COVERAGE GAP: repair.order not in ALLOWED_APPLY_MODELS
-// Must be added to governed-odoo-apply-service.js before
-// this checkpoint can have governed-apply execution
+// Intended changes for this model must remain null until the write gate expands.
 export const REPAIRS_COVERAGE_GAP_MODELS = Object.freeze(["repair.order"]);
-
-export const REPAIRS_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([]);
-export const REPAIRS_OP_DEFS_VERSION = "1.0.0";
-
-export function assembleRepairsOperationDefinitions(
-  target_context = null,
-  discovery_answers = null
-) {
-  return createOperationDefinitionsMap();
-}
+export const REPAIRS_CHECKPOINT_METADATA = Object.freeze({
+  [CHECKPOINT_IDS.REP_FOUND_001]: Object.freeze({
+    target_model: "repair.order",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Informational",
+    safety_class: "Not_Applicable",
+  }),
+  [CHECKPOINT_IDS.REP_DREQ_001]: Object.freeze({
+    target_model: "repair.order",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Conditional",
+  }),
+  [CHECKPOINT_IDS.REP_DREQ_002]: Object.freeze({
+    target_model: "repair.order",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Conditional",
+  }),
+  [CHECKPOINT_IDS.REP_REC_001]: Object.freeze({
+    target_model: "repair.order",
+    validation_source: "User_Confirmed",
+    execution_relevance: "None",
+    safety_class: "Not_Applicable",
+  }),
+});
+export const REPAIRS_EXECUTABLE_CHECKPOINT_IDS = Object.freeze(Object.keys(REPAIRS_CHECKPOINT_METADATA));
+function addRepairsDefinition(map, checkpoint_id) { const metadata = REPAIRS_CHECKPOINT_METADATA[checkpoint_id]; if (!metadata) return; map[checkpoint_id] = createOperationDefinition({ checkpoint_id, target_model: metadata.target_model, method: REPAIRS_TARGET_METHOD, intended_changes: null, safety_class: metadata.safety_class, execution_relevance: metadata.execution_relevance, validation_source: metadata.validation_source }); }
+export function assembleRepairsOperationDefinitions(target_context = null, discovery_answers = null) { const map = createOperationDefinitionsMap(); const answers = discovery_answers?.answers ?? {};
+    // honest-null: truthful intended_changes cannot be derived from target_context, discovery_answers, or wizard_captures without fabrication.
+    addRepairsDefinition(map, CHECKPOINT_IDS.REP_FOUND_001);
+    // honest-null: truthful intended_changes cannot be derived from target_context, discovery_answers, or wizard_captures without fabrication.
+    addRepairsDefinition(map, CHECKPOINT_IDS.REP_DREQ_001);
+    // honest-null: truthful intended_changes cannot be derived from target_context, discovery_answers, or wizard_captures without fabrication.
+    addRepairsDefinition(map, CHECKPOINT_IDS.REP_DREQ_002);
+    // honest-null: truthful intended_changes cannot be derived from target_context, discovery_answers, or wizard_captures without fabrication.
+    addRepairsDefinition(map, CHECKPOINT_IDS.REP_REC_001);
+  return map; }

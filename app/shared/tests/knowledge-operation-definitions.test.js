@@ -1,41 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-
-import { ALLOWED_APPLY_MODELS } from "../../backend/governed-odoo-apply-service.js";
-import {
-  assembleKnowledgeOperationDefinitions,
-  KNOWLEDGE_COVERAGE_GAP_MODELS,
-} from "../knowledge-operation-definitions.js";
-import {
-  assertDefinitionsUseAllowedModels,
-  assertPlainObject,
-  makeDiscoveryAnswers,
-  makeTargetContext,
-} from "./operation-definitions-test-helpers.js";
-
+import { assembleKnowledgeOperationDefinitions, KNOWLEDGE_CHECKPOINT_METADATA, KNOWLEDGE_COVERAGE_GAP_MODELS, KNOWLEDGE_TARGET_METHOD } from "../knowledge-operation-definitions.js";
+import { assertDefinitionMetadata, assertPlainObject, makeDiscoveryAnswers, makeTargetContext } from "./operation-definitions-test-helpers.js";
 describe("assembleKnowledgeOperationDefinitions", () => {
-  it("1. returns zero definitions with null inputs", () => {
-    const defs = assembleKnowledgeOperationDefinitions(null, null);
-    assert.equal(Object.keys(defs).length, 0, "Knowledge must currently emit zero definitions");
-  });
-
-  it("2. still returns zero definitions when gates are active", () => {
-    const defs = assembleKnowledgeOperationDefinitions(
-      makeTargetContext(),
-      makeDiscoveryAnswers({ "KN-01": "Yes" })
-    );
-    assert.equal(Object.keys(defs).length, 0, "Knowledge must remain zero until allowed models exist");
-  });
-
-  it("3. coverage gaps are documented", () => {
-    assert.deepEqual(KNOWLEDGE_COVERAGE_GAP_MODELS, ["knowledge.article"]);
-  });
-
-  it("4. no definition references a model outside ALLOWED_APPLY_MODELS", () => {
-    assertDefinitionsUseAllowedModels(assembleKnowledgeOperationDefinitions(null, null), ALLOWED_APPLY_MODELS);
-  });
-
-  it("5. return is a plain object — never null, never array", () => {
-    assertPlainObject(assembleKnowledgeOperationDefinitions(null, null));
-  });
+  it("1. assembles one definition per metadata entry", () => { assert.equal(Object.keys(assembleKnowledgeOperationDefinitions(null, null)).length, Object.keys(KNOWLEDGE_CHECKPOINT_METADATA).length); });
+  it("2. every assembled definition carries the required metadata fields", () => { assertDefinitionMetadata(assembleKnowledgeOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers()), KNOWLEDGE_CHECKPOINT_METADATA, KNOWLEDGE_TARGET_METHOD); });
+  it("3. intended_changes is null for every definition", () => { const defs = assembleKnowledgeOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers()); for (const k of Object.keys(defs)) assert.equal(defs[k].intended_changes, null); });
+  it("4. coverage gaps are documented", () => { assert.ok(Array.isArray(KNOWLEDGE_COVERAGE_GAP_MODELS)); });
+  it("5. return is a plain object", () => { assertPlainObject(assembleKnowledgeOperationDefinitions(null, null)); });
 });

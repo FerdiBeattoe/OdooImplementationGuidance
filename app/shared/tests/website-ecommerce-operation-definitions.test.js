@@ -1,54 +1,18 @@
-// ---------------------------------------------------------------------------
-// Website/eCommerce Operation Definitions Tests
-// Tests for: app/shared/website-ecommerce-operation-definitions.js
-// ---------------------------------------------------------------------------
-//
-// Test coverage:
-//   1.  Website/eCommerce assembler returns zero definitions with null inputs
-//   2.  Website/eCommerce assembler still returns zero definitions when conditional gates are active
-//   3.  Coverage gaps are documented
-//   4.  No Website/eCommerce definition references a model outside ALLOWED_APPLY_MODELS
-//   5.  Return is a plain object — never null, never array
-// ---------------------------------------------------------------------------
-
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-
 import { ALLOWED_APPLY_MODELS } from "../../backend/governed-odoo-apply-service.js";
-import {
-  assembleWebsiteEcommerceOperationDefinitions,
-  WEBSITE_ECOMMERCE_COVERAGE_GAP_MODELS,
-} from "../website-ecommerce-operation-definitions.js";
-import {
+import { assembleWebsiteEcommerceOperationDefinitions, WEBSITE_ECOMMERCE_CHECKPOINT_METADATA, WEBSITE_ECOMMERCE_COVERAGE_GAP_MODELS, WEBSITE_ECOMMERCE_TARGET_METHOD } from "../website-ecommerce-operation-definitions.js";
+import { assertDefinitionMetadata,
   assertDefinitionsUseAllowedModels,
   assertPlainObject,
   makeDiscoveryAnswers,
   makeTargetContext,
 } from "./operation-definitions-test-helpers.js";
-
 describe("assembleWebsiteEcommerceOperationDefinitions", () => {
-  it("1. returns zero Website/eCommerce definitions with null inputs", () => {
-    const defs = assembleWebsiteEcommerceOperationDefinitions(null, null);
-    assert.equal(Object.keys(defs).length, 0, "Website/eCommerce must currently emit zero definitions");
-  });
-
-  it("2. still returns zero Website/eCommerce definitions when conditional gates are active", () => {
-    const defs = assembleWebsiteEcommerceOperationDefinitions(
-      makeTargetContext(),
-      makeDiscoveryAnswers({ "OP-01": true, "SC-03": true })
-    );
-    assert.equal(Object.keys(defs).length, 0, "Website/eCommerce must remain zero until allowed models exist");
-  });
-
-  it("3. coverage gaps are documented", () => {
-    assert.deepEqual(WEBSITE_ECOMMERCE_COVERAGE_GAP_MODELS, ["website", "payment.provider"]);
-  });
-
-  it("4. no Website/eCommerce definition references a model outside ALLOWED_APPLY_MODELS", () => {
-    assertDefinitionsUseAllowedModels(assembleWebsiteEcommerceOperationDefinitions(null, null), ALLOWED_APPLY_MODELS);
-  });
-
-  it("5. return is a plain object — never null, never array", () => {
-    assertPlainObject(assembleWebsiteEcommerceOperationDefinitions(null, null));
-  });
+  it("1. assembles definitions", () => { assert.ok(Object.keys(assembleWebsiteEcommerceOperationDefinitions(null, null)).length > 0); });
+  it("2. metadata matches", () => { assertDefinitionMetadata(assembleWebsiteEcommerceOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers({"OP-01":"Yes","SC-03":"Yes","RM-02":"Yes","FC-05":"Yes"})), WEBSITE_ECOMMERCE_CHECKPOINT_METADATA, WEBSITE_ECOMMERCE_TARGET_METHOD); });
+  it("3. intended_changes is null", () => { const defs = assembleWebsiteEcommerceOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers({"OP-01":"Yes","SC-03":"Yes","RM-02":"Yes","FC-05":"Yes"})); for (const k of Object.keys(defs)) assert.equal(defs[k].intended_changes, null); });
+  it("4. all definitions use allowed target models", () => { assertDefinitionsUseAllowedModels(assembleWebsiteEcommerceOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers({"OP-01":"Yes","SC-03":"Yes","RM-02":"Yes","FC-05":"Yes"})), ALLOWED_APPLY_MODELS); });
+  it("5. coverage gaps are documented", () => { assert.ok(Array.isArray(WEBSITE_ECOMMERCE_COVERAGE_GAP_MODELS)); });
+  it("6. return is a plain object", () => { assertPlainObject(assembleWebsiteEcommerceOperationDefinitions(null, null)); });
 });

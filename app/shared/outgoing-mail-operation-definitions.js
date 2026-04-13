@@ -1,56 +1,56 @@
-// ---------------------------------------------------------------------------
-// Outgoing Mail Operation Definitions — Odoo 19 Implementation Control Platform
-// ---------------------------------------------------------------------------
-//
-// Purpose:
-//   Assembles caller-supplied operation definitions for Outgoing Mail domain
-//   Executable checkpoints. Outgoing Mail currently has no governed-apply
-//   operation definitions because the requested target models are outside the
-//   allowed apply surface.
-//
-// Governing constraints:
-//   - specs/runtime_state_contract.md §1 (operation_definition shape)
-//   - governed-preview-engine.js R15 / Gate 6
-//   - governed-odoo-apply-service.js S4 (ir.mail_server and
-//     ir.config_parameter are not in ALLOWED_APPLY_MODELS)
-//   - checkpoint-engine.js generateOutgoingMailCheckpoints
-//
-// Hard rules:
-//   R1  Only Outgoing Mail domain checkpoints are considered here. Never other domains.
-//   R2  No Outgoing Mail operation definitions are emitted. ir.mail_server
-//       and ir.config_parameter are documented coverage gaps.
-//   R3  The returned map is always a plain object (createOperationDefinitionsMap
-//       shape). Never null, never an array.
-//   R4  Non-Outgoing Mail checkpoint IDs are never added to the returned map.
-// ---------------------------------------------------------------------------
-
 import { ODOO_VERSION } from "./constants.js";
-
-if (ODOO_VERSION !== "19") {
-  throw new Error(
-    `outgoing-mail-operation-definitions: ODOO_VERSION must be "19", got "${ODOO_VERSION}". Halting module init.`
-  );
-}
-
-import { createOperationDefinitionsMap } from "./runtime-state-contract.js";
-
+if (ODOO_VERSION !== "19") throw new Error(`outgoing-mail-operation-definitions: ODOO_VERSION must be "19", got "${ODOO_VERSION}".`);
+import { createOperationDefinition, createOperationDefinitionsMap } from "./runtime-state-contract.js";
+export const OUTGOING_MAIL_OP_DEFS_VERSION = "1.1.0";
+export const OUTGOING_MAIL_TARGET_METHOD = "write";
 // COVERAGE GAP: ir.mail_server not in ALLOWED_APPLY_MODELS
-// Must be added to governed-odoo-apply-service.js before
-// this checkpoint can have governed-apply execution
+// Intended changes for this model must remain null until the write gate expands.
 // COVERAGE GAP: ir.config_parameter not in ALLOWED_APPLY_MODELS
-// Must be added to governed-odoo-apply-service.js before
-// this checkpoint can have governed-apply execution
-export const OUTGOING_MAIL_COVERAGE_GAP_MODELS = Object.freeze([
-  "ir.mail_server",
-  "ir.config_parameter",
-]);
-
-export const OUTGOING_MAIL_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([]);
-export const OUTGOING_MAIL_OP_DEFS_VERSION = "1.0.0";
-
-export function assembleOutgoingMailOperationDefinitions(
-  target_context = null,
-  discovery_answers = null
-) {
-  return createOperationDefinitionsMap();
-}
+// Intended changes for this model must remain null until the write gate expands.
+export const OUTGOING_MAIL_COVERAGE_GAP_MODELS = Object.freeze(["ir.mail_server", "ir.config_parameter"]);
+export const OUTGOING_MAIL_CHECKPOINT_METADATA = Object.freeze({
+  ["checkpoint-outgoing-mail-smtp-configuration"]: Object.freeze({
+    target_model: "ir.mail_server",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Conditional",
+  }),
+  ["checkpoint-outgoing-mail-sender-address"]: Object.freeze({
+    target_model: "ir.config_parameter",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Conditional",
+  }),
+  ["checkpoint-outgoing-mail-alias-setup"]: Object.freeze({
+    target_model: "ir.config_parameter",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Conditional",
+  }),
+  ["checkpoint-outgoing-mail-deliverability"]: Object.freeze({
+    target_model: "ir.mail_server",
+    validation_source: "User_Confirmed",
+    execution_relevance: "None",
+    safety_class: "Conditional",
+  }),
+  ["checkpoint-outgoing-mail-test-send"]: Object.freeze({
+    target_model: "ir.mail_server",
+    validation_source: "User_Confirmed",
+    execution_relevance: "Executable",
+    safety_class: "Conditional",
+  }),
+});
+export const OUTGOING_MAIL_EXECUTABLE_CHECKPOINT_IDS = Object.freeze(Object.keys(OUTGOING_MAIL_CHECKPOINT_METADATA));
+function addOutgoingMailDefinition(map, checkpoint_id) { const metadata = OUTGOING_MAIL_CHECKPOINT_METADATA[checkpoint_id]; if (!metadata) return; map[checkpoint_id] = createOperationDefinition({ checkpoint_id, target_model: metadata.target_model, method: OUTGOING_MAIL_TARGET_METHOD, intended_changes: null, safety_class: metadata.safety_class, execution_relevance: metadata.execution_relevance, validation_source: metadata.validation_source }); }
+export function assembleOutgoingMailOperationDefinitions(target_context = null, discovery_answers = null) { const map = createOperationDefinitionsMap();
+  // honest-null: target model is outside ALLOWED_APPLY_MODELS.
+  addOutgoingMailDefinition(map, "checkpoint-outgoing-mail-smtp-configuration");
+  // honest-null: target model is outside ALLOWED_APPLY_MODELS.
+  addOutgoingMailDefinition(map, "checkpoint-outgoing-mail-sender-address");
+  // honest-null: target model is outside ALLOWED_APPLY_MODELS.
+  addOutgoingMailDefinition(map, "checkpoint-outgoing-mail-alias-setup");
+  // honest-null: target model is outside ALLOWED_APPLY_MODELS.
+  addOutgoingMailDefinition(map, "checkpoint-outgoing-mail-deliverability");
+  // honest-null: target model is outside ALLOWED_APPLY_MODELS.
+  addOutgoingMailDefinition(map, "checkpoint-outgoing-mail-test-send");
+  return map; }

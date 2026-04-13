@@ -108,27 +108,79 @@ export const ALLOWED_APPLY_MODELS = Object.freeze([
   // Users / Security (bounded implementation provisioning)
   "res.users",
   "res.groups",
+  // HR & People
+  "hr.attendance",
+  "hr.appraisal",
+  "hr.appraisal.goal",
+  "hr.applicant",
+  "hr.expense",
+  "hr.expense.sheet",
+  // "hr.payslip" — see GOVERNANCE EXCLUSIONS below
+  "hr.salary.rule",
+  // Helpdesk
+  "helpdesk.team",
+  "helpdesk.ticket",
+  // Planning
+  "planning.role",
+  "planning.slot",
+  // Maintenance — see GOVERNANCE EXCLUSIONS below
+  // Repairs — see GOVERNANCE EXCLUSIONS below
+  // Loyalty & Lunch
+  "loyalty.program",
+  "loyalty.reward",
+  "lunch.supplier",
+  "lunch.product",
+  // Marketing
+  "mailing.list",
+  "mailing.mailing",
+  // Live Chat
+  "im_livechat.channel",
+  // Knowledge
+  "knowledge.article",
+  // Calendar
+  "calendar.event",
+  // Fleet
+  "fleet.vehicle",
+  "fleet.vehicle.model",
+  // Mail servers
+  "fetchmail.server",
+  "ir.mail_server",
+  // WhatsApp
+  "whatsapp.account",
+  "whatsapp.template",
+  // VoIP
+  "voip.provider",
 ]);
 
-// ---------------------------------------------------------------------------
-// Excluded models — business data or transactional records, not implementation
-// configuration. These models were evaluated and explicitly rejected.
-// ---------------------------------------------------------------------------
+// GOVERNANCE EXCLUSIONS — deliberately outside the write gate
+// These models require a separate controller approval before
+// being added to ALLOWED_APPLY_MODELS.
 //
-// quality.alert        — operational incident records (business data), not config
+// product.template — touches live product catalog, transactional risk
+// sale.order       — transactional record, not implementation config
+// ir.model         — schema modification, irreversible risk
+// ir.ui.view       — UI structure changes, irreversible risk
+// ir.config_parameter — system-wide settings, requires explicit sign-off
+// ir.config_parameter — keep out until blast radius is scoped
+// account.report   — reporting structure, needs accounting review
+// account.financial.html.report — same as above
+// spreadsheet.template — borderline, defer until use case is defined
+// mrp.eco          — ECO workflow, defer until PLM proof is complete
+// documents.share  — sharing permissions, security review needed
+// documents.document — content layer, not implementation config
+// consolidation.company — multi-company risk, needs review
+// consolidation.period  — same as above
+// project.task     — transactional, not config
+// hr.referral      — low priority, defer
+// hr.referral.stage — low priority, defer
+// sms.sms          — provider-dependent, defer until SMS proof complete
+// mail.alias       — alias routing, system-wide impact
+// mail.channel     — messaging infrastructure, needs review
+// iot.device       — hardware binding, needs IoT proof first
 // maintenance.equipment — asset/resource master records (business data), not config
 // maintenance.request  — maintenance work orders (transactional), not config
 // repair.order         — repair business documents (transactional), not config
-// project.task         — operational task records (transactional), not config
-// mrp.eco              — engineering change order documents (transactional), not config
-// documents.share      — runtime sharing links (operational), not implementation config
-// sale.order           — sales transaction documents (transactional), not config
-//
-// Deferred models (need more scoping before approval):
-// mrp.bom              — DEFERRED: write classified conditional (affects open MOs);
-//                        no operation definition emitted yet; needs bounded scope
-// product.template     — DEFERRED: too broad (all products); no bounded checkpoint
-//                        scoping the specific write intent; global impact risk
+// hr.payslip           — payroll transactional record, existing test coverage asserts exclusion
 
 // ---------------------------------------------------------------------------
 // Allowed application-layer methods (S5 — no raw DB)

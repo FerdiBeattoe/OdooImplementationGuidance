@@ -5,7 +5,6 @@
  * Validates inputs before next step, checks cross-domain dependencies
  */
 
-import { OdooClient } from '../../../tools/src/api/OdooClient.js';
 
 export const PURCHASE_STEPS = {
   VENDOR_SETUP: 1,

@@ -1,8 +1,0 @@
-node_modules/
-.env
-output/
-*.log
-data/*.xlsx
-data/*.xls
-data/*.csv
-.DS_Store

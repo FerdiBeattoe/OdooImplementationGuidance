@@ -3,7 +3,6 @@
  * Phase 5: Core Operations Wizards
  */
 
-import { OdooClient } from '../../api/OdooClient.js';
 
 export const INVENTORY_STEPS = {
   WAREHOUSE_SETUP: 1,

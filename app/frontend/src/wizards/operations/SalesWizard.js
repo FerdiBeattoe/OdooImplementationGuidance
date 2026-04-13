@@ -5,7 +5,6 @@
  * Validates inputs before next step, checks cross-domain dependencies
  */
 
-import { OdooClient } from '../../../tools/src/api/OdooClient.js';
 
 export const SALES_STEPS = {
   QUOTATION_SETTINGS: 1,

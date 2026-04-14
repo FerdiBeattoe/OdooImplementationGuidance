@@ -1,8 +1,10 @@
 import { renderCrmWizard } from "./crm-wizard.js";
+import { renderPurchaseWizard } from "./purchase-wizard.js";
 import { renderSalesWizard } from "./sales-wizard.js";
 
 const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "crm-setup": renderCrmWizard,
+  "purchase-setup": renderPurchaseWizard,
   "sales-setup": renderSalesWizard,
 });
 

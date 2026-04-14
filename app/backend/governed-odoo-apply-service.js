@@ -90,7 +90,7 @@ export const ALLOWED_APPLY_MODELS = Object.freeze([
   // PLM
   "mrp.eco.type",              // ECO workflow type definitions (implementation config), approved per controller judgment 2026-04-05
   // Documents
-  "documents.folder",          // document folder structure (implementation config), approved per controller judgment 2026-04-05
+  "documents.document",        // documents (including folders via type='folder') — documents.folder was removed in Odoo 19; approved per controller judgment 2026-04-05
   // Sign
   "sign.template",             // signature template definitions (implementation config), approved per controller judgment 2026-04-05
   // Approvals

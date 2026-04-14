@@ -183,7 +183,7 @@ describe("ALLOWED_APPLY_MODELS", () => {
     "payment.provider",      // payment provider configuration
     "quality.point",         // quality check point definitions
     "mrp.eco.type",          // ECO workflow type definitions
-    "documents.folder",      // document folder structure
+    "documents.document",    // documents (including folders) — documents.folder removed in Odoo 19
     "sign.template",         // signature template definitions
     "approval.category",     // approval workflow category definitions
     "sale.subscription.plan", // subscription plan definitions
@@ -256,7 +256,7 @@ describe("applyGoverned — S4 gate passes for controller-judgment-approved mode
     "payment.provider",
     "quality.point",
     "mrp.eco.type",
-    "documents.folder",
+    "documents.document",
     "sign.template",
     "approval.category",
     "sale.subscription.plan",

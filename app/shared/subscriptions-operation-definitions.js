@@ -16,8 +16,16 @@ export const SUBSCRIPTIONS_EXECUTABLE_CHECKPOINT_IDS = Object.freeze(Object.keys
 function isPlainObject(value) { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function extractSubscriptionsCapture(wizard_captures) { if (!isPlainObject(wizard_captures)) return null; return isPlainObject(wizard_captures.subscriptions) ? wizard_captures.subscriptions : null; }
 function addSubscriptionsDefinition(map, checkpoint_id, intended_changes) { const metadata = SUBSCRIPTIONS_CHECKPOINT_METADATA[checkpoint_id]; if (!metadata) return; map[checkpoint_id] = createOperationDefinition({ checkpoint_id, target_model: metadata.target_model, method: SUBSCRIPTIONS_TARGET_METHOD, intended_changes, safety_class: metadata.safety_class, execution_relevance: metadata.execution_relevance, validation_source: metadata.validation_source }); }
-export function assembleSubscriptionsOperationDefinitions(target_context = null, discovery_answers = null, wizard_captures = null) { const map = createOperationDefinitionsMap(); const answers = discovery_answers?.answers ?? {}; const capture = extractSubscriptionsCapture(wizard_captures); void capture;
-    // honest-null: sale.subscription.plan is not confirmed in scripts/odoo-confirmed-fields.json, so intended_changes must remain null.
+export function assembleSubscriptionsOperationDefinitions(target_context = null, discovery_answers = null, wizard_captures = null) {
+  const map = createOperationDefinitionsMap();
+  const answers = discovery_answers?.answers ?? {};
+  // Assembler alignment with subscriptions-wizard.js capture: { plan_name, billing_period }.
+  const subsCapture = isPlainObject(wizard_captures?.subscriptions) ? wizard_captures.subscriptions : {};
+  const planName = typeof subsCapture.plan_name === "string" && subsCapture.plan_name.trim() ? subsCapture.plan_name.trim() : null;
+  void planName;
+  // honest-null: sale.subscription.plan is not present in scripts/odoo-confirmed-fields.json — no field (including `name`)
+  // is confirmed for this model. Per HARD RULES (only use confirmed field names; never fabricate),
+  // intended_changes must remain null until odoo-confirmed-fields.json is extended to cover sale.subscription.plan.
     addSubscriptionsDefinition(map, CHECKPOINT_IDS.SUB_FOUND_001, null);
     addSubscriptionsDefinition(map, CHECKPOINT_IDS.SUB_DREQ_001, null);
     addSubscriptionsDefinition(map, CHECKPOINT_IDS.SUB_DREQ_002, null);

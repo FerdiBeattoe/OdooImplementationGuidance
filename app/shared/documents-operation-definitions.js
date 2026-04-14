@@ -14,9 +14,17 @@ export const DOCUMENTS_EXECUTABLE_CHECKPOINT_IDS = Object.freeze(Object.keys(DOC
 function isPlainObject(value) { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function extractDocumentsCapture(wizard_captures) { if (!isPlainObject(wizard_captures)) return null; return isPlainObject(wizard_captures.documents) ? wizard_captures.documents : null; }
 function addDocumentsDefinition(map, checkpoint_id, intended_changes) { const metadata = DOCUMENTS_CHECKPOINT_METADATA[checkpoint_id]; if (!metadata) return; map[checkpoint_id] = createOperationDefinition({ checkpoint_id, target_model: metadata.target_model, method: DOCUMENTS_TARGET_METHOD, intended_changes, safety_class: metadata.safety_class, execution_relevance: metadata.execution_relevance, validation_source: metadata.validation_source }); }
-export function assembleDocumentsOperationDefinitions(target_context = null, discovery_answers = null, wizard_captures = null) { const map = createOperationDefinitionsMap(); const capture = extractDocumentsCapture(wizard_captures); void capture;
-    // honest-null: documents.folder is not confirmed in scripts/odoo-confirmed-fields.json, so intended_changes must remain null.
-    addDocumentsDefinition(map, CHECKPOINT_IDS.DOC_FOUND_001, null);
-    addDocumentsDefinition(map, CHECKPOINT_IDS.DOC_DREQ_001, null);
-    addDocumentsDefinition(map, CHECKPOINT_IDS.DOC_REC_001, null);
-  return map; }
+export function assembleDocumentsOperationDefinitions(target_context = null, discovery_answers = null, wizard_captures = null) {
+  const map = createOperationDefinitionsMap();
+  // Assembler alignment with documents-wizard.js capture: { root_folder_name, subfolder_names }.
+  const docsCapture = isPlainObject(wizard_captures?.documents) ? wizard_captures.documents : {};
+  const rootFolderName = typeof docsCapture.root_folder_name === "string" && docsCapture.root_folder_name.trim() ? docsCapture.root_folder_name.trim() : null;
+  void rootFolderName;
+  // honest-null: documents.folder is not present in scripts/odoo-confirmed-fields.json — no field (including `name`)
+  // is confirmed for this model. Per HARD RULES (only use confirmed field names; never fabricate),
+  // intended_changes must remain null until odoo-confirmed-fields.json is extended to cover documents.folder.
+  addDocumentsDefinition(map, CHECKPOINT_IDS.DOC_FOUND_001, null);
+  addDocumentsDefinition(map, CHECKPOINT_IDS.DOC_DREQ_001, null);
+  addDocumentsDefinition(map, CHECKPOINT_IDS.DOC_REC_001, null);
+  return map;
+}

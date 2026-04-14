@@ -199,6 +199,7 @@ const DEFERRED_DEFAULTS = {
 };
 
 const ONBOARDING_STORAGE_KEY = "odoo_impl_onboarding_state";
+const SUPPORTED_WIZARD_CAPTURE_DOMAINS = new Set(["foundation", "inventory"]);
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -524,6 +525,70 @@ export function createOnboardingStore({ persist = false } = {}) {
     notify();
   }
 
+  // ── setWizardCapture ───────────────────────────────────────────────────────
+  //
+  // Fire-and-forget wizard capture persistence to backend.
+  // Does not block UI and does not change onboarding flow/state transitions.
+  //
+  // @param {string} wizardId
+  // @param {object} data
+  function setWizardCapture(wizardId, data) {
+    const projectId = state.connection?.project_id || null;
+    if (!projectId) {
+      return;
+    }
+
+    if (!SUPPORTED_WIZARD_CAPTURE_DOMAINS.has(wizardId)) {
+      return;
+    }
+
+    if (!isPlainObject(data)) {
+      console.error(
+        `[wizard-capture] Skipped "${wizardId}" capture: wizard_data must be a plain object.`
+      );
+      return;
+    }
+
+    const token = state.sessionToken || "";
+    const headers = { "Content-Type": "application/json" };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    void fetch("/api/pipeline/wizard-capture", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        project_id: projectId,
+        domain: wizardId,
+        wizard_data: data,
+      }),
+    })
+      .then(async (res) => {
+        let payload = null;
+        try {
+          payload = await res.json();
+        } catch {
+          payload = null;
+        }
+
+        if (!res.ok || !payload?.ok) {
+          const errorMessage = payload?.error || `HTTP ${res.status}`;
+          console.error(`[wizard-capture] "${wizardId}" capture failed: ${errorMessage}`);
+          return;
+        }
+
+        console.info(`[wizard-capture] "${wizardId}" capture saved.`);
+      })
+      .catch((error) => {
+        console.error(
+          `[wizard-capture] "${wizardId}" capture request failed: ${
+            error?.message || String(error)
+          }`
+        );
+      });
+  }
+
   // ── confirmAndRun ─────────────────────────────────────────────────────────
   //
   // POST /api/pipeline/run with collected discovery answers.
@@ -752,6 +817,7 @@ export function createOnboardingStore({ persist = false } = {}) {
     clearPendingIrreversible,
     setDeferredAcknowledged,
     setConfirmed,
+    setWizardCapture,
     confirmAndRun,
     getDeferredCount,
     getDefaultedDomains,

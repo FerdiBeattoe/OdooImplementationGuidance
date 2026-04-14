@@ -44,7 +44,7 @@ if (ODOO_VERSION !== "19") {
 // Engine version — increment on any rule change
 // ---------------------------------------------------------------------------
 
-export const CHECKPOINT_ENGINE_VERSION = "1.0.0";
+export const CHECKPOINT_ENGINE_VERSION = "1.1.0";
 
 // ---------------------------------------------------------------------------
 // Output contract factories
@@ -160,7 +160,7 @@ export const CHECKPOINT_IDS = Object.freeze({
   MAS_DREQ_004: "MAS-DREQ-004",
   MAS_DREQ_005: "MAS-DREQ-005", // conditional: OP-01 = Yes
   MAS_DREQ_006: "MAS-DREQ-006", // conditional: MF-01 = Yes
-  MAS_DREQ_007: "MAS-DREQ-007", // conditional: PI-04 != None
+  MAS_DREQ_007: "MAS-DREQ-007", // conditional: PI-04 legacy; new gate reads wizard_captures.inventory in master-data-operation-definitions.js
 
   // CRM
   CRM_FOUND_001: "CRM-FOUND-001",
@@ -206,7 +206,7 @@ export const CHECKPOINT_IDS = Object.freeze({
   INV_DREQ_006: "INV-DREQ-006", // conditional: PI-05 = Yes
   INV_DREQ_007: "INV-DREQ-007", // conditional: FC-02 = AVCO or FIFO
   INV_DREQ_008: "INV-DREQ-008", // conditional: MF-01 = Yes
-  INV_DREQ_009: "INV-DREQ-009", // conditional: RM-04 = Yes
+  INV_DREQ_009: "INV-DREQ-009", // conditional: RM-01 includes "Rental of assets or equipment" (RM-04 removed from discovery)
   INV_GL_001: "INV-GL-001",
   INV_GL_002: "INV-GL-002",
 
@@ -774,7 +774,9 @@ function generateMasterDataCheckpoints(answers) {
     }));
   }
 
-  // Conditional: PI-04 != None
+  // Conditional: legacy PI-04 != None retained for backward-compat data only.
+  // PI-04 was removed from discovery; new authority is wizard_captures.inventory,
+  // enforced at the operation-definitions assembler (see master-data-operation-definitions.js).
   if (isAnswered(answers, "PI-04") && !answerEquals(answers, "PI-04", "None")) {
     records.push(createCheckpointRecord({
       checkpoint_id: C.MAS_DREQ_007,
@@ -1280,8 +1282,9 @@ function generateInventoryCheckpoints(answers) {
     }));
   }
 
-  // Conditional: RM-04 = Yes
-  if (isAnswered(answers, "RM-04") && (answerEquals(answers, "RM-04", true) || answerEquals(answers, "RM-04", "Yes"))) {
+  // Conditional: RM-01 includes "Rental of assets or equipment".
+  // RM-04 was removed from discovery; rental is now derived from RM-01 array.
+  if (multiSelectIncludes(answers, "RM-01", "Rental of assets or equipment")) {
     records.push(createCheckpointRecord({
       checkpoint_id: C.INV_DREQ_009,
       domain: D,

@@ -17,7 +17,7 @@ import {
 
 import { CHECKPOINT_IDS } from "./checkpoint-engine.js";
 
-export const MASTER_DATA_OP_DEFS_VERSION = "1.1.0";
+export const MASTER_DATA_OP_DEFS_VERSION = "1.2.0";
 export const MASTER_DATA_CATEGORY_MODEL = "product.category";
 export const MASTER_DATA_PARTNER_CATEGORY_MODEL = "res.partner.category";
 export const MASTER_DATA_UOM_CATEGORY_MODEL = "uom.category";
@@ -45,6 +45,18 @@ function extractMasterDataCapture(wizard_captures) {
     return null;
   }
   return isPlainObject(wizard_captures["master-data"]) ? wizard_captures["master-data"] : null;
+}
+
+// Extract inventory wizard capture for MAS-DREQ-007 gating.
+// PI-04 was removed from discovery; traceability category provisioning now gates
+// on whether the inventory wizard has been completed (non-empty plain object).
+// Mirrors the foundation-operation-definitions.js pattern of reading wizard_captures
+// with a dedicated extractor. Returns null when no capture is present.
+function extractInventoryCapture(wizard_captures) {
+  if (!isPlainObject(wizard_captures)) {
+    return null;
+  }
+  return isPlainObject(wizard_captures.inventory) ? wizard_captures.inventory : null;
 }
 
 function buildProductCategoryChanges(masterDataCapture) {
@@ -102,8 +114,13 @@ export function assembleMasterDataOperationDefinitions(
     });
   }
 
-  const pi04 = answers["PI-04"];
-  if (pi04 !== undefined && pi04 !== null && pi04 !== "None") {
+  // MAS-DREQ-007 — PI-04 removed from discovery. Traceability category
+  // provisioning now gates on wizard_captures.inventory presence (non-empty
+  // plain object). Mirrors foundation-operation-definitions.js wizard_captures
+  // pattern (R4 honest-null: intended_changes still drawn from master-data
+  // capture when available).
+  const inventoryCapture = extractInventoryCapture(wizard_captures);
+  if (inventoryCapture !== null) {
     map[CHECKPOINT_IDS.MAS_DREQ_007] = createOperationDefinition({
       checkpoint_id: CHECKPOINT_IDS.MAS_DREQ_007,
       target_model: MASTER_DATA_PARTNER_CATEGORY_MODEL,

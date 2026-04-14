@@ -149,8 +149,9 @@ describe("assembleMasterDataOperationDefinitions", () => {
   // ── Test 2: Keyed by correct checkpoint IDs ─────────────────────────────
 
   it("2. definitions keyed by exact MAS checkpoint IDs (conditional only)", () => {
-    const answers = makeDiscoveryAnswers({ "OP-01": true, "MF-01": true, "PI-04": "Industry" });
-    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), answers);
+    const answers = makeDiscoveryAnswers({ "OP-01": true, "MF-01": true });
+    const captures = { inventory: { warehouse_name: "Main" } };
+    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), answers, captures);
     assert.equal(defs[CHECKPOINT_IDS.MAS_DREQ_005].checkpoint_id, CHECKPOINT_IDS.MAS_DREQ_005);
     assert.equal(defs[CHECKPOINT_IDS.MAS_DREQ_006].checkpoint_id, CHECKPOINT_IDS.MAS_DREQ_006);
     assert.equal(defs[CHECKPOINT_IDS.MAS_DREQ_007].checkpoint_id, CHECKPOINT_IDS.MAS_DREQ_007);
@@ -269,44 +270,47 @@ describe("assembleMasterDataOperationDefinitions", () => {
     );
   });
 
-  // ── Test 14: MAS-DREQ-007 assembled when PI-04 != "None" ────────────────
+  // ── Test 14: MAS-DREQ-007 assembled when inventory wizard captured ──────
+  // PI-04 was removed from discovery; the new gate reads wizard_captures.inventory.
 
-  it('14. MAS-DREQ-007 assembled when PI-04 is answered and != "None"', () => {
-    const answers = makeDiscoveryAnswers({ "PI-04": "Industry" });
-    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), answers);
+  it("14. MAS-DREQ-007 assembled when wizard_captures.inventory is present", () => {
+    const answers = makeDiscoveryAnswers();
+    const captures = { inventory: { warehouse_name: "Main" } };
+    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), answers, captures);
     assert.ok(defs[CHECKPOINT_IDS.MAS_DREQ_007],
-      'MAS-DREQ-007 must be assembled when PI-04 is answered and != "None"');
+      "MAS-DREQ-007 must be assembled when wizard_captures.inventory is present");
     assert.equal(defs[CHECKPOINT_IDS.MAS_DREQ_007].checkpoint_id, CHECKPOINT_IDS.MAS_DREQ_007);
   });
 
-  // ── Test 15: MAS-DREQ-007 NOT assembled when PI-04 = "None" ─────────────
+  // ── Test 15: MAS-DREQ-007 NOT assembled when wizard_captures is null ────
 
-  it('15. MAS-DREQ-007 NOT assembled when PI-04 = "None"', () => {
-    const answers = makeDiscoveryAnswers({ "PI-04": "None" });
-    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), answers);
+  it("15. MAS-DREQ-007 NOT assembled when wizard_captures is null", () => {
+    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers(), null);
     assert.equal(
       defs[CHECKPOINT_IDS.MAS_DREQ_007],
       undefined,
-      'MAS-DREQ-007 must NOT be assembled when PI-04="None"'
+      "MAS-DREQ-007 must NOT be assembled when wizard_captures is null"
     );
   });
 
-  // ── Test 16: MAS-DREQ-007 NOT assembled when PI-04 absent ───────────────
+  // ── Test 16: MAS-DREQ-007 NOT assembled when inventory capture absent ───
 
-  it("16. MAS-DREQ-007 NOT assembled when PI-04 is absent", () => {
-    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers());
+  it("16. MAS-DREQ-007 NOT assembled when wizard_captures.inventory is absent", () => {
+    const captures = { "master-data": { product_category_name: "X" } };
+    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), makeDiscoveryAnswers(), captures);
     assert.equal(
       defs[CHECKPOINT_IDS.MAS_DREQ_007],
       undefined,
-      "MAS-DREQ-007 must NOT be assembled when PI-04 is absent"
+      "MAS-DREQ-007 must NOT be assembled when wizard_captures.inventory is absent"
     );
   });
 
   // ── Test 17: target_model correct per checkpoint ─────────────────────────
 
   it("17. target_model is correct per checkpoint", () => {
-    const answers = makeDiscoveryAnswers({ "OP-01": true, "MF-01": true, "PI-04": "Industry" });
-    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), answers);
+    const answers = makeDiscoveryAnswers({ "OP-01": true, "MF-01": true });
+    const captures = { inventory: { warehouse_name: "Main" } };
+    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), answers, captures);
 
     // product.category checkpoints
     assert.equal(defs[CHECKPOINT_IDS.MAS_DREQ_005].target_model, MASTER_DATA_CATEGORY_MODEL,
@@ -324,8 +328,9 @@ describe("assembleMasterDataOperationDefinitions", () => {
   // ── Test 18: target_operation is "write" for every assembled definition ──
 
   it('18. target_operation is "write" for every assembled definition', () => {
-    const answers = makeDiscoveryAnswers({ "OP-01": true, "MF-01": true, "PI-04": "Industry" });
-    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), answers);
+    const answers = makeDiscoveryAnswers({ "OP-01": true, "MF-01": true });
+    const captures = { inventory: { warehouse_name: "Main" } };
+    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), answers, captures);
     for (const key of Object.keys(defs)) {
       assert.equal(
         defs[key].target_operation,
@@ -338,8 +343,9 @@ describe("assembleMasterDataOperationDefinitions", () => {
   // ── Test 19: intended_changes is null for all definitions ───────────────
 
   it("19. intended_changes is null for all assembled definitions — honest missing-input behavior", () => {
-    const answers = makeDiscoveryAnswers({ "OP-01": true, "MF-01": true, "PI-04": "Industry" });
-    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), answers);
+    const answers = makeDiscoveryAnswers({ "OP-01": true, "MF-01": true });
+    const captures = { inventory: { warehouse_name: "Main" } };
+    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), answers, captures);
     for (const key of Object.keys(defs)) {
       assert.equal(
         defs[key].intended_changes,
@@ -352,8 +358,9 @@ describe("assembleMasterDataOperationDefinitions", () => {
   // ── Test 20: Non-MAS checkpoint IDs not added ────────────────────────────
 
   it("20. non-MAS checkpoint IDs are not in the assembled map", () => {
-    const answers = makeDiscoveryAnswers({ "OP-01": true, "MF-01": true, "PI-04": "Industry" });
-    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), answers);
+    const answers = makeDiscoveryAnswers({ "OP-01": true, "MF-01": true });
+    const captures = { inventory: { warehouse_name: "Main" } };
+    const defs = assembleMasterDataOperationDefinitions(makeTargetContext(), answers, captures);
     const keys = Object.keys(defs);
     for (const key of keys) {
       assert.ok(

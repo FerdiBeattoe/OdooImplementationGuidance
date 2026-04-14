@@ -56,7 +56,7 @@ import {
 
 import { CHECKPOINT_IDS } from "./checkpoint-engine.js";
 
-export const INVENTORY_OP_DEFS_VERSION = "1.0.0";
+export const INVENTORY_OP_DEFS_VERSION = "1.1.0";
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -185,10 +185,12 @@ export function assembleInventoryOperationDefinitions(
   wizard_captures = null
 ) {
   const map = createOperationDefinitionsMap();
+  const wizardData = extractInventoryWizardData(wizard_captures);
+  const warehouseChanges = buildWarehouseIntendedChanges(wizardData);
 
-  addInventoryDefinition(map, CHECKPOINT_IDS.INV_FOUND_001);
-  addInventoryDefinition(map, CHECKPOINT_IDS.INV_FOUND_002);
-  addInventoryDefinition(map, CHECKPOINT_IDS.INV_FOUND_003);
+  addInventoryDefinition(map, CHECKPOINT_IDS.INV_FOUND_001, { intended_changes: warehouseChanges });
+  addInventoryDefinition(map, CHECKPOINT_IDS.INV_FOUND_002, { intended_changes: warehouseChanges });
+  addInventoryDefinition(map, CHECKPOINT_IDS.INV_FOUND_003, { intended_changes: warehouseChanges });
   addInventoryDefinition(map, CHECKPOINT_IDS.INV_DREQ_001);
   addInventoryDefinition(map, CHECKPOINT_IDS.INV_DREQ_002);
 
@@ -197,8 +199,6 @@ export function assembleInventoryOperationDefinitions(
   if (!Number.isNaN(op02) && op02 >= 2) {
     addInventoryDefinition(map, CHECKPOINT_IDS.INV_DREQ_003);
   }
-
-  const wizardData = extractInventoryWizardData(wizard_captures);
   const pi03 = answers["PI-03"];
   if (pi03 === "2 steps") {
     addInventoryDefinition(
@@ -256,14 +256,40 @@ function buildDefinitionOptions(wizardData, expectedReceptionSteps) {
   return intendedChanges ? { intended_changes: intendedChanges } : undefined;
 }
 
+function buildWarehouseIntendedChanges(wizardData) {
+  if (!isPlainObject(wizardData)) {
+    return null;
+  }
+
+  const changes = {};
+  if (
+    typeof wizardData.warehouse_name === "string" &&
+    wizardData.warehouse_name.trim() !== ""
+  ) {
+    changes.name = wizardData.warehouse_name.trim();
+  }
+  if (
+    typeof wizardData.warehouse_code === "string" &&
+    wizardData.warehouse_code.trim() !== ""
+  ) {
+    changes.code = wizardData.warehouse_code.trim();
+  }
+  if (typeof wizardData.reception_steps === "string") {
+    changes.reception_steps = wizardData.reception_steps;
+  }
+  if (typeof wizardData.delivery_steps === "string") {
+    changes.delivery_steps = wizardData.delivery_steps;
+  }
+
+  return Object.keys(changes).length > 0 ? changes : null;
+}
+
 function buildReceptionIntendedChanges(wizardData, expectedReceptionSteps) {
   if (!isPlainObject(wizardData)) {
     return null;
   }
-  if (typeof expectedReceptionSteps === "string") {
-    if (wizardData.reception_steps !== expectedReceptionSteps) {
-      return null;
-    }
+  if (typeof expectedReceptionSteps === "string" && wizardData.reception_steps !== expectedReceptionSteps) {
+    return null;
   }
 
   const changes = {};
@@ -277,12 +303,6 @@ function buildReceptionIntendedChanges(wizardData, expectedReceptionSteps) {
     !changes.delivery_steps
   ) {
     changes.delivery_steps = "pick_pack_ship";
-  }
-  if (
-    typeof wizardData.warehouse_name === "string" &&
-    wizardData.warehouse_name.trim() !== ""
-  ) {
-    changes.warehouse_name = wizardData.warehouse_name.trim();
   }
 
   return Object.keys(changes).length > 0 ? changes : null;

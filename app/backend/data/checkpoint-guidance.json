@@ -468,7 +468,7 @@
         },
         "MAS-DREQ-007": {
           "title": "Industry partner category scaffolding",
-          "what": "Conditional checkpoint (PI-04 != None). Configures industry-specific partner categories on res.partner.category for specialized segmentation.",
+          "what": "Conditional checkpoint (inventory wizard completed, per wizard_captures.inventory). Configures industry-specific partner categories on res.partner.category for specialized segmentation.",
           "why": "Industry-specific partner categories enable targeted pricing, reporting, and workflow automation that generic categories cannot support.",
           "confirm_first": [
             "Has the client defined industry-specific partner segments?",
@@ -1249,7 +1249,7 @@
         },
         "INV-DREQ-009": {
           "title": "Rental inventory integration",
-          "what": "Conditional checkpoint (RM-04=Yes). Informational confirmation that inventory is configured for rental product tracking and return flow.",
+          "what": "Conditional checkpoint (RM-01 includes 'Rental of assets or equipment'). Informational confirmation that inventory is configured for rental product tracking and return flow.",
           "why": "Rental products require specific inventory handling for checkout, return, and availability tracking. Without configuration, rental stock is not properly tracked.",
           "confirm_first": [
             "Are rental products configured as storable products with serial tracking?",

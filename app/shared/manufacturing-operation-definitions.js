@@ -1,47 +1,5 @@
 // ---------------------------------------------------------------------------
-// Manufacturing Operation Definitions — Odoo 19 Implementation Control Platform
-// ---------------------------------------------------------------------------
-//
-// Purpose:
-//   Assembles caller-supplied operation definitions for Manufacturing domain
-//   Executable checkpoints. Provides the operation_definitions map consumed by
-//   governed-preview-engine.js Gate 6, unblocking Manufacturing previews.
-//
-// Governing constraints:
-//   - specs/runtime_state_contract.md §1 (operation_definition shape)
-//   - governed-preview-engine.js R15 / Gate 6 (Executable checkpoints require
-//     a matching operation_definition keyed by checkpoint_id)
-//   - governed-odoo-apply-service.js S4 (mrp.workcenter is in
-//     ALLOWED_APPLY_MODELS; mrp.bom and mrp.routing are not)
-//   - checkpoint-engine.js generateManufacturingCheckpoints (checkpoint IDs,
-//     validation_source, execution_relevance, safety_class, and gates)
-//   - domain-capabilities.js "manufacturing-mrp" summary (bounded workcenter
-//     scaffolding)
-//
-// Hard rules:
-//   R1  Only Manufacturing domain checkpoints are assembled here. Never other domains.
-//   R2  target_model is "mrp.workcenter" for every assembled Manufacturing
-//       checkpoint in the current governed apply surface. mrp.bom and mrp.routing
-//       are documented coverage gaps.
-//   R3  method is always "write". target_operation mirrors method for governed
-//       preview/apply compatibility.
-//   R4  intended_changes is null for all checkpoints. BOM, routing, and
-//       workcenter specifics are not derivable from checkpoint metadata or
-//       discovery answers alone. Null is honest.
-//   R5  MRP-FOUND-001 is Informational (execution_relevance: Informational,
-//       safety_class: Not_Applicable). Intentionally excluded.
-//   R6  MRP-GL-001 and MRP-GL-002 are non-Executable (execution_relevance: None,
-//       safety_class: Not_Applicable). Intentionally excluded.
-//   R7  MRP-DREQ-003 is conditional: only assembled when MF-02 = "Multi-level".
-//   R8  MRP-DREQ-004 is conditional: only assembled when MF-02 = "Phantom".
-//   R9  MRP-DREQ-005 and MRP-DREQ-006 are conditional: only assembled when
-//       MF-03 = true or "Yes".
-//   R10 MRP-DREQ-007 is conditional: only assembled when MF-04 = true or "Yes".
-//   R11 MRP-DREQ-008 is conditional: only assembled when FC-01 = "Full accounting"
-//       and MF-02 = "Multi-level".
-//   R12 The returned map is always a plain object (createOperationDefinitionsMap
-//       shape). Never null, never an array.
-//   R13 Non-Manufacturing checkpoint IDs are never added to the returned map.
+// Manufacturing Operation Definitions - Odoo 19 Implementation Control Platform
 // ---------------------------------------------------------------------------
 
 import { ODOO_VERSION } from "./constants.js";
@@ -59,17 +17,9 @@ import {
 
 import { CHECKPOINT_IDS } from "./checkpoint-engine.js";
 
-export const MANUFACTURING_OP_DEFS_VERSION = "1.0.0";
-
+export const MANUFACTURING_OP_DEFS_VERSION = "1.1.0";
 export const MANUFACTURING_WORKCENTER_MODEL = "mrp.workcenter";
 export const MANUFACTURING_TARGET_METHOD = "write";
-
-// COVERAGE GAP: mrp.bom not in ALLOWED_APPLY_MODELS
-// Must be added to governed-odoo-apply-service.js before
-// this checkpoint can have governed-apply execution
-// COVERAGE GAP: mrp.routing not in ALLOWED_APPLY_MODELS
-// Must be added to governed-odoo-apply-service.js before
-// this checkpoint can have governed-apply execution
 export const MANUFACTURING_COVERAGE_GAP_MODELS = Object.freeze([
   "mrp.bom",
   "mrp.routing",
@@ -78,12 +28,6 @@ export const MANUFACTURING_COVERAGE_GAP_MODELS = Object.freeze([
 export const MANUFACTURING_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([
   CHECKPOINT_IDS.MRP_DREQ_001,
   CHECKPOINT_IDS.MRP_DREQ_002,
-  // MRP_DREQ_003 added conditionally when MF-02 = "Multi-level" (R7)
-  // MRP_DREQ_004 added conditionally when MF-02 = "Phantom" (R8)
-  // MRP_DREQ_005 and MRP_DREQ_006 added conditionally when MF-03 = Yes (R9)
-  // MRP_DREQ_007 added conditionally when MF-04 = Yes (R10)
-  // MRP_DREQ_008 added conditionally when FC-01 = "Full accounting" and
-  // MF-02 = "Multi-level" (R11)
 ]);
 
 export const MANUFACTURING_CHECKPOINT_METADATA = Object.freeze({
@@ -137,14 +81,52 @@ export const MANUFACTURING_CHECKPOINT_METADATA = Object.freeze({
   }),
 });
 
-function addManufacturingDefinition(map, checkpoint_id) {
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function extractManufacturingCapture(wizard_captures) {
+  if (!isPlainObject(wizard_captures)) {
+    return null;
+  }
+  return isPlainObject(wizard_captures.manufacturing) ? wizard_captures.manufacturing : null;
+}
+
+function buildWorkcenterChanges(manufacturingCapture) {
+  if (!isPlainObject(manufacturingCapture)) {
+    return null;
+  }
+
+  const name = typeof manufacturingCapture.workcenter_name === "string"
+    ? manufacturingCapture.workcenter_name.trim()
+    : "";
+  const code = typeof manufacturingCapture.workcenter_code === "string"
+    ? manufacturingCapture.workcenter_code.trim()
+    : "";
+  const rawEfficiency = typeof manufacturingCapture.time_efficiency === "string"
+    ? manufacturingCapture.time_efficiency.trim()
+    : "";
+  const timeEfficiency = rawEfficiency === "" ? null : Number(rawEfficiency);
+
+  if (!name && !code && !Number.isFinite(timeEfficiency)) {
+    return null;
+  }
+
+  return {
+    name: name || null,
+    code: code || null,
+    time_efficiency: Number.isFinite(timeEfficiency) ? timeEfficiency : null,
+  };
+}
+
+function addManufacturingDefinition(map, checkpoint_id, intended_changes) {
   const metadata = MANUFACTURING_CHECKPOINT_METADATA[checkpoint_id];
   if (!metadata) return;
   map[checkpoint_id] = createOperationDefinition({
     checkpoint_id,
     target_model: metadata.target_model,
     method: MANUFACTURING_TARGET_METHOD,
-    intended_changes: null,
+    intended_changes,
     safety_class: metadata.safety_class,
     execution_relevance: metadata.execution_relevance,
     validation_source: metadata.validation_source,
@@ -153,35 +135,37 @@ function addManufacturingDefinition(map, checkpoint_id) {
 
 export function assembleManufacturingOperationDefinitions(
   target_context = null,
-  discovery_answers = null
+  discovery_answers = null,
+  wizard_captures = null
 ) {
   const map = createOperationDefinitionsMap();
   const answers = discovery_answers?.answers ?? {};
+  const workcenterChanges = buildWorkcenterChanges(extractManufacturingCapture(wizard_captures));
 
-  addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_001);
-  addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_002);
+  addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_001, workcenterChanges);
+  addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_002, workcenterChanges);
 
   const mf02 = answers["MF-02"];
   if (mf02 === "Multi-level") {
-    addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_003);
+    addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_003, workcenterChanges);
   }
   if (mf02 === "Phantom") {
-    addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_004);
+    addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_004, workcenterChanges);
   }
 
   const mf03 = answers["MF-03"];
   if (mf03 === true || mf03 === "Yes") {
-    addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_005);
-    addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_006);
+    addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_005, workcenterChanges);
+    addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_006, workcenterChanges);
   }
 
   const mf04 = answers["MF-04"];
   if (mf04 === true || mf04 === "Yes") {
-    addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_007);
+    addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_007, workcenterChanges);
   }
 
   if (answers["FC-01"] === "Full accounting" && mf02 === "Multi-level") {
-    addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_008);
+    addManufacturingDefinition(map, CHECKPOINT_IDS.MRP_DREQ_008, workcenterChanges);
   }
 
   return map;

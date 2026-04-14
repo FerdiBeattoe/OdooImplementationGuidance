@@ -51,6 +51,25 @@ const INDUSTRIES = [
   },
 ];
 
+const FISCAL_YEAR_END_MONTH_OPTIONS = Object.freeze([
+  { value: "1", label: "January" },
+  { value: "2", label: "February" },
+  { value: "3", label: "March" },
+  { value: "4", label: "April" },
+  { value: "5", label: "May" },
+  { value: "6", label: "June" },
+  { value: "7", label: "July" },
+  { value: "8", label: "August" },
+  { value: "9", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" },
+]);
+
+const VALID_FISCAL_YEAR_END_MONTHS = new Set(
+  FISCAL_YEAR_END_MONTH_OPTIONS.map((entry) => entry.value)
+);
+
 // ---------------------------------------------------------------------------
 // QUESTION DEFINITIONS — 78 questions, ordered by section
 // ---------------------------------------------------------------------------
@@ -1426,6 +1445,9 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     exitWarningVisible: false,
     activeQuestionFlush: () => {},
     popstateHandler: null,
+    foundationFiscalYearEndMonth: "12",
+    foundationFiscalYearEndDay: "31",
+    lastPostedFoundationCapture: null,
   };
 
   const container = el("div", {
@@ -1565,6 +1587,40 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     local.activeQuestionFlush();
     detachPopstateGuard();
     onNavigate("dashboard");
+  }
+
+  function getFoundationFiscalYearCapture() {
+    const month = String(local.foundationFiscalYearEndMonth || "").trim();
+    const dayRaw = String(local.foundationFiscalYearEndDay || "").trim();
+    const day = Number.parseInt(dayRaw, 10);
+
+    if (!VALID_FISCAL_YEAR_END_MONTHS.has(month)) {
+      return null;
+    }
+    if (!Number.isInteger(day) || day < 1 || day > 31) {
+      return null;
+    }
+
+    return {
+      fiscal_year_end_month: month,
+      fiscal_year_end_day: day,
+    };
+  }
+
+  function postFoundationCaptureIfChanged() {
+    const capture = getFoundationFiscalYearCapture();
+    if (!capture) {
+      return false;
+    }
+
+    const signature = `${capture.fiscal_year_end_month}:${capture.fiscal_year_end_day}`;
+    if (local.lastPostedFoundationCapture === signature) {
+      return true;
+    }
+
+    onboardingStore.setWizardCapture("foundation", capture);
+    local.lastPostedFoundationCapture = signature;
+    return true;
   }
 
   function buildHeader() {
@@ -2555,7 +2611,10 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     // 1. Answers reviewed — grouped by section, collapsible
     wrap.append(buildAnswersSection(s, visibleQuestions));
 
-    // 2. Domains that will be activated
+    // 2. Foundation fiscal year capture (feeds FND-DREQ-001 wizard capture)
+    wrap.append(buildFoundationFiscalYearSection());
+
+    // 3. Domains that will be activated
     wrap.append(buildDomainsSection(s));
 
     // 3. Defaulted activations (amber box, only if deferred questions)
@@ -2578,6 +2637,12 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     wrap.append(buildConfirmCheckbox(s));
 
     // 7. Confirm button
+    const foundationCapture = getFoundationFiscalYearCapture();
+    const foundationCaptureOk = Boolean(foundationCapture);
+    if (foundationCaptureOk) {
+      postFoundationCaptureIfChanged();
+    }
+
     const allRequired = visibleQuestions.filter((q) => q.required);
     const missingRequired = allRequired.filter((q) => {
       const ans = s.answers[q.id];
@@ -2591,7 +2656,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     const confirmedOk = s.confirmed;
     const ta04Answer = s.answers["TA-04"];
     const ta04Ok = ta04Answer && !ta04Answer.deferred && ta04Answer.answer;
-    const canConfirm = missingRequired.length === 0 && deferredOk && confirmedOk && ta04Ok;
+    const canConfirm = missingRequired.length === 0 && deferredOk && confirmedOk && ta04Ok && foundationCaptureOk;
 
     if (missingRequired.length > 0) {
       wrap.append(el("div", { className: "ow-panel ow-panel--error", style: "padding: 12px 16px; background: var(--ee-error-soft); border-left: 3px solid var(--ee-error); margin-bottom: 16px;" }, [
@@ -2605,6 +2670,12 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     if (!ta04Ok && visibleQuestions.some((q) => q.id === "TA-04")) {
       wrap.append(el("div", { className: "ow-panel ow-panel--error", style: "padding: 10px 14px; background: var(--ee-error-soft); border-left: 3px solid var(--ee-error); margin-bottom: 12px;" }, [
         el("p", { style: "font-size: 13px; color: var(--ee-error);" }, "TA-04 (System administrator name) must be answered — it cannot be deferred."),
+      ]));
+    }
+
+    if (!foundationCaptureOk) {
+      wrap.append(el("div", { className: "ow-panel ow-panel--error", style: "padding: 10px 14px; background: var(--ee-error-soft); border-left: 3px solid var(--ee-error); margin-bottom: 12px;" }, [
+        el("p", { style: "font-size: 13px; color: var(--ee-error);" }, "Foundation fiscal year end month/day is required."),
       ]));
     }
 
@@ -2638,6 +2709,9 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
         disabled: !canConfirm || isLoading || noProject,
         onclick: async () => {
           if (!canConfirm || isLoading || !projectId) return;
+          const capture = getFoundationFiscalYearCapture();
+          if (!capture) return;
+          onboardingStore.setWizardCapture("foundation", capture);
           const result = await onboardingStore.confirmAndRun(projectId);
           if (result.ok) {
             onComplete({ projectId, runtimeState: result.runtime_state ?? null });
@@ -2696,6 +2770,61 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     }
 
     return wrap;
+  }
+
+  function buildFoundationFiscalYearSection() {
+    const section = el("div", { className: "ow-card ow-summary-card", style: "background: var(--ee-surface-container-low); box-shadow: var(--ee-shadow-lg); margin-bottom: 16px; padding: 20px;" });
+
+    section.append(el("h3", { style: "font-size: 15px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 8px;" }, "Foundation fiscal year end"));
+    section.append(el("p", { style: "font-size: 13px; color: var(--ee-on-surface-variant); margin-bottom: 14px;" }, "Set the fiscal year end that should be captured for Foundation setup."));
+
+    const fieldWrap = el("div", { style: "display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;" });
+
+    const monthSelect = el("select", {
+      className: "ee-input",
+      style: "min-width: 220px;",
+      onchange: (event) => {
+        local.foundationFiscalYearEndMonth = String(event.target.value || "");
+        postFoundationCaptureIfChanged();
+        render(true);
+      },
+    }, FISCAL_YEAR_END_MONTH_OPTIONS.map((entry) =>
+      el("option", { value: entry.value }, `${entry.label} (${entry.value})`)
+    ));
+    monthSelect.value = String(local.foundationFiscalYearEndMonth || "");
+
+    const dayInput = el("input", {
+      type: "number",
+      className: "ee-input",
+      min: "1",
+      max: "31",
+      step: "1",
+      style: "width: 120px;",
+      value: String(local.foundationFiscalYearEndDay || ""),
+      oninput: (event) => {
+        local.foundationFiscalYearEndDay = String(event.target.value || "");
+      },
+      onblur: () => {
+        postFoundationCaptureIfChanged();
+        render(true);
+      },
+    });
+
+    fieldWrap.append(
+      el("div", { style: "display: flex; flex-direction: column; gap: 6px;" }, [
+        el("label", { style: "font-size: 12px; font-weight: 600; color: var(--ee-on-surface);" }, "Fiscal year end month"),
+        monthSelect,
+      ]),
+      el("div", { style: "display: flex; flex-direction: column; gap: 6px;" }, [
+        el("label", { style: "font-size: 12px; font-weight: 600; color: var(--ee-on-surface);" }, "Fiscal year end day"),
+        dayInput,
+      ])
+    );
+
+    section.append(fieldWrap);
+    section.append(el("p", { style: "font-size: 12px; color: var(--ee-on-surface-variant); margin-top: 10px; margin-bottom: 0;" }, "This value is captured as foundation wizard data for governed pipeline assembly."));
+
+    return section;
   }
 
   function buildAnswersSection(s, visibleQuestions) {

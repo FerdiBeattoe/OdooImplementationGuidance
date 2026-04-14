@@ -6,6 +6,7 @@ import { renderPosWizard } from "./pos-wizard.js";
 import { renderPurchaseWizard } from "./purchase-wizard.js";
 import { renderSalesWizard } from "./sales-wizard.js";
 import { renderUsersRolesWizard } from "./users-roles-wizard.js";
+import { renderWebsiteEcommerceWizard } from "./website-ecommerce-wizard.js";
 
 const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "accounting-setup": renderAccountingWizard,
@@ -16,6 +17,7 @@ const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "purchase-setup": renderPurchaseWizard,
   "sales-setup": renderSalesWizard,
   "users-access": renderUsersRolesWizard,
+  "website-setup": renderWebsiteEcommerceWizard,
 });
 
 export function getGovernedWizardRenderer(wizardId, props = {}) {

@@ -199,7 +199,28 @@ const DEFERRED_DEFAULTS = {
 };
 
 const ONBOARDING_STORAGE_KEY = "odoo_impl_onboarding_state";
-const SUPPORTED_WIZARD_CAPTURE_DOMAINS = new Set(["foundation", "inventory"]);
+const SUPPORTED_WIZARD_CAPTURE_DOMAINS = new Set([
+  "foundation",
+  "inventory",
+  "crm",
+  "sales",
+  "purchase",
+  "accounting",
+  "master-data",
+  "users-roles",
+  "manufacturing",
+  "pos",
+  "website-ecommerce",
+  "projects",
+  "quality",
+  "documents",
+  "sign",
+  "approvals",
+  "subscriptions",
+  "field-service",
+  "hr",
+  "plm",
+]);
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);

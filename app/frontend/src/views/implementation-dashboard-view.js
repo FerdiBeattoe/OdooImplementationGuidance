@@ -10,24 +10,31 @@ import { getImplementationState } from "../state/implementationStore.js";
 import { pipelineStore } from "../state/pipeline-store.js";
 
 const MODULES = [
-  { id: "company-setup", name: "Company Setup", icon: "building-2", wizardId: "company-setup" },
-  { id: "users-access", name: "Users & Access", icon: "users", wizardId: "users-access" },
-  { id: "chart-of-accounts", name: "Chart of Accounts", icon: "landmark", wizardId: "chart-of-accounts" },
-  { id: "sales-setup", name: "Sales", icon: "tag", wizardId: "sales-setup" },
+  { id: "users-access", name: "Users & Roles", icon: "users", wizardId: "users-access" },
+  { id: "master-data-setup", name: "Master Data", icon: "database", wizardId: "master-data-setup" },
   { id: "crm-setup", name: "CRM", icon: "target", wizardId: "crm-setup" },
-  { id: "inventory-setup", name: "Inventory", icon: "package", wizardId: "inventory-setup" },
-  { id: "accounting-setup", name: "Accounting", icon: "calculator", wizardId: "accounting-setup" },
+  { id: "sales-setup", name: "Sales", icon: "tag", wizardId: "sales-setup" },
   { id: "purchase-setup", name: "Purchase", icon: "shopping-cart", wizardId: "purchase-setup" },
+  { id: "accounting-setup", name: "Accounting", icon: "calculator", wizardId: "accounting-setup" },
   { id: "manufacturing-setup", name: "Manufacturing", icon: "factory", wizardId: "manufacturing-setup" },
-  { id: "hr-setup", name: "HR & Payroll", icon: "user-check", wizardId: "hr-setup" },
+  { id: "pos-setup", name: "Point of Sale", icon: "monitor", wizardId: "pos-setup" },
   { id: "website-setup", name: "Website & eCommerce", icon: "globe", wizardId: "website-setup" },
-  { id: "pos-setup", name: "Point of Sale", icon: "monitor", wizardId: "pos-setup" }
+  { id: "projects-setup", name: "Projects", icon: "briefcase", wizardId: "projects-setup" },
+  { id: "quality-setup", name: "Quality", icon: "shield-check", wizardId: "quality-setup" },
+  { id: "inventory-setup", name: "Inventory", icon: "package", wizardId: "inventory-setup" },
+  { id: "hr-setup", name: "HR", icon: "user-check", wizardId: "hr-setup" },
+  { id: "plm-setup", name: "PLM", icon: "git-branch", wizardId: "plm-setup" },
+  { id: "documents-setup", name: "Documents", icon: "folder", wizardId: "documents-setup" },
+  { id: "sign-setup", name: "Sign", icon: "pen-tool", wizardId: "sign-setup" },
+  { id: "approvals-setup", name: "Approvals", icon: "check-circle", wizardId: "approvals-setup" },
+  { id: "subscriptions-setup", name: "Subscriptions", icon: "repeat", wizardId: "subscriptions-setup" },
+  { id: "field-service-setup", name: "Field Service", icon: "wrench", wizardId: "field-service-setup" }
 ];
 
 const NEXT_STEPS = [
-  { id: "company-setup", name: "Company Setup", icon: "business", time: "5 min", wizardId: "company-setup" },
-  { id: "users-access", name: "Users & Access", icon: "people", time: "10 min", wizardId: "users-access" },
-  { id: "chart-of-accounts", name: "Chart of Accounts", icon: "account_balance", time: "15 min", wizardId: "chart-of-accounts" }
+  { id: "users-access", name: "Users & Roles", icon: "users", time: "10 min", wizardId: "users-access" },
+  { id: "master-data-setup", name: "Master Data", icon: "database", time: "15 min", wizardId: "master-data-setup" },
+  { id: "crm-setup", name: "CRM", icon: "target", time: "15 min", wizardId: "crm-setup" }
 ];
 
 /**

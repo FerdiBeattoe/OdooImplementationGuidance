@@ -5,6 +5,7 @@
 import { createWizardShell, formField, formInput, formSelect, formCheckbox, formSection, formGrid, pushSummaryStep } from "./WizardShell.js";
 import { el } from "../lib/dom.js";
 import { lucideIcon } from "../lib/icons.js";
+import { getGovernedWizardRenderer } from "../views/wizards/index.js";
 import {
   pushCompanySetup, pushUsersAccess, pushChartOfAccounts, pushSalesConfig,
   pushCrmConfig, pushInventoryConfig, pushAccountingConfig, pushPurchaseConfig,
@@ -3987,6 +3988,10 @@ export function renderApprovalsWizard({ onComplete, onCancel }) {
 // ─────────────────────────────────────────────────────────────
 export function renderModuleSetupView({ wizardId, onComplete, onCancel, onNavigate }) {
   const props = { onComplete, onCancel };
+  const governedWizard = getGovernedWizardRenderer(wizardId, { onCancel });
+  if (governedWizard) {
+    return governedWizard;
+  }
 
   const WIZARD_MAP = {
     "company-setup":           () => renderCompanySetupWizard(props),

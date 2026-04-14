@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// CRM Operation Definitions — Odoo 19 Implementation Control Platform
+// CRM Operation Definitions - Odoo 19 Implementation Control Platform
 // ---------------------------------------------------------------------------
 //
 // Purpose:
@@ -19,17 +19,19 @@
 //   R1  Only CRM domain checkpoints are assembled here. Never other domains.
 //   R2  target_model is "crm.stage" or "crm.team" per checkpoint purpose.
 //       See per-checkpoint comments for exact assignment.
-//   R3  target_operation is always "write" — no create, unlink, or other operations.
-//   R4  intended_changes is null for all checkpoints — CRM configuration data
-//       (pipeline stages, team assignments, lead rules) is not available in
-//       target_context or discovery_answers at assembly time. Null is honest
-//       (no fabrication).
+//   R3  target_operation is always "write" - no create, unlink, or other operations.
+//   R4  intended_changes is sourced only from wizard_captures.crm when present.
+//       No invented fields or guessed IDs are permitted.
 //   R5  CRM-DREQ-004 is conditional: only assembled when discovery_answers
 //       contains TA-02 = true or "Yes". Gate confirmed in checkpoint-engine.js
 //       generateCRMCheckpoints line 854.
-//   R6  The returned map is always a plain object (createOperationDefinitionsMap shape).
+//   R6  crm.stage changes may be expressed as an array of { name } objects to
+//       preserve the truthful multi-stage capture supplied by the wizard.
+//   R7  crm.team.user_id remains null when the wizard only supplies a leader
+//       name. A truthful user ID cannot be derived from free text alone.
+//   R8  The returned map is always a plain object (createOperationDefinitionsMap shape).
 //       Never null, never an array.
-//   R7  Non-CRM checkpoint IDs are never added to the returned map.
+//   R9  Non-CRM checkpoint IDs are never added to the returned map.
 // ---------------------------------------------------------------------------
 
 import { ODOO_VERSION } from "./constants.js";
@@ -47,142 +49,122 @@ import {
 
 import { CHECKPOINT_IDS } from "./checkpoint-engine.js";
 
-// ---------------------------------------------------------------------------
-// Module version — increment on any rule change
-// ---------------------------------------------------------------------------
-
-export const CRM_OP_DEFS_VERSION = "1.0.0";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-// Target models for CRM Executable checkpoints.
-// All confirmed present in governed-odoo-apply-service.js ALLOWED_APPLY_MODELS.
+export const CRM_OP_DEFS_VERSION = "1.1.0";
 export const CRM_STAGE_MODEL = "crm.stage";
-export const CRM_TEAM_MODEL  = "crm.team";
-
-// Target operation for all CRM Executable checkpoints.
+export const CRM_TEAM_MODEL = "crm.team";
 export const CRM_TARGET_OPERATION = "write";
 
-// CRM Executable checkpoint IDs covered by this assembler (unconditional only).
-// CRM-DREQ-004 added conditionally (TA-02=Yes — R5).
 export const CRM_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([
-  CHECKPOINT_IDS.CRM_FOUND_001, // Unconditional, Safe
-  CHECKPOINT_IDS.CRM_FOUND_002, // Unconditional, Safe
-  CHECKPOINT_IDS.CRM_DREQ_001,  // Unconditional, Safe
-  CHECKPOINT_IDS.CRM_DREQ_002,  // Unconditional, Safe
-  CHECKPOINT_IDS.CRM_DREQ_003,  // Unconditional, Safe
-  CHECKPOINT_IDS.CRM_REC_001,   // Unconditional, Safe
-  // CRM_DREQ_004 added conditionally when TA-02=Yes (R5)
+  CHECKPOINT_IDS.CRM_FOUND_001,
+  CHECKPOINT_IDS.CRM_FOUND_002,
+  CHECKPOINT_IDS.CRM_DREQ_001,
+  CHECKPOINT_IDS.CRM_DREQ_002,
+  CHECKPOINT_IDS.CRM_DREQ_003,
+  CHECKPOINT_IDS.CRM_REC_001,
 ]);
 
-// ---------------------------------------------------------------------------
-// Main export: assembleCrmOperationDefinitions
-// ---------------------------------------------------------------------------
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
 
-/**
- * Assembles the operation_definitions map for CRM Executable checkpoints.
- *
- * Unconditional definitions returned (keyed by checkpoint_id):
- *   CRM-FOUND-001  CRM pipeline/stage activation foundation  target_model: crm.stage
- *   CRM-FOUND-002  CRM team/user assignment foundation       target_model: crm.team
- *   CRM-DREQ-001   Pipeline stage configuration              target_model: crm.stage
- *   CRM-DREQ-002   Lead assignment rules                     target_model: crm.team
- *   CRM-DREQ-003   Activity/pipeline discipline              target_model: crm.stage
- *   CRM-REC-001    Reporting/team readiness                  target_model: crm.team
- *
- * Conditional definition (added only when TA-02 = true or "Yes"):
- *   CRM-DREQ-004   Team activity tracking (TA-02=Yes)        target_model: crm.team
- *
- * intended_changes is null for all entries — CRM configuration data is not
- * available in target_context or discovery_answers at assembly time (R4).
- *
- * @param {object|null} target_context      — createTargetContext() shape or null
- * @param {object|null} discovery_answers   — createDiscoveryAnswers() shape or null
- * @returns {{ [checkpoint_id: string]: object }} operation_definitions map (never null)
- */
+function extractCrmCapture(wizard_captures) {
+  if (!isPlainObject(wizard_captures)) {
+    return null;
+  }
+  return isPlainObject(wizard_captures.crm) ? wizard_captures.crm : null;
+}
+
+function buildStageIntendedChanges(crmCapture) {
+  if (!isPlainObject(crmCapture) || !Array.isArray(crmCapture.stage_names)) {
+    return null;
+  }
+
+  const stages = crmCapture.stage_names
+    .filter((entry) => typeof entry === "string")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((name) => ({ name }));
+
+  return stages.length >= 2 ? stages : null;
+}
+
+function buildTeamIntendedChanges(crmCapture) {
+  if (!isPlainObject(crmCapture)) {
+    return null;
+  }
+
+  const teamName = typeof crmCapture.team_name === "string" ? crmCapture.team_name.trim() : "";
+  const leaderName = typeof crmCapture.team_leader_name === "string" ? crmCapture.team_leader_name.trim() : "";
+
+  if (!teamName && !leaderName) {
+    return null;
+  }
+
+  return {
+    name: teamName || null,
+    user_id: leaderName ? null : null,
+  };
+}
+
 export function assembleCrmOperationDefinitions(
   target_context = null,
-  discovery_answers = null
+  discovery_answers = null,
+  wizard_captures = null
 ) {
   const map = createOperationDefinitionsMap();
-
-  // ── CRM-FOUND-001: CRM pipeline/stage activation foundation (Safe, unconditional) ──
-  // Activates the CRM pipeline and establishes the foundational stage structure.
-  // intended_changes is null — stage configuration data not available at assembly time (R4).
-  map[CHECKPOINT_IDS.CRM_FOUND_001] = createOperationDefinition({
-    checkpoint_id:    CHECKPOINT_IDS.CRM_FOUND_001,
-    target_model:     CRM_STAGE_MODEL,
-    target_operation: CRM_TARGET_OPERATION,
-    intended_changes: null,
-  });
-
-  // ── CRM-FOUND-002: CRM team/user assignment foundation (Safe, unconditional) ────────
-  // Establishes the foundational CRM team and user assignment configuration.
-  // intended_changes is null — team assignment data not available at assembly time (R4).
-  map[CHECKPOINT_IDS.CRM_FOUND_002] = createOperationDefinition({
-    checkpoint_id:    CHECKPOINT_IDS.CRM_FOUND_002,
-    target_model:     CRM_TEAM_MODEL,
-    target_operation: CRM_TARGET_OPERATION,
-    intended_changes: null,
-  });
-
-  // ── CRM-DREQ-001: Pipeline stage configuration (Safe, unconditional) ─────────────────
-  // Configures the CRM pipeline stages in crm.stage.
-  // intended_changes is null — stage configuration data not available at assembly time (R4).
-  map[CHECKPOINT_IDS.CRM_DREQ_001] = createOperationDefinition({
-    checkpoint_id:    CHECKPOINT_IDS.CRM_DREQ_001,
-    target_model:     CRM_STAGE_MODEL,
-    target_operation: CRM_TARGET_OPERATION,
-    intended_changes: null,
-  });
-
-  // ── CRM-DREQ-002: Lead assignment rules (Safe, unconditional) ────────────────────────
-  // Configures lead assignment rules on crm.team.
-  // intended_changes is null — lead assignment configuration not available at assembly time (R4).
-  map[CHECKPOINT_IDS.CRM_DREQ_002] = createOperationDefinition({
-    checkpoint_id:    CHECKPOINT_IDS.CRM_DREQ_002,
-    target_model:     CRM_TEAM_MODEL,
-    target_operation: CRM_TARGET_OPERATION,
-    intended_changes: null,
-  });
-
-  // ── CRM-DREQ-003: Activity/pipeline discipline (Safe, unconditional) ─────────────────
-  // Configures activity types and pipeline discipline rules in crm.stage.
-  // intended_changes is null — activity configuration not available at assembly time (R4).
-  map[CHECKPOINT_IDS.CRM_DREQ_003] = createOperationDefinition({
-    checkpoint_id:    CHECKPOINT_IDS.CRM_DREQ_003,
-    target_model:     CRM_STAGE_MODEL,
-    target_operation: CRM_TARGET_OPERATION,
-    intended_changes: null,
-  });
-
-  // ── CRM-REC-001: Reporting/team readiness (Safe, unconditional) ──────────────────────
-  // Configures CRM team reporting readiness in crm.team.
-  // intended_changes is null — reporting configuration not available at assembly time (R4).
-  map[CHECKPOINT_IDS.CRM_REC_001] = createOperationDefinition({
-    checkpoint_id:    CHECKPOINT_IDS.CRM_REC_001,
-    target_model:     CRM_TEAM_MODEL,
-    target_operation: CRM_TARGET_OPERATION,
-    intended_changes: null,
-  });
-
-  // ── Conditional definitions ────────────────────────────────────────────────────────────
-
   const answers = discovery_answers?.answers ?? {};
+  const crmCapture = extractCrmCapture(wizard_captures);
+  const stageChanges = buildStageIntendedChanges(crmCapture);
+  const teamChanges = buildTeamIntendedChanges(crmCapture);
 
-  // ── CRM-DREQ-004: Team activity tracking (Conditional, TA-02=Yes) ────────────────────
-  // Configures team activity tracking in crm.team.
-  // Only assembled when TA-02 (technical administrator required) is explicitly Yes (R5).
-  // Gate confirmed: checkpoint-engine.js generateCRMCheckpoints line 854.
-  const ta02 = answers["TA-02"];
-  if (ta02 === true || ta02 === "Yes") {
+  map[CHECKPOINT_IDS.CRM_FOUND_001] = createOperationDefinition({
+    checkpoint_id: CHECKPOINT_IDS.CRM_FOUND_001,
+    target_model: CRM_STAGE_MODEL,
+    target_operation: CRM_TARGET_OPERATION,
+    intended_changes: stageChanges,
+  });
+
+  map[CHECKPOINT_IDS.CRM_FOUND_002] = createOperationDefinition({
+    checkpoint_id: CHECKPOINT_IDS.CRM_FOUND_002,
+    target_model: CRM_TEAM_MODEL,
+    target_operation: CRM_TARGET_OPERATION,
+    intended_changes: teamChanges,
+  });
+
+  map[CHECKPOINT_IDS.CRM_DREQ_001] = createOperationDefinition({
+    checkpoint_id: CHECKPOINT_IDS.CRM_DREQ_001,
+    target_model: CRM_STAGE_MODEL,
+    target_operation: CRM_TARGET_OPERATION,
+    intended_changes: stageChanges,
+  });
+
+  map[CHECKPOINT_IDS.CRM_DREQ_002] = createOperationDefinition({
+    checkpoint_id: CHECKPOINT_IDS.CRM_DREQ_002,
+    target_model: CRM_TEAM_MODEL,
+    target_operation: CRM_TARGET_OPERATION,
+    intended_changes: teamChanges,
+  });
+
+  map[CHECKPOINT_IDS.CRM_DREQ_003] = createOperationDefinition({
+    checkpoint_id: CHECKPOINT_IDS.CRM_DREQ_003,
+    target_model: CRM_STAGE_MODEL,
+    target_operation: CRM_TARGET_OPERATION,
+    intended_changes: stageChanges,
+  });
+
+  map[CHECKPOINT_IDS.CRM_REC_001] = createOperationDefinition({
+    checkpoint_id: CHECKPOINT_IDS.CRM_REC_001,
+    target_model: CRM_TEAM_MODEL,
+    target_operation: CRM_TARGET_OPERATION,
+    intended_changes: teamChanges,
+  });
+
+  if (answers["TA-02"] === true || answers["TA-02"] === "Yes") {
     map[CHECKPOINT_IDS.CRM_DREQ_004] = createOperationDefinition({
-      checkpoint_id:    CHECKPOINT_IDS.CRM_DREQ_004,
-      target_model:     CRM_TEAM_MODEL,
+      checkpoint_id: CHECKPOINT_IDS.CRM_DREQ_004,
+      target_model: CRM_TEAM_MODEL,
       target_operation: CRM_TARGET_OPERATION,
-      intended_changes: null,
+      intended_changes: teamChanges,
     });
   }
 

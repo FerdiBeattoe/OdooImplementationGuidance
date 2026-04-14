@@ -697,10 +697,25 @@ export function getAllGovernedImportedData() {
 export function getModuleCompletionStatus() {
   const completed = state.activeProject.workflowState.completedWizards || [];
   const allModules = [
-    "company-setup", "users-access", "chart-of-accounts",
-    "sales-setup", "crm-setup", "inventory-setup",
-    "accounting-setup", "purchase-setup", "manufacturing-setup",
-    "hr-setup", "website-setup", "pos-setup"
+    "users-access",
+    "master-data-setup",
+    "crm-setup",
+    "sales-setup",
+    "purchase-setup",
+    "accounting-setup",
+    "manufacturing-setup",
+    "pos-setup",
+    "website-setup",
+    "projects-setup",
+    "quality-setup",
+    "inventory-setup",
+    "hr-setup",
+    "plm-setup",
+    "documents-setup",
+    "sign-setup",
+    "approvals-setup",
+    "subscriptions-setup",
+    "field-service-setup"
   ];
   return {
     completed: completed.length,

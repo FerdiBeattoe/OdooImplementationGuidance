@@ -19,8 +19,17 @@ export const APPROVALS_EXECUTABLE_CHECKPOINT_IDS = Object.freeze(Object.keys(APP
 function isPlainObject(value) { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function extractApprovalsCapture(wizard_captures) { if (!isPlainObject(wizard_captures)) return null; return isPlainObject(wizard_captures.approvals) ? wizard_captures.approvals : null; }
 function addApprovalsDefinition(map, checkpoint_id, intended_changes) { const metadata = APPROVALS_CHECKPOINT_METADATA[checkpoint_id]; if (!metadata) return; map[checkpoint_id] = createOperationDefinition({ checkpoint_id, target_model: metadata.target_model, method: APPROVALS_TARGET_METHOD, intended_changes, safety_class: metadata.safety_class, execution_relevance: metadata.execution_relevance, validation_source: metadata.validation_source }); }
-export function assembleApprovalsOperationDefinitions(target_context = null, discovery_answers = null, wizard_captures = null) { const map = createOperationDefinitionsMap(); const answers = discovery_answers?.answers ?? {}; const ta03 = Array.isArray(answers["TA-03"]) ? answers["TA-03"] : []; const capture = extractApprovalsCapture(wizard_captures); void capture;
-    // honest-null: approval.category is not confirmed in scripts/odoo-confirmed-fields.json, so intended_changes must remain null.
+export function assembleApprovalsOperationDefinitions(target_context = null, discovery_answers = null, wizard_captures = null) {
+  const map = createOperationDefinitionsMap();
+  const answers = discovery_answers?.answers ?? {};
+  const ta03 = Array.isArray(answers["TA-03"]) ? answers["TA-03"] : [];
+  // Assembler alignment with approvals-wizard.js capture: { approval_category_name, approval_type }.
+  const approvalsCapture = isPlainObject(wizard_captures?.approvals) ? wizard_captures.approvals : {};
+  const categoryName = typeof approvalsCapture.approval_category_name === "string" && approvalsCapture.approval_category_name.trim() ? approvalsCapture.approval_category_name.trim() : null;
+  void categoryName;
+  // honest-null: approval.category is not present in scripts/odoo-confirmed-fields.json — no field (including `name`)
+  // is confirmed for this model. Per HARD RULES (only use confirmed field names; never fabricate),
+  // intended_changes must remain null until odoo-confirmed-fields.json is extended to cover approval.category.
     addApprovalsDefinition(map, CHECKPOINT_IDS.APR_FOUND_001, null);
     addApprovalsDefinition(map, CHECKPOINT_IDS.APR_DREQ_001, null);
     addApprovalsDefinition(map, CHECKPOINT_IDS.APR_DREQ_002, null);

@@ -401,13 +401,17 @@ function activatePurchase(answers) {
 function activateInventory(answers) {
   // Activated when ANY of:
   //   OP-01 = "Yes"
-  //   RM-04 = "Yes"
   //   MF-01 = "Yes"
   //
   // BM-01 (optional reinforcement):
   //   If BM-01 is present and implies physical product handling (Physical products
   //   only, or Both), it is added to activation_question_refs when inventory
   //   activates via an existing gate. BM-01 does not activate inventory on its own.
+  //
+  // Note: RM-04 was removed from discovery. Rental activation is now derived
+  // from RM-01 only and no longer forces inventory activation on its own —
+  // OP-01/MF-01 remain the inventory gates (and the rental wizard captures
+  // its own inventory linkage when needed).
   if (!isAnswered(answers, "OP-01")) {
     return buildRecord({
       domain_id: DOMAIN_IDS.INVENTORY,
@@ -419,11 +423,6 @@ function activateInventory(answers) {
 
   const op01 = getAnswer(answers, "OP-01");
   if (op01 === true || op01 === "Yes") triggeringRefs.push("OP-01");
-
-  if (isAnswered(answers, "RM-04")) {
-    const rm04 = getAnswer(answers, "RM-04");
-    if (rm04 === true || rm04 === "Yes") triggeringRefs.push("RM-04");
-  }
 
   // MF-01 is conditional on BM-01; only count if answered
   if (isAnswered(answers, "MF-01")) {
@@ -1071,84 +1070,66 @@ function activateApprovals(answers) {
 }
 
 function activateSubscriptions(answers) {
-  // Activated when ANY of:
-  //   RM-03 = "Yes"
+  // Activated when:
   //   RM-01 includes "Recurring subscriptions or contracts"
-  if (!isAnswered(answers, "RM-03")) {
+  //
+  // RM-03 (the dedicated subscription yes/no) was removed from the discovery
+  // wizard — RM-01 multi-select now fully covers the activation signal.
+  if (!isAnswered(answers, "RM-01")) {
     return buildRecord({
       domain_id: DOMAIN_IDS.SUBSCRIPTIONS,
       activated: false,
       activation_reason: "missing_required_input",
     });
   }
-  const triggeringRefs = [];
 
-  const rm03 = getAnswer(answers, "RM-03");
-  if (rm03 === true || rm03 === "Yes") triggeringRefs.push("RM-03");
-
-  if (
-    isAnswered(answers, "RM-01") &&
-    multiSelectIncludes(answers, "RM-01", "Recurring subscriptions or contracts")
-  ) {
-    if (!triggeringRefs.includes("RM-01")) triggeringRefs.push("RM-01");
-  }
-
-  if (triggeringRefs.length === 0) {
+  if (multiSelectIncludes(answers, "RM-01", "Recurring subscriptions or contracts")) {
     return buildRecord({
       domain_id: DOMAIN_IDS.SUBSCRIPTIONS,
-      activated: false,
-      activation_reason: "RM-03",
-      excluded_reason: "RM-03=No and RM-01 does not include Recurring subscriptions",
+      activated: true,
+      activation_reason: ["RM-01"],
+      priority: "optional",
+      deferral_eligible: true,
     });
   }
 
   return buildRecord({
     domain_id: DOMAIN_IDS.SUBSCRIPTIONS,
-    activated: true,
-    activation_reason: triggeringRefs,
-    priority: "optional",
-    deferral_eligible: true,
+    activated: false,
+    activation_reason: "RM-01",
+    excluded_reason: "RM-01 does not include Recurring subscriptions",
   });
 }
 
 function activateRental(answers) {
-  // Activated when ANY of:
-  //   RM-04 = "Yes"
+  // Activated when:
   //   RM-01 includes "Rental of assets or equipment"
-  if (!isAnswered(answers, "RM-04")) {
+  //
+  // RM-04 (the dedicated rental yes/no) was removed from the discovery
+  // wizard — RM-01 multi-select now fully covers the activation signal.
+  if (!isAnswered(answers, "RM-01")) {
     return buildRecord({
       domain_id: DOMAIN_IDS.RENTAL,
       activated: false,
       activation_reason: "missing_required_input",
     });
   }
-  const triggeringRefs = [];
 
-  const rm04 = getAnswer(answers, "RM-04");
-  if (rm04 === true || rm04 === "Yes") triggeringRefs.push("RM-04");
-
-  if (
-    isAnswered(answers, "RM-01") &&
-    multiSelectIncludes(answers, "RM-01", "Rental of assets or equipment")
-  ) {
-    if (!triggeringRefs.includes("RM-01")) triggeringRefs.push("RM-01");
-  }
-
-  if (triggeringRefs.length === 0) {
+  if (multiSelectIncludes(answers, "RM-01", "Rental of assets or equipment")) {
     return buildRecord({
       domain_id: DOMAIN_IDS.RENTAL,
-      activated: false,
-      activation_reason: "RM-04",
-      excluded_reason: "RM-04=No and RM-01 does not include Rental",
+      activated: true,
+      activation_reason: ["RM-01"],
+      priority: "optional",
+      deferral_eligible: true,
     });
   }
 
   return buildRecord({
     domain_id: DOMAIN_IDS.RENTAL,
-    activated: true,
-    activation_reason: triggeringRefs,
-    priority: "optional",
-    deferral_eligible: true,
+    activated: false,
+    activation_reason: "RM-01",
+    excluded_reason: "RM-01 does not include Rental",
   });
 }
 

@@ -333,7 +333,7 @@ describe("CRM activation via SC-01", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Conditional domain: Inventory (OP-01 / RM-04 / MF-01)
+// Conditional domain: Inventory (OP-01 / MF-01)
 // ---------------------------------------------------------------------------
 
 describe("inventory activation", () => {
@@ -347,20 +347,9 @@ describe("inventory activation", () => {
     assert.ok(rec.activation_question_refs.includes("OP-01"));
   });
 
-  test("RM-04=Yes activates inventory", () => {
-    const da = minimalAnswers();
-    da.answers["OP-01"] = "No";
-    da.answers["RM-04"] = "Yes";
-    const result = computeActivatedDomains(da);
-    const rec = getDomainRecord(result, DOMAIN_IDS.INVENTORY);
-    assert.strictEqual(rec.activated, true);
-    assert.ok(rec.activation_question_refs.includes("RM-04"));
-  });
-
   test("MF-01=Yes activates inventory", () => {
     const da = minimalAnswers();
     da.answers["OP-01"] = "No";
-    da.answers["RM-04"] = "No";
     da.answers["MF-01"] = "Yes";
     const result = computeActivatedDomains(da);
     const rec = getDomainRecord(result, DOMAIN_IDS.INVENTORY);
@@ -368,10 +357,9 @@ describe("inventory activation", () => {
     assert.ok(rec.activation_question_refs.includes("MF-01"));
   });
 
-  test("OP-01=No, RM-04=No, MF-01=No → excluded", () => {
+  test("OP-01=No, MF-01=No → excluded", () => {
     const da = minimalAnswers();
     da.answers["OP-01"] = "No";
-    da.answers["RM-04"] = "No";
     da.answers["MF-01"] = "No";
     const result = computeActivatedDomains(da);
     const rec = getDomainRecord(result, DOMAIN_IDS.INVENTORY);
@@ -684,51 +672,29 @@ describe("determinism", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Conditional domain: Subscriptions (RM-03 / RM-01 recurring)
+// Conditional domain: Subscriptions (RM-01 includes "Recurring subscriptions")
 // ---------------------------------------------------------------------------
 
 describe("subscriptions activation", () => {
-  test("RM-03=Yes → activated, priority=optional", () => {
+  test("RM-01 includes recurring subscriptions → activated, priority=optional", () => {
     const da = minimalAnswers();
-    da.answers["RM-03"] = "Yes";
+    da.answers["RM-01"] = ["Recurring subscriptions or contracts"];
     const result = computeActivatedDomains(da);
     const rec = getDomainRecord(result, DOMAIN_IDS.SUBSCRIPTIONS);
     assert.strictEqual(rec.activated, true);
     assert.strictEqual(rec.priority, "optional");
-    assert.ok(rec.activation_question_refs.includes("RM-03"));
-  });
-
-  test("RM-01 includes recurring subscriptions → activated", () => {
-    const da = minimalAnswers();
-    da.answers["RM-03"] = "No";
-    da.answers["RM-01"] = ["Recurring subscriptions or contracts"];
-    const result = computeActivatedDomains(da);
-    const rec = getDomainRecord(result, DOMAIN_IDS.SUBSCRIPTIONS);
-    assert.strictEqual(rec.activated, true);
     assert.ok(rec.activation_question_refs.includes("RM-01"));
   });
 
-  test("RM-03=Yes and RM-01 recurring → both refs present", () => {
+  test("RM-01 does not include recurring subscriptions → excluded", () => {
     const da = minimalAnswers();
-    da.answers["RM-03"] = "Yes";
-    da.answers["RM-01"] = ["Recurring subscriptions or contracts"];
-    const result = computeActivatedDomains(da);
-    const rec = getDomainRecord(result, DOMAIN_IDS.SUBSCRIPTIONS);
-    assert.strictEqual(rec.activated, true);
-    assert.ok(rec.activation_question_refs.includes("RM-03"));
-    assert.ok(rec.activation_question_refs.includes("RM-01"));
-  });
-
-  test("RM-03=No, RM-01 no recurring → excluded", () => {
-    const da = minimalAnswers();
-    da.answers["RM-03"] = "No";
     da.answers["RM-01"] = ["One-time product sales"];
     const result = computeActivatedDomains(da);
     const rec = getDomainRecord(result, DOMAIN_IDS.SUBSCRIPTIONS);
     assert.strictEqual(rec.activated, false);
   });
 
-  test("RM-03 not answered → not activated, missing_required_input", () => {
+  test("RM-01 not answered → not activated, missing_required_input", () => {
     const result = computeActivatedDomains(makeAnswers({}));
     const rec = getDomainRecord(result, DOMAIN_IDS.SUBSCRIPTIONS);
     assert.strictEqual(rec.activated, false);
@@ -737,51 +703,29 @@ describe("subscriptions activation", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Conditional domain: Rental (RM-04 / RM-01 rental)
+// Conditional domain: Rental (RM-01 includes "Rental of assets")
 // ---------------------------------------------------------------------------
 
 describe("rental activation", () => {
-  test("RM-04=Yes → activated, priority=optional", () => {
+  test("RM-01 includes Rental of assets → activated, priority=optional", () => {
     const da = minimalAnswers();
-    da.answers["RM-04"] = "Yes";
+    da.answers["RM-01"] = ["Rental of assets or equipment"];
     const result = computeActivatedDomains(da);
     const rec = getDomainRecord(result, DOMAIN_IDS.RENTAL);
     assert.strictEqual(rec.activated, true);
     assert.strictEqual(rec.priority, "optional");
-    assert.ok(rec.activation_question_refs.includes("RM-04"));
-  });
-
-  test("RM-01 includes Rental of assets → activated", () => {
-    const da = minimalAnswers();
-    da.answers["RM-04"] = "No";
-    da.answers["RM-01"] = ["Rental of assets or equipment"];
-    const result = computeActivatedDomains(da);
-    const rec = getDomainRecord(result, DOMAIN_IDS.RENTAL);
-    assert.strictEqual(rec.activated, true);
     assert.ok(rec.activation_question_refs.includes("RM-01"));
   });
 
-  test("RM-04=Yes and RM-01 rental → both refs present", () => {
+  test("RM-01 does not include Rental → excluded", () => {
     const da = minimalAnswers();
-    da.answers["RM-04"] = "Yes";
-    da.answers["RM-01"] = ["Rental of assets or equipment"];
-    const result = computeActivatedDomains(da);
-    const rec = getDomainRecord(result, DOMAIN_IDS.RENTAL);
-    assert.strictEqual(rec.activated, true);
-    assert.ok(rec.activation_question_refs.includes("RM-04"));
-    assert.ok(rec.activation_question_refs.includes("RM-01"));
-  });
-
-  test("RM-04=No, RM-01 no rental → excluded", () => {
-    const da = minimalAnswers();
-    da.answers["RM-04"] = "No";
     da.answers["RM-01"] = ["One-time product sales"];
     const result = computeActivatedDomains(da);
     const rec = getDomainRecord(result, DOMAIN_IDS.RENTAL);
     assert.strictEqual(rec.activated, false);
   });
 
-  test("RM-04 not answered → not activated, missing_required_input", () => {
+  test("RM-01 not answered → not activated, missing_required_input", () => {
     const result = computeActivatedDomains(makeAnswers({}));
     const rec = getDomainRecord(result, DOMAIN_IDS.RENTAL);
     assert.strictEqual(rec.activated, false);

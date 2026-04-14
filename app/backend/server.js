@@ -1970,7 +1970,7 @@ function buildDeferredQuestions(industryId, populatedAnswers) {
   // Full question set used by the engine (all gate questions from domain-activation-engine.js)
   const ALL_GATE_QUESTIONS = [
     "BM-01", "BM-05",
-    "RM-01", "RM-02", "RM-03", "RM-04",
+    "RM-01", "RM-02",
     "SC-01", "SC-02", "SC-04",
     "PI-01", "PI-02", "PI-03", "PI-05",
     "OP-01", "OP-03", "OP-04", "OP-05",

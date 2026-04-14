@@ -14,14 +14,14 @@ import { createOnboardingStore } from "./onboarding-store.js";
 // ---------------------------------------------------------------------------
 
 const NEW_QUESTION_IDS = [
-  "AP-01", "AP-02", "AR-01", "AT-01", "AT-02",
-  "CA-01", "CA-02", "DI-01", "EM-01", "EM-02",
-  "EV-01", "EV-02", "EX-01", "EX-02",
-  "FL-01", "FL-02", "HD-01", "HD-02",
-  "IM-01", "IM-02", "KN-01", "LC-01", "LC-02",
-  "LY-01", "OM-01", "OM-02", "PL-01", "PL-02",
-  "PY-01", "PY-02", "RC-01", "RC-02", "RF-01",
-  "SM-01", "SP-01", "TS-01", "TS-02", "WA-01",
+  "AP-01", "AR-01", "AT-01",
+  "CA-01", "DI-01", "EM-01",
+  "EV-01", "EX-01",
+  "FL-01", "HD-01",
+  "IM-01", "IM-02", "KN-01", "LC-01",
+  "LY-01", "OM-01", "OM-02", "PL-01",
+  "PY-01", "RC-01", "RF-01",
+  "SM-01", "SP-01", "TS-01", "WA-01",
 ];
 
 describe("new discovery question defaults", () => {

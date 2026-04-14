@@ -44,7 +44,7 @@ if (ODOO_VERSION !== "19") {
 // Engine version — increment on any rule change
 // ---------------------------------------------------------------------------
 
-export const VALIDATION_ENGINE_VERSION = "1.1.0";
+export const VALIDATION_ENGINE_VERSION = "1.2.0";
 
 // ---------------------------------------------------------------------------
 // Validation status constants
@@ -89,7 +89,11 @@ export const VALIDATION_REQUIRED_ANSWERS = Object.freeze({
   // Master Data
   "MAS-DREQ-005":  Object.freeze(["OP-01"]),
   "MAS-DREQ-006":  Object.freeze(["MF-01"]),
-  "MAS-DREQ-007":  Object.freeze(["PI-04"]),
+  // MAS-DREQ-007 (traceability categories) no longer maps to a discovery
+  // question. PI-04 was removed from discovery; the gate now comes from
+  // wizard_captures.inventory at checkpoint generation time. Absence from
+  // this table is intentional — first-pass validation defaults to
+  // Pending_User_Input / Pending_System_Check per R5.
 
   // CRM
   "CRM-DREQ-004":  Object.freeze(["TA-02"]),
@@ -115,7 +119,11 @@ export const VALIDATION_REQUIRED_ANSWERS = Object.freeze({
   "INV-DREQ-006":  Object.freeze(["PI-05"]),
   "INV-DREQ-007":  Object.freeze(["FC-02"]),
   "INV-DREQ-008":  Object.freeze(["MF-01"]),
-  "INV-DREQ-009":  Object.freeze(["RM-04"]),
+  // INV-DREQ-009 (rental availability) gates on RM-01 array after RM-04 removal.
+  // Generation checks RM-01 includes "Rental of assets or equipment"; here we
+  // only require RM-01 to be answered at all — presence is sufficient because
+  // the checkpoint is only generated when the array contains the rental value.
+  "INV-DREQ-009":  Object.freeze(["RM-01"]),
 
   // Manufacturing
   "MRP-DREQ-003":  Object.freeze(["MF-02"]),

@@ -3,6 +3,7 @@ import { renderCrmWizard } from "./crm-wizard.js";
 import { renderMasterDataWizard } from "./master-data-wizard.js";
 import { renderManufacturingWizard } from "./manufacturing-wizard.js";
 import { renderPosWizard } from "./pos-wizard.js";
+import { renderProjectsWizard } from "./projects-wizard.js";
 import { renderPurchaseWizard } from "./purchase-wizard.js";
 import { renderSalesWizard } from "./sales-wizard.js";
 import { renderUsersRolesWizard } from "./users-roles-wizard.js";
@@ -14,6 +15,7 @@ const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "master-data-setup": renderMasterDataWizard,
   "manufacturing-setup": renderManufacturingWizard,
   "pos-setup": renderPosWizard,
+  "projects-setup": renderProjectsWizard,
   "purchase-setup": renderPurchaseWizard,
   "sales-setup": renderSalesWizard,
   "users-access": renderUsersRolesWizard,

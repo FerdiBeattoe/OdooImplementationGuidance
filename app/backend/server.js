@@ -127,6 +127,24 @@ import { getIndustryTemplate } from "../shared/industry-templates.js";
 const WIZARD_DOMAIN_ASSEMBLERS = Object.freeze({
   foundation: assembleFoundationOperationDefinitions,
   inventory:  assembleInventoryOperationDefinitions,
+  crm: assembleCrmOperationDefinitions,
+  sales: assembleSalesOperationDefinitions,
+  purchase: assemblePurchaseOperationDefinitions,
+  accounting: assembleAccountingOperationDefinitions,
+  "master-data": assembleMasterDataOperationDefinitions,
+  "users-roles": assembleUsersRolesOperationDefinitions,
+  manufacturing: assembleManufacturingOperationDefinitions,
+  pos: assemblePosOperationDefinitions,
+  "website-ecommerce": assembleWebsiteEcommerceOperationDefinitions,
+  projects: assembleProjectsOperationDefinitions,
+  quality: assembleQualityOperationDefinitions,
+  documents: assembleDocumentsOperationDefinitions,
+  sign: assembleSignOperationDefinitions,
+  approvals: assembleApprovalsOperationDefinitions,
+  subscriptions: assembleSubscriptionsOperationDefinitions,
+  "field-service": assembleFieldServiceOperationDefinitions,
+  hr: assembleHrOperationDefinitions,
+  plm: assemblePlmOperationDefinitions,
 });
 
 // Rate limiting configuration

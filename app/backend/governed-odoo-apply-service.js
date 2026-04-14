@@ -40,6 +40,12 @@
 //       operation.method must equal preview.target_operation (when non-null/non-undefined).
 //       Fail closed on mismatch. Skip cross-check when preview fields are null/undefined
 //       (non-Executable checkpoints or previews without operation_definitions).
+//   S13 Before any write/create, call client.fieldsGet(model) on the live Odoo
+//       instance and validate every key in operation.values against the live
+//       field map. Unknown keys are dropped with a warning. If fieldsGet fails,
+//       returns empty, or the filtered values are empty — fail closed. This
+//       replaces the former static odoo-confirmed-fields.json dependency in the
+//       write path (that file is now reference material only).
 // ---------------------------------------------------------------------------
 
 import { getClientForProject } from "./engine.js";
@@ -50,7 +56,7 @@ import { appendExecution } from "../shared/runtime-state-contract.js";
 // Service version — increment on any rule change
 // ---------------------------------------------------------------------------
 
-export const GOVERNED_APPLY_SERVICE_VERSION = "2.1.0";
+export const GOVERNED_APPLY_SERVICE_VERSION = "2.2.0";
 
 // ---------------------------------------------------------------------------
 // Bounded target surface (S4 — safe config models only)
@@ -405,6 +411,41 @@ export async function applyGoverned({
     project_id: connection_context.project_id,
   };
 
+  // ── S13: Live field validation — fail closed on any failure ─────────────
+  // Call fieldsGet() on the connected Odoo instance and filter
+  // operation.values to only the keys that actually exist on the live
+  // model. Fail closed if fieldsGet fails, returns empty, or the filtered
+  // values become empty (nothing honest left to write).
+
+  let filtered_values;
+  try {
+    filtered_values = await validateAndFilterChanges(
+      client,
+      operation.model,
+      operation.values
+    );
+  } catch (err) {
+    return {
+      ok: false,
+      result_status: "failure",
+      odoo_result: null,
+      error: `Live field validation failed for '${operation.model}': ${err instanceof Error ? err.message : String(err)}`,
+      executed_at,
+      execution_source_inputs,
+    };
+  }
+
+  if (filtered_values === null) {
+    return {
+      ok: false,
+      result_status: "skipped",
+      odoo_result: null,
+      error: `No valid fields remain after live field validation for '${operation.model}'. Nothing to write.`,
+      executed_at,
+      execution_source_inputs,
+    };
+  }
+
   // ── S5: Execute through application-layer boundary — no raw DB ───────────
 
   try {
@@ -415,14 +456,14 @@ export async function applyGoverned({
       odoo_result = await client.write(
         operation.model,
         operation.ids,
-        operation.values
+        filtered_values
       );
     } else {
       // operation.method === "create"
       // OdooClient.create(model, values) → calls execute_kw "create"
       odoo_result = await client.create(
         operation.model,
-        operation.values
+        filtered_values
       );
     }
 
@@ -523,6 +564,70 @@ export async function applyGoverned({
 // ---------------------------------------------------------------------------
 // Internal: fail-closed envelope factory (S9)
 // ---------------------------------------------------------------------------
+
+/**
+ * Live field validation (S13).
+ *
+ * Calls fieldsGet() on the connected Odoo instance and filters the
+ * intended changes down to keys that actually exist on the live model.
+ *
+ * - Throws if the client has no fieldsGet method, fieldsGet fails,
+ *   or fieldsGet returns a non-object / empty map (fail closed).
+ * - Returns a filtered values object, with unknown keys dropped and
+ *   logged via console.warn.
+ * - Returns null if no keys remain after filtering (nothing to write).
+ *
+ * @param {object} client
+ * @param {string} model
+ * @param {object} intended_changes
+ * @returns {Promise<object|null>}
+ */
+async function validateAndFilterChanges(client, model, intended_changes) {
+  if (!client || typeof client.fieldsGet !== "function") {
+    throw new Error("client.fieldsGet is not available");
+  }
+
+  const fields = await client.fieldsGet(model);
+
+  if (
+    !fields ||
+    typeof fields !== "object" ||
+    Array.isArray(fields)
+  ) {
+    throw new Error("fieldsGet returned a non-object response");
+  }
+
+  // Empty field map means the live instance returned nothing for this model
+  // (module not installed, wrong DB, permission denied) — fail closed.
+  let hasAnyField = false;
+  for (const _k in fields) { hasAnyField = true; break; }
+  if (!hasAnyField) {
+    throw new Error("fieldsGet returned an empty field map");
+  }
+
+  const filtered = {};
+  const removed = [];
+
+  for (const key of Object.keys(intended_changes)) {
+    if (key in fields) {
+      filtered[key] = intended_changes[key];
+    } else {
+      removed.push(key);
+    }
+  }
+
+  if (removed.length > 0) {
+    console.warn(
+      `[governed-apply] Dropped ${removed.length} unknown field(s) on '${model}' not present on live instance: ${removed.join(", ")}`
+    );
+  }
+
+  if (Object.keys(filtered).length === 0) {
+    return null;
+  }
+
+  return filtered;
+}
 
 function failClosed(reason) {
   return {

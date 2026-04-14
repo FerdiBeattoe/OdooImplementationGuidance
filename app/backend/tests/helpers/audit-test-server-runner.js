@@ -249,6 +249,12 @@ function patchOdooClient(OdooClient) {
   OdooClient.prototype.create = async function mockCreate() {
     return 1;
   };
+  // Permissive live-field map — the audit server tests the governance
+  // write path, not Odoo schema correctness. Any key the caller supplies
+  // is treated as a valid live field so S13 validation passes through.
+  OdooClient.prototype.fieldsGet = async function mockFieldsGet() {
+    return new Proxy({ __live: { type: 'char' } }, { has: () => true });
+  };
   OdooClient.prototype.getVersionInfo = async function mockGetVersionInfo() {
     return {
       server_version: '19.0',

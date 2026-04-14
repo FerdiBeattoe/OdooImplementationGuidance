@@ -114,7 +114,7 @@ function makeConnectionContext(overrides = {}) {
 
 // Mock OdooClient — never touches a real database
 function makeMockClient({ writeResult = true, createResult = 42, throws = null } = {}) {
-  const calls = { write: [], create: [] };
+  const calls = { write: [], create: [], fieldsGet: [] };
   const client = {
     _calls: calls,
     write: async (model, ids, values) => {
@@ -126,6 +126,17 @@ function makeMockClient({ writeResult = true, createResult = 42, throws = null }
       calls.create.push({ model, values });
       if (throws) throw throws;
       return createResult;
+    },
+    // Permissive live-field map — mock claims every key exists so
+    // governance tests exercise S1–S12 logic without needing a per-test
+    // per-model field schema. S13 (live field validation) is covered by
+    // dedicated tests that inject their own fieldsGet behavior.
+    fieldsGet: async (model) => {
+      calls.fieldsGet.push({ model });
+      return new Proxy(
+        { __live: { type: "char" } },
+        { has: () => true }
+      );
     },
   };
   return client;

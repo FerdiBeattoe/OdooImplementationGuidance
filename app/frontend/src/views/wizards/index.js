@@ -1,4 +1,5 @@
 import { renderAccountingWizard } from "./accounting-wizard.js";
+import { renderApprovalsWizard } from "./approvals-wizard.js";
 import { renderCrmWizard } from "./crm-wizard.js";
 import { renderDocumentsWizard } from "./documents-wizard.js";
 import { renderHrWizard } from "./hr-wizard.js";
@@ -17,6 +18,7 @@ import { renderWebsiteEcommerceWizard } from "./website-ecommerce-wizard.js";
 
 const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "accounting-setup": renderAccountingWizard,
+  "approvals-setup": renderApprovalsWizard,
   "crm-setup": renderCrmWizard,
   "documents-setup": renderDocumentsWizard,
   "hr-setup": renderHrWizard,

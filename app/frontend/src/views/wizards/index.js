@@ -39,6 +39,7 @@ import { renderRentalWizard } from "./rental-wizard.js";
 import { renderRepairsWizard } from "./repairs-wizard.js";
 import { renderSalesWizard } from "./sales-wizard.js";
 import { renderSignWizard } from "./sign-wizard.js";
+import { renderSmsMarketingWizard } from "./sms-marketing-wizard.js";
 import { renderSubscriptionsWizard } from "./subscriptions-wizard.js";
 import { renderUsersRolesWizard } from "./users-roles-wizard.js";
 import { renderWebsiteEcommerceWizard } from "./website-ecommerce-wizard.js";
@@ -85,6 +86,7 @@ const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "repairs-setup": renderRepairsWizard,
   "sales-setup": renderSalesWizard,
   "sign-setup": renderSignWizard,
+  "sms-marketing-setup": renderSmsMarketingWizard,
   "subscriptions-setup": renderSubscriptionsWizard,
   "users-access": renderUsersRolesWizard,
   "website-setup": renderWebsiteEcommerceWizard,

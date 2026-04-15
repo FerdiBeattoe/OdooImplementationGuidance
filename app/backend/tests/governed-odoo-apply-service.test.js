@@ -206,6 +206,15 @@ describe("ALLOWED_APPLY_MODELS", () => {
     "mail.alias",            // incoming-mail target_model
     "spreadsheet.template",  // spreadsheet target_model
     "ir.config_parameter",   // outgoing-mail / system-settings target_model
+    // Round-2 module-install additions 2026-04-15 (install-and-confirm-modules.js)
+    "event.event",           // events master records
+    "event.tag",             // event classification tags
+    "iot.device",            // IoT device provisioning
+    "maintenance.equipment", // maintenance asset register
+    "maintenance.request",   // maintenance work orders
+    "repair.order",          // repair work orders
+    "hr.payslip",            // payroll payslip records (promoted after live-confirm)
+    "discuss.channel",       // Odoo 19 canonical name for legacy mail.channel
   ];
 
   for (const model of EXPECTED_SAFE_MODELS) {
@@ -216,7 +225,9 @@ describe("ALLOWED_APPLY_MODELS", () => {
 
   // Models that remain outside scope — no wizard surface, security-critical
   // beyond implementation provisioning, or not an Odoo ORM model.
-  const EXCLUDED_MODELS = ["ir.rule", "ir.model.access", "res_company", "hr.payslip", "hr.contract"];
+  // (hr.payslip was promoted into the allowlist on 2026-04-15 after the
+  // hr_payroll module install run confirmed 107 fields.)
+  const EXCLUDED_MODELS = ["ir.rule", "ir.model.access", "res_company", "hr.contract"];
 
   for (const model of EXCLUDED_MODELS) {
     it(`excludes non-implementation model ${model}`, () => {
@@ -227,12 +238,10 @@ describe("ALLOWED_APPLY_MODELS", () => {
   // Task hard exclusions + coverage-gap placeholders not yet bound to a
   // wizard target_model. These models must never appear in ALLOWED_APPLY_MODELS.
   // project.task and product.template were promoted out of this list in the
-  // 2026-04-15 write-gate expansion (confirmed live on Odoo 19 saas~19.2+e).
+  // 2026-04-15 write-gate expansion; maintenance.equipment, maintenance.request,
+  // and repair.order were promoted after the round-2 module install run.
   const EXCLUDED_BUSINESS_DATA_MODELS = [
     "quality.alert",         // QUALITY_COVERAGE_GAP placeholder (transactional alert)
-    "maintenance.equipment", // maintenance module not installed on this instance
-    "maintenance.request",   // maintenance module not installed on this instance
-    "repair.order",          // repair module not installed on this instance
     "mrp.eco",               // PLM_COVERAGE_GAP placeholder (transactional change doc)
     "documents.share",       // DOCUMENTS_COVERAGE_GAP placeholder
     "sale.order",            // task hard exclusion: transactional sales document
@@ -289,6 +298,15 @@ describe("applyGoverned — S4 gate passes for controller-judgment-approved mode
     "mail.alias",
     "spreadsheet.template",
     "ir.config_parameter",
+    // Round-2 module-install additions 2026-04-15
+    "event.event",
+    "event.tag",
+    "iot.device",
+    "maintenance.equipment",
+    "maintenance.request",
+    "repair.order",
+    "hr.payslip",
+    "discuss.channel",
   ];
 
   for (const model of APPROVED_NEW_MODELS) {
@@ -318,9 +336,6 @@ describe("applyGoverned — S4 gate passes for controller-judgment-approved mode
 describe("applyGoverned — S4 gate rejects excluded business-data models", () => {
   const REJECTED_MODELS = [
     "quality.alert",
-    "maintenance.equipment",
-    "maintenance.request",
-    "repair.order",
     "mrp.eco",
     "documents.share",
     "sale.order",
@@ -1160,7 +1175,8 @@ describe("applyGoverned — non-implementation models refused", () => {
   const GUARDED = [
     { model: "ir.rule", values: { name: "Bypass" } },
     { model: "ir.model.access", values: { name: "Bypass" } },
-    { model: "hr.payslip", values: { name: "Payslip" } },
+    // hr.payslip was promoted into ALLOWED_APPLY_MODELS on 2026-04-15 after
+    // the hr_payroll module install run confirmed its 107-field surface.
     { model: "hr.contract", values: { name: "Contract" } },
     { model: "res.partner", values: { name: "Partner" } },
   ];

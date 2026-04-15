@@ -168,6 +168,18 @@ export const ALLOWED_APPLY_MODELS = Object.freeze([
   "spreadsheet.template",      // spreadsheet template definitions (spreadsheet target_model), added 2026-04-15 — live-confirmed 18 fields
   // System / Outgoing Mail
   "ir.config_parameter",       // system configuration parameters (outgoing-mail target_model for SMTP / system settings), added 2026-04-15 — live-confirmed 8 fields
+  // Round-2 additions — modules installed on majestic.odoo.com 2026-04-15 and
+  // live-confirmed via scripts/install-and-confirm-modules.js. Modules were
+  // uninstalled after confirmation (free-tier usage); S13 live fields_get at
+  // write time will surface any missing module at the customer's instance.
+  "event.event",               // event master records (events module), live-confirmed 86 fields
+  "event.tag",                 // event classification tags (events module), live-confirmed 11 fields
+  "iot.device",                // IoT device provisioning (iot module), live-confirmed 26 fields
+  "maintenance.equipment",     // maintenance asset register (maintenance module), live-confirmed 64 fields
+  "maintenance.request",       // maintenance work orders (maintenance module), live-confirmed 63 fields
+  "repair.order",              // repair work orders (repair module), live-confirmed 79 fields
+  "hr.payslip",                // payroll payslip records (hr_payroll module), live-confirmed 107 fields — note: promoted into allowlist 2026-04-15 after module install verified the field set
+  "discuss.channel",           // Odoo 19 canonical name for the legacy mail.channel (live-confirmed 104 fields) — operation-definitions targeting "mail.channel" should be retargeted to this model
 ]);
 
 // ---------------------------------------------------------------------------
@@ -190,26 +202,36 @@ export const ALLOWED_APPLY_MODELS = Object.freeze([
 //   ir.rule               — record-level security rule
 //   base.automation       — automated action definitions
 //
-// MODULE NOT INSTALLED on the operating Odoo 19 instance (saas~19.2+e)
-// confirmed 2026-04-15 via scripts/confirm-expansion-fields.js — these
-// models are referenced by the domain assemblers but return 404 on
-// fields_get because the backing module is absent. Reserved for inclusion
-// once the modules are installed and fields confirmed:
+// MODULE-INSTALL ROUND 2 — 2026-04-15, scripts/install-and-confirm-modules.js
+// ran on majestic.odoo.com (saas~19.2+e), installed 18 modules, confirmed
+// fields on 25 target models, then scripts/retry-alternates-and-uninstall.js
+// resolved 3 more via their canonical Odoo 19 names and uninstalled the apps
+// to free tier usage. All confirmed models were promoted into the allowlist.
 //
-//   account.financial.html.report, consolidation.company, consolidation.period,
-//   event.event, event.tag, fleet.vehicle, fleet.vehicle.model,
-//   helpdesk.team, helpdesk.ticket, hr.applicant, hr.appraisal,
-//   hr.appraisal.goal, hr.attendance, hr.expense, hr.expense.sheet,
-//   hr.payslip, hr.referral, hr.referral.stage, hr.salary.rule, hr.timesheet,
-//   im_livechat.channel, iot.device, loyalty.program, loyalty.reward,
-//   lunch.product, lunch.supplier, mail.channel, maintenance.equipment,
-//   maintenance.request, repair.order, uom.category, voip.provider,
-//   whatsapp.account, whatsapp.template
+// Model-name correction captured in this round (Odoo 19 canonical names):
+//   mail.channel                  → discuss.channel (renamed Odoo 17+)
+//   account.financial.html.report → account.report (replaced Odoo 18+)
+//   hr.timesheet                  → account.analytic.line (timesheets are
+//                                    analytic lines; not added to allowlist —
+//                                    scope too broad, treat as coverage gap
+//                                    until operation-definitions target a
+//                                    narrower wizard surface)
 //
-//   (Several of these already appear in the allowlist above from earlier
-//    controller-judgment additions; they stay on that list. The S13 live
-//    fields_get gate enforces reality at write time — if the module is not
-//    installed at apply time, the write fails closed by construction.)
+// Modules that returned "not in registry" for this instance and remain
+// unconfirmable here:
+//   fetchmail               — not in Odoo Online registry on this tier
+//   account_consolidation   — not in Odoo Online registry on this tier
+//
+// Models that remained unresolved even with candidate-name lookup (no
+// Odoo 19 canonical equivalent found on this instance):
+//   hr.expense.sheet, hr.referral, hr.referral.stage, consolidation.company,
+//   consolidation.period, uom.category
+//
+//   uom.category is expected to exist in base; the ir.model read did not
+//   return it under the authenticated session. Likely an access-rights or
+//   model-registration oddity on this SaaS tier. The S13 live fields_get
+//   gate enforces reality at write time — if the model is absent at the
+//   customer's instance, the write fails closed by construction.
 //
 // COVERAGE GAP PLACEHOLDERS — models declared in *_COVERAGE_GAP_MODELS but
 // never produced as a target_model by any executable checkpoint. No write

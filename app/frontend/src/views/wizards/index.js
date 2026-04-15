@@ -13,6 +13,7 @@ import { renderEventsWizard } from "./events-wizard.js";
 import { renderExpensesWizard } from "./expenses-wizard.js";
 import { renderFieldServiceWizard } from "./field-service-wizard.js";
 import { renderFleetWizard } from "./fleet-wizard.js";
+import { renderHelpdeskWizard } from "./helpdesk-wizard.js";
 import { renderHrWizard } from "./hr-wizard.js";
 import { renderInventoryWizard } from "./inventory-wizard.js";
 import { renderMasterDataWizard } from "./master-data-wizard.js";
@@ -44,6 +45,7 @@ const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "expenses-setup": renderExpensesWizard,
   "field-service-setup": renderFieldServiceWizard,
   "fleet-setup": renderFleetWizard,
+  "helpdesk-setup": renderHelpdeskWizard,
   "hr-setup": renderHrWizard,
   "inventory-setup": renderInventoryWizard,
   "master-data-setup": renderMasterDataWizard,

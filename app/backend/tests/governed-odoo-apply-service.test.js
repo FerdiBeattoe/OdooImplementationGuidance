@@ -171,7 +171,7 @@ describe("ALLOWED_APPLY_MODELS", () => {
     "crm.team",
     "res.partner.category",
     "product.category",
-    "uom.category",
+    "uom.uom",               // Odoo 19 canonical unit-of-measure model (replaced uom.category 2026-04-15 — legacy grouping restructured out of Odoo 19 base)
     "product.pricelist",
     "mrp.workcenter",
     "delivery.carrier",
@@ -1065,7 +1065,7 @@ const SAFE_MODELS_CREATE = [
   { model: "crm.team", values: { name: "Direct Sales" } },
   { model: "res.partner.category", values: { name: "VIP" } },
   { model: "product.category", values: { name: "Electronics" } },
-  { model: "uom.category", values: { name: "Weight" } },
+  { model: "uom.uom", values: { name: "Kilogram", relative_factor: 1.0 } },
   { model: "product.pricelist", values: { name: "Retail" } },
   { model: "mrp.workcenter", values: { name: "Assembly Line 1" } },
   { model: "delivery.carrier", values: { name: "DHL Express" } },

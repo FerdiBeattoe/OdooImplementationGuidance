@@ -23,7 +23,7 @@ const ALLOWED_APPLY_MODELS = [
   "crm.team",
   "res.partner.category",
   "product.category",
-  "uom.category",
+  "uom.uom",
   "product.pricelist",
   "mrp.workcenter",
   "mrp.routing",

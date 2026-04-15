@@ -17,10 +17,10 @@ import {
 
 import { CHECKPOINT_IDS } from "./checkpoint-engine.js";
 
-export const MASTER_DATA_OP_DEFS_VERSION = "1.2.0";
+export const MASTER_DATA_OP_DEFS_VERSION = "1.3.0";
 export const MASTER_DATA_CATEGORY_MODEL = "product.category";
 export const MASTER_DATA_PARTNER_CATEGORY_MODEL = "res.partner.category";
-export const MASTER_DATA_UOM_CATEGORY_MODEL = "uom.category";
+export const MASTER_DATA_UOM_MODEL = "uom.uom";
 export const MASTER_DATA_TARGET_OPERATION = "write";
 
 export const MASTER_DATA_EXECUTABLE_CHECKPOINT_IDS = Object.freeze([]);
@@ -91,8 +91,10 @@ export function assembleMasterDataOperationDefinitions(
   // MAS-FOUND-001, MAS-FOUND-002, MAS-DREQ-001, MAS-DREQ-002, MAS-DREQ-003,
   // and MAS-DREQ-004 remain excluded. They were reclassified to confirm-only or
   // informational checkpoints in checkpoint-engine.js.
-  // honest-null: uom.category is not confirmed in scripts/odoo-confirmed-fields.json,
-  // and no executable Master Data checkpoint currently targets it.
+  // honest-null: uom.uom (the Odoo 19 canonical unit-of-measure model, which
+  // replaced the legacy uom.category grouping) is confirmed in
+  // scripts/odoo-confirmed-fields.json as of 2026-04-15, but no executable
+  // Master Data checkpoint currently targets it.
 
   const op01 = answers["OP-01"];
   if (op01 === true || op01 === "Yes") {

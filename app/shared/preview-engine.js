@@ -179,7 +179,7 @@ function generateMasterDataPreviews(project, inspection, context) {
   const moduleState = new Map((inspection.moduleStatus || []).map((item) => [item.module, item.state]));
   const partnerModelReady = inspection.modelStatus?.["res.partner.category"] !== "unavailable";
   const productModelReady = inspection.modelStatus?.["product.category"] !== "unavailable";
-  const uomModelReady = inspection.modelStatus?.["uom.category"] !== "unavailable";
+  const uomModelReady = inspection.modelStatus?.["uom.uom"] !== "unavailable";
   const productModuleInstalled = moduleState.get("product") === "installed";
   const uomModuleInstalled = moduleState.get("uom") === "installed";
 
@@ -453,7 +453,7 @@ function generateMasterDataPreviews(project, inspection, context) {
         normalizePreviewRecord({
           domainId: "master-data",
           title: "Create unit category",
-          targetModel: "uom.category",
+          targetModel: "uom.uom",
           targetIdentifier: record.key,
           operation: "create",
           intendedChanges: [],
@@ -475,7 +475,7 @@ function generateMasterDataPreviews(project, inspection, context) {
         normalizePreviewRecord({
           domainId: "master-data",
           title: `Create unit category ${categoryName}`,
-          targetModel: "uom.category",
+          targetModel: "uom.uom",
           targetIdentifier: categoryName,
           operation: "create",
           intendedChanges: [{ field: "name", from: "", to: categoryName }],
@@ -497,7 +497,7 @@ function generateMasterDataPreviews(project, inspection, context) {
         normalizePreviewRecord({
           domainId: "master-data",
           title: `Create unit category ${categoryName}`,
-          targetModel: "uom.category",
+          targetModel: "uom.uom",
           targetIdentifier: categoryName,
           operation: "create",
           intendedChanges: [{ field: "name", from: categoryName, to: categoryName }],
@@ -519,7 +519,7 @@ function generateMasterDataPreviews(project, inspection, context) {
       normalizePreviewRecord({
         domainId: "master-data",
         title: `Create unit category ${categoryName}`,
-        targetModel: "uom.category",
+        targetModel: "uom.uom",
         targetIdentifier: categoryName,
         operation: "create",
         intendedChanges: [{ field: "name", from: "", to: categoryName }],

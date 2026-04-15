@@ -116,7 +116,7 @@ function handleCall(state, model, method, args, kwargs) {
       return id;
     }
 
-    if (model === "uom.category") {
+    if (model === "uom.uom") {
       const id = state.uomCategories.length + 100;
       state.uomCategories.push({ id, name: values.name });
       return id;
@@ -161,7 +161,7 @@ function getRows(state, model) {
       return state.partnerCategories;
     case "product.category":
       return state.productCategories;
-    case "uom.category":
+    case "uom.uom":
       return state.uomCategories;
     default:
       return [];

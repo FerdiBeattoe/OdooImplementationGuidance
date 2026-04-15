@@ -150,7 +150,7 @@ test("master-data preview generates safe create-first actions for missing shared
     modelStatus: {
       "res.partner.category": "readable",
       "product.category": "readable",
-      "uom.category": "readable"
+      "uom.uom": "readable"
     },
     records: {
       partnerCategories: [],
@@ -161,7 +161,7 @@ test("master-data preview generates safe create-first actions for missing shared
 
   assert.ok(result.previews.some((preview) => preview.targetModel === "res.partner.category" && preview.executable));
   assert.ok(result.previews.some((preview) => preview.targetModel === "product.category" && preview.executable));
-  assert.ok(result.previews.some((preview) => preview.targetModel === "uom.category" && preview.executable));
+  assert.ok(result.previews.some((preview) => preview.targetModel === "uom.uom" && preview.executable));
 });
 
 test("master-data preview blocks duplicates and unresolved parent dependencies", () => {
@@ -197,7 +197,7 @@ test("master-data preview blocks duplicates and unresolved parent dependencies",
     modelStatus: {
       "res.partner.category": "readable",
       "product.category": "readable",
-      "uom.category": "readable"
+      "uom.uom": "readable"
     },
     records: {
       partnerCategories: [{ id: 40, name: "VIP" }],

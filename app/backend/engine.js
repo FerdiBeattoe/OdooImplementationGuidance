@@ -298,11 +298,15 @@ export async function inspectDomain(project, domainId, fetchImpl = fetch) {
       }
 
       try {
-        inspection.records.uomCategories = await client.searchRead("uom.category", [], ["id", "name"], { limit: 100 });
+        // uom.uom is the Odoo 19 canonical unit-of-measure model (legacy
+        // uom.category was restructured out of Odoo 19 base; uom.uom now
+        // carries relative_factor / relative_uom_id directly so the
+        // per-unit tree on uom.uom replaces the separate grouping model).
+        inspection.records.uomCategories = await client.searchRead("uom.uom", [], ["id", "name"], { limit: 100 });
         inspection.recordCounts.uomCategories = inspection.records.uomCategories.length;
-        inspection.modelStatus["uom.category"] = "readable";
+        inspection.modelStatus["uom.uom"] = "readable";
       } catch {
-        inspection.modelStatus["uom.category"] = "unavailable";
+        inspection.modelStatus["uom.uom"] = "unavailable";
       }
 
       inspection.records.productCategories = inspection.records.productCategories.map((record) => ({

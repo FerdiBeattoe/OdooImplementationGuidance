@@ -31,7 +31,7 @@ const DOMAIN_SUPPORT = {
   },
   "master-data": {
     targetLevel: 3,
-    inspectModels: ["res.partner", "product.template", "product.category", "res.partner.category", "uom.category"],
+    inspectModels: ["res.partner", "product.template", "product.category", "res.partner.category", "uom.uom"],
     previewSupport: true,
     executeSupport: true,
     moduleNames: ["product", "contacts", "uom"],

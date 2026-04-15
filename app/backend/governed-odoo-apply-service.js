@@ -75,7 +75,7 @@ export const ALLOWED_APPLY_MODELS = Object.freeze([
   // Master data
   "res.partner.category",
   "product.category",
-  "uom.category",
+  "uom.uom",                   // Odoo 19 canonical unit-of-measure model (legacy uom.category was restructured out of Odoo 19 — uom.uom now carries relative_factor/relative_uom_id directly), replaced uom.category 2026-04-15 — live-confirmed 16 writable fields
   "product.template",          // product template master records (master-data / rental / subscriptions / website configuration), added 2026-04-15 — live-confirmed 206 fields
   // Sales
   "product.pricelist",
@@ -225,13 +225,16 @@ export const ALLOWED_APPLY_MODELS = Object.freeze([
 // Models that remained unresolved even with candidate-name lookup (no
 // Odoo 19 canonical equivalent found on this instance):
 //   hr.expense.sheet, hr.referral, hr.referral.stage, consolidation.company,
-//   consolidation.period, uom.category
+//   consolidation.period
 //
-//   uom.category is expected to exist in base; the ir.model read did not
-//   return it under the authenticated session. Likely an access-rights or
-//   model-registration oddity on this SaaS tier. The S13 live fields_get
-//   gate enforces reality at write time — if the model is absent at the
-//   customer's instance, the write fails closed by construction.
+//   uom.category — RESOLVED 2026-04-15: Odoo 19 restructured the UoM schema.
+//   The standalone "unit category" grouping no longer exists; uom.uom now
+//   carries relative_factor / relative_uom_id directly so categories are
+//   expressed as unit trees on uom.uom itself. A live fields_get against
+//   uom.uom returned 16 writable fields, confirming the replacement model
+//   is available in base Odoo 19. All operation-definition target_model
+//   references that previously pointed at uom.category have been retargeted
+//   to uom.uom above.
 //
 // COVERAGE GAP PLACEHOLDERS — models declared in *_COVERAGE_GAP_MODELS but
 // never produced as a target_model by any executable checkpoint. No write

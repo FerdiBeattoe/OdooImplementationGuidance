@@ -82,7 +82,7 @@ export class MasterDataSetupWizard {
     try {
       const [categories, uomCategories, uoms, accounts, partners] = await Promise.all([
         this.client.searchRead('product.category', [], ['id', 'name', 'parent_path', 'property_account_income_categ_id', 'property_account_expense_categ_id']),
-        this.client.searchRead('uom.category', [], ['id', 'name', 'uom_ids']),
+        this.client.searchRead('uom.uom', [], ['id', 'name', 'relative_uom_id', 'relative_factor']),
         this.client.searchRead('uom.uom', [], ['id', 'name', 'category_id', 'factor', 'rounding', 'uom_type']),
         this.client.searchRead('account.analytic.account', [], ['id', 'name', 'code', 'partner_id', 'active']),
         this.client.searchRead('res.partner', [['supplier_rank', '>', 0]], ['id', 'name', 'email', 'phone', 'supplier_rank'])
@@ -246,8 +246,13 @@ export class MasterDataSetupWizard {
     this._setState({ isLoading: true });
 
     try {
-      const categoryId = await this.client.create('uom.category', {
-        name: categoryName
+      // uom.uom is the Odoo 19 canonical unit-of-measure model (legacy
+      // uom.category was restructured out of base; uom.uom now carries
+      // relative_factor / relative_uom_id directly). A freshly-created
+      // unit defaults to relative_factor=1.0 (reference unit for its tree).
+      const categoryId = await this.client.create('uom.uom', {
+        name: categoryName,
+        relative_factor: 1.0
       });
 
       this.state.uomCategories.push({

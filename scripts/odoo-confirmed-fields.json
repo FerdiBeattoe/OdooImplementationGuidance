@@ -44908,6 +44908,82 @@
           "relation": "account.analytic.account"
         }
       }
+    },
+    "uom.uom": {
+      "fields": {
+        "id": {
+          "type": "integer",
+          "string": "ID"
+        },
+        "name": {
+          "type": "char",
+          "string": "Unit Name",
+          "required": true
+        },
+        "sequence": {
+          "type": "integer",
+          "string": "Sequence"
+        },
+        "relative_factor": {
+          "type": "float",
+          "string": "Contains",
+          "required": true
+        },
+        "active": {
+          "type": "boolean",
+          "string": "Active"
+        },
+        "relative_uom_id": {
+          "type": "many2one",
+          "string": "Reference Unit",
+          "relation": "uom.uom"
+        },
+        "related_uom_ids": {
+          "type": "one2many",
+          "string": "Related UoMs",
+          "relation": "uom.uom"
+        },
+        "factor": {
+          "type": "float",
+          "string": "Absolute Quantity"
+        },
+        "parent_path": {
+          "type": "char",
+          "string": "Parent Path"
+        },
+        "create_uid": {
+          "type": "many2one",
+          "string": "Created by",
+          "relation": "res.users"
+        },
+        "create_date": {
+          "type": "datetime",
+          "string": "Created on"
+        },
+        "write_uid": {
+          "type": "many2one",
+          "string": "Last Updated by",
+          "relation": "res.users"
+        },
+        "write_date": {
+          "type": "datetime",
+          "string": "Last Updated on"
+        },
+        "product_uom_ids": {
+          "type": "one2many",
+          "string": "Barcodes",
+          "relation": "product.uom"
+        },
+        "package_type_id": {
+          "type": "many2one",
+          "string": "Package Type",
+          "relation": "stock.package.type"
+        },
+        "is_pos_groupable": {
+          "type": "boolean",
+          "string": "Group Products in POS"
+        }
+      }
     }
   }
 }

@@ -216,17 +216,18 @@ describe("ALLOWED_APPLY_MODELS", () => {
     });
   }
 
-  // Business data and transactional models excluded by controller judgment 2026-04-05
-  // These must never appear in ALLOWED_APPLY_MODELS.
+  // Task hard exclusions + coverage-gap placeholders not yet bound to a
+  // wizard target_model. These models must never appear in ALLOWED_APPLY_MODELS.
+  // project.task and product.template were promoted out of this list in the
+  // 2026-04-15 write-gate expansion (confirmed live on Odoo 19 saas~19.2+e).
   const EXCLUDED_BUSINESS_DATA_MODELS = [
-    "quality.alert",         // operational incident records (business data)
-    "maintenance.equipment", // asset/resource master records (business data)
-    "maintenance.request",   // maintenance work orders (transactional)
-    "repair.order",          // repair business documents (transactional)
-    "project.task",          // operational task records (transactional)
-    "mrp.eco",               // engineering change order documents (transactional)
-    "documents.share",       // runtime sharing links (operational)
-    "sale.order",            // sales transaction documents (transactional)
+    "quality.alert",         // QUALITY_COVERAGE_GAP placeholder (transactional alert)
+    "maintenance.equipment", // maintenance module not installed on this instance
+    "maintenance.request",   // maintenance module not installed on this instance
+    "repair.order",          // repair module not installed on this instance
+    "mrp.eco",               // PLM_COVERAGE_GAP placeholder (transactional change doc)
+    "documents.share",       // DOCUMENTS_COVERAGE_GAP placeholder
+    "sale.order",            // task hard exclusion: transactional sales document
   ];
 
   for (const model of EXCLUDED_BUSINESS_DATA_MODELS) {
@@ -235,10 +236,11 @@ describe("ALLOWED_APPLY_MODELS", () => {
     });
   }
 
-  // Deferred models — must not appear until DL-024/DL-025 are resolved
+  // Deferred models — must not appear until DL-024 is resolved.
+  // (product.template was promoted on 2026-04-15 after being live-confirmed —
+  // it is now a master-data / rental / subscriptions target_model.)
   const DEFERRED_MODELS = [
     "mrp.bom",          // DL-024: conditional write risk, no operation definition
-    "product.template", // DL-025: too broad, no bounded checkpoint scope
   ];
 
   for (const model of DEFERRED_MODELS) {
@@ -303,12 +305,10 @@ describe("applyGoverned — S4 gate rejects excluded business-data models", () =
     "maintenance.equipment",
     "maintenance.request",
     "repair.order",
-    "project.task",
     "mrp.eco",
     "documents.share",
     "sale.order",
     "mrp.bom",          // deferred DL-024
-    "product.template", // deferred DL-025
   ];
 
   for (const model of REJECTED_MODELS) {

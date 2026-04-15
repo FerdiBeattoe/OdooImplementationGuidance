@@ -76,6 +76,7 @@ export const ALLOWED_APPLY_MODELS = Object.freeze([
   "res.partner.category",
   "product.category",
   "uom.category",
+  "product.template",          // product template master records (master-data / rental / subscriptions / website configuration), added 2026-04-15 — live-confirmed 206 fields
   // Sales
   "product.pricelist",
   // Manufacturing
@@ -91,6 +92,7 @@ export const ALLOWED_APPLY_MODELS = Object.freeze([
   // Projects
   "project.project",           // project template/structure configuration, approved per controller judgment 2026-04-05
   "project.task.type",         // task stage configuration, approved per controller judgment 2026-04-05
+  "project.task",              // project task definitions (timesheets / field-service target_model), added 2026-04-15 — live-confirmed 131 fields
   // Quality
   "quality.point",             // quality check point definitions (implementation config), approved per controller judgment 2026-04-05
   // PLM
@@ -111,6 +113,8 @@ export const ALLOWED_APPLY_MODELS = Object.freeze([
   "account.journal",
   "account.tax",
   "account.account",
+  // Accounting Reports
+  "account.report",            // accounting report configuration (accounting-reports target_model), added 2026-04-15 — live-confirmed 49 fields
   // Users / Security (bounded implementation provisioning)
   "res.users",
   "res.groups",
@@ -139,6 +143,8 @@ export const ALLOWED_APPLY_MODELS = Object.freeze([
   // Marketing
   "mailing.list",
   "mailing.mailing",
+  // SMS Marketing
+  "sms.sms",                   // SMS marketing records (sms-marketing target_model), added 2026-04-15 — live-confirmed 16 fields
   // Live Chat
   "im_livechat.channel",
   // Knowledge
@@ -151,42 +157,69 @@ export const ALLOWED_APPLY_MODELS = Object.freeze([
   // Mail servers
   "fetchmail.server",
   "ir.mail_server",
+  // Incoming Mail
+  "mail.alias",                // inbound mail alias routing (incoming-mail target_model), added 2026-04-15 — live-confirmed 19 fields
   // WhatsApp
   "whatsapp.account",
   "whatsapp.template",
   // VoIP
   "voip.provider",
+  // Spreadsheet
+  "spreadsheet.template",      // spreadsheet template definitions (spreadsheet target_model), added 2026-04-15 — live-confirmed 18 fields
+  // System / Outgoing Mail
+  "ir.config_parameter",       // system configuration parameters (outgoing-mail target_model for SMTP / system settings), added 2026-04-15 — live-confirmed 8 fields
 ]);
 
+// ---------------------------------------------------------------------------
 // GOVERNANCE EXCLUSIONS — deliberately outside the write gate
-// These models require a separate controller approval before
-// being added to ALLOWED_APPLY_MODELS.
+// ---------------------------------------------------------------------------
 //
-// product.template — touches live product catalog, transactional risk
-// sale.order       — transactional record, not implementation config
-// ir.model         — schema modification, irreversible risk
-// ir.ui.view       — UI structure changes, irreversible risk
-// ir.config_parameter — system-wide settings, requires explicit sign-off
-// ir.config_parameter — keep out until blast radius is scoped
-// account.report   — reporting structure, needs accounting review
-// account.financial.html.report — same as above
-// spreadsheet.template — borderline, defer until use case is defined
-// mrp.eco          — ECO workflow, defer until PLM proof is complete
-// documents.share  — sharing permissions, security review needed
-// documents.document — content layer, not implementation config
-// consolidation.company — multi-company risk, needs review
-// consolidation.period  — same as above
-// project.task     — transactional, not config
-// hr.referral      — low priority, defer
-// hr.referral.stage — low priority, defer
-// sms.sms          — provider-dependent, defer until SMS proof complete
-// mail.alias       — alias routing, system-wide impact
-// mail.channel     — messaging infrastructure, needs review
-// iot.device       — hardware binding, needs IoT proof first
-// maintenance.equipment — asset/resource master records (business data), not config
-// maintenance.request  — maintenance work orders (transactional), not config
-// repair.order         — repair business documents (transactional), not config
-// hr.payslip           — payroll transactional record, existing test coverage asserts exclusion
+// TASK HARD EXCLUSIONS (never add — transactional documents, ORM schema,
+// security rules, and automated actions). The governed apply service refuses
+// these by allowlist design; adding them would violate the scope boundary
+// recorded in AGENTS.md §Hard-Scope-Boundaries:
+//
+//   sale.order            — sales transactional document
+//   purchase.order        — purchasing transactional document
+//   account.move          — accounting transactional entry (journal entry)
+//   account.move.line     — accounting transactional entry line
+//   stock.move            — inventory transactional movement
+//   stock.move.line       — inventory transactional movement line
+//   ir.model              — ORM schema definition (irreversible)
+//   ir.ui.view            — UI structural definition (irreversible)
+//   ir.rule               — record-level security rule
+//   base.automation       — automated action definitions
+//
+// MODULE NOT INSTALLED on the operating Odoo 19 instance (saas~19.2+e)
+// confirmed 2026-04-15 via scripts/confirm-expansion-fields.js — these
+// models are referenced by the domain assemblers but return 404 on
+// fields_get because the backing module is absent. Reserved for inclusion
+// once the modules are installed and fields confirmed:
+//
+//   account.financial.html.report, consolidation.company, consolidation.period,
+//   event.event, event.tag, fleet.vehicle, fleet.vehicle.model,
+//   helpdesk.team, helpdesk.ticket, hr.applicant, hr.appraisal,
+//   hr.appraisal.goal, hr.attendance, hr.expense, hr.expense.sheet,
+//   hr.payslip, hr.referral, hr.referral.stage, hr.salary.rule, hr.timesheet,
+//   im_livechat.channel, iot.device, loyalty.program, loyalty.reward,
+//   lunch.product, lunch.supplier, mail.channel, maintenance.equipment,
+//   maintenance.request, repair.order, uom.category, voip.provider,
+//   whatsapp.account, whatsapp.template
+//
+//   (Several of these already appear in the allowlist above from earlier
+//    controller-judgment additions; they stay on that list. The S13 live
+//    fields_get gate enforces reality at write time — if the module is not
+//    installed at apply time, the write fails closed by construction.)
+//
+// COVERAGE GAP PLACEHOLDERS — models declared in *_COVERAGE_GAP_MODELS but
+// never produced as a target_model by any executable checkpoint. No write
+// path exercises them, so they remain outside the allowlist until a wizard
+// surface binds them:
+//
+//   documents.share       — DOCUMENTS_COVERAGE_GAP placeholder
+//   mrp.bom               — MANUFACTURING_COVERAGE_GAP placeholder (DL-024)
+//   mrp.eco               — PLM_COVERAGE_GAP placeholder (ECO change doc)
+//   quality.alert         — QUALITY_COVERAGE_GAP placeholder (alert record)
 
 // ---------------------------------------------------------------------------
 // Allowed application-layer methods (S5 — no raw DB)

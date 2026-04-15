@@ -6,6 +6,7 @@ import { renderApprovalsWizard } from "./approvals-wizard.js";
 import { renderCalendarWizard } from "./calendar-wizard.js";
 import { renderConsolidationWizard } from "./consolidation-wizard.js";
 import { renderCrmWizard } from "./crm-wizard.js";
+import { renderDiscussWizard } from "./discuss-wizard.js";
 import { renderDocumentsWizard } from "./documents-wizard.js";
 import { renderFieldServiceWizard } from "./field-service-wizard.js";
 import { renderHrWizard } from "./hr-wizard.js";
@@ -32,6 +33,7 @@ const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "calendar-setup": renderCalendarWizard,
   "consolidation-setup": renderConsolidationWizard,
   "crm-setup": renderCrmWizard,
+  "discuss-setup": renderDiscussWizard,
   "documents-setup": renderDocumentsWizard,
   "field-service-setup": renderFieldServiceWizard,
   "hr-setup": renderHrWizard,

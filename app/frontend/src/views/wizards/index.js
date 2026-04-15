@@ -18,6 +18,7 @@ import { renderHrWizard } from "./hr-wizard.js";
 import { renderIncomingMailWizard } from "./incoming-mail-wizard.js";
 import { renderInventoryWizard } from "./inventory-wizard.js";
 import { renderIotWizard } from "./iot-wizard.js";
+import { renderKnowledgeWizard } from "./knowledge-wizard.js";
 import { renderMasterDataWizard } from "./master-data-wizard.js";
 import { renderManufacturingWizard } from "./manufacturing-wizard.js";
 import { renderPlmWizard } from "./plm-wizard.js";
@@ -52,6 +53,7 @@ const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "incoming-mail-setup": renderIncomingMailWizard,
   "inventory-setup": renderInventoryWizard,
   "iot-setup": renderIotWizard,
+  "knowledge-setup": renderKnowledgeWizard,
   "master-data-setup": renderMasterDataWizard,
   "manufacturing-setup": renderManufacturingWizard,
   "pos-setup": renderPosWizard,

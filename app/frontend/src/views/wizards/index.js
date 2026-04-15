@@ -43,6 +43,7 @@ import { renderSmsMarketingWizard } from "./sms-marketing-wizard.js";
 import { renderSpreadsheetWizard } from "./spreadsheet-wizard.js";
 import { renderStudioWizard } from "./studio-wizard.js";
 import { renderSubscriptionsWizard } from "./subscriptions-wizard.js";
+import { renderTimesheetsWizard } from "./timesheets-wizard.js";
 import { renderUsersRolesWizard } from "./users-roles-wizard.js";
 import { renderWebsiteEcommerceWizard } from "./website-ecommerce-wizard.js";
 
@@ -92,6 +93,7 @@ const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "spreadsheet-setup": renderSpreadsheetWizard,
   "studio-setup": renderStudioWizard,
   "subscriptions-setup": renderSubscriptionsWizard,
+  "timesheets-setup": renderTimesheetsWizard,
   "users-access": renderUsersRolesWizard,
   "website-setup": renderWebsiteEcommerceWizard,
 });

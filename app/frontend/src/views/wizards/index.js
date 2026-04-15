@@ -47,6 +47,7 @@ import { renderTimesheetsWizard } from "./timesheets-wizard.js";
 import { renderUsersRolesWizard } from "./users-roles-wizard.js";
 import { renderVoipWizard } from "./voip-wizard.js";
 import { renderWebsiteEcommerceWizard } from "./website-ecommerce-wizard.js";
+import { renderWhatsappWizard } from "./whatsapp-wizard.js";
 
 const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "accounting-reports-setup": renderAccountingReportsWizard,
@@ -98,6 +99,7 @@ const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "users-access": renderUsersRolesWizard,
   "voip-setup": renderVoipWizard,
   "website-setup": renderWebsiteEcommerceWizard,
+  "whatsapp-setup": renderWhatsappWizard,
 });
 
 export function getGovernedWizardRenderer(wizardId, props = {}) {

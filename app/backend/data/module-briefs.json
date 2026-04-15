@@ -1,0 +1,1263 @@
+{
+  "version": "1.0.0",
+  "domains": {
+    "accounting-reports": {
+      "label": "Accounting Reports",
+      "icon": "file-bar-chart",
+      "what_it_does": "Produces Odoo 19's built-in statutory and management financial reports (Profit & Loss, Balance Sheet, Cash Flow, Executive Summary, General Ledger, Tax Report) and lets you customise report lines or add custom management packs. Works against the posted journal entries in the Accounting app — nothing prints unless the ledger is closed and journals are set up first.",
+      "business_benefit": "Gives finance a trusted single source of truth for monthly close, board packs, and tax filings without exporting to Excel.",
+      "estimated_setup_hours": "2-4 hours",
+      "connects_to": ["accounting", "spreadsheet"],
+      "activating_questions": ["AR-01"],
+      "personalisation_rules": [
+        {
+          "question": "AR-01",
+          "answer": "Yes",
+          "adds_context": "You said you need reports beyond Odoo standard — plan for custom report line designs and likely a Spreadsheet template layer on top of the base reports."
+        },
+        {
+          "question": "FC-01",
+          "answer": "Invoicing only (send invoices and track payments, no general ledger)",
+          "adds_context": "Because your finance model is invoicing-only, only receivables-oriented reports (aged receivables, invoicing summary) will be meaningful — the full P&L and Balance Sheet depend on a complete chart of accounts."
+        },
+        {
+          "question": "BM-02",
+          "answer": "Yes",
+          "adds_context": "You operate multiple legal entities, so reports must be run per company and rolled up — see the Consolidation module if you need a true group view."
+        }
+      ],
+      "setup_checklist": [
+        "Confirm Accounting is configured (Chart of Accounts, Fiscal Year, taxes) before opening reports",
+        "Open Accounting > Reporting > Profit and Loss and verify the default layout matches your statutory format",
+        "Open Accounting > Reporting > Balance Sheet and confirm account groups roll up correctly",
+        "Go to Accounting > Configuration > Management > Account Groups to adjust roll-ups if needed",
+        "For custom management reports, enable developer mode and use Accounting > Configuration > Reporting > Account Reports to design new report definitions",
+        "If you need variance/KPI packs, pair with the Spreadsheet app so finance users can extend reports without touching the model"
+      ],
+      "first_action": "Open Accounting > Reporting > Profit and Loss and check that at least one month of posted journal entries appears — reports are empty until the ledger has real postings.",
+      "common_mistakes": [
+        "Trying to design reports before the Chart of Accounts and account groups are finalised — every redesign has to track account changes",
+        "Building custom reports in Studio when the same output could be a standard Account Report line definition",
+        "Forgetting that Tax Report output depends on correct tax code mapping on every tax — wrong tax → wrong filing"
+      ],
+      "odoo_menu_path": "Accounting > Reporting"
+    },
+    "appraisals": {
+      "label": "Appraisals",
+      "icon": "clipboard-check",
+      "what_it_does": "Odoo 19 Enterprise's Appraisals app runs the employee performance review cycle — templated forms, self-assessment, manager review, 360 feedback, and goal tracking — linked to each employee record in HR. Appraisals are scheduled per employee or per department plan and produce a signed record attached to the HR file.",
+      "business_benefit": "Replaces offline review spreadsheets with a governed cycle that produces an auditable performance record against every employee.",
+      "estimated_setup_hours": "3-6 hours",
+      "connects_to": ["hr", "recruitment", "documents"],
+      "activating_questions": ["AP-01"],
+      "personalisation_rules": [
+        {
+          "question": "AP-01",
+          "answer": "Yes",
+          "adds_context": "You confirmed formal appraisals — plan cycle cadence, appraisal templates per job level, and the list of managers authorised to complete reviews."
+        },
+        {
+          "question": "BM-05",
+          "answer": "> 50",
+          "adds_context": "With more than 50 users, design department-level appraisal plans and delegate HR administration of cycles rather than running them centrally."
+        }
+      ],
+      "setup_checklist": [
+        "Ensure HR is configured and every employee has a valid manager and department",
+        "Go to Appraisals > Configuration > Settings and confirm the Enterprise Appraisals module is installed",
+        "Go to Appraisals > Configuration > Appraisal Plans to define frequency (annual, biannual, probation, custom) per department or job position",
+        "Go to Appraisals > Configuration > Feedback Templates to create or edit question templates for self-assessment and manager sections",
+        "Go to Appraisals > Configuration > Appraisal Goals to define any shared goal templates",
+        "Launch a pilot cycle for one department before rolling out company-wide"
+      ],
+      "first_action": "Go to Appraisals > Configuration > Appraisal Plans and define the standard cadence (for example: annual + 6-month probation) for one department as the pilot.",
+      "common_mistakes": [
+        "Launching company-wide before piloting one department — template and plan mistakes become painful to retract mid-cycle",
+        "Not assigning a Manager on each employee record — the appraisal flow silently fails to send manager-review steps",
+        "Confusing Appraisals with Recruitment interview evaluations — they share feedback templates but drive different lifecycles"
+      ],
+      "odoo_menu_path": "Appraisals > Dashboard"
+    },
+    "attendance": {
+      "label": "Attendance",
+      "icon": "fingerprint",
+      "what_it_does": "Odoo 19's Attendances app records employee check-in/check-out through a shared kiosk (RFID badge, PIN, barcode), a mobile app, or manual entry, and posts the hours to each employee's HR record. It underpins overtime calculations and, when paired with Payroll, drives paid-hour rules.",
+      "business_benefit": "Replaces paper timesheets and spreadsheet sign-in logs with an authoritative attendance record that HR, Payroll, and Planning can all trust.",
+      "estimated_setup_hours": "2-5 hours",
+      "connects_to": ["hr", "payroll", "planning", "timesheets"],
+      "activating_questions": ["AT-01"],
+      "personalisation_rules": [
+        {
+          "question": "AT-01",
+          "answer": "Kiosk / badge scan",
+          "adds_context": "You chose kiosk/badge mode — procure RFID badges or barcodes per employee, plan the kiosk device location(s), and secure the kiosk with a PIN to prevent buddy-punching."
+        },
+        {
+          "question": "AT-01",
+          "answer": "Mobile app",
+          "adds_context": "Mobile check-in requires every employee to have the Odoo mobile app installed and a valid user linked to their HR record — plan for geofencing if you need site-bound check-in."
+        },
+        {
+          "question": "AT-01",
+          "answer": "Manual entry",
+          "adds_context": "Manual entry means supervisors post attendances after the fact — plan an approval step to avoid silent edits and keep the record trustworthy."
+        },
+        {
+          "question": "PY-01",
+          "answer": "Yes",
+          "adds_context": "Because payroll runs in Odoo, attendance hours can feed pay rules directly — confirm overtime thresholds before the first payroll period closes."
+        }
+      ],
+      "setup_checklist": [
+        "Ensure every person you want to track exists in Employees (HR) with a valid PIN or badge ID",
+        "Go to Attendances > Configuration > Settings and enable Kiosk Mode and/or Mobile check-in according to your AT-01 answer",
+        "If using badges, go to the employee record > HR Settings tab and assign a unique Badge ID and PIN",
+        "Set up the Kiosk device (any tablet/PC with browser) and bookmark /odoo/attendances/kiosk after login",
+        "Go to Attendances > Configuration > Settings and set the overtime policy (extra-hours threshold, tolerance, display mode)",
+        "Run a one-day pilot with 2-3 employees before onboarding the whole workforce"
+      ],
+      "first_action": "Go to Attendances > Configuration > Settings and pick the single tracking mode that matches your AT-01 answer — mixing modes makes overtime and payroll reconciliation unreliable.",
+      "common_mistakes": [
+        "Leaving kiosk mode open without a manager PIN — anyone can check out anyone",
+        "Forgetting to assign PIN/Badge IDs to employees — they can't check in on day one",
+        "Setting overtime tolerance too tight — legitimate late-by-a-minute check-ins get flagged"
+      ],
+      "odoo_menu_path": "Attendances > Manage Attendances"
+    },
+    "calendar": {
+      "label": "Calendar",
+      "icon": "calendar",
+      "what_it_does": "Odoo 19's Calendar app is the shared meeting and activity scheduler — every user gets a personal calendar, and activities raised on CRM leads, helpdesk tickets, sales orders, and projects appear as events. External sync with Google Calendar and Microsoft Outlook/365 two-ways records through OAuth integrations configured in Settings.",
+      "business_benefit": "Stops salespeople and managers from missing meetings because their real calendar lives outside Odoo — activities become calendar events everyone can see.",
+      "estimated_setup_hours": "1-3 hours",
+      "connects_to": ["crm", "helpdesk", "field_service", "projects", "discuss"],
+      "activating_questions": ["CA-01"],
+      "personalisation_rules": [
+        {
+          "question": "CA-01",
+          "answer": "Google Calendar",
+          "adds_context": "Plan for a Google Cloud OAuth client (Calendar API) and per-user consent — each user must authorise their own calendar once."
+        },
+        {
+          "question": "CA-01",
+          "answer": "Microsoft Outlook",
+          "adds_context": "Plan for a Microsoft Entra (Azure AD) app registration with Calendars.ReadWrite permissions — each user consents with their Microsoft account."
+        },
+        {
+          "question": "CA-01",
+          "answer": "Both",
+          "adds_context": "Dual-provider sync means two OAuth apps and a policy decision about which calendar is source-of-truth when a user switches platforms."
+        },
+        {
+          "question": "CA-01",
+          "answer": "No external calendar sync needed",
+          "adds_context": "Users will work with the Odoo-native calendar only — train them to create activities from CRM and Projects so meetings are still tied to records."
+        }
+      ],
+      "setup_checklist": [
+        "Go to Settings > General Settings > Integrations and locate the Calendar section",
+        "For Google: create an OAuth 2.0 client in Google Cloud Console with the Calendar API, paste the Client ID and Secret into Odoo, and save",
+        "For Microsoft: register an application in Azure AD with Calendars.ReadWrite delegated permission, configure redirect URIs, and paste the Application ID and Client Secret",
+        "Ask each user to open Calendar and click the sync prompt to authorise their own Google/Microsoft account",
+        "Confirm two-way sync by creating an event in Odoo and verifying it appears in the user's external calendar within a minute",
+        "Train the team to use the activity scheduler on CRM leads, Helpdesk tickets, and Sales orders so meetings tie back to records"
+      ],
+      "first_action": "Open Settings > General Settings > Integrations and check whether the Calendar section shows the Google/Microsoft Client IDs — without credentials the sync button in the user UI silently fails.",
+      "common_mistakes": [
+        "Putting OAuth credentials in place but forgetting to ask each user to authorise — sync appears configured but no events flow",
+        "Mixing company-wide service accounts with per-user OAuth — Odoo's Calendar integration is per-user, not centralised",
+        "Creating meetings outside Odoo and expecting them to attach to CRM leads — activities must originate from Odoo to link to records"
+      ],
+      "odoo_menu_path": "Calendar"
+    },
+    "consolidation": {
+      "label": "Consolidation",
+      "icon": "layers",
+      "what_it_does": "Odoo 19 Enterprise's Consolidation app rolls up the ledgers of multiple Odoo companies (or Odoo + imported third-party data) into a single consolidated financial view, with intercompany elimination, currency conversion at closing/average/historical rates, and minority-interest handling. It reads posted journal entries from the underlying companies — it does not re-book them.",
+      "business_benefit": "Produces group-level financial statements without maintaining a parallel set of books in Excel or a separate consolidation tool.",
+      "estimated_setup_hours": "6-12 hours",
+      "connects_to": ["accounting", "accounting-reports"],
+      "activating_questions": [],
+      "personalisation_rules": [
+        {
+          "question": "BM-02",
+          "answer": "Yes",
+          "adds_context": "You operate as multiple legal entities — Consolidation is the right destination once each subsidiary's Accounting is closed and reconciling cleanly month-to-month."
+        },
+        {
+          "question": "BM-04",
+          "answer": "Yes",
+          "adds_context": "Multi-currency adds FX translation complexity — decide the consolidation currency and rate method (closing, average, historical per account) before the first period."
+        }
+      ],
+      "setup_checklist": [
+        "Confirm every subsidiary's Accounting is configured and produces clean period-end reports independently",
+        "Install the Consolidation app (Enterprise only) on the parent company's database",
+        "Go to Consolidation > Configuration > Chart of Accounts and design the consolidated CoA that every subsidiary maps into",
+        "Go to Consolidation > Configuration > Companies and register each subsidiary with its ownership percentage",
+        "Go to Consolidation > Configuration > Consolidation Rules and define FX translation method per account (closing rate, average, historical)",
+        "Go to Consolidation > Configuration > Eliminations and configure intercompany elimination rules for AR/AP, loans, and revenue",
+        "Run a dry consolidation for a closed historical period and reconcile it to the manual group statements before going live"
+      ],
+      "first_action": "Confirm every subsidiary's trial balance already reconciles cleanly standalone — consolidation inherits every underlying error and multiplies it.",
+      "common_mistakes": [
+        "Launching Consolidation before each underlying company's Accounting is stable — you spend more time debugging subsidiary books than consolidating",
+        "Forgetting to review intercompany balances before elimination — if AR in Company A ≠ AP in Company B, the mismatch hits the consolidated P&L",
+        "Using a single FX rate method for every account — revenue accounts typically need average rate, balance sheet items need closing rate"
+      ],
+      "odoo_menu_path": "Consolidation > Dashboard"
+    },
+    "discuss": {
+      "label": "Discuss / Messaging",
+      "icon": "message-circle",
+      "what_it_does": "Odoo 19's Discuss is the in-product messaging layer — direct messages, group channels, and the chatter threads attached to every business record (lead, order, invoice, task, ticket). It's always installed; this confirmation decides which channels exist, who joins them, and the notification defaults across the company.",
+      "business_benefit": "Keeps business conversation tied to the record it's about, so handovers survive people leaving and email archives aren't the institutional memory.",
+      "estimated_setup_hours": "1-2 hours",
+      "connects_to": ["crm", "helpdesk", "projects", "hr", "sales"],
+      "activating_questions": ["DI-01"],
+      "personalisation_rules": [
+        {
+          "question": "DI-01",
+          "answer": "Yes",
+          "adds_context": "You chose to use Discuss as an internal channel — plan the initial channel list (sales, support, ops) and a naming rule before anyone creates ad-hoc channels."
+        },
+        {
+          "question": "BM-05",
+          "answer": "> 50",
+          "adds_context": "Large organisations need channel hygiene — appoint channel owners and set channel visibility (public vs private) on day one, otherwise the channel list becomes noise."
+        }
+      ],
+      "setup_checklist": [
+        "Open Discuss and review the default Direct Messages / Channels layout",
+        "Create company-wide channels: #general (all employees), #sales, #support, #ops — set visibility per channel",
+        "Set channel moderators or owners so channel hygiene has a named owner",
+        "Go to Settings > General Settings > Discuss to confirm the company-wide notification default (mentions only vs all)",
+        "Train every user that the chatter on each record is the audit trail — email and in-person chat should not replace it",
+        "Decide whether to use Discuss video/voice calls (Enterprise) or an external tool, and communicate the policy"
+      ],
+      "first_action": "Open Discuss and create a small set of company-wide channels with named owners — left to self-organise, channels multiply and become noise.",
+      "common_mistakes": [
+        "Expecting Discuss to replace Slack/Teams company-wide — users who live in external tools default to them and the chatter trail on records goes cold",
+        "Leaving every channel public by default — HR and finance conversations end up visible to everyone",
+        "Not training users that the chatter on a record is auditable — they treat it as a scratchpad"
+      ],
+      "odoo_menu_path": "Discuss"
+    },
+    "email-marketing": {
+      "label": "Email Marketing",
+      "icon": "mail",
+      "what_it_does": "Odoo 19's Email Marketing app builds and sends bulk mailings to segmented contact lists (from CRM, Contacts, or custom lists), manages unsubscribes at the mailing-list level, and reports opens, clicks, and bounces. Sending rides on the Outgoing Mail server(s) configured in Settings — deliverability depends on that setup, not the app itself.",
+      "business_benefit": "Runs campaigns against the same contact database used by Sales and CRM, so marketing engagement and opportunity pipeline stay in one system.",
+      "estimated_setup_hours": "2-4 hours",
+      "connects_to": ["crm", "sales", "outgoing-mail", "sms-marketing"],
+      "activating_questions": ["EM-01"],
+      "personalisation_rules": [
+        {
+          "question": "EM-01",
+          "answer": "Yes",
+          "adds_context": "You confirmed bulk marketing email — deliverability (SPF, DKIM, DMARC) on your sending domain is the real gate, not the app itself."
+        },
+        {
+          "question": "OM-01",
+          "answer": "Odoo default (odoo.com relay)",
+          "adds_context": "Odoo's default relay is limited to ~200/day and is frequently flagged as spam — configure your own SMTP provider (SendGrid, Amazon SES, Brevo, Microsoft/Google) before running a real campaign."
+        }
+      ],
+      "setup_checklist": [
+        "Confirm Outgoing Mail is configured with a provider other than the Odoo default relay",
+        "Publish SPF, DKIM, and DMARC records on the sending domain — without these, campaigns go to spam",
+        "Go to Email Marketing > Configuration > Mailing Lists and create the initial segmented lists (customers, leads, newsletter)",
+        "Go to Email Marketing > Configuration > Settings and enable the Blacklist / Unsubscribe handling",
+        "Go to Email Marketing > Mailings and build a test mailing to an internal seed list before the first real campaign",
+        "Review engagement on Email Marketing > Reporting after the first campaign and tune send windows"
+      ],
+      "first_action": "Confirm your sending domain has SPF, DKIM, and DMARC configured — the app will send, but without these records the messages land in spam and your domain reputation drops on every campaign.",
+      "common_mistakes": [
+        "Running a first campaign through the Odoo default relay — hits the 200/day cap and arrives in spam",
+        "Skipping an internal seed test before sending to the real list — rendering bugs and broken merge fields reach the customer",
+        "Treating the Blacklist as optional — regulators (GDPR, CAN-SPAM, POPIA) require one-click unsubscribe to actually work"
+      ],
+      "odoo_menu_path": "Email Marketing > Mailings"
+    },
+    "events": {
+      "label": "Events",
+      "icon": "calendar-days",
+      "what_it_does": "Odoo 19's Events app manages in-person and online events — event definitions, ticket types, registrations, attendee lists, sponsor management, and the event page on the Website. Registrations can be free or paid through the Website/eCommerce storefront, and attendee communications route through Email Marketing templates.",
+      "business_benefit": "Runs the full event lifecycle — registration, ticketing, comms, check-in, follow-up — in the same system that holds customer data, so leads from events land straight in CRM.",
+      "estimated_setup_hours": "3-6 hours",
+      "connects_to": ["website_ecommerce", "email-marketing", "crm", "sales"],
+      "activating_questions": ["EV-01"],
+      "personalisation_rules": [
+        {
+          "question": "EV-01",
+          "answer": "Yes",
+          "adds_context": "You run events — decide early whether tickets are free or paid. Paid events require Website + eCommerce + a payment provider configured before any ticket can be sold."
+        },
+        {
+          "question": "OP-04",
+          "answer": "Yes",
+          "adds_context": "Your website runs in Odoo, so event pages can be published on the same site — no separate event landing page needed."
+        }
+      ],
+      "setup_checklist": [
+        "Go to Events > Configuration > Event Types and define one or more templates (workshop, webinar, conference) with default agenda, questions, and communications",
+        "Go to Events > Configuration > Event Categories and set up groupings for reporting",
+        "For paid events, confirm Website and a payment provider (Stripe, PayPal, etc.) are configured",
+        "Go to Events > Events and create the first event: name, dates, venue, ticket types, capacity",
+        "Design the event Website page via the Website builder — enable it only when ready",
+        "Set up attendee communications (pre-event reminder, post-event follow-up) on the event record"
+      ],
+      "first_action": "Go to Events > Configuration > Event Types and define the default template you want reused — events without a template force you to re-enter agenda and communications every time.",
+      "common_mistakes": [
+        "Publishing an event page before the ticket types and payment provider are configured — registrations fail silently",
+        "Using free-text venues that don't match Contact records — location reporting becomes impossible",
+        "Skipping event templates and entering the same communications by hand on every event — drift in messaging is inevitable"
+      ],
+      "odoo_menu_path": "Events > Events"
+    },
+    "expenses": {
+      "label": "Expenses",
+      "icon": "receipt",
+      "what_it_does": "Odoo 19's Expenses app captures employee out-of-pocket spend — paper receipts (OCR), mobile photos, credit-card imports — and runs them through a manager approval chain before posting to Accounting as a supplier bill against the employee or credit-card partner. Expense categories map to accounts and analytic accounts so cost centres stay clean.",
+      "business_benefit": "Stops employees chasing finance for reimbursements and stops finance chasing employees for receipts — every expense has an owner, an approval, and an accounting posting.",
+      "estimated_setup_hours": "2-5 hours",
+      "connects_to": ["hr", "accounting", "approvals"],
+      "activating_questions": ["EX-01"],
+      "personalisation_rules": [
+        {
+          "question": "EX-01",
+          "answer": "Yes",
+          "adds_context": "Employees submit expense claims — confirm the reimbursement method (payroll add-on, supplier bill paid separately) and the approval chain (manager only, or manager + finance)."
+        },
+        {
+          "question": "PY-01",
+          "answer": "Yes",
+          "adds_context": "Because payroll runs in Odoo, reimbursements can flow into the payslip as an addition — or stay as a separate payment. Decide once and document the policy."
+        },
+        {
+          "question": "FC-05",
+          "answer": "Yes",
+          "adds_context": "You use analytic accounting — map every expense category to its default analytic account so project/department costing is clean from day one."
+        }
+      ],
+      "setup_checklist": [
+        "Confirm every submitter exists as an Employee with a valid manager set",
+        "Go to Expenses > Configuration > Expense Categories and create categories (travel, meals, supplies) with default product + account + analytic account",
+        "Go to Expenses > Configuration > Settings and set the Reimbursement method (paid separately or via payslip), the Mileage rate, and whether receipts are mandatory",
+        "Define the approval chain — by default it's the employee's manager, but you can extend it with the Approvals app for high-value spend",
+        "Test the full cycle: employee submits a receipt → manager approves → finance posts the accounting entry → payment is made",
+        "Publish the expense policy (thresholds, receipts required, mileage rate) alongside the app rollout"
+      ],
+      "first_action": "Go to Expenses > Configuration > Expense Categories and map each category to both its expense account and its default analytic account — without the analytic link, project/department cost reporting is broken from day one.",
+      "common_mistakes": [
+        "Not setting a Manager on every employee — expense approvals silently stall",
+        "Leaving Expense Categories without analytic account defaults — cost centre reporting is corrupt",
+        "Treating expense posting as final before it hits Accounting — always reconcile expense reports to posted bills monthly"
+      ],
+      "odoo_menu_path": "Expenses > My Expenses > Dashboard"
+    },
+    "fleet": {
+      "label": "Fleet",
+      "icon": "car",
+      "what_it_does": "Odoo 19's Fleet app tracks company vehicles — make/model, driver assignment, lease or purchase contracts, service log, fuel log, odometer, insurance, and disposal. It feeds HR for benefit-in-kind reporting and can link to Accounting for depreciation and operating expense.",
+      "business_benefit": "Replaces fleet spreadsheets with one record per vehicle covering lifecycle cost, contract renewals, service due-dates, and driver assignment — so nothing lapses unnoticed.",
+      "estimated_setup_hours": "2-4 hours",
+      "connects_to": ["hr", "accounting"],
+      "activating_questions": ["FL-01"],
+      "personalisation_rules": [
+        {
+          "question": "FL-01",
+          "answer": "Yes",
+          "adds_context": "You operate company vehicles — plan the vehicle master (make, model, VIN, assigned driver) and the contract calendar (lease, insurance, service) before the first vehicle goes in."
+        },
+        {
+          "question": "OP-05",
+          "answer": "Yes",
+          "adds_context": "Field Service staff drive to customer sites — link each technician's Employee to their Fleet vehicle so service cost is traceable."
+        }
+      ],
+      "setup_checklist": [
+        "Go to Fleet > Configuration > Vehicle Models to define the models you operate",
+        "Go to Fleet > Configuration > Vehicle Tags and Categories for grouping (executive, operations, sales)",
+        "Go to Fleet > Vehicles and create a record for every vehicle with VIN, registration, driver (Employee), acquisition date, and purchase/lease",
+        "Go to Fleet > Configuration > Contracts to define contract types (lease, insurance, service plan) with renewal dates",
+        "Log the first service and fuel card entry to confirm the workflow before onboarding all drivers",
+        "Set activity reminders on each contract so renewals don't silently lapse"
+      ],
+      "first_action": "Create one vehicle record end-to-end (model, driver, contract, service log) and run the lifecycle on it before adding the rest of the fleet — mistakes found on one vehicle are cheap to fix.",
+      "common_mistakes": [
+        "Leaving Driver blank — utilisation and benefit-in-kind reporting break",
+        "Not setting contract renewal activity reminders — insurance and lease renewals lapse",
+        "Mixing private mileage into fuel logs — tax benefit-in-kind calculations become unreliable"
+      ],
+      "odoo_menu_path": "Fleet > Vehicles"
+    },
+    "helpdesk": {
+      "label": "Helpdesk",
+      "icon": "life-buoy",
+      "what_it_does": "Odoo 19 Enterprise's Helpdesk app routes customer support requests (email alias, web form, live chat, API) into teams, applies SLA policies, and moves tickets through a kanban-style stage pipeline. Tickets can trigger follow-up tasks, time entries, or invoicing if your support is billable.",
+      "business_benefit": "Gives support a single queue with SLA tracking against the same customer records used by Sales and Accounting — customer context is one click away.",
+      "estimated_setup_hours": "3-6 hours",
+      "connects_to": ["crm", "sales", "timesheets", "knowledge", "live-chat", "incoming-mail"],
+      "activating_questions": ["HD-01"],
+      "personalisation_rules": [
+        {
+          "question": "HD-01",
+          "answer": "Yes",
+          "adds_context": "You need a ticketing system — design the team split (by product, by region, by tier) and SLA policies before the first ticket arrives."
+        },
+        {
+          "question": "IM-01",
+          "answer": "Yes",
+          "adds_context": "With incoming mail routing enabled, you can wire support@ directly to the Helpdesk team alias so customer emails become tickets automatically."
+        },
+        {
+          "question": "LC-01",
+          "answer": "Yes",
+          "adds_context": "Live chat on the website can convert into a Helpdesk ticket when an agent escalates — plan the live-chat → ticket handoff rule."
+        }
+      ],
+      "setup_checklist": [
+        "Go to Helpdesk > Configuration > Teams and create the first team (name, description, assignment rule: all members, random, balanced)",
+        "Set the team alias (e.g., support@company.com) so inbound email becomes tickets",
+        "Go to Helpdesk > Configuration > Stages and define the kanban pipeline (New, In Progress, Waiting on Customer, Solved)",
+        "Go to Helpdesk > Configuration > SLA Policies to set response/resolution targets per priority and per team",
+        "Enable Helpdesk features per team as needed: Timesheets, Knowledge, Ratings, Live Chat integration",
+        "Run a synthetic test ticket end-to-end before publishing the support email address"
+      ],
+      "first_action": "Go to Helpdesk > Configuration > Teams and create exactly one team with one clear alias — multiple overlapping teams day one is the fastest way to lose a ticket.",
+      "common_mistakes": [
+        "Spinning up multiple teams before one is stable — tickets drift between teams and SLAs stop meaning anything",
+        "Publishing the support alias before the team is set up — inbound tickets land in an undefined state",
+        "Setting SLA policies without a named owner — no one gets paged when the SLA breaches"
+      ],
+      "odoo_menu_path": "Helpdesk > All Tickets"
+    },
+    "incoming-mail": {
+      "label": "Incoming Mail",
+      "icon": "inbox",
+      "what_it_does": "Odoo 19's Incoming Mail plumbing ingests email into records — inbound messages match the alias domain and get routed to the right model (CRM lead, Helpdesk ticket, Sales order, Recruitment application, invoice chatter). Aliases are configured under Settings > Technical > Email, and a fetching policy (POP/IMAP or direct catch-all) governs how Odoo collects replies.",
+      "business_benefit": "Reply-to-Odoo just works — customer replies to quotes, invoices, and tickets land back on the right record instead of disappearing into an individual inbox.",
+      "estimated_setup_hours": "2-5 hours",
+      "connects_to": ["crm", "helpdesk", "sales", "accounting", "recruitment", "outgoing-mail"],
+      "activating_questions": ["IM-01", "IM-02"],
+      "personalisation_rules": [
+        {
+          "question": "IM-01",
+          "answer": "Yes",
+          "adds_context": "Reply-to-Odoo routing is on — plan either a catch-all alias on your mail domain forwarded to Odoo, or POP/IMAP fetching from dedicated mailboxes."
+        },
+        {
+          "question": "IM-02",
+          "answer": "sales@  CRM leads",
+          "adds_context": "sales@ → CRM: every inbound message to sales@ becomes a new Lead (or updates an existing thread) — train Sales to watch the CRM inbox, not sales@ mailbox."
+        },
+        {
+          "question": "IM-02",
+          "answer": "support@  Helpdesk tickets",
+          "adds_context": "support@ → Helpdesk: inbound becomes a ticket on the team linked to that alias."
+        },
+        {
+          "question": "IM-02",
+          "answer": "jobs@  Recruitment applications",
+          "adds_context": "jobs@ → Recruitment: inbound becomes a candidate with the CV attachment."
+        }
+      ],
+      "setup_checklist": [
+        "Enable developer mode: Settings > General Settings > Developer Tools > Activate the developer mode",
+        "Go to Settings > Technical > Email > Alias Domains and set your mail domain (e.g. company.com)",
+        "For catch-all forwarding: configure DNS/mail forwarding at your provider so all mail to the alias domain forwards to Odoo's catchall",
+        "For POP/IMAP fetching: go to Settings > Technical > Email > Incoming Mail Servers, add a server per mailbox, and set fetch frequency",
+        "Go to Settings > Technical > Email > Aliases (or the specific model's Configuration menu) and create aliases per your IM-02 selection (sales@, support@, jobs@, invoices@)",
+        "Verify each alias routes to the correct model + target record by sending a real test email from outside"
+      ],
+      "first_action": "Verify your mail domain's MX record can actually forward to Odoo before creating a single alias — without the DNS side, aliases are just entries in a table that nothing ever reaches.",
+      "common_mistakes": [
+        "Creating aliases in Odoo without the DNS side — test emails go nowhere and teams don't notice for days",
+        "Mixing IMAP fetching with catch-all forwarding — duplicate messages land on records",
+        "Not setting a bounce/no-reply address — replies to automated notifications pile up in a mailbox no-one watches"
+      ],
+      "odoo_menu_path": "Settings > Technical > Email > Aliases"
+    },
+    "iot": {
+      "label": "IoT",
+      "icon": "cpu",
+      "what_it_does": "Odoo 19 Enterprise's IoT app runs the IoT Box (or IoT virtual instance) — a small device or VM on the local network that bridges Odoo to physical hardware: receipt printers, barcode scanners, weighing scales, payment terminals, measurement tools at work centres, cash drawers. Each device is registered to the box, then assigned to POS terminals, Quality control points, or Manufacturing work orders.",
+      "business_benefit": "Lets operations staff use real hardware — scales, scanners, printers — instead of retyping values into Odoo, cutting human error and speeding every transaction.",
+      "estimated_setup_hours": "4-8 hours",
+      "connects_to": ["pos", "manufacturing", "quality", "inventory"],
+      "activating_questions": [],
+      "personalisation_rules": [
+        {
+          "question": "OP-03",
+          "answer": "Yes",
+          "adds_context": "POS is in scope — IoT boxes plug receipt printers, barcode scanners, cash drawers, and payment terminals into POS terminals."
+        },
+        {
+          "question": "MF-01",
+          "answer": "Yes",
+          "adds_context": "Manufacturing is active — IoT can bind measurement tools and label printers to work centres and quality control points."
+        }
+      ],
+      "setup_checklist": [
+        "Procure or provision the IoT Box (Odoo-sold hardware, Raspberry Pi image, or the IoT virtual image on your own hardware)",
+        "Connect the IoT Box to the same local network as the Odoo client devices; wired Ethernet is more reliable than WiFi for receipt printers and scales",
+        "In Odoo: go to IoT > IoT Boxes and click Connect; follow the pairing steps (QR code or token)",
+        "Plug each device into the IoT Box and confirm it appears under IoT > Devices",
+        "Assign devices to POS terminals at Point of Sale > Configuration > Point of Sale, or to work centres at Manufacturing > Configuration > Work Centers, or to control points at Quality",
+        "Run a one-transaction test per device: scan, print, weigh, tap-to-pay"
+      ],
+      "first_action": "Pick one device (receipt printer or barcode scanner) and get it working end-to-end with one POS terminal — a one-device pilot is the only reliable way to validate the network and driver stack.",
+      "common_mistakes": [
+        "Plugging the IoT Box into a segmented VLAN that can't reach Odoo — devices appear offline for reasons that look like driver bugs",
+        "Using WiFi for a receipt printer in a busy environment — prints drop silently",
+        "Not updating the IoT Box image — older firmware breaks when Odoo version upgrades"
+      ],
+      "odoo_menu_path": "IoT > IoT Boxes"
+    },
+    "knowledge": {
+      "label": "Knowledge",
+      "icon": "book-open",
+      "what_it_does": "Odoo 19 Enterprise's Knowledge app is the internal wiki — hierarchical articles with rich-text, embedded views from any Odoo model, templates, cover images, and fine-grained permissions per article tree. Articles can be public, company-wide, or restricted to specific users.",
+      "business_benefit": "Gives the business one canonical home for SOPs, policies, runbooks, onboarding, and customer FAQs — instead of a mix of Notion, Google Docs, Confluence, and email trails.",
+      "estimated_setup_hours": "2-4 hours",
+      "connects_to": ["discuss", "helpdesk", "hr", "documents"],
+      "activating_questions": ["KN-01"],
+      "personalisation_rules": [
+        {
+          "question": "KN-01",
+          "answer": "Yes",
+          "adds_context": "You confirmed an internal knowledge base — agree the top-level article tree (departments, functions, products) and appoint owners per branch before seeding content."
+        },
+        {
+          "question": "HD-01",
+          "answer": "Yes",
+          "adds_context": "Helpdesk is active — Knowledge articles can be linked into tickets so agents have one-click runbooks, and public articles become self-service answers for customers."
+        }
+      ],
+      "setup_checklist": [
+        "Open Knowledge from the main app menu",
+        "Create the top-level Workspace articles — one per department or function (Operations, Sales, Support, HR, Finance)",
+        "Set the access rules per workspace: who can read, who can write, who is admin",
+        "Pin the key articles (runbooks, onboarding, policies) so they surface at the top of the left sidebar",
+        "If Helpdesk is in use, link high-value articles into ticket templates so agents find them while working",
+        "Publish a migration plan for your existing wiki (Notion/Confluence) — don't let the old wiki linger alongside"
+      ],
+      "first_action": "Agree the top-level article tree (one level deep, 5-10 workspaces max) before anyone writes a word — reorganising hundreds of articles later is brutal.",
+      "common_mistakes": [
+        "Letting everyone create top-level workspaces — the tree becomes a mess within a month",
+        "Leaving access rules default (public) when articles contain sensitive HR or finance content",
+        "Not migrating the existing wiki — both systems stay half-full and everyone loses trust in both"
+      ],
+      "odoo_menu_path": "Knowledge"
+    },
+    "live-chat": {
+      "label": "Live Chat",
+      "icon": "message-square",
+      "what_it_does": "Odoo 19's Live Chat app puts a chat widget on any page of your Website (or any external site via JS snippet), routes visitors to available operators, and optionally escalates conversations into a CRM lead or Helpdesk ticket. Chatbot flows can answer common questions and qualify leads before a human takes over.",
+      "business_benefit": "Catches website visitors while they're still on the page — instead of hoping they fill in a contact form and email them back tomorrow.",
+      "estimated_setup_hours": "2-4 hours",
+      "connects_to": ["website_ecommerce", "helpdesk", "crm", "discuss"],
+      "activating_questions": ["LC-01"],
+      "personalisation_rules": [
+        {
+          "question": "LC-01",
+          "answer": "Yes",
+          "adds_context": "You want live chat on the website — decide operator coverage hours and the fallback (chatbot, offline form) for out-of-hours visitors before the widget goes live."
+        },
+        {
+          "question": "HD-01",
+          "answer": "Yes",
+          "adds_context": "Helpdesk is in scope — configure live chat to convert escalated conversations into tickets so follow-up is guaranteed."
+        },
+        {
+          "question": "OP-04",
+          "answer": "Yes",
+          "adds_context": "Your website runs in Odoo so the widget embeds natively on every published page — decide which pages should show it and which shouldn't."
+        }
+      ],
+      "setup_checklist": [
+        "Go to Live Chat > Configuration > Channels and create a channel (name, operators, rule URLs)",
+        "Under the channel, go to the Channel Rules tab and set which URLs trigger the widget and for which visitor country",
+        "Go to the Chatbot tab and build a simple script to qualify visitors and capture their email before an operator takes over",
+        "Assign operators (users) to the channel and set their live-chat availability in their user profile",
+        "Go to Live Chat > Configuration > Canned Responses for common replies",
+        "Test from an incognito browser window before publishing the widget on production pages"
+      ],
+      "first_action": "Go to Live Chat > Configuration > Channels and create one channel with tight URL rules — enabling chat on every page day one floods a small team.",
+      "common_mistakes": [
+        "Enabling the widget site-wide without deciding operator coverage — visitors wait for no-one and churn",
+        "Skipping the chatbot — the same 5 questions repeat manually every day",
+        "Not converting chats to leads/tickets — conversations end, nothing follows up"
+      ],
+      "odoo_menu_path": "Live Chat > Configuration > Channels"
+    },
+    "loyalty": {
+      "label": "Loyalty / Gift Cards",
+      "icon": "gift",
+      "what_it_does": "Odoo 19's Loyalty module defines loyalty programs, gift cards, promo codes, and discount rules across Sales, POS, and Website/eCommerce. Programs can award points per purchase, apply next-order discounts, issue e-gift cards with serial numbers, or run time-bound promotions.",
+      "business_benefit": "Runs loyalty, gift cards, and promos on the same order flow Sales and POS already use — customer redemptions and balances stay in one system.",
+      "estimated_setup_hours": "3-5 hours",
+      "connects_to": ["sales", "pos", "website_ecommerce", "accounting"],
+      "activating_questions": ["LY-01"],
+      "personalisation_rules": [
+        {
+          "question": "LY-01",
+          "answer": "Loyalty points programme",
+          "adds_context": "You run a points programme — decide the earn rate, point value, and expiry policy, and confirm how points are accounted for (liability on the balance sheet)."
+        },
+        {
+          "question": "LY-01",
+          "answer": "Gift cards",
+          "adds_context": "Gift cards mean an unearned revenue liability — confirm the accounting treatment and the expiry/escheatment rules that apply in your jurisdiction."
+        },
+        {
+          "question": "LY-01",
+          "answer": "Both",
+          "adds_context": "Running both means a layered program — gift cards fund purchases, loyalty rewards repeat purchases. Design the interaction (can gift-card purchases earn loyalty points?) explicitly."
+        },
+        {
+          "question": "OP-03",
+          "answer": "Yes",
+          "adds_context": "POS is active — train till operators to apply and redeem rewards at the point of sale and confirm the receipt format shows loyalty balances."
+        }
+      ],
+      "setup_checklist": [
+        "Go to Sales > Configuration > Settings and enable Discount, Promotion & Loyalty Programs",
+        "Go to Sales > Configuration > Discount & Loyalty to create your first program: type, rules (minimum spend, products, customer tags), rewards",
+        "For gift cards: under program type Gift Card, define serial-number range, initial balance, expiry policy, and the accounting liability account",
+        "For POS redemption: go to Point of Sale > Configuration > Point of Sale and enable the Loyalty option on the POS terminal",
+        "For Website redemption: go to Website > Configuration > Settings and enable the Loyalty feature on the eCommerce storefront",
+        "Run a dummy transaction through POS and Website to confirm points/balance update and post to the correct accounts"
+      ],
+      "first_action": "Go to Sales > Configuration > Settings, enable Loyalty & Gift Cards, and create one program end-to-end (rules, rewards, accounting) before advertising it to customers.",
+      "common_mistakes": [
+        "Launching a points program without an expiry policy — the unredeemed-points liability grows indefinitely",
+        "Issuing gift cards without booking them to a dedicated liability account — finance can't track unearned revenue",
+        "Not training POS operators — customers expect redemption at the till and the till operator doesn't know how"
+      ],
+      "odoo_menu_path": "Sales > Configuration > Discount & Loyalty"
+    },
+    "lunch": {
+      "label": "Lunch",
+      "icon": "coffee",
+      "what_it_does": "Odoo 19's Lunch app lets employees order their meals through Odoo — from configured vendors with menus, daily/weekly availability, order cutoff times, and optional wallet top-ups. Managers handle the daily order summary; deductions can post to the employee wallet or payroll.",
+      "business_benefit": "Replaces the paper order sheet or WhatsApp chain with a structured daily order that finance and HR can audit.",
+      "estimated_setup_hours": "1-2 hours",
+      "connects_to": ["hr", "accounting"],
+      "activating_questions": [],
+      "personalisation_rules": [
+        {
+          "question": "BM-05",
+          "answer": "> 50",
+          "adds_context": "With 50+ staff, lunch coordination matters — set a firm cutoff time and appoint a single lunch manager responsible for the daily order."
+        }
+      ],
+      "setup_checklist": [
+        "Go to Lunch > Configuration > Vendors and register each supplier (name, delivery days, order cutoff time, contact)",
+        "Go to Lunch > Configuration > Products and load each vendor's menu with price and category",
+        "Go to Lunch > Configuration > Alerts to schedule daily reminders to employees before the cutoff",
+        "Go to Lunch > Configuration > Settings to set wallet defaults and whether top-ups or payroll deduction is the repayment model",
+        "Assign a Lunch Manager (user) with permission to confirm the daily order and close off the day",
+        "Run a one-day live pilot before sharing the link company-wide"
+      ],
+      "first_action": "Go to Lunch > Configuration > Vendors and create one vendor with a real cutoff time — the cutoff discipline is the whole point of moving off WhatsApp.",
+      "common_mistakes": [
+        "Skipping the cutoff time — orders drift late and vendors can't fulfil",
+        "Not setting a Lunch Manager — the daily order never gets confirmed, vendor never gets the list",
+        "Letting the wallet run without top-up discipline — negative balances accumulate silently"
+      ],
+      "odoo_menu_path": "Lunch > Dashboard"
+    },
+    "maintenance": {
+      "label": "Maintenance",
+      "icon": "wrench",
+      "what_it_does": "Odoo 19's Maintenance app tracks equipment and runs preventive and corrective maintenance requests against each asset — work orders, scheduled PM plans based on time or meter, downtime tracking, MTBF/MTTR reporting, and maintenance teams. When Manufacturing is active, maintenance requests can be raised directly from work centres and production orders.",
+      "business_benefit": "Stops equipment failures from being surprises — PM plans run on schedule and corrective work orders carry the full history of each asset.",
+      "estimated_setup_hours": "3-6 hours",
+      "connects_to": ["manufacturing", "inventory", "hr", "fleet"],
+      "activating_questions": ["MF-03", "MF-07"],
+      "personalisation_rules": [
+        {
+          "question": "MF-07",
+          "answer": "Yes",
+          "adds_context": "You track preventive and corrective maintenance on production equipment — plan the asset register, PM schedules per asset class, and the Maintenance team roster before the first request is raised."
+        },
+        {
+          "question": "MF-03",
+          "answer": "Yes",
+          "adds_context": "Work centres are tracked — link each work centre to its maintenance equipment record so downtime shows on both Manufacturing and Maintenance reporting."
+        }
+      ],
+      "setup_checklist": [
+        "Go to Maintenance > Configuration > Maintenance Teams and create at least one team with members and a team lead",
+        "Go to Maintenance > Configuration > Equipment Categories and define categories (production, IT, facilities, fleet)",
+        "Go to Maintenance > Equipment and register every asset with serial, assigned employee/department, and its expected maintenance type",
+        "On each equipment record, go to the Maintenance tab and define the PM frequency (days, or meter-based via equipment counter)",
+        "If Manufacturing is active, link Work Centers to their Equipment records (Manufacturing > Configuration > Work Centers)",
+        "Raise a dummy corrective request and a scheduled PM request to validate the full flow before going live"
+      ],
+      "first_action": "Go to Maintenance > Equipment and register the top 10 assets — running PM plans against an incomplete asset register produces alerts for the wrong things.",
+      "common_mistakes": [
+        "Setting PM plans before the asset register is accurate — you PM things that don't exist and miss things that do",
+        "Not linking Work Centers to Equipment — downtime posted in Manufacturing doesn't flow to Maintenance reporting",
+        "Treating Maintenance as optional — the first failure without a history makes the whole system look useless"
+      ],
+      "odoo_menu_path": "Maintenance > Equipment"
+    },
+    "outgoing-mail": {
+      "label": "Outgoing Mail",
+      "icon": "send",
+      "what_it_does": "Odoo 19's Outgoing Mail configuration tells Odoo which SMTP server(s) to send through — one catch-all, or per-department senders (sales@, support@, invoices@) with different From addresses. Servers are defined under Settings > Technical and their priority determines which is used for which mail.",
+      "business_benefit": "Puts deliverability of every quote, invoice, ticket, and marketing email on a provider you own — instead of the shared Odoo default relay that throttles and lands in spam.",
+      "estimated_setup_hours": "1-3 hours",
+      "connects_to": ["email-marketing", "crm", "sales", "accounting", "helpdesk", "incoming-mail"],
+      "activating_questions": ["OM-01", "OM-02"],
+      "personalisation_rules": [
+        {
+          "question": "OM-01",
+          "answer": "Gmail / Google Workspace",
+          "adds_context": "Use a Google Workspace service account or SMTP relay — plan for an OAuth 2.0 flow (recommended) or an App Password on a dedicated sending account."
+        },
+        {
+          "question": "OM-01",
+          "answer": "Microsoft 365 / Outlook",
+          "adds_context": "Use Microsoft 365 SMTP with OAuth 2.0 (recommended — basic auth is deprecated) via an Azure AD app registration with SMTP.Send permission."
+        },
+        {
+          "question": "OM-01",
+          "answer": "Custom SMTP server",
+          "adds_context": "Gather the provider's SMTP hostname, port (587 TLS or 465 SSL), username/password or API key, and the sending limits before configuring."
+        },
+        {
+          "question": "OM-01",
+          "answer": "Odoo default (odoo.com relay)",
+          "adds_context": "The Odoo default relay is limited (~200/day) and frequently flagged as spam. Plan to migrate to your own SMTP before any volume is sent — do not run marketing through the default relay."
+        },
+        {
+          "question": "OM-02",
+          "answer": "Yes",
+          "adds_context": "Multiple senders means per-server From address routing — each department (sales@, support@, invoices@) needs its own Outgoing Mail Server entry with the right From filter."
+        }
+      ],
+      "setup_checklist": [
+        "Publish SPF, DKIM, and DMARC DNS records on every sending domain before any Odoo mail goes out",
+        "Enable developer mode: Settings > General Settings > Developer Tools > Activate the developer mode",
+        "Go to Settings > Technical > Email > Outgoing Mail Servers and add the primary SMTP server (hostname, port, security, auth)",
+        "Click Test Connection on the new server and resolve any TLS/auth errors before saving",
+        "Set the Priority (lowest number wins) — a catch-all server should be priority 10, department-specific servers priority 5 with a From Filter",
+        "For per-department senders: create a server per From address and set the From Filter to that exact address or domain",
+        "Go to Settings > General Settings > Discuss > Alias Domain and confirm the alias domain matches the outgoing From address",
+        "Send a test email from Odoo (e.g., email a quote to yourself) and verify headers show SPF/DKIM pass"
+      ],
+      "first_action": "Before anything else, confirm SPF, DKIM, and DMARC DNS records are published on the sending domain — the best SMTP setup fails deliverability without these.",
+      "common_mistakes": [
+        "Using the Odoo default relay for anything other than smoke tests — rate limits and spam filtering bite fast",
+        "Configuring SMTP without SPF/DKIM/DMARC — mail sends successfully from Odoo's side but lands in spam",
+        "Relying on SMTP basic auth with Gmail/Microsoft 365 — providers are deprecating it, use OAuth 2.0",
+        "Leaving the From Filter empty on multiple servers — Odoo may pick the wrong server and send with the wrong From"
+      ],
+      "odoo_menu_path": "Settings > Technical > Email > Outgoing Mail Servers"
+    },
+    "payroll": {
+      "label": "Payroll",
+      "icon": "banknote",
+      "what_it_does": "Odoo 19 Enterprise's Payroll app runs the pay cycle against each employee's contract — gross-to-net calculations driven by salary rules, tax brackets, benefits, and deductions, producing payslips that post to Accounting as a payroll journal entry. It reads time data from Attendance, Timesheets, Leaves, and Expenses when those are active.",
+      "business_benefit": "Payroll becomes a governed monthly process inside the same system that holds the employees, time, expenses, and accounting — instead of a separate payroll tool that disagrees with HR.",
+      "estimated_setup_hours": "8-20 hours",
+      "connects_to": ["hr", "accounting", "attendance", "timesheets", "expenses"],
+      "activating_questions": ["PY-01"],
+      "personalisation_rules": [
+        {
+          "question": "PY-01",
+          "answer": "Yes",
+          "adds_context": "Payroll runs in Odoo — confirm the country-localized payroll module is installed (statutory rules differ per country) and plan a parallel run against the current payroll system before cutover."
+        },
+        {
+          "question": "PY-01",
+          "answer": "We use an external payroll system",
+          "adds_context": "Payroll stays external — Odoo still holds employees and contracts, but pay calculation lives elsewhere. Plan an export/import interface for pay results into Accounting."
+        },
+        {
+          "question": "BM-03",
+          "answer": "[country]",
+          "adds_context": "The country selection drives which Payroll localisation module loads — tax brackets, statutory deductions, leave accrual rules, and payslip format are country-specific."
+        }
+      ],
+      "setup_checklist": [
+        "Confirm BM-03 country is correct and the matching Payroll localisation module is installed",
+        "Go to Payroll > Configuration > Salary Structures and review the default structure for your country — create variants per employee category if needed",
+        "Go to Payroll > Configuration > Salary Rules to confirm each rule's formula, condition, and accounting code",
+        "Go to Payroll > Contracts and create a contract per employee with start date, wage, structure, and working schedule",
+        "Go to Payroll > Configuration > Work Entries and confirm how Attendance/Timesheet hours map to paid work types",
+        "Run a parallel payroll for one past period — match the payslip to the current payroll system line by line before going live",
+        "Only cut over after a clean parallel run and written sign-off from finance and HR"
+      ],
+      "first_action": "Run a parallel payroll for at least one full period against your current system — payroll errors on the first live run cost days of damage control and employee trust.",
+      "common_mistakes": [
+        "Cutting over without a parallel run — statutory deduction mistakes reach employees and the tax authority",
+        "Treating payroll as a one-quarter project — localisation, contract migration, and year-to-date balance setup take longer than most planners admit",
+        "Not locking the payroll period post-run — edits after close change finance numbers silently"
+      ],
+      "odoo_menu_path": "Payroll > Employees"
+    },
+    "planning": {
+      "label": "Planning",
+      "icon": "calendar-clock",
+      "what_it_does": "Odoo 19 Enterprise's Planning app schedules shifts and resource assignments — drag-drop slots on a calendar grid per employee, role, or project, with templates for recurring shifts and self-service slot claiming. It integrates with HR for employee availability, Projects for billable planning, and Sales for project-based work delivery.",
+      "business_benefit": "Ops managers assign people to work on a visual board instead of a spreadsheet — and the plan shows up to employees on mobile, not in a weekly email.",
+      "estimated_setup_hours": "3-6 hours",
+      "connects_to": ["hr", "projects", "sales", "timesheets", "field_service"],
+      "activating_questions": ["PL-01"],
+      "personalisation_rules": [
+        {
+          "question": "PL-01",
+          "answer": "Yes",
+          "adds_context": "You schedule shifts or resources in advance — plan the role catalogue, working hours per employee, and the publish cadence (weekly, fortnightly) before rolling out."
+        },
+        {
+          "question": "OP-05",
+          "answer": "Yes",
+          "adds_context": "Field Service is active — Planning can assign technicians to customer visits and Field Service tasks in one view."
+        },
+        {
+          "question": "RM-02",
+          "answer": "Yes",
+          "adds_context": "Time-based billing is active — plan against project analytic accounts so billable planning and actuals reconcile."
+        }
+      ],
+      "setup_checklist": [
+        "Ensure HR is configured and every employee has a working calendar and department",
+        "Go to Planning > Configuration > Roles and create the planning roles (barista, technician, nurse, consultant)",
+        "Go to Planning > Shift Templates and define recurring shift patterns (morning, afternoon, weekend)",
+        "Go to Planning > Schedule and build the first week's plan in draft — drag shifts onto employees or roles",
+        "Publish the plan to employees via the Publish button — they receive email/mobile notification",
+        "Test the open-shift self-service flow: create an unassigned shift and let employees claim it"
+      ],
+      "first_action": "Go to Planning > Configuration > Roles and define the role catalogue before anyone drags a shift — roles drive availability, cost, and reporting.",
+      "common_mistakes": [
+        "Scheduling without setting employee working hours — the system accepts impossible schedules and you catch them on the day",
+        "Publishing draft plans too soon — employees act on shifts that change, trust drops",
+        "Not linking Planning to Timesheets when time is billable — schedule says one thing, timesheet says another"
+      ],
+      "odoo_menu_path": "Planning > Schedule"
+    },
+    "recruitment": {
+      "label": "Recruitment",
+      "icon": "user-plus",
+      "what_it_does": "Odoo 19's Recruitment app manages job positions, candidate pipelines (kanban stages), interview scheduling, and the offer workflow. Candidates can self-apply via the Website careers page, through the jobs@ email alias (CV becomes the attachment), or through API integrations with job boards. On hire, a candidate converts to an Employee record.",
+      "business_benefit": "Replaces the applicant-tracking spreadsheet — every application, interview, and decision lives on one candidate record with a timeline and a chatter trail.",
+      "estimated_setup_hours": "3-6 hours",
+      "connects_to": ["hr", "website_ecommerce", "appraisals", "referrals", "incoming-mail"],
+      "activating_questions": ["RC-01"],
+      "personalisation_rules": [
+        {
+          "question": "RC-01",
+          "answer": "Yes",
+          "adds_context": "You manage job vacancies — plan the pipeline stages (New, First interview, Second interview, Offer, Hired), the job board publishing strategy, and the jobs@ alias routing before posting the first role."
+        },
+        {
+          "question": "RF-01",
+          "answer": "Yes",
+          "adds_context": "Employee referrals are in scope — link the Referrals app so referral submissions arrive as candidates with the referrer recorded on the record."
+        },
+        {
+          "question": "IM-02",
+          "answer": "jobs@  Recruitment applications",
+          "adds_context": "The jobs@ alias routes to Recruitment — CVs sent to jobs@ automatically become candidate records with the attachment."
+        }
+      ],
+      "setup_checklist": [
+        "Go to Recruitment > Configuration > Stages and define the pipeline (New, Qualified, First Interview, Offer, Hired, Rejected)",
+        "Go to Recruitment > Configuration > Job Positions and create each open role — publish only the ones you're actively hiring for",
+        "Go to Recruitment > Configuration > Settings and enable the Website integration if you want a public careers page",
+        "Configure the jobs@ alias under Settings > Technical > Email > Aliases to route to the Recruitment job position",
+        "Set up interview templates per stage using Recruitment > Configuration > Interview Forms",
+        "Publish one role end-to-end (website, alias, LinkedIn) and run one candidate through before posting the rest"
+      ],
+      "first_action": "Go to Recruitment > Configuration > Stages and pin down a short, opinionated pipeline — ten stages no-one uses is worse than five everyone does.",
+      "common_mistakes": [
+        "Publishing roles without configuring the jobs@ alias — candidate emails arrive somewhere else and get lost",
+        "Letting stages multiply until the kanban is unreadable — recruiters revert to spreadsheets",
+        "Not converting hired candidates to Employees before payroll cut-off — new hires are missing from the payroll"
+      ],
+      "odoo_menu_path": "Recruitment > Job Positions"
+    },
+    "referrals": {
+      "label": "Referrals",
+      "icon": "share-2",
+      "what_it_does": "Odoo 19 Enterprise's Referrals app is a gamified employee-referral programme — employees share open roles through unique referral links, track their submissions through the recruitment pipeline, and earn points or rewards when referrals are hired. It sits on top of Recruitment.",
+      "business_benefit": "Turns the workforce into a warm sourcing channel with clear tracking and a governed reward payout — instead of the informal 'tell a friend' that never gets rewarded.",
+      "estimated_setup_hours": "1-3 hours",
+      "connects_to": ["recruitment", "hr"],
+      "activating_questions": ["RF-01"],
+      "personalisation_rules": [
+        {
+          "question": "RF-01",
+          "answer": "Yes",
+          "adds_context": "You run a referral programme — decide the reward structure (cash, points, gifts), the trigger stage (hired, offer accepted, probation complete), and the referral lifetime before publishing."
+        },
+        {
+          "question": "RC-01",
+          "answer": "Yes",
+          "adds_context": "Recruitment is in scope — Referrals hooks into the recruitment pipeline so referred candidates are tagged and the referrer is credited on stage progression."
+        }
+      ],
+      "setup_checklist": [
+        "Confirm Recruitment is configured with stages and at least one open job position",
+        "Go to Referrals > Configuration > Rewards and create the reward catalogue (cash amount, physical gift, vouchers)",
+        "Go to Referrals > Configuration > Points and set the points earned per action (link share, submission, hire)",
+        "Go to Referrals > Configuration > Stages to align referral-reward triggers with recruitment stages (e.g. reward on Hired)",
+        "Publish the programme internally — explain the rules, rewards, and how to share job links",
+        "Monitor Referrals > Dashboard weekly to confirm credit is being awarded to referrers"
+      ],
+      "first_action": "Decide and document the reward trigger stage (Hired vs Offer Accepted vs Probation Complete) — changing this later retroactively confuses payouts.",
+      "common_mistakes": [
+        "Paying reward on offer acceptance then seeing the hire fall through probation — recover is awkward",
+        "Letting referral rewards clash with agency commission policies — double-pay or reputation damage",
+        "Not publicising the programme — employees share roles via WhatsApp and the referral link never gets used"
+      ],
+      "odoo_menu_path": "Referrals > Refer Friends"
+    },
+    "rental": {
+      "label": "Rental",
+      "icon": "key",
+      "what_it_does": "Odoo 19's Rental app handles rental orders for physical assets — rental products, rate schedules (per hour, day, week, month), pickup and return operations that move stock in and out of the rental location, late-return fees, and availability reporting. It sits on top of Sales and Inventory.",
+      "business_benefit": "Tracks every rented asset through its cycle — reserved, out, returned, damaged, returned-late — with pricing and availability that Sales can quote against in real time.",
+      "estimated_setup_hours": "4-8 hours",
+      "connects_to": ["sales", "inventory", "accounting"],
+      "activating_questions": ["RM-01"],
+      "personalisation_rules": [
+        {
+          "question": "RM-01",
+          "answer": "Rental of assets or equipment",
+          "adds_context": "RM-01 includes Rental — plan rentable products (stockable with rental enabled), rental pricing schedules, pickup/return warehouse operations, and late-fee rules."
+        },
+        {
+          "question": "OP-01",
+          "answer": "Yes",
+          "adds_context": "Inventory is in scope — rented assets track through a dedicated rental location so on-hand reporting stays meaningful (stock-on-hand ≠ stock-out-on-rental)."
+        },
+        {
+          "question": "PI-04",
+          "answer": "Serial number tracking (individual unit-level)",
+          "adds_context": "Serial tracking is active — rental history is per-unit, enabling asset utilisation and service-on-return workflows."
+        }
+      ],
+      "setup_checklist": [
+        "Go to Rental > Configuration > Settings and enable Rental and configure the late-fee policy",
+        "Go to Rental > Configuration > Rental Pricing and define rate schedules per rentable product (hour/day/week/month with quantity tiers)",
+        "Mark rentable products: Inventory > Products, tick Can be Rented, and set the dedicated rental location if different from standard stock",
+        "Go to Rental > Configuration > Warehouse and confirm the rental location and the pickup/return operations are correct",
+        "Create a test rental order end-to-end: reserve, schedule pickup, record return, invoice",
+        "Add damage-charge products so return inspections can post additional charges on the order"
+      ],
+      "first_action": "Decide whether rented items are serial-tracked or lot-tracked before loading the catalogue — changing tracking after stock has moved is painful.",
+      "common_mistakes": [
+        "Using normal stock locations for rented assets — on-hand reporting becomes unusable",
+        "Not setting late-fee rules — overdue returns carry no financial consequence and customers don't return",
+        "Treating rental like a standard sale — availability reservation and return tracking are the whole point; they require the rental flows, not sale orders"
+      ],
+      "odoo_menu_path": "Rental > Rental Orders"
+    },
+    "repairs": {
+      "label": "Repairs",
+      "icon": "wrench",
+      "what_it_does": "Odoo 19's Repairs app runs repair orders for customer-returned or internal-use products — intake, diagnosis, parts consumption from inventory, labour charges, and optional invoicing. A repair order can consume components, produce replaced parts, and generate a customer invoice or a warranty claim.",
+      "business_benefit": "Replaces the repair-workshop whiteboard with a tracked order per repair, with parts, labour, and invoicing on the same customer record used by Sales and Accounting.",
+      "estimated_setup_hours": "3-6 hours",
+      "connects_to": ["inventory", "sales", "field_service", "accounting", "maintenance"],
+      "activating_questions": ["OP-01", "RM-01", "OP-05"],
+      "personalisation_rules": [
+        {
+          "question": "RM-01",
+          "answer": "One-time service delivery",
+          "adds_context": "Service delivery is in your revenue model — Repairs often carries the service side of a product business (warranty repairs, post-sale service)."
+        },
+        {
+          "question": "OP-05",
+          "answer": "Yes",
+          "adds_context": "Field service dispatches to customer sites — repairs performed on-site typically become Field Service tasks rather than workshop repairs; decide which flow owns which job."
+        },
+        {
+          "question": "PI-04",
+          "answer": "Serial number tracking (individual unit-level)",
+          "adds_context": "Serial tracking enables full repair history per unit — the customer sees every repair on the same asset over its lifetime."
+        }
+      ],
+      "setup_checklist": [
+        "Confirm Inventory is configured with products that can be repaired and spare-parts/components stocked",
+        "Go to Repairs > Configuration > Settings and set the default repair location and warranty behaviour",
+        "Decide the repair invoicing policy per repair type (after repair, before repair, no invoice for warranty work)",
+        "Go to Repairs > Repair Orders and create a pilot repair: intake product, list components to replace, set labour, quote, approve, repair, invoice",
+        "Link Repairs to Field Service if on-site repairs are in scope — decide which flow handles which job",
+        "Set up repair reporting views so workshop managers see the backlog and aged orders"
+      ],
+      "first_action": "Walk one pilot repair through the full cycle (intake → quote → approve → consume parts → labour → invoice) before training the whole workshop.",
+      "common_mistakes": [
+        "Mixing Repairs and Field Service ownership — the same job enters both flows and numbers don't reconcile",
+        "Not consuming components through the repair order — inventory on-hand drifts from reality",
+        "Quoting without approval — parts get ordered for jobs the customer never agreed to"
+      ],
+      "odoo_menu_path": "Repairs > Repair Orders"
+    },
+    "sms-marketing": {
+      "label": "SMS Marketing",
+      "icon": "message-square-text",
+      "what_it_does": "Odoo 19's SMS Marketing app sends bulk SMS campaigns to segmented contact lists — with opt-in/opt-out handling, personalised merge fields, and click tracking via shortened URLs. Sending uses Odoo's IAP (In-App Purchase) SMS credits or a connected SMS provider.",
+      "business_benefit": "Reaches customers on the channel they actually read, within the same contact database used by CRM and Email Marketing — so opt-outs and consent live in one place.",
+      "estimated_setup_hours": "2-3 hours",
+      "connects_to": ["crm", "sales", "email-marketing"],
+      "activating_questions": ["SM-01"],
+      "personalisation_rules": [
+        {
+          "question": "SM-01",
+          "answer": "Yes",
+          "adds_context": "You send SMS to customers — confirm opt-in consent source, the sender ID or from-number, and that SMS credits are topped up before the first send."
+        },
+        {
+          "question": "EM-01",
+          "answer": "Yes",
+          "adds_context": "Email marketing is also active — coordinate cadence so customers don't get both at once and decide which channel each campaign uses."
+        }
+      ],
+      "setup_checklist": [
+        "Go to Settings > Odoo IAP and confirm SMS credits are available — or configure a custom SMS provider",
+        "Go to SMS Marketing > Configuration > Settings and confirm the sender (short code, alphanumeric sender, or long number per country rules)",
+        "Go to SMS Marketing > Configuration > Mailing Lists and create a list of opted-in contacts (consent captured at the source — no buying lists)",
+        "Test-send to an internal seed list before any real campaign",
+        "Go to SMS Marketing > Mailings to build the first campaign with merge fields, shortlink tracking, and schedule",
+        "Review opt-out rate after the first campaign — high opt-out means bad targeting, not bad content"
+      ],
+      "first_action": "Confirm every number in your contact list has opt-in consent recorded on the Contact — regulators (GDPR, POPIA, TCPA) enforce this, and the opt-out rate makes it obvious if you skip it.",
+      "common_mistakes": [
+        "Sending without explicit opt-in — regulatory fines plus domain/sender-ID reputation damage",
+        "Ignoring country sender rules — some countries block non-registered alphanumeric senders outright",
+        "Not testing with an internal seed — rendering on SMS is unforgiving of broken merge fields"
+      ],
+      "odoo_menu_path": "SMS Marketing > Mailings"
+    },
+    "spreadsheet": {
+      "label": "Spreadsheet",
+      "icon": "table",
+      "what_it_does": "Odoo 19 Enterprise's Spreadsheet app is an in-product spreadsheet (Excel-like) with live connectors to Odoo data — pivot tables, charts, and formulas can reference Accounting, Sales, CRM, and any other model. Spreadsheets live in Documents (or the Spreadsheets app) and can be shared, versioned, and embedded into Dashboards.",
+      "business_benefit": "Gets finance and analysts off external Excel workbooks that go stale — spreadsheets refresh from Odoo directly, so KPIs never lie.",
+      "estimated_setup_hours": "2-4 hours",
+      "connects_to": ["accounting", "accounting-reports", "documents", "sales", "crm"],
+      "activating_questions": ["SP-01"],
+      "personalisation_rules": [
+        {
+          "question": "SP-01",
+          "answer": "Yes",
+          "adds_context": "Teams use live-data spreadsheets — plan the set of core templates (management pack, sales KPI, project P&L) and appoint template owners."
+        },
+        {
+          "question": "AR-01",
+          "answer": "Yes",
+          "adds_context": "Custom accounting reports are needed — Spreadsheet templates are the lightweight way to deliver management packs without Studio customisation of account reports."
+        }
+      ],
+      "setup_checklist": [
+        "Open Documents > Spreadsheets (or the Spreadsheets app in the main menu)",
+        "Create the first core template by exporting an existing pivot from Accounting or Sales: on any list/pivot view use Favorites > Insert in Spreadsheet",
+        "Publish the template into a shared Workspace so the finance/analyst team can all edit it",
+        "Add formulas referencing Odoo data via the ODOO.FORMULA and ODOO.PIVOT functions",
+        "Schedule a refresh and share cadence — weekly management pack, monthly close pack — so everyone sees the same numbers at the same time",
+        "Retire the external Excel copy once the Spreadsheet version is trusted — running both is the fastest way to lose trust in both"
+      ],
+      "first_action": "From an Accounting or Sales pivot view click Favorites > Insert in Spreadsheet and build one live-data spreadsheet end-to-end before promising a set of templates.",
+      "common_mistakes": [
+        "Keeping the external Excel copy alongside — numbers diverge, no-one trusts either",
+        "Overusing formulas when a native pivot does the job — performance degrades",
+        "Not setting workspace access rules — sensitive finance spreadsheets become viewable company-wide"
+      ],
+      "odoo_menu_path": "Documents > Spreadsheets"
+    },
+    "studio": {
+      "label": "Studio",
+      "icon": "edit-3",
+      "what_it_does": "Odoo 19 Enterprise's Studio is the no-code customisation layer — drag-drop changes to views (form, list, kanban, pivot), custom fields, automated actions, custom reports, and simple custom apps. Changes are captured as a proper Odoo module in the background, versioned and removable.",
+      "business_benefit": "Lets business users make small UI and data-model changes without a developer — so configuration stays in the product instead of sitting on a dev backlog.",
+      "estimated_setup_hours": "Variable (governance setup: 1-2 hours)",
+      "connects_to": [],
+      "activating_questions": [],
+      "personalisation_rules": [
+        {
+          "question": "TA-01",
+          "answer": "System Administrator (separate from all operational roles)",
+          "adds_context": "System Administrator role is separated — only grant Studio access to the Admin role, not to operational managers."
+        },
+        {
+          "question": "BM-05",
+          "answer": "> 50",
+          "adds_context": "Larger organisation — put a change-control policy around Studio (who can add custom fields, how changes are reviewed, how they're tested) or the data model becomes unmanageable within months."
+        }
+      ],
+      "setup_checklist": [
+        "Confirm this is an Enterprise instance — Studio is Enterprise-only",
+        "Restrict Studio access: go to Settings > Users & Companies > Users and grant 'Administration: Settings' only to named users who should be able to customise",
+        "Publish a written policy: what Studio is used for, what requires developer involvement, how changes are reviewed",
+        "Enable Studio from the top-right toggle on any record — the Studio bar appears only for authorised users",
+        "For every change: name the change, document the why, test in a staging environment, then apply in production",
+        "Export the Studio module as a backup (Studio > Customizations > Export) before major version upgrades"
+      ],
+      "first_action": "Restrict Studio access to named admins only and publish a one-page change-control rule before anyone opens Studio — unrestricted Studio is the #1 cause of unmaintainable Odoo instances.",
+      "common_mistakes": [
+        "Giving Studio access to every operational manager — the data model grows 40 custom fields no-one remembers the purpose of",
+        "Customising without a staging environment — production breaks from one bad view change",
+        "Using Studio for logic that really needs a developer — forcing complex flows into Automated Actions leads to brittle code"
+      ],
+      "odoo_menu_path": "Settings > Technical > Studio Customizations"
+    },
+    "subscriptions": {
+      "label": "Subscriptions",
+      "icon": "repeat",
+      "what_it_does": "Odoo 19's Subscriptions app runs recurring billing — subscription templates with recurrence (weekly, monthly, annual), automatic renewal invoicing, upsell/downgrade, trial periods, dunning for failed payments, and churn reporting. Subscriptions create recurring Sales orders and post invoices to Accounting on schedule.",
+      "business_benefit": "Runs the full recurring-revenue cycle — renewal, dunning, upgrade, churn — against the same Sales and Accounting records used by one-time sales.",
+      "estimated_setup_hours": "4-8 hours",
+      "connects_to": ["sales", "accounting", "crm"],
+      "activating_questions": ["RM-01"],
+      "personalisation_rules": [
+        {
+          "question": "RM-01",
+          "answer": "Recurring subscriptions or contracts",
+          "adds_context": "RM-01 includes Recurring subscriptions — plan subscription templates per plan (monthly/annual/tier), the renewal policy (auto vs confirmation), and the dunning steps for failed payments."
+        },
+        {
+          "question": "FC-06",
+          "answer": "Yes",
+          "adds_context": "Payment terms are in scope — map subscription plans to the right payment terms and confirm the payment provider supports stored-token charging for auto-renewals."
+        }
+      ],
+      "setup_checklist": [
+        "Confirm Sales and Accounting are configured and at least one payment provider supports tokenised recurring charging (Stripe, Adyen, Authorize.Net)",
+        "Go to Subscriptions > Configuration > Subscription Templates and create each plan — recurrence, billing, termination policy, upsell rules",
+        "Go to Subscriptions > Configuration > Settings to confirm the renewal mode, send-reminders cadence, and the default template",
+        "Design the dunning process: email reminders at N, N+3, N+7 days past due before auto-cancel or manual intervention",
+        "Run a pilot subscription end-to-end: create, renew, upsell, close — confirm accounting postings are correct on each",
+        "Set up churn and MRR reporting in Subscriptions > Reporting and share with leadership"
+      ],
+      "first_action": "Pick one plan (not all of them) and run a subscription through one full renewal cycle before publishing the catalogue — renewal bugs are subtle and show up only on the second bill.",
+      "common_mistakes": [
+        "Publishing the whole plan catalogue before validating one renewal — customers get the wrong charges on their second invoice",
+        "No dunning policy — failed payments silently churn the customer",
+        "Not reconciling subscription revenue to deferred revenue — revenue recognition gets messy across period closes"
+      ],
+      "odoo_menu_path": "Subscriptions > Quotations"
+    },
+    "timesheets": {
+      "label": "Timesheets",
+      "icon": "clock",
+      "what_it_does": "Odoo 19's Timesheets app captures hours worked by employees against projects, tasks, or analytic accounts — entered via desktop, mobile, or timer. Timesheet hours feed billable-hour invoicing in Sales, project cost analytics, payroll work entries when Payroll is active, and manager approvals when required.",
+      "business_benefit": "Puts a real number on how time is spent — billable vs internal, per project, per employee — so quotes, invoices, and capacity decisions are based on data, not guesses.",
+      "estimated_setup_hours": "2-4 hours",
+      "connects_to": ["projects", "sales", "hr", "payroll", "accounting", "planning"],
+      "activating_questions": ["TS-01"],
+      "personalisation_rules": [
+        {
+          "question": "TS-01",
+          "answer": "Yes",
+          "adds_context": "Employees log time against projects — confirm the submission cadence (daily/weekly), approval chain (manager only or manager + PM), and whether time feeds invoicing (billable) or cost only."
+        },
+        {
+          "question": "RM-02",
+          "answer": "Yes",
+          "adds_context": "Billing is time-based — timesheet hours must feed sales invoicing. Project billing mode on each project must be set to Based on Timesheets."
+        },
+        {
+          "question": "PY-01",
+          "answer": "Yes",
+          "adds_context": "Payroll runs in Odoo — confirm how timesheet hours map to Work Entries so pay rules pick up the right hours per period."
+        }
+      ],
+      "setup_checklist": [
+        "Confirm Projects is configured and every project has an analytic account",
+        "Go to Timesheets > Configuration > Settings and set the policy (submission cadence, approval chain, invoicing link)",
+        "For billable projects: go to Project > Settings and set the Billing Method to Based on Timesheets with the right hourly rate product",
+        "Train employees to use the timer (Timesheets > My Timesheets > Timer) for the first two weeks — it's the highest-compliance entry method",
+        "Set up manager reminders under Timesheets > Configuration > Settings > Reminders so late submissions escalate",
+        "Review Timesheets > Reports after the first full period and tune the policy (minimums, rounding)"
+      ],
+      "first_action": "Go to Timesheets > Configuration > Settings and set a specific submission cadence — without a deadline, timesheet compliance is under 50% within a month.",
+      "common_mistakes": [
+        "Leaving submission cadence open-ended — late entries accumulate and managers give up reviewing",
+        "Not mapping billable projects to timesheets — invoicing manually from timesheets defeats the point",
+        "Using timesheets for attendance tracking — they answer different questions; attendance belongs to the Attendance app"
+      ],
+      "odoo_menu_path": "Timesheets > My Timesheets"
+    },
+    "voip": {
+      "label": "VoIP",
+      "icon": "phone",
+      "what_it_does": "Odoo 19 Enterprise's VoIP integration lets users place and receive calls from inside Odoo using a SIP provider (Axivox is the native integration; OnSIP and other SIP providers also work). Calls log automatically to the contact record; click-to-call appears on every phone field.",
+      "business_benefit": "Every outbound sales call and inbound customer call gets logged against the customer record, with notes and recordings — instead of disappearing into a separate softphone.",
+      "estimated_setup_hours": "2-4 hours",
+      "connects_to": ["crm", "helpdesk", "sales"],
+      "activating_questions": [],
+      "personalisation_rules": [
+        {
+          "question": "SC-01",
+          "answer": "Yes",
+          "adds_context": "CRM is in scope — VoIP click-to-call from leads and opportunities cuts dial-time per call and guarantees the call is logged on the lead."
+        },
+        {
+          "question": "HD-01",
+          "answer": "Yes",
+          "adds_context": "Helpdesk is active — agents call customers from tickets and the call log attaches to the ticket automatically."
+        }
+      ],
+      "setup_checklist": [
+        "Confirm this is an Enterprise instance — VoIP is Enterprise-only",
+        "Pick and provision a SIP provider (Axivox is the native integration; OnSIP is the documented alternative; other SIP providers require generic config)",
+        "Go to Settings > General Settings > Integrations > VoIP and paste the provider's SIP settings (WebSocket server, domain, credentials mode)",
+        "On each user's profile, set their SIP Login and Password under Preferences > VoIP Configuration",
+        "Test an outbound call from a CRM lead's phone field and confirm the call log appears on the lead chatter",
+        "Configure call recording policy (per regulatory rules in your country) — recordings are a legal commitment, not a casual setting"
+      ],
+      "first_action": "Test one outbound call end-to-end before rolling out — VoIP integration problems (firewall/NAT, WebSocket blocks, codec mismatch) are hard to diagnose and show up on every user at once.",
+      "common_mistakes": [
+        "Configuring at company level but not on individual users — users can't place calls even though VoIP appears configured",
+        "Recording calls without customer consent — regulatory exposure in most jurisdictions",
+        "Assuming cloud-hosted Odoo bypasses network issues — WebSocket/UDP/SRTP still depend on the user's local network"
+      ],
+      "odoo_menu_path": "Settings > General Settings > Integrations > VoIP"
+    },
+    "whatsapp": {
+      "label": "WhatsApp",
+      "icon": "message-circle",
+      "what_it_does": "Odoo 19 Enterprise's WhatsApp integration connects to Meta's WhatsApp Business Cloud API — inbound customer messages arrive as Discuss threads or Helpdesk tickets, outbound messages use approved message templates (required by Meta for out-of-session messaging), and media (PDFs of invoices, quotes) can be attached.",
+      "business_benefit": "Customers get invoices, quotes, order updates, and support on the channel they actually read — instead of an email inbox they may not even have.",
+      "estimated_setup_hours": "4-8 hours (Meta approval lead time extra)",
+      "connects_to": ["crm", "helpdesk", "sales", "discuss", "sms-marketing"],
+      "activating_questions": ["WA-01"],
+      "personalisation_rules": [
+        {
+          "question": "WA-01",
+          "answer": "Yes",
+          "adds_context": "WhatsApp is in scope — start the Meta Business Manager verification now (it takes days), and plan the template-approval cycle for every outbound message pattern you'll use."
+        },
+        {
+          "question": "HD-01",
+          "answer": "Yes",
+          "adds_context": "Helpdesk is active — inbound WhatsApp can route into tickets so support replies go back through WhatsApp on the same thread."
+        }
+      ],
+      "setup_checklist": [
+        "Confirm this is an Enterprise instance — the WhatsApp integration is Enterprise-only",
+        "In Meta Business Manager: verify the business, add the WhatsApp Business Account, add a phone number, and generate an access token with whatsapp_business_messaging permission",
+        "Go to Settings > General Settings > Integrations > WhatsApp and paste the Phone Number ID, Business Account ID, Access Token, and App Secret",
+        "Configure the Meta webhook URL (Odoo shows the URL and verify token) so inbound messages arrive in Odoo",
+        "Go to WhatsApp > Templates and submit template messages to Meta for approval — approvals take hours to days",
+        "Test inbound: send a WhatsApp message to the business number and confirm it arrives in Discuss/Helpdesk",
+        "Test outbound: send an approved template to a seed contact and confirm delivery"
+      ],
+      "first_action": "Start Meta Business verification and template approval on day one — they are the long-lead-time items, not the Odoo config.",
+      "common_mistakes": [
+        "Assuming you can send any message to any customer — Meta requires approved templates for out-of-session messages, and freeform is only allowed within 24h of the customer's message",
+        "Not setting the webhook verify token — inbound messages never arrive and the issue looks like an Odoo bug",
+        "Using a personal WhatsApp number — WhatsApp Business API requires a dedicated, Meta-verified number"
+      ],
+      "odoo_menu_path": "Settings > General Settings > Integrations > WhatsApp"
+    }
+  }
+}

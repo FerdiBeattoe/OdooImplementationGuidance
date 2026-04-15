@@ -23,6 +23,7 @@ import { renderLiveChatWizard } from "./live-chat-wizard.js";
 import { renderLoyaltyWizard } from "./loyalty-wizard.js";
 import { renderLunchWizard } from "./lunch-wizard.js";
 import { renderMasterDataWizard } from "./master-data-wizard.js";
+import { renderMaintenanceWizard } from "./maintenance-wizard.js";
 import { renderManufacturingWizard } from "./manufacturing-wizard.js";
 import { renderPlmWizard } from "./plm-wizard.js";
 import { renderPosWizard } from "./pos-wizard.js";
@@ -60,6 +61,7 @@ const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "live-chat-setup": renderLiveChatWizard,
   "loyalty-setup": renderLoyaltyWizard,
   "lunch-setup": renderLunchWizard,
+  "maintenance-setup": renderMaintenanceWizard,
   "master-data-setup": renderMasterDataWizard,
   "manufacturing-setup": renderManufacturingWizard,
   "pos-setup": renderPosWizard,

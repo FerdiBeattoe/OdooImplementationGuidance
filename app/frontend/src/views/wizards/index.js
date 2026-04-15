@@ -26,6 +26,7 @@ import { renderMasterDataWizard } from "./master-data-wizard.js";
 import { renderMaintenanceWizard } from "./maintenance-wizard.js";
 import { renderManufacturingWizard } from "./manufacturing-wizard.js";
 import { renderOutgoingMailWizard } from "./outgoing-mail-wizard.js";
+import { renderPayrollWizard } from "./payroll-wizard.js";
 import { renderPlmWizard } from "./plm-wizard.js";
 import { renderPosWizard } from "./pos-wizard.js";
 import { renderProjectsWizard } from "./projects-wizard.js";
@@ -66,6 +67,7 @@ const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "master-data-setup": renderMasterDataWizard,
   "manufacturing-setup": renderManufacturingWizard,
   "outgoing-mail-setup": renderOutgoingMailWizard,
+  "payroll-setup": renderPayrollWizard,
   "pos-setup": renderPosWizard,
   "plm-setup": renderPlmWizard,
   "projects-setup": renderProjectsWizard,

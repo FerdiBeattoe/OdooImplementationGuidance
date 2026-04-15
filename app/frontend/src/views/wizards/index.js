@@ -45,6 +45,7 @@ import { renderStudioWizard } from "./studio-wizard.js";
 import { renderSubscriptionsWizard } from "./subscriptions-wizard.js";
 import { renderTimesheetsWizard } from "./timesheets-wizard.js";
 import { renderUsersRolesWizard } from "./users-roles-wizard.js";
+import { renderVoipWizard } from "./voip-wizard.js";
 import { renderWebsiteEcommerceWizard } from "./website-ecommerce-wizard.js";
 
 const GOVERNED_WIZARD_RENDERERS = Object.freeze({
@@ -95,6 +96,7 @@ const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "subscriptions-setup": renderSubscriptionsWizard,
   "timesheets-setup": renderTimesheetsWizard,
   "users-access": renderUsersRolesWizard,
+  "voip-setup": renderVoipWizard,
   "website-setup": renderWebsiteEcommerceWizard,
 });
 

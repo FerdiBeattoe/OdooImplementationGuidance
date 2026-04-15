@@ -1,290 +1,680 @@
+// ---------------------------------------------------------------------------
+// Implementation Dashboard — Odoo 19 Implementation Control Platform
+// ---------------------------------------------------------------------------
+//
+// Purpose:
+//   Landing dashboard for implementation progress. Reads real pipeline
+//   runtime state (checkpoint records, activated domains) from pipelineStore
+//   and renders KPIs, per-domain cards, and a go-live readiness indicator.
+//   No synthetic KPIs. No client-side completion inference.
+//
+// Hard rules:
+//   I1  Reads state from pipelineStore only — never fabricates runtime data.
+//   I2  runtime_state is never mutated or re-shaped after receipt.
+//   I3  Completion counts and percentages are computed from
+//       runtime_state checkpoint records only.
+//   I4  Domain labels derive from domain key — no hardcoded display strings.
+//   I5  Re-fetch is time-bounded and always routes through pipelineStore.
+//   I6  Configuration completion ≠ operational readiness — go-live indicator
+//       reflects actual checkpoint/domain state only.
+// ---------------------------------------------------------------------------
+
 import { el } from "../lib/dom.js";
 import { lucideIcon } from "../lib/icons.js";
-import {
-  getState,
-  getModuleCompletionStatus,
-  getGovernedRoadmapSteps,
-  getCompletedWizards
-} from "../state/app-store.js";
-import { getImplementationState } from "../state/implementationStore.js";
 import { pipelineStore } from "../state/pipeline-store.js";
+import { getState } from "../state/app-store.js";
+import {
+  getCheckpointRecords,
+  getActivatedDomainIds,
+  deriveCompletionPercentage,
+  deriveDomainStatus,
+  humanizeDomainId,
+} from "./pipeline-dashboard.js";
 
-const MODULES = [
-  { id: "users-access", name: "Users & Roles", icon: "users", wizardId: "users-access" },
-  { id: "master-data-setup", name: "Master Data", icon: "database", wizardId: "master-data-setup" },
-  { id: "crm-setup", name: "CRM", icon: "target", wizardId: "crm-setup" },
-  { id: "sales-setup", name: "Sales", icon: "tag", wizardId: "sales-setup" },
-  { id: "purchase-setup", name: "Purchase", icon: "shopping-cart", wizardId: "purchase-setup" },
-  { id: "accounting-setup", name: "Accounting", icon: "calculator", wizardId: "accounting-setup" },
-  { id: "manufacturing-setup", name: "Manufacturing", icon: "factory", wizardId: "manufacturing-setup" },
-  { id: "pos-setup", name: "Point of Sale", icon: "monitor", wizardId: "pos-setup" },
-  { id: "website-setup", name: "Website & eCommerce", icon: "globe", wizardId: "website-setup" },
-  { id: "projects-setup", name: "Projects", icon: "briefcase", wizardId: "projects-setup" },
-  { id: "quality-setup", name: "Quality", icon: "shield-check", wizardId: "quality-setup" },
-  { id: "inventory-setup", name: "Inventory", icon: "package", wizardId: "inventory-setup" },
-  { id: "hr-setup", name: "HR", icon: "user-check", wizardId: "hr-setup" },
-  { id: "plm-setup", name: "PLM", icon: "git-branch", wizardId: "plm-setup" },
-  { id: "documents-setup", name: "Documents", icon: "folder", wizardId: "documents-setup" },
-  { id: "sign-setup", name: "Sign", icon: "pen-tool", wizardId: "sign-setup" },
-  { id: "approvals-setup", name: "Approvals", icon: "check-circle", wizardId: "approvals-setup" },
-  { id: "subscriptions-setup", name: "Subscriptions", icon: "repeat", wizardId: "subscriptions-setup" },
-  { id: "field-service-setup", name: "Field Service", icon: "wrench", wizardId: "field-service-setup" }
-];
+// ---------------------------------------------------------------------------
+// Poll configuration
+// ---------------------------------------------------------------------------
 
-const NEXT_STEPS = [
-  { id: "users-access", name: "Users & Roles", icon: "users", time: "10 min", wizardId: "users-access" },
-  { id: "master-data-setup", name: "Master Data", icon: "database", time: "15 min", wizardId: "master-data-setup" },
-  { id: "crm-setup", name: "CRM", icon: "target", time: "15 min", wizardId: "crm-setup" }
-];
+const POLL_INTERVAL_MS = 60000;
+let _pollTimer = null;
 
-/**
- * Compute KPI values from governed state and implementationStore
- */
-function computeKpis() {
-  const moduleStatus = getModuleCompletionStatus();
-  const roadmapSteps = getGovernedRoadmapSteps();
-  const implState = getImplementationState();
-  const importedData = implState.importedData || {};
+// ---------------------------------------------------------------------------
+// Domain → lucide icon mapping (display only — no behavior derived from this)
+// ---------------------------------------------------------------------------
 
-  // Count completed roadmap steps
-  const allStepIds = [];
-  for (let i = 1; i <= 30; i++) allStepIds.push(`step-${i}`);
-  const completedSteps = allStepIds.filter(id => roadmapSteps[id] === "complete").length;
-  // Also count steps auto-derived from completed wizards (handled in roadmap-view)
-  const totalSteps = 30;
+const DOMAIN_TO_ICON = {
+  foundation:         "building",
+  users_roles:        "users",
+  master_data:        "database",
+  crm:                "target",
+  sales:              "tag",
+  purchase:           "shopping-cart",
+  inventory:          "package",
+  manufacturing:      "factory",
+  plm:                "git-branch",
+  accounting:         "calculator",
+  pos:                "monitor",
+  website_ecommerce:  "globe",
+  projects:           "briefcase",
+  hr:                 "user-check",
+  quality:            "shield-check",
+  maintenance:        "wrench",
+  repairs:            "hammer",
+  documents:          "folder",
+  sign:               "pen-tool",
+  approvals:          "check-circle",
+  field_service:      "wrench",
+  rental:             "calendar",
+  subscriptions:      "repeat",
+};
 
-  // Count imported data records
-  const totalImported = Object.values(importedData).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+// ---------------------------------------------------------------------------
+// Domain → wizard id mapping (used by "Configure" button routing)
+// ---------------------------------------------------------------------------
 
-  // Compute estimated time remaining (each incomplete step ~18min avg)
-  const remainingSteps = totalSteps - completedSteps;
-  const estMinutes = remainingSteps * 18;
-  const estHours = Math.round(estMinutes / 60);
-  const estTimeLabel = estMinutes < 60 ? `~${estMinutes}m` : `~${estHours}h`;
+const DOMAIN_TO_WIZARD = {
+  foundation:         "company-setup",
+  users_roles:        "users-access",
+  master_data:        "master-data-setup",
+  crm:                "crm-setup",
+  sales:              "sales-setup",
+  purchase:           "purchase-setup",
+  inventory:          "inventory-setup",
+  manufacturing:      "manufacturing-setup",
+  plm:                "plm-setup",
+  accounting:         "accounting-setup",
+  pos:                "pos-setup",
+  website_ecommerce:  "website-setup",
+  projects:           "projects-setup",
+  hr:                 "hr-setup",
+  quality:            "quality-setup",
+  maintenance:        "maintenance-setup",
+  repairs:            "repairs-setup",
+  documents:          "documents-setup",
+  sign:               "sign-setup",
+  approvals:          "approvals-setup",
+  field_service:      "field-service-setup",
+  rental:             "rental-setup",
+  subscriptions:      "subscriptions-setup",
+};
 
-  // Compute overall progress percentage
-  const wizardWeight = 0.6; // wizards are 60% of progress
-  const stepsWeight = 0.4;  // roadmap steps are 40%
-  const wizardPct = moduleStatus.total > 0 ? moduleStatus.completed / moduleStatus.total : 0;
-  const stepsPct = totalSteps > 0 ? completedSteps / totalSteps : 0;
-  const overallPct = Math.round((wizardPct * wizardWeight + stepsPct * stepsWeight) * 100);
+function iconForDomain(domainId) {
+  return DOMAIN_TO_ICON[domainId] || "layers";
+}
 
-  return {
-    modulesConfigured: `${moduleStatus.completed}/${moduleStatus.total}`,
-    dataImported: totalImported > 0 ? `${totalImported} records` : "0 records",
-    stepsComplete: `${completedSteps}/${totalSteps}`,
-    estTimeRemaining: estTimeLabel,
-    overallProgress: overallPct
+function wizardForDomain(domainId) {
+  return DOMAIN_TO_WIZARD[domainId] || null;
+}
+
+// ---------------------------------------------------------------------------
+// resolveProjectId
+//
+// Prefers the project_id already present on runtime_state. Falls back to
+// the active project from the app-store. Returns null if neither is set —
+// in which case fetchPipelineState is a no-op.
+// ---------------------------------------------------------------------------
+
+function resolveProjectId() {
+  const ps = pipelineStore.getState();
+  const runtimeProjectId = ps?.runtime_state?.project_identity?.project_id;
+  if (typeof runtimeProjectId === "string" && runtimeProjectId.trim()) {
+    return runtimeProjectId.trim();
+  }
+  const s = getState();
+  const activeProjectId = s?.activeProject?.projectIdentity?.projectId;
+  if (typeof activeProjectId === "string" && activeProjectId.trim()) {
+    return activeProjectId.trim();
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// fetchPipelineState
+//
+// Routes through pipelineStore, which calls POST /api/pipeline/state/load
+// via the pipeline adapter. Re-uses the existing governed transport — no
+// new backend surface introduced. Lifecycle (loading/success/failure/
+// not_found) is tracked on the store and drives this view's render states.
+// ---------------------------------------------------------------------------
+
+export async function fetchPipelineState() {
+  const projectId = resolveProjectId();
+  if (!projectId) return;
+  try {
+    await pipelineStore.loadPipelineState(projectId);
+  } catch {
+    // Store records failure — no throw from UI layer.
+  }
+}
+
+function ensurePolling() {
+  if (_pollTimer != null) return;
+  if (typeof setInterval !== "function") return;
+  _pollTimer = setInterval(() => {
+    if (typeof document !== "undefined" && document.hidden) return;
+    void fetchPipelineState();
+  }, POLL_INTERVAL_MS);
+}
+
+// ---------------------------------------------------------------------------
+// Shared styles
+// ---------------------------------------------------------------------------
+
+const CARD_STYLE =
+  "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px;";
+
+const AMBER_BUTTON_STYLE =
+  "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); " +
+  "color: #92400e; border-radius: 6px; font-weight: 600; font-size: 13px; " +
+  "padding: 8px 14px; cursor: pointer; font-family: Inter, sans-serif;";
+
+const SECONDARY_BUTTON_STYLE =
+  "background: rgba(12,26,48,0.06); border: 1px solid rgba(12,26,48,0.15); " +
+  "color: #0c1a30; border-radius: 6px; font-weight: 600; font-size: 13px; " +
+  "padding: 8px 14px; cursor: pointer; font-family: Inter, sans-serif;";
+
+// ---------------------------------------------------------------------------
+// renderImplementationDashboardView — entry point
+// ---------------------------------------------------------------------------
+
+export function renderImplementationDashboardView({ onNavigate } = {}) {
+  const ps = pipelineStore.getState();
+
+  // On mount, trigger a fetch when the store hasn't been hydrated yet.
+  if (ps.status === "idle" && !ps.runtime_state) {
+    void fetchPipelineState();
+  }
+  ensurePolling();
+
+  // ── Loading state (covers running / loading / resuming) ──────────────────
+  if (ps.status === "loading" || ps.status === "running" || ps.status === "resuming") {
+    return renderLoadingState();
+  }
+
+  // ── Error state (explicit failure, not a benign not_found) ───────────────
+  if (ps.status === "failure" && ps.error && !ps.not_found) {
+    return renderErrorState(ps.error);
+  }
+
+  const runtimeState      = ps.runtime_state;
+  const checkpointRecords = getCheckpointRecords(runtimeState);
+  const activatedDomains  = getActivatedDomainIds(runtimeState);
+
+  // ── Empty state ───────────────────────────────────────────────────────────
+  if (!runtimeState || (checkpointRecords.length === 0 && activatedDomains.length === 0)) {
+    return renderEmptyState(onNavigate);
+  }
+
+  // ── KPIs (real, derived from runtime_state) ───────────────────────────────
+  const totalCheckpoints    = checkpointRecords.length;
+  const completeCheckpoints = checkpointRecords.filter((cp) => cp?.status === "Complete").length;
+  const failingCheckpoints  = checkpointRecords.filter((cp) => cp?.status === "Fail").length;
+  const remainingCheckpoints = Math.max(0, totalCheckpoints - completeCheckpoints);
+  const overallPct          = deriveCompletionPercentage(checkpointRecords);
+  const activeBlockers      = runtimeState?.blockers?.active_blockers ?? [];
+
+  // Group checkpoints by domain for per-domain cards
+  const byDomain = {};
+  for (const cp of checkpointRecords) {
+    const domainId = cp?.domain ?? cp?.domain_id ?? "unknown";
+    if (!byDomain[domainId]) byDomain[domainId] = [];
+    byDomain[domainId].push(cp);
+  }
+
+  const allDomainIds = new Set([...activatedDomains, ...Object.keys(byDomain)]);
+  const domainIds = Array.from(allDomainIds).filter((id) => id && id !== "unknown");
+
+  const domains = domainIds.map((id) => {
+    const cps = byDomain[id] || [];
+    const total = cps.length;
+    const complete = cps.filter((c) => c?.status === "Complete").length;
+    const status = deriveDomainStatus(cps, activeBlockers);
+    return { id, total, complete, status };
+  });
+
+  const domainsComplete = domains.filter((d) => d.status === "Complete").length;
+  const isGoLiveReady = domains.length > 0 && domainsComplete === domains.length && failingCheckpoints === 0;
+
+  return el(
+    "div",
+    {
+      style: "display: flex; flex-direction: column; gap: 24px; font-family: Inter, sans-serif;",
+      dataset: { testid: "implementation-dashboard" },
+    },
+    [
+      renderSummaryBar({
+        overallPct,
+        domainsComplete,
+        domainsTotal: domains.length,
+        remainingCheckpoints,
+        isGoLiveReady,
+      }),
+      renderProgressCard({
+        overallPct,
+        completeCheckpoints,
+        totalCheckpoints,
+      }),
+      renderDomainsGrid({ domains, onNavigate }),
+    ]
+  );
+}
+
+// ---------------------------------------------------------------------------
+// renderSummaryBar — top strip with the 4 headline KPIs
+// ---------------------------------------------------------------------------
+
+function renderSummaryBar({
+  overallPct,
+  domainsComplete,
+  domainsTotal,
+  remainingCheckpoints,
+  isGoLiveReady,
+}) {
+  const readinessLabel = isGoLiveReady ? "Go-Live Ready" : "Not Ready";
+  const readinessIcon  = isGoLiveReady ? "check-circle-2" : "clock";
+  const readinessColor = isGoLiveReady ? "#065f46" : "#92400e";
+  const readinessBg    = isGoLiveReady
+    ? "rgba(16,185,129,0.08)"
+    : "rgba(245,158,11,0.08)";
+  const readinessBorder = isGoLiveReady
+    ? "1px solid rgba(16,185,129,0.25)"
+    : "1px solid rgba(245,158,11,0.25)";
+
+  return el(
+    "div",
+    {
+      style: `${CARD_STYLE} padding: 20px 24px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;`,
+      dataset: { testid: "summary-bar" },
+    },
+    [
+      renderSummaryTile({
+        value: `${overallPct}%`,
+        label: "Overall Progress",
+        testid: "summary-overall-progress",
+        accent: "#f59e0b",
+      }),
+      renderSummaryTile({
+        value: `${domainsComplete} / ${domainsTotal}`,
+        label: "Domains Complete",
+        testid: "summary-domains-complete",
+        accent: "#0c1a30",
+      }),
+      renderSummaryTile({
+        value: String(remainingCheckpoints),
+        label: "Checkpoints Remaining",
+        testid: "summary-checkpoints-remaining",
+        accent: "#0c1a30",
+      }),
+      el(
+        "div",
+        {
+          style: `display: flex; flex-direction: column; gap: 6px; justify-content: center; align-items: flex-start; background: ${readinessBg}; border: ${readinessBorder}; border-radius: 8px; padding: 12px 16px;`,
+          dataset: { testid: "summary-go-live" },
+        },
+        [
+          el(
+            "div",
+            { style: `display: flex; align-items: center; gap: 8px; color: ${readinessColor};` },
+            [
+              lucideIcon(readinessIcon, 18),
+              el(
+                "span",
+                {
+                  style: `font-size: 14px; font-weight: 700; color: ${readinessColor};`,
+                  dataset: { testid: "summary-go-live-label" },
+                },
+                readinessLabel
+              ),
+            ]
+          ),
+          el(
+            "span",
+            {
+              style: "font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em;",
+            },
+            "Go-Live Readiness"
+          ),
+        ]
+      ),
+    ]
+  );
+}
+
+function renderSummaryTile({ value, label, testid, accent }) {
+  return el(
+    "div",
+    {
+      style: "display: flex; flex-direction: column; gap: 4px; justify-content: center;",
+      dataset: { testid },
+    },
+    [
+      el(
+        "span",
+        {
+          style: `font-size: 28px; font-weight: 700; color: ${accent}; line-height: 1; font-family: Inter, sans-serif;`,
+        },
+        value
+      ),
+      el(
+        "span",
+        {
+          style: "font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em;",
+        },
+        label
+      ),
+    ]
+  );
+}
+
+// ---------------------------------------------------------------------------
+// renderProgressCard — overall implementation progress bar
+// ---------------------------------------------------------------------------
+
+function renderProgressCard({ overallPct, completeCheckpoints, totalCheckpoints }) {
+  return el(
+    "div",
+    {
+      style: `${CARD_STYLE} padding: 24px;`,
+      dataset: { testid: "progress-card" },
+    },
+    [
+      el(
+        "div",
+        {
+          style: "display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px;",
+        },
+        [
+          el(
+            "h2",
+            { style: "font-size: 16px; font-weight: 600; color: #0c1a30; margin: 0;" },
+            "Implementation Progress"
+          ),
+          el(
+            "span",
+            {
+              style: "font-size: 13px; color: #64748b;",
+              dataset: { testid: "progress-count" },
+            },
+            `${completeCheckpoints} of ${totalCheckpoints} checkpoints complete`
+          ),
+        ]
+      ),
+      el(
+        "div",
+        {
+          style: "height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden;",
+        },
+        [
+          el("div", {
+            style: `height: 100%; width: ${overallPct}%; background: #f59e0b; border-radius: 4px; transition: width 300ms ease;`,
+            dataset: { testid: "progress-bar-fill" },
+          }),
+        ]
+      ),
+    ]
+  );
+}
+
+// ---------------------------------------------------------------------------
+// renderDomainsGrid — per-domain cards
+// ---------------------------------------------------------------------------
+
+function renderDomainsGrid({ domains, onNavigate }) {
+  if (domains.length === 0) {
+    return el(
+      "div",
+      {
+        style: `${CARD_STYLE} padding: 32px; text-align: center; color: #64748b; font-size: 14px;`,
+        dataset: { testid: "domain-grid-empty" },
+      },
+      "No activated domains yet. Complete onboarding to activate your implementation domains."
+    );
+  }
+
+  return el(
+    "div",
+    {
+      style: "display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;",
+      dataset: { testid: "domain-grid" },
+    },
+    domains.map((d) => renderDomainCard(d, onNavigate))
+  );
+}
+
+function renderDomainCard({ id, total, complete, status }, onNavigate) {
+  const pct = total > 0 ? Math.round((complete / total) * 100) : 0;
+  const displayName = humanizeDomainId(id);
+  const wizardId = wizardForDomain(id);
+
+  const badge = renderStatusBadge(status);
+  const barColor = status === "Complete"
+    ? "#10b981"
+    : status === "Blocked"
+      ? "#dc2626"
+      : "#f59e0b";
+
+  const actions = el(
+    "div",
+    { style: "display: flex; gap: 8px; flex-wrap: wrap;" },
+    [
+      el(
+        "button",
+        {
+          style: wizardId ? AMBER_BUTTON_STYLE : `${AMBER_BUTTON_STYLE} opacity: 0.5; cursor: not-allowed;`,
+          dataset: { testid: `domain-configure-${id}` },
+          disabled: !wizardId,
+          onclick: () => {
+            if (wizardId && onNavigate) onNavigate(`wizard-${wizardId}`);
+          },
+        },
+        "Configure"
+      ),
+      el(
+        "button",
+        {
+          style: SECONDARY_BUTTON_STYLE,
+          dataset: { testid: `domain-view-checkpoints-${id}` },
+          onclick: () => {
+            if (onNavigate) onNavigate("pipeline-dashboard");
+          },
+        },
+        "View Checkpoints"
+      ),
+    ]
+  );
+
+  return el(
+    "div",
+    {
+      style: `${CARD_STYLE} padding: 20px; display: flex; flex-direction: column; gap: 14px;`,
+      dataset: { testid: `domain-card-${id}`, domainId: id },
+    },
+    [
+      // Header: icon + name + status badge
+      el(
+        "div",
+        { style: "display: flex; align-items: center; gap: 12px;" },
+        [
+          el(
+            "div",
+            {
+              style: "background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); border-radius: 10px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: #92400e; flex-shrink: 0;",
+            },
+            [lucideIcon(iconForDomain(id), 20)]
+          ),
+          el(
+            "span",
+            {
+              style: "font-size: 15px; font-weight: 600; color: #0c1a30; flex: 1;",
+              dataset: { testid: `domain-name-${id}` },
+            },
+            displayName
+          ),
+          badge,
+        ]
+      ),
+
+      // Checkpoint count + progress bar
+      el(
+        "div",
+        { style: "display: flex; flex-direction: column; gap: 6px;" },
+        [
+          el(
+            "div",
+            {
+              style: "display: flex; justify-content: space-between; font-size: 12px; color: #64748b;",
+            },
+            [
+              el(
+                "span",
+                { dataset: { testid: `domain-checkpoints-${id}` } },
+                `${complete} of ${total} checkpoint${total === 1 ? "" : "s"} complete`
+              ),
+              el("span", {}, `${pct}%`),
+            ]
+          ),
+          el(
+            "div",
+            {
+              style: "height: 6px; background: #f1f5f9; border-radius: 4px; overflow: hidden;",
+            },
+            [
+              el("div", {
+                style: `height: 100%; width: ${pct}%; background: ${barColor}; border-radius: 4px; transition: width 300ms ease;`,
+                dataset: { testid: `domain-progress-bar-${id}` },
+              }),
+            ]
+          ),
+        ]
+      ),
+
+      actions,
+    ]
+  );
+}
+
+function renderStatusBadge(status) {
+  const palette = {
+    "Not Started": { color: "#64748b", bg: "rgba(12,26,48,0.06)",  border: "rgba(12,26,48,0.1)" },
+    "In Progress": { color: "#92400e", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.25)" },
+    "Complete":    { color: "#065f46", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.25)" },
+    "Blocked":     { color: "#991b1b", bg: "rgba(220,38,38,0.1)",  border: "rgba(220,38,38,0.25)" },
   };
+  const p = palette[status] || palette["Not Started"];
+
+  return el(
+    "span",
+    {
+      style: `display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: ${p.color}; background: ${p.bg}; border: 1px solid ${p.border}; border-radius: 6px; padding: 2px 8px; white-space: nowrap;`,
+      dataset: { testid: "domain-status-badge" },
+    },
+    status
+  );
 }
 
-/**
- * Find next recommended steps (first 3 incomplete wizards)
- */
-function computeNextSteps() {
-  const completed = getCompletedWizards();
-  return MODULES
-    .filter(m => !completed.includes(m.id))
-    .slice(0, 3)
-    .map(m => ({ id: m.id, name: m.name, icon: m.icon, time: "15 min", wizardId: m.wizardId }));
+// ---------------------------------------------------------------------------
+// Lifecycle / fallback states
+// ---------------------------------------------------------------------------
+
+function renderLoadingState() {
+  return el(
+    "div",
+    {
+      style: `${CARD_STYLE} padding: 40px; display: flex; flex-direction: column; align-items: center; gap: 12px; color: #64748b; font-family: Inter, sans-serif;`,
+      dataset: { testid: "dashboard-loading" },
+    },
+    [
+      el(
+        "div",
+        {
+          style: "color: #f59e0b; animation: spin 1s linear infinite; display: flex;",
+        },
+        [lucideIcon("loader-2", 28)]
+      ),
+      el(
+        "span",
+        { style: "font-size: 14px; font-weight: 500;" },
+        "Loading implementation state\u2026"
+      ),
+    ]
+  );
 }
 
-export function renderImplementationDashboardView({ onNavigate, onOpenRoadmap }) {
-  const kpis = computeKpis();
-  const nextSteps = computeNextSteps();
-  const completedWizards = getCompletedWizards();
-
-  const handleModuleClick = (wizardId) => {
-    if (wizardId && onNavigate) {
-      onNavigate(`wizard-${wizardId}`);
-    }
-  };
-
-  // Determine if onboarding is incomplete
-  const psState = pipelineStore.getState();
-  const hasActivatedDomains = (psState.runtime_state?.activated_domains ?? []).length > 0;
-  const onboardingIncomplete = !hasActivatedDomains && completedWizards.length === 0;
-
-  return el("div", {
-    style: "display: flex; flex-direction: column; gap: 0;"
-  }, [
-    // Onboarding banner (shown only when onboarding is incomplete)
-    onboardingIncomplete
-      ? el("div", {
-          style: "background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 10px; padding: 20px 24px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;",
-          dataset: { testid: "onboarding-banner" },
-        }, [
-          el("div", {}, [
-            el("h3", {
-              style: "font-size: 16px; font-weight: 600; color: #0c1a30; margin: 0 0 4px;",
-            }, "Complete your business assessment"),
-            el("p", {
-              style: "font-size: 13px; color: #64748b; margin: 0;",
-            }, "Answer 34 questions about your business to activate your Odoo implementation domains."),
-          ]),
-          el("button", {
-            style: "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 14px; padding: 10px 24px; cursor: pointer; white-space: nowrap; margin-left: 24px;",
-            onclick: () => { if (onNavigate) onNavigate("onboarding"); },
-            dataset: { testid: "onboarding-banner-cta" },
-          }, "Start assessment \u2192"),
-        ])
-      : null,
-
-    el("div", {
-      style: "display: grid; grid-template-columns: 1fr 1fr 1fr 300px; gap: 24px;"
-    }, [
-    // Main content area (spans 3 columns)
-    el("div", {
-      style: "grid-column: span 3; display: flex; flex-direction: column; gap: 24px;"
-    }, [
-      // KPI Cards Row
-      el("div", {
-        style: "display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;"
-      }, [
-        renderKpiCard(kpis.modulesConfigured, "Modules Configured", "settings"),
-        renderKpiCard(kpis.dataImported, "Data Imported", "upload"),
-        renderKpiCard(kpis.stepsComplete, "Steps Complete", "check-circle"),
-        renderKpiCard(kpis.estTimeRemaining, "Est. Time Remaining", "clock")
-      ]),
-
-      // Implementation Progress Section
-      renderProgressSection(handleModuleClick, completedWizards, kpis.overallProgress)
-    ]),
-
-    // Right Sidebar
-    el("div", {
-      style: "grid-column: span 1; display: flex; flex-direction: column; gap: 24px;"
-    }, [
-      // Jump Back In Card
-      el("div", {
-        style: "background: #0c1a30; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 16px;"
-      }, [
-        el("div", {}, [
-          el("p", {
-            style: "font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(245,158,11,0.8); margin-bottom: 8px;"
-          }, "CONTINUE YOUR JOURNEY"),
-          el("h3", {
-            style: "font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 16px;"
-          }, "Jump Back In")
-        ]),
-        el("button", {
-          style: "background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #f59e0b; border-radius: 6px; font-weight: 600; font-size: 13px; padding: 8px 16px; cursor: pointer; width: 100%;",
-          onclick: () => onNavigate("implementation-roadmap")
-        }, "Open Roadmap")
-      ]),
-
-      // Next Steps Section
-      el("div", {
-        style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px;"
-      }, [
-        el("h4", {
-          style: "font-size: 11px; letter-spacing: 0.1em; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 12px;"
-        }, "NEXT STEPS"),
-        el("div", {
-          style: "display: flex; flex-direction: column; gap: 0;"
-        }, nextSteps.length > 0
-          ? nextSteps.map(step => renderNextStepItem(step, onNavigate))
-          : [el("p", { style: "font-size: 13px; color: #64748b; padding: 8px;" }, "All modules configured!")]
-        )
-      ])
-    ])
-  ]),
-  ]);
+function renderErrorState(errorMessage) {
+  return el(
+    "div",
+    {
+      style: `${CARD_STYLE} padding: 32px; display: flex; flex-direction: column; align-items: center; gap: 12px; border-color: rgba(220,38,38,0.3); background: rgba(220,38,38,0.05); font-family: Inter, sans-serif;`,
+      dataset: { testid: "dashboard-error" },
+    },
+    [
+      el(
+        "div",
+        { style: "color: #b91c1c; display: flex;" },
+        [lucideIcon("alert-triangle", 28)]
+      ),
+      el(
+        "div",
+        { style: "font-size: 14px; color: #991b1b; font-weight: 600; text-align: center;" },
+        "Unable to load implementation state"
+      ),
+      el(
+        "div",
+        {
+          style: "font-size: 12px; color: #7f1d1d; text-align: center; max-width: 480px;",
+          dataset: { testid: "dashboard-error-message" },
+        },
+        errorMessage
+      ),
+      el(
+        "button",
+        {
+          style: AMBER_BUTTON_STYLE,
+          dataset: { testid: "dashboard-error-retry" },
+          onclick: () => { void fetchPipelineState(); },
+        },
+        "Retry"
+      ),
+    ]
+  );
 }
 
-function renderKpiCard(value, label, icon) {
-  return el("div", {
-    style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; flex: 1; display: flex; flex-direction: column; gap: 8px; position: relative;"
-  }, [
-    el("div", {
-      style: "position: absolute; top: 20px; right: 20px; color: #f59e0b; opacity: 0.7;"
-    }, [
-      lucideIcon(icon, 20)
-    ]),
-    el("div", {
-      style: "font-family: Inter, sans-serif; font-size: 28px; font-weight: 700; color: #0c1a30; line-height: 1;"
-    }, value),
-    el("p", {
-      style: "font-size: 12px; color: #64748b; margin-top: 4px;"
-    }, label)
-  ]);
-}
-
-function renderProgressSection(onModuleClick, completedWizards, overallProgress) {
-  return el("div", {
-    style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 32px; display: flex; flex-direction: column; gap: 24px;"
-  }, [
-    // Header with Progress
-    el("div", {
-      style: "display: flex; align-items: baseline; gap: 12px;"
-    }, [
-      el("h2", {
-        style: "font-size: 16px; font-weight: 600; color: #0c1a30;"
-      }, "Implementation Progress"),
-      el("span", {
-        style: "font-size: 24px; font-weight: 700; color: #f59e0b;"
-      }, `${overallProgress}%`)
-    ]),
-
-    // Progress Bar
-    el("div", {
-      style: "height: 6px; background: #f1f5f9; border-radius: 4px; overflow: hidden;"
-    }, [
-      el("div", {
-        style: `height: 100%; width: ${overallProgress}%; background: #f59e0b; border-radius: 4px; transition: width 300ms ease;`
-      })
-    ]),
-
-    // Module List (2-column grid)
-    el("div", {
-      style: "display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 8px;"
-    }, MODULES.map(module => renderModuleItem(module, onModuleClick, completedWizards)))
-  ]);
-}
-
-function renderModuleItem(module, onClick, completedWizards) {
-  const isComplete = completedWizards.includes(module.id);
-  const statusLabel = isComplete ? "COMPLETE" : "NOT STARTED";
-  const statusStyle = isComplete
-    ? "display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #065f46; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 6px; padding: 2px 8px; margin-left: auto; flex-shrink: 0;"
-    : "display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; background: rgba(12,26,48,0.06); border: 1px solid rgba(12,26,48,0.1); border-radius: 6px; padding: 2px 8px; margin-left: auto; flex-shrink: 0;";
-
-  const card = el("div", {
-    style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: border-color 0.15s;",
-    onclick: () => onClick && onClick(module.wizardId)
-  }, [
-    el("div", {
-      style: `background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: ${isComplete ? "#065f46" : "#92400e"};`
-    }, [
-      lucideIcon(isComplete ? "check" : module.icon, 20)
-    ]),
-    el("span", {
-      style: "font-size: 15px; font-weight: 600; color: #0c1a30; font-family: Inter, sans-serif;"
-    }, module.name),
-    el("span", { style: statusStyle }, statusLabel)
-  ]);
-
-  card.onmouseenter = () => { card.style.borderColor = "#f59e0b"; };
-  card.onmouseleave = () => { card.style.borderColor = "#e2e8f0"; };
-
-  return card;
-}
-
-function renderNextStepItem(step, onNavigate) {
-  return el("div", {
-    style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;",
-    onclick: () => onNavigate && onNavigate(`wizard-${step.wizardId}`)
-  }, [
-    el("div", {}, [
-      el("p", {
-        style: "font-size: 13px; font-weight: 500; color: #0c1a30; margin: 0 0 2px;"
-      }, step.name),
-      el("p", {
-        style: "font-size: 11px; color: #94a3b8; margin: 0;"
-      }, step.time)
-    ]),
-    el("button", {
-      style: "font-size: 12px; font-weight: 600; color: #92400e; cursor: pointer; background: none; border: none; padding: 0;"
-    }, "Start \u2192")
-  ]);
+function renderEmptyState(onNavigate) {
+  return el(
+    "div",
+    {
+      style: `${CARD_STYLE} padding: 40px; display: flex; flex-direction: column; align-items: center; gap: 16px; font-family: Inter, sans-serif;`,
+      dataset: { testid: "dashboard-empty" },
+    },
+    [
+      el(
+        "div",
+        { style: "color: #f59e0b; display: flex;" },
+        [lucideIcon("clipboard-list", 32)]
+      ),
+      el(
+        "h3",
+        { style: "font-size: 16px; font-weight: 600; color: #0c1a30; margin: 0;" },
+        "No pipeline data yet"
+      ),
+      el(
+        "p",
+        {
+          style: "font-size: 13px; color: #64748b; margin: 0; text-align: center; max-width: 460px;",
+        },
+        "Complete onboarding to activate your implementation domains. Pipeline state will appear here once discovery answers are captured."
+      ),
+      el(
+        "button",
+        {
+          style: AMBER_BUTTON_STYLE,
+          dataset: { testid: "dashboard-empty-onboarding-cta" },
+          onclick: () => {
+            if (onNavigate) onNavigate("onboarding");
+          },
+        },
+        "Start assessment \u2192"
+      ),
+    ]
+  );
 }

@@ -21,6 +21,7 @@ import { renderIotWizard } from "./iot-wizard.js";
 import { renderKnowledgeWizard } from "./knowledge-wizard.js";
 import { renderLiveChatWizard } from "./live-chat-wizard.js";
 import { renderLoyaltyWizard } from "./loyalty-wizard.js";
+import { renderLunchWizard } from "./lunch-wizard.js";
 import { renderMasterDataWizard } from "./master-data-wizard.js";
 import { renderManufacturingWizard } from "./manufacturing-wizard.js";
 import { renderPlmWizard } from "./plm-wizard.js";
@@ -58,6 +59,7 @@ const GOVERNED_WIZARD_RENDERERS = Object.freeze({
   "knowledge-setup": renderKnowledgeWizard,
   "live-chat-setup": renderLiveChatWizard,
   "loyalty-setup": renderLoyaltyWizard,
+  "lunch-setup": renderLunchWizard,
   "master-data-setup": renderMasterDataWizard,
   "manufacturing-setup": renderManufacturingWizard,
   "pos-setup": renderPosWizard,

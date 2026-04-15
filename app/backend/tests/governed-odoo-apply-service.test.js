@@ -198,6 +198,14 @@ describe("ALLOWED_APPLY_MODELS", () => {
     "sign.template",         // signature template definitions
     "approval.category",     // approval workflow category definitions
     "sale.subscription.plan", // subscription plan definitions
+    // Write-gate expansion 2026-04-15 (live-confirmed against saas~19.2+e)
+    "product.template",      // master-data / rental / subscriptions / website configuration
+    "project.task",          // timesheets / field-service target_model
+    "account.report",        // accounting-reports target_model
+    "sms.sms",               // sms-marketing target_model
+    "mail.alias",            // incoming-mail target_model
+    "spreadsheet.template",  // spreadsheet target_model
+    "ir.config_parameter",   // outgoing-mail / system-settings target_model
   ];
 
   for (const model of EXPECTED_SAFE_MODELS) {
@@ -273,6 +281,14 @@ describe("applyGoverned — S4 gate passes for controller-judgment-approved mode
     "sign.template",
     "approval.category",
     "sale.subscription.plan",
+    // Write-gate expansion 2026-04-15 (live-confirmed against saas~19.2+e)
+    "product.template",
+    "project.task",
+    "account.report",
+    "sms.sms",
+    "mail.alias",
+    "spreadsheet.template",
+    "ir.config_parameter",
   ];
 
   for (const model of APPROVED_NEW_MODELS) {

@@ -3,10 +3,59 @@ import { lucideIcon } from "../lib/icons.js";
 import { getState } from "../state/app-store.js";
 import { onboardingStore } from "../state/onboarding-store.js";
 
-const NAVY = "#0c1a30";
-const AMBER = "#f59e0b";
-const FADED_AMBER_BUTTON = "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-family: Inter, sans-serif; font-weight: 600; cursor: pointer;";
-const CARD_STYLE = "background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px;";
+const CANVAS_STYLE =
+  "background: var(--canvas-bloom-warm), var(--canvas-bloom-cool), " +
+  "var(--color-canvas-base), var(--surface-texture); " +
+  "padding: var(--space-6) var(--space-7) var(--space-8); " +
+  "font-family: var(--font-body); color: var(--color-ink);";
+
+const PANEL_STYLE =
+  "background: var(--color-surface); border: 1px solid var(--color-line); " +
+  "border-radius: var(--radius-panel);";
+
+const CARD_STYLE =
+  "background: var(--color-surface); border: 1px solid var(--color-line); " +
+  "border-radius: var(--radius-card);";
+
+const PILL_PRIMARY =
+  "display: inline-flex; align-items: center; gap: 8px; " +
+  "padding: 9px 16px; border-radius: var(--radius-pill); " +
+  "background: var(--color-pill-primary-bg); color: var(--color-pill-primary-fg); " +
+  "border: 1px solid var(--color-pill-primary-bg); " +
+  "font-family: var(--font-body); font-size: var(--fs-small); font-weight: 500; " +
+  "cursor: pointer; transition: all var(--dur-base) var(--ease);";
+
+const PILL_SECONDARY =
+  "display: inline-flex; align-items: center; gap: 8px; " +
+  "padding: 9px 16px; border-radius: var(--radius-pill); " +
+  "background: var(--color-pill-secondary-bg); color: var(--color-pill-secondary-fg); " +
+  "border: 1px solid var(--color-pill-secondary-border); " +
+  "font-family: var(--font-body); font-size: var(--fs-small); font-weight: 500; " +
+  "cursor: pointer; transition: all var(--dur-base) var(--ease);";
+
+const EYEBROW_STYLE =
+  "display: inline-flex; align-self: flex-start; align-items: center; " +
+  "padding: 4px 12px; border: 1px solid var(--color-line); " +
+  "border-radius: var(--radius-pill); background: var(--color-surface); " +
+  "font-family: var(--font-body); font-size: var(--fs-tiny); font-weight: 600; " +
+  "text-transform: uppercase; letter-spacing: var(--track-eyebrow-strong); " +
+  "color: var(--color-subtle);";
+
+const MONO_META_STYLE =
+  "font-family: var(--font-mono); font-size: var(--fs-small); color: var(--color-muted);";
+
+const FIELD_STYLE =
+  "width: 100%; box-sizing: border-box; " +
+  "background: var(--color-surface); border: 1px solid var(--color-line); " +
+  "border-radius: var(--radius-input); padding: 10px 12px; " +
+  "font-family: var(--font-body); font-size: var(--fs-small); color: var(--color-ink); " +
+  "outline: none; transition: border-color var(--dur-fast) var(--ease);";
+
+const FIELD_LABEL_STYLE =
+  "font-family: var(--font-body); font-size: var(--fs-micro); " +
+  "text-transform: uppercase; letter-spacing: var(--track-eyebrow); " +
+  "font-weight: 600; color: var(--color-muted);";
+
 const ROLE_OPTIONS = [
   { value: "project_lead", label: "Project Lead" },
   { value: "implementor", label: "Implementor" },
@@ -15,8 +64,12 @@ const ROLE_OPTIONS = [
 ];
 const INVITE_ROLE_OPTIONS = ROLE_OPTIONS.filter((role) => role.value !== "project_lead");
 const READ_ONLY_ROLES = new Set(["reviewer", "stakeholder"]);
-const TEAM_BUTTON_STYLE = `${FADED_AMBER_BUTTON} display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px;`;
-const FIELD_STYLE = "width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px 12px; font-size: 14px; color: #111827; font-family: Inter, sans-serif; background: #ffffff; box-sizing: border-box;";
+
+const ROLE_DESCRIPTIONS = {
+  implementor: "Can configure checkpoints and run the pipeline. Cannot commit changes to Odoo.",
+  reviewer: "Read-only. Can view progress and audit trail but cannot modify configuration.",
+  stakeholder: "Read-only. Dashboard and report access for business oversight.",
+};
 
 function renderTeamIcon(name, size) {
   const normalized = String(name || "")
@@ -24,62 +77,63 @@ function renderTeamIcon(name, size) {
     .replace(/([A-Za-z])([0-9])/g, "$1-$2")
     .replace(/([0-9])([A-Za-z])/g, "$1-$2")
     .toLowerCase();
-
   return lucideIcon(normalized, size);
 }
 
-function getRoleBadgeConfig(role) {
-  switch (role) {
-    case "project_lead":
-      return { label: "Project Lead", background: NAVY, color: "#ffffff" };
-    case "implementor":
-      return { label: "Implementor", background: "rgba(245,158,11,0.15)", color: "#92400e" };
-    case "reviewer":
-      return { label: "Reviewer", background: "#e0f2fe", color: "#0369a1" };
-    case "stakeholder":
-    default:
-      return { label: "Stakeholder", background: "#f3f4f6", color: "#6b7280" };
+function bindFocusBorder(node) {
+  if (!node) return;
+  node.addEventListener("focus", () => { node.style.borderColor = "var(--color-ink)"; });
+  node.addEventListener("blur", () => { node.style.borderColor = "var(--color-line)"; });
+}
+
+function roleLabel(role) {
+  const match = ROLE_OPTIONS.find((option) => option.value === role);
+  return match ? match.label : "";
+}
+
+function createRoleBadge(role) {
+  const label = roleLabel(role);
+  if (!label) return null;
+  let bg = "var(--color-chip-bg)";
+  let fg = "var(--color-chip-fg)";
+  if (role === "project_lead") {
+    bg = "var(--color-pill-primary-bg)";
+    fg = "var(--color-pill-primary-fg)";
+  } else if (role === "implementor") {
+    bg = "var(--color-chip-review-bg)";
+    fg = "var(--color-chip-review-fg)";
+  } else if (role === "reviewer") {
+    bg = "var(--color-chip-ready-bg)";
+    fg = "var(--color-chip-ready-fg)";
   }
+  return el("span", {
+    style:
+      `display: inline-flex; align-items: center; padding: 2px 8px; ` +
+      `border-radius: var(--radius-pill); background: ${bg}; color: ${fg}; ` +
+      `font-family: var(--font-body); font-size: var(--fs-tiny); font-weight: 600;`,
+    text: label,
+  });
 }
 
 function formatShortDate(value, fallback = "Date unavailable") {
-  if (!value) {
-    return fallback;
-  }
-
+  if (!value) return fallback;
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return fallback;
-  }
-
+  if (Number.isNaN(parsed.getTime())) return fallback;
   return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
+    day: "numeric", month: "short", year: "numeric",
   }).format(parsed);
 }
 
 function getInitials(fullName) {
-  const words = String(fullName || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (words.length === 0) {
-    return "TM";
-  }
-
-  if (words.length === 1) {
-    return words[0].slice(0, 2).toUpperCase();
-  }
-
+  const words = String(fullName || "").trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "TM";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
 }
 
 function resolveProjectId(project) {
   const onboardingState = onboardingStore.getState();
   const storeProject = getState().activeProject;
-
   return (
     onboardingState?.connection?.project_id ||
     project?.projectIdentity?.projectId ||
@@ -88,64 +142,45 @@ function resolveProjectId(project) {
   );
 }
 
+function deriveInstanceHost(url, database) {
+  const raw = typeof url === "string" ? url.trim() : "";
+  if (raw) {
+    try { return new URL(raw).hostname; }
+    catch {
+      const stripped = raw.replace(/^https?:\/\//i, "").split(/[/?#]/)[0];
+      if (stripped) return stripped;
+    }
+  }
+  const db = typeof database === "string" ? database.trim() : "";
+  return db || "NEW";
+}
+
 function buildHeaders(token, includeJson = true) {
   const headers = {};
-
-  if (includeJson) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
+  if (includeJson) headers["Content-Type"] = "application/json";
+  if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }
 
 async function readJsonResponse(response) {
   const raw = await response.text();
-  if (!raw) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch { return {}; }
 }
 
 async function requestTeamJson(url, options = {}) {
   const response = await fetch(url, options);
   const payload = await readJsonResponse(response);
-
-  if (!response.ok) {
-    throw new Error(payload.error || "Request failed.");
-  }
-
-  if (payload?.error) {
-    throw new Error(payload.error);
-  }
-
+  if (!response.ok) throw new Error(payload.error || "Request failed.");
+  if (payload?.error) throw new Error(payload.error);
   return payload;
-}
-
-function createRoleBadge(role) {
-  const config = getRoleBadgeConfig(role);
-  return el("span", {
-    style: `display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: ${config.background}; color: ${config.color}; font-family: Inter, sans-serif;`,
-    text: config.label,
-  });
 }
 
 function createFieldShell(label, control) {
   return el("label", {
-    style: "display: flex; flex-direction: column; gap: 6px; font-family: Inter, sans-serif;",
+    style: "display: flex; flex-direction: column; gap: 6px;",
   }, [
-    el("span", {
-      style: "font-size: 13px; font-weight: 600; color: #374151;",
-      text: label,
-    }),
+    el("span", { style: FIELD_LABEL_STYLE, text: label }),
     control,
   ]);
 }
@@ -153,12 +188,15 @@ function createFieldShell(label, control) {
 export function renderTeamView({ project } = {}) {
   const projectId = resolveProjectId(project);
   const container = el("section", {
-    style: "max-width: 1080px; margin: 0 auto; padding: 32px; font-family: Inter, sans-serif;",
+    style: `${CANVAS_STYLE} max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-5);`,
+    dataset: { testid: "team-view" },
   });
   const contentEl = el("div");
   const modalHost = el("div");
   const toastHost = el("div", {
-    style: "position: fixed; right: 24px; bottom: 24px; z-index: 90; display: flex; flex-direction: column; gap: 12px;",
+    style:
+      "position: fixed; right: var(--space-6); bottom: var(--space-6); z-index: 120; " +
+      "display: flex; flex-direction: column; gap: var(--space-3);",
   });
   const state = {
     loading: true,
@@ -167,11 +205,7 @@ export function renderTeamView({ project } = {}) {
     inviteModalOpen: false,
     inviteSubmitting: false,
     inviteError: "",
-    inviteForm: {
-      fullName: "",
-      email: "",
-      role: "implementor",
-    },
+    inviteForm: { fullName: "", email: "", role: "implementor" },
   };
   let latestLoadId = 0;
   let toastTimer = null;
@@ -180,16 +214,15 @@ export function renderTeamView({ project } = {}) {
 
   function showToast(message) {
     clearNode(toastHost);
-    if (toastTimer) {
-      clearTimeout(toastTimer);
-      toastTimer = null;
-    }
-
+    if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
     const toast = el("div", {
-      style: "background: #0c1a30; color: #ffffff; padding: 12px 20px; border-radius: 6px; font-size: 14px; box-shadow: 0 10px 25px rgba(12,26,48,0.18); max-width: 320px;",
+      style:
+        "background: var(--color-pill-primary-bg); color: var(--color-pill-primary-fg); " +
+        "padding: var(--space-3) var(--space-5); border-radius: var(--radius-pill); " +
+        "font-family: var(--font-body); font-size: var(--fs-small); " +
+        "box-shadow: var(--shadow-menu); max-width: 320px;",
       text: message,
     });
-
     toastHost.append(toast);
     toastTimer = setTimeout(() => {
       clearNode(toastHost);
@@ -204,43 +237,24 @@ export function renderTeamView({ project } = {}) {
     const activeMembers = state.members.filter((member) => member.accepted_at);
     const pendingMembers = state.members.filter((member) => !member.accepted_at);
     const currentMembership = activeMembers.find((member) => {
-      if (currentUserId && member.account_id === currentUserId) {
-        return true;
-      }
-
-      return !currentUserId && currentUserEmail && String(member.email || "").trim().toLowerCase() === currentUserEmail;
+      if (currentUserId && member.account_id === currentUserId) return true;
+      return !currentUserId && currentUserEmail &&
+        String(member.email || "").trim().toLowerCase() === currentUserEmail;
     }) || null;
     const currentRole = currentMembership?.role || null;
     const isProjectLead = currentRole === "project_lead";
     const isReadOnly = READ_ONLY_ROLES.has(currentRole);
     const leadCount = activeMembers.filter((member) => member.role === "project_lead").length;
     const activeMembersExcludingSelf = activeMembers.filter((member) => {
-      if (currentMembership?.id) {
-        return member.id !== currentMembership.id;
-      }
-
-      if (currentUserId) {
-        return member.account_id !== currentUserId;
-      }
-
-      if (currentUserEmail) {
-        return String(member.email || "").trim().toLowerCase() !== currentUserEmail;
-      }
-
+      if (currentMembership?.id) return member.id !== currentMembership.id;
+      if (currentUserId) return member.account_id !== currentUserId;
+      if (currentUserEmail) return String(member.email || "").trim().toLowerCase() !== currentUserEmail;
       return true;
     });
-
+    const host = deriveInstanceHost(onboardingState?.connection?.url || "", onboardingState?.connection?.database || "");
     return {
-      onboardingState,
-      currentUserId,
-      activeMembers,
-      pendingMembers,
-      currentMembership,
-      currentRole,
-      isProjectLead,
-      isReadOnly,
-      leadCount,
-      activeMembersExcludingSelf,
+      onboardingState, currentUserId, activeMembers, pendingMembers, currentMembership,
+      currentRole, isProjectLead, isReadOnly, leadCount, activeMembersExcludingSelf, host,
     };
   }
 
@@ -251,30 +265,21 @@ export function renderTeamView({ project } = {}) {
       render();
       return;
     }
-
     const requestId = ++latestLoadId;
     state.loading = true;
     state.error = null;
     render();
-
     try {
       const token = onboardingStore.getState()?.sessionToken || null;
       const payload = await requestTeamJson(`/api/team/${encodeURIComponent(projectId)}`, {
         method: "GET",
         headers: buildHeaders(token, false),
       });
-
-      if (requestId !== latestLoadId) {
-        return;
-      }
-
+      if (requestId !== latestLoadId) return;
       state.members = Array.isArray(payload.members) ? payload.members : [];
       state.error = null;
     } catch (error) {
-      if (requestId !== latestLoadId) {
-        return;
-      }
-
+      if (requestId !== latestLoadId) return;
       state.error = error instanceof Error ? error.message : "Failed to load team members.";
     } finally {
       if (requestId === latestLoadId) {
@@ -288,11 +293,7 @@ export function renderTeamView({ project } = {}) {
     state.inviteModalOpen = true;
     state.inviteSubmitting = false;
     state.inviteError = "";
-    state.inviteForm = {
-      fullName: "",
-      email: "",
-      role: "implementor",
-    };
+    state.inviteForm = { fullName: "", email: "", role: "implementor" };
     render();
   }
 
@@ -305,40 +306,29 @@ export function renderTeamView({ project } = {}) {
 
   async function handleInviteSubmit(event) {
     event.preventDefault();
-
     const email = String(state.inviteForm.email || "").trim();
     const fullName = String(state.inviteForm.fullName || "").trim();
     const role = String(state.inviteForm.role || "").trim();
-
     if (!fullName || !email) {
       state.inviteError = "Full name and email are required.";
       render();
       return;
     }
-
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       state.inviteError = "Enter a valid email address.";
       render();
       return;
     }
-
     state.inviteSubmitting = true;
     state.inviteError = "";
     render();
-
     try {
       const token = onboardingStore.getState()?.sessionToken || null;
       await requestTeamJson("/api/team/invite", {
         method: "POST",
         headers: buildHeaders(token, true),
-        body: JSON.stringify({
-          projectId,
-          email,
-          fullName,
-          role,
-        }),
+        body: JSON.stringify({ projectId, email, fullName, role }),
       });
-
       closeInviteModal();
       await loadMembers();
       showToast(`Invite sent to ${email}`);
@@ -350,10 +340,7 @@ export function renderTeamView({ project } = {}) {
   }
 
   async function handleRoleChange(member, nextRole) {
-    if (!nextRole || nextRole === member.role) {
-      return;
-    }
-
+    if (!nextRole || nextRole === member.role) return;
     try {
       const token = onboardingStore.getState()?.sessionToken || null;
       await requestTeamJson(
@@ -364,7 +351,6 @@ export function renderTeamView({ project } = {}) {
           body: JSON.stringify({ role: nextRole }),
         }
       );
-
       await loadMembers();
       showToast("Role updated");
     } catch (error) {
@@ -373,107 +359,113 @@ export function renderTeamView({ project } = {}) {
   }
 
   async function handleDelete(member, { confirmPrompt } = {}) {
-    if (confirmPrompt && typeof window !== "undefined" && !window.confirm(confirmPrompt)) {
-      return;
-    }
-
+    if (confirmPrompt && typeof window !== "undefined" && !window.confirm(confirmPrompt)) return;
     try {
       const token = onboardingStore.getState()?.sessionToken || null;
       await requestTeamJson(
         `/api/team/${encodeURIComponent(projectId)}/${encodeURIComponent(member.id)}`,
-        {
-          method: "DELETE",
-          headers: buildHeaders(token, false),
-        }
+        { method: "DELETE", headers: buildHeaders(token, false) }
       );
-
       await loadMembers();
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Failed to update team membership.");
     }
   }
 
+  function renderAvatar(fullName) {
+    return el("div", {
+      style:
+        "width: 40px; height: 40px; border-radius: 50%; " +
+        "background: var(--color-pill-primary-bg); color: var(--color-pill-primary-fg); " +
+        "display: flex; align-items: center; justify-content: center; " +
+        "font-family: var(--font-mono); font-size: var(--fs-small); font-weight: 600; " +
+        "flex-shrink: 0;",
+      text: getInitials(fullName),
+    });
+  }
+
   function renderMemberCard(member, derivedState) {
     const lastLeadLocked = member.role === "project_lead" && derivedState.leadCount <= 1;
     const tooltip = lastLeadLocked ? "You are the only project lead" : null;
     const select = el("select", {
-      style: "border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 10px; font-size: 13px; color: #111827; font-family: Inter, sans-serif; background: #ffffff;",
+      style:
+        "background: var(--color-surface); border: 1px solid var(--color-line); " +
+        "border-radius: var(--radius-input); padding: 8px 10px; " +
+        "font-family: var(--font-body); font-size: var(--fs-small); color: var(--color-ink); " +
+        "outline: none; transition: border-color var(--dur-fast) var(--ease);",
       disabled: lastLeadLocked,
       title: tooltip,
-      onchange: (event) => {
-        void handleRoleChange(member, event.target.value);
-      },
+      onchange: (event) => { void handleRoleChange(member, event.target.value); },
     }, ROLE_OPTIONS.map((option) => el("option", {
       value: option.value,
       selected: member.role === option.value,
       text: option.label,
     })));
+    bindFocusBorder(select);
 
-    const removeButtonIcon = renderTeamIcon("Trash2", 15);
     const removeButton = el("button", {
       type: "button",
-      style: "border: none; background: transparent; color: #6b7280; padding: 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;",
+      style:
+        "border: none; background: transparent; color: var(--color-muted); " +
+        "padding: 8px; border-radius: var(--radius-chip); cursor: pointer; " +
+        "display: inline-flex; align-items: center; justify-content: center; " +
+        "transition: color var(--dur-fast) var(--ease);",
       disabled: lastLeadLocked,
       title: tooltip,
       onclick: () => {
-        void handleDelete(member, {
-          confirmPrompt: `Remove ${member.full_name} from the project?`,
-        });
+        void handleDelete(member, { confirmPrompt: `Remove ${member.full_name} from the project?` });
       },
-    }, [removeButtonIcon]);
+    }, [renderTeamIcon("trash-2", 15)]);
 
     if (!lastLeadLocked) {
-      removeButton.onmouseenter = () => { removeButton.style.color = "#dc2626"; };
-      removeButton.onmouseleave = () => { removeButton.style.color = "#6b7280"; };
+      removeButton.onmouseenter = () => { removeButton.style.color = "var(--color-chip-review-fg)"; };
+      removeButton.onmouseleave = () => { removeButton.style.color = "var(--color-muted)"; };
     } else {
       removeButton.style.cursor = "not-allowed";
       removeButton.style.opacity = "0.55";
-    }
-
-    if (lastLeadLocked) {
       select.style.cursor = "not-allowed";
       select.style.opacity = "0.7";
     }
 
     return el("div", {
-      style: `${CARD_STYLE} display: flex; align-items: center; justify-content: space-between; gap: 16px;`,
+      style:
+        `${CARD_STYLE} padding: var(--space-4) var(--space-5); ` +
+        `display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);`,
     }, [
       el("div", {
-        style: "display: flex; align-items: center; gap: 16px; min-width: 0; flex: 1;",
+        style: "display: flex; align-items: center; gap: var(--space-3); min-width: 0; flex: 1;",
       }, [
-        el("div", {
-          style: "width: 40px; height: 40px; border-radius: 999px; background: #0c1a30; color: #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; flex-shrink: 0;",
-          text: getInitials(member.full_name),
-        }),
+        renderAvatar(member.full_name),
         el("div", {
           style: "display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1;",
         }, [
           el("div", {
-            style: "display: flex; align-items: center; gap: 8px; flex-wrap: wrap;",
+            style: "display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;",
           }, [
             el("span", {
-              style: "font-size: 15px; font-weight: 700; color: #0c1a30;",
+              style: "font-size: var(--fs-body); font-weight: 600; color: var(--color-ink);",
               text: member.full_name,
             }),
             createRoleBadge(member.role),
           ]),
           el("span", {
-            style: "font-size: 13px; color: #6b7280; word-break: break-word;",
+            style:
+              "font-family: var(--font-mono); font-size: var(--fs-small); " +
+              "color: var(--color-muted); word-break: break-word;",
             text: member.email,
           }),
           el("span", {
-            style: "font-size: 12px; color: #6b7280;",
+            style:
+              "font-family: var(--font-mono); font-size: var(--fs-tiny); " +
+              "color: var(--color-subtle);",
             text: `Joined ${formatShortDate(member.accepted_at, formatShortDate(member.created_at))}`,
           }),
         ]),
       ]),
       derivedState.isProjectLead
         ? el("div", {
-            style: "display: flex; align-items: center; gap: 8px; flex-shrink: 0;",
-          }, [
-            select,
-            removeButton,
-          ])
+            style: "display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0;",
+          }, [select, removeButton])
         : null,
     ]);
   }
@@ -483,32 +475,42 @@ export function renderTeamView({ project } = {}) {
       ? (() => {
           const button = el("button", {
             type: "button",
-            style: "border: none; background: transparent; color: #6b7280; padding: 6px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;",
-            onclick: () => {
-              void handleDelete(member);
-            },
+            style:
+              "border: none; background: transparent; color: var(--color-muted); " +
+              "padding: 6px; border-radius: var(--radius-chip); cursor: pointer; " +
+              "display: inline-flex; align-items: center; justify-content: center; " +
+              "transition: color var(--dur-fast) var(--ease);",
+            onclick: () => { void handleDelete(member); },
             title: "Revoke invite",
-          }, [renderTeamIcon("X", 16)]);
-
-          button.onmouseenter = () => { button.style.color = "#dc2626"; };
-          button.onmouseleave = () => { button.style.color = "#6b7280"; };
+          }, [renderTeamIcon("x", 16)]);
+          button.onmouseenter = () => { button.style.color = "var(--color-chip-review-fg)"; };
+          button.onmouseleave = () => { button.style.color = "var(--color-muted)"; };
           return button;
         })()
       : null;
 
     return el("div", {
-      style: "display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #f3f4f6;",
+      style:
+        "display: flex; align-items: center; justify-content: space-between; " +
+        "gap: var(--space-3); padding: var(--space-3) 0; " +
+        "border-bottom: 1px solid var(--color-line-soft);",
     }, [
       el("div", {
-        style: "display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0;",
+        style:
+          "display: flex; align-items: center; gap: var(--space-2); " +
+          "flex-wrap: wrap; min-width: 0;",
       }, [
         el("span", {
-          style: "font-size: 14px; font-weight: 600; color: #0c1a30; word-break: break-word;",
+          style:
+            "font-family: var(--font-mono); font-size: var(--fs-small); " +
+            "font-weight: 500; color: var(--color-ink); word-break: break-word;",
           text: member.email,
         }),
         createRoleBadge(member.role),
         el("span", {
-          style: "font-size: 13px; color: #6b7280;",
+          style:
+            "font-family: var(--font-mono); font-size: var(--fs-tiny); " +
+            "color: var(--color-subtle);",
           text: `Invited ${formatShortDate(member.created_at)}`,
         }),
       ]),
@@ -522,116 +524,145 @@ export function renderTeamView({ project } = {}) {
       value: state.inviteForm.fullName,
       placeholder: "Jane Smith",
       style: FIELD_STYLE,
-      oninput: (event) => {
-        state.inviteForm.fullName = event.target.value;
-      },
+      oninput: (event) => { state.inviteForm.fullName = event.target.value; },
     });
+    bindFocusBorder(fullNameInput);
+
     const emailInput = el("input", {
       type: "email",
       value: state.inviteForm.email,
       placeholder: "jane@company.com",
-      style: FIELD_STYLE,
-      oninput: (event) => {
-        state.inviteForm.email = event.target.value;
-      },
+      style: `${FIELD_STYLE} font-family: var(--font-mono);`,
+      oninput: (event) => { state.inviteForm.email = event.target.value; },
     });
+    bindFocusBorder(emailInput);
+
+    const roleDescriptionEl = el("div", {
+      style:
+        `${PANEL_STYLE} padding: var(--space-3) var(--space-4); ` +
+        `font-size: var(--fs-small); color: var(--color-body); ` +
+        `line-height: var(--lh-body); background: var(--color-canvas-base);`,
+      text: ROLE_DESCRIPTIONS[state.inviteForm.role] || "",
+    });
+
     const roleSelect = el("select", {
       style: FIELD_STYLE,
       onchange: (event) => {
         state.inviteForm.role = event.target.value;
+        roleDescriptionEl.textContent = ROLE_DESCRIPTIONS[event.target.value] || "";
       },
     }, INVITE_ROLE_OPTIONS.map((option) => el("option", {
       value: option.value,
       selected: state.inviteForm.role === option.value,
       text: option.label,
     })));
+    bindFocusBorder(roleSelect);
 
     const closeButton = el("button", {
       type: "button",
-      style: "border: none; background: transparent; color: #6b7280; padding: 6px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;",
+      style:
+        "border: none; background: transparent; color: var(--color-muted); " +
+        "padding: 6px; border-radius: var(--radius-chip); cursor: pointer; " +
+        "display: inline-flex; align-items: center; justify-content: center;",
       onclick: closeInviteModal,
       "aria-label": "Close invite modal",
-    }, [renderTeamIcon("X", 18)]);
-
-    closeButton.onmouseenter = () => { closeButton.style.color = NAVY; };
-    closeButton.onmouseleave = () => { closeButton.style.color = "#6b7280"; };
+    }, [renderTeamIcon("x", 18)]);
 
     return el("div", {
-      style: "position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 80;",
+      style:
+        "position: fixed; inset: 0; background: rgba(0,0,0,0.5); " +
+        "display: flex; align-items: center; justify-content: center; " +
+        "padding: var(--space-6); z-index: 100;",
       onclick: (event) => {
-        if (event.target === event.currentTarget) {
-          closeInviteModal();
-        }
+        if (event.target === event.currentTarget) closeInviteModal();
       },
     }, [
       el("div", {
-        style: "width: 100%; max-width: 440px; background: #ffffff; border-radius: 10px; padding: 32px; position: relative; box-shadow: 0 24px 48px rgba(12,26,48,0.18);",
+        style:
+          `width: 100%; max-width: 480px; ${CARD_STYLE} ` +
+          `padding: var(--space-7); box-shadow: var(--shadow-menu); ` +
+          `display: flex; flex-direction: column; gap: var(--space-4);`,
       }, [
         el("div", {
-          style: "display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px;",
+          style:
+            "display: flex; align-items: flex-start; justify-content: space-between; " +
+            "gap: var(--space-3);",
         }, [
-          el("h2", {
-            style: "font-size: 18px; font-weight: 700; color: #0c1a30; margin: 0;",
-            text: "Invite a Team Member",
-          }),
+          el("div", { style: "display: flex; flex-direction: column; gap: var(--space-2);" }, [
+            el("span", { style: EYEBROW_STYLE, text: "INVITE" }),
+            el("h2", {
+              style:
+                "margin: 0; font-size: var(--fs-h2); font-weight: 600; " +
+                "color: var(--color-ink); letter-spacing: var(--track-tight);",
+              text: "Invite a team member",
+            }),
+          ]),
           closeButton,
         ]),
         el("form", {
-          style: "display: flex; flex-direction: column; gap: 16px;",
-          onsubmit: (event) => {
-            void handleInviteSubmit(event);
-          },
+          style: "display: flex; flex-direction: column; gap: var(--space-4);",
+          onsubmit: (event) => { void handleInviteSubmit(event); },
         }, [
           createFieldShell("Full name", fullNameInput),
           createFieldShell("Email", emailInput),
           createFieldShell("Role", roleSelect),
+          roleDescriptionEl,
           state.inviteError
             ? el("div", {
-                style: "font-size: 13px; color: #dc2626;",
+                style: "font-size: var(--fs-small); color: var(--color-chip-review-fg);",
                 text: state.inviteError,
               })
             : null,
-          el("button", {
-            type: "submit",
-            disabled: state.inviteSubmitting,
-            style: `${FADED_AMBER_BUTTON} width: 100%; padding: 12px 18px; font-size: 14px;${state.inviteSubmitting ? " opacity: 0.75; cursor: wait;" : ""}`,
-            text: state.inviteSubmitting ? "Sending..." : "Send Invite",
-          }),
-          el("button", {
-            type: "button",
-            style: "border: none; background: transparent; color: #6b7280; font-size: 14px; cursor: pointer; padding: 0; margin-top: 4px;",
-            onclick: closeInviteModal,
-            text: "Cancel",
-          }),
+          el("div", {
+            style: "display: flex; justify-content: flex-end; gap: var(--space-3);",
+          }, [
+            el("button", {
+              type: "button",
+              style: PILL_SECONDARY,
+              onclick: closeInviteModal,
+              text: "Cancel",
+            }),
+            el("button", {
+              type: "submit",
+              disabled: state.inviteSubmitting,
+              style: `${PILL_PRIMARY}${state.inviteSubmitting ? " opacity: 0.75; cursor: wait;" : ""}`,
+              text: state.inviteSubmitting ? "Sending..." : "Send invite",
+            }),
+          ]),
         ]),
       ]),
     ]);
   }
 
   function renderEmptyState(derivedState) {
+    const icon = renderTeamIcon("users", 40);
+    icon.style.color = "var(--color-subtle)";
     return el("div", {
-      style: "text-align: center; padding-top: 60px; display: flex; flex-direction: column; align-items: center;",
+      style:
+        `${PANEL_STYLE} padding: var(--space-8) var(--space-6); ` +
+        `display: flex; flex-direction: column; align-items: center; ` +
+        `text-align: center; gap: var(--space-3);`,
     }, [
-      (() => {
-        const icon = renderTeamIcon("Users", 48);
-        icon.style.color = "#d1d5db";
-        return icon;
-      })(),
+      icon,
       el("h3", {
-        style: "font-size: 18px; font-weight: 600; color: #0c1a30; margin: 16px 0 8px;",
+        style:
+          "margin: 0; font-size: var(--fs-h3); font-weight: 600; " +
+          "color: var(--color-ink); letter-spacing: var(--track-tight);",
         text: "Your team is just you for now.",
       }),
       el("p", {
-        style: "font-size: 14px; color: #6b7280; margin: 0; max-width: 420px;",
+        style:
+          "margin: 0; font-size: var(--fs-body); color: var(--color-muted); " +
+          "max-width: 420px; line-height: var(--lh-body);",
         text: "Invite collaborators to track who approves each checkpoint.",
       }),
       derivedState.isProjectLead
         ? el("button", {
             type: "button",
-            style: `${TEAM_BUTTON_STYLE} margin-top: 20px;`,
+            style: PILL_PRIMARY,
             onclick: openInviteModal,
           }, [
-            renderTeamIcon("UserPlus", 16),
+            renderTeamIcon("user-plus", 16),
             el("span", { text: "Invite your first team member" }),
           ])
         : null,
@@ -643,37 +674,53 @@ export function renderTeamView({ project } = {}) {
     const headerInviteButton = derivedState.isProjectLead
       ? el("button", {
           type: "button",
-          style: TEAM_BUTTON_STYLE,
+          style: PILL_PRIMARY,
           onclick: openInviteModal,
         }, [
-          renderTeamIcon("UserPlus", 16),
-          el("span", { text: "Invite Member" }),
+          renderTeamIcon("user-plus", 16),
+          el("span", { text: "Invite member" }),
         ])
       : null;
 
+    const activeCount = derivedState.activeMembers.length;
+    const pendingCount = derivedState.pendingMembers.length;
+    const metaText = state.loading
+      ? "Loading..."
+      : `${activeCount} ${activeCount === 1 ? "member" : "members"}  ·  ${pendingCount} pending invites`;
+
     const activeSection = state.loading
       ? el("div", {
-          style: `${CARD_STYLE} color: #6b7280;`,
+          style: `${PANEL_STYLE} padding: var(--space-5); color: var(--color-muted); font-size: var(--fs-small);`,
           text: "Loading team members...",
         })
       : state.error
         ? el("div", {
-            style: "background: rgba(220,38,38,0.06); border: 1px solid rgba(220,38,38,0.2); border-radius: 10px; padding: 16px; color: #b91c1c;",
+            style:
+              "background: var(--color-chip-review-bg); " +
+              "border: 1px solid var(--color-chip-review-fg); " +
+              "border-radius: var(--radius-panel); " +
+              "padding: var(--space-3) var(--space-4); " +
+              "color: var(--color-chip-review-fg); font-size: var(--fs-small);",
             text: state.error,
           })
-        : derivedState.activeMembersExcludingSelf.length === 0
+        : derivedState.activeMembersExcludingSelf.length === 0 && derivedState.activeMembers.length <= 1
           ? renderEmptyState(derivedState)
           : el("div", {
-              style: "display: flex; flex-direction: column; gap: 12px;",
+              style: "display: flex; flex-direction: column; gap: var(--space-3);",
             }, derivedState.activeMembers.map((member) => renderMemberCard(member, derivedState)));
 
     const pendingSection = !state.loading && !state.error && derivedState.pendingMembers.length > 0
       ? el("section", {
-          style: `${CARD_STYLE} margin-top: 24px;`,
+          style:
+            `${PANEL_STYLE} padding: var(--space-4) var(--space-5); ` +
+            `display: flex; flex-direction: column; gap: var(--space-2);`,
         }, [
           el("div", {
-            style: "font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: #6b7280; margin-bottom: 12px; font-weight: 600;",
-            text: "Pending Invites",
+            style:
+              "font-size: var(--fs-micro); text-transform: uppercase; " +
+              "letter-spacing: var(--track-eyebrow-strong); " +
+              "color: var(--color-subtle); font-weight: 600;",
+            text: "Pending invites",
           }),
           ...derivedState.pendingMembers.map((member, index) => {
             const row = renderPendingInviteRow(member, derivedState);
@@ -686,32 +733,48 @@ export function renderTeamView({ project } = {}) {
       : null;
 
     return el("div", {
-      style: "display: flex; flex-direction: column; gap: 24px;",
+      style: "display: flex; flex-direction: column; gap: var(--space-5);",
     }, [
+      el("div", {
+        style:
+          `position: sticky; top: 0; z-index: 20; ${PANEL_STYLE} ` +
+          `padding: var(--space-4) var(--space-5); ` +
+          `display: flex; align-items: center; justify-content: space-between; ` +
+          `gap: var(--space-4); flex-wrap: wrap;`,
+      }, [
+        el("div", {
+          style: "display: flex; flex-direction: column; gap: var(--space-2); min-width: 240px; flex: 1 1 360px;",
+        }, [
+          el("span", { style: EYEBROW_STYLE, text: `TEAM · ${derivedState.host}` }),
+          el("h1", {
+            style:
+              "margin: 0; font-size: var(--fs-h1); font-weight: 600; " +
+              "letter-spacing: var(--track-tight); line-height: var(--lh-snug); " +
+              "color: var(--color-ink); font-family: var(--font-body);",
+            text: "Team",
+          }),
+          el("div", { style: MONO_META_STYLE, text: metaText }),
+        ]),
+        headerInviteButton,
+      ]),
       derivedState.isReadOnly
         ? el("div", {
-            style: "background: rgba(245,158,11,0.08); border-left: 3px solid #f59e0b; border-radius: 4px; padding: 10px 16px; display: flex; align-items: center; gap: 8px;",
+            style:
+              `${PANEL_STYLE} padding: var(--space-3) var(--space-4); ` +
+              `display: flex; align-items: center; gap: var(--space-3); ` +
+              `color: var(--color-body); font-size: var(--fs-small);`,
           }, [
             (() => {
-              const icon = renderTeamIcon("Info", 15);
-              icon.style.color = "#f59e0b";
+              const icon = renderTeamIcon("info", 16);
+              icon.style.color = "var(--color-subtle)";
+              icon.style.flexShrink = "0";
               return icon;
             })(),
             el("span", {
-              style: "color: #92400e; font-size: 14px;",
               text: "You have read-only access to this section. Contact your project lead to make changes.",
             }),
           ])
         : null,
-      el("div", {
-        style: "display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;",
-      }, [
-        el("h1", {
-          style: "font-size: 28px; font-weight: 700; color: #0c1a30; margin: 0;",
-          text: "Team",
-        }),
-        headerInviteButton,
-      ]),
       activeSection,
       pendingSection,
     ]);
@@ -721,16 +784,11 @@ export function renderTeamView({ project } = {}) {
     clearNode(contentEl);
     clearNode(modalHost);
     contentEl.append(renderContent());
-
-    if (state.inviteModalOpen) {
-      modalHost.append(renderInviteModal());
-    }
+    if (state.inviteModalOpen) modalHost.append(renderInviteModal());
   }
 
   render();
-  queueMicrotask(() => {
-    void loadMembers();
-  });
+  queueMicrotask(() => { void loadMembers(); });
 
   return container;
 }

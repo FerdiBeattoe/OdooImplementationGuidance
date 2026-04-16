@@ -289,21 +289,20 @@ Environment variables: SUPABASE_URL, SUPABASE_ANON_KEY,
 
 ---
 
-## Design System — No Deviations
+## Design System — Kinso-Inspired
 
-Navy: #0c1a30 | Amber: #f59e0b
-Faded amber button:
-  background rgba(245,158,11,0.12)
-  border 1px solid rgba(245,158,11,0.3)
-  color #92400e | border-radius 6px
-Secondary button:
-  background rgba(12,26,48,0.06)
-  border 1px solid rgba(12,26,48,0.15)
-  color #0c1a30 | border-radius 6px
-Cards: white | 1px solid #e2e8f0 | border-radius 10px
-Font: Inter, sans-serif
-Icons: lucideIcon(name, size) PascalCase from lib/icons.js
-No solid orange. No purple. No border-radius > 8px on buttons.
+Authority document: .ruflo/skills/frontend-design/SKILL.md
+Tokens: app/frontend/src/styles/tokens.css
+All colors, spacing, radii, fonts, and motion come from tokens.css.
+Do not hardcode hex values, font names, spacing, or radii in views.
+
+Light register default. Dark on user toggle. System option supported.
+Theme control lives in the Settings cog menu, not the top nav.
+
+Top nav: four workflow items only (Dashboard, Module setup, Pipeline,
+Pre-commit) + a More dropdown for secondary views + a Settings cog.
+Grid texture is scoped: marketing/auth/onboarding/dashboard-landing only.
+Dense product views opt out by setting --surface-texture to none.
 
 ---
 

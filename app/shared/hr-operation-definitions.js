@@ -53,6 +53,10 @@ function addHrDefinition(map, checkpoint_id, intended_changes) { const metadata 
 export function assembleHrOperationDefinitions(target_context = null, discovery_answers = null, wizard_captures = null) { const map = createOperationDefinitionsMap(); const answers = discovery_answers?.answers ?? {}; const ta03 = Array.isArray(answers["TA-03"]) ? answers["TA-03"] : []; const capture = extractHrCapture(wizard_captures); const departmentChanges = buildDepartmentChanges(capture); const jobChanges = buildJobChanges(capture);
   addHrDefinition(map, CHECKPOINT_IDS.HR_FOUND_001, departmentChanges);
   addHrDefinition(map, CHECKPOINT_IDS.HR_DREQ_001, departmentChanges);
+  // NOTE: hr.job write/create may fail with AccessError if the connected Odoo user (e.g. uid=2)
+  // lacks HR Officer/Manager rights. This is an instance configuration issue on the Odoo side
+  // (e.g. majestic.odoo.com), not an assembler defect. The admin user must be granted
+  // group_hr_manager or group_hr_user before hr.job operations will succeed at runtime.
   addHrDefinition(map, CHECKPOINT_IDS.HR_DREQ_002, jobChanges);
   if (ta03.includes("HR leave")) {
     addHrDefinition(map, CHECKPOINT_IDS.HR_DREQ_003, null);

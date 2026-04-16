@@ -37,6 +37,9 @@ function buildQualityPointChanges(capture) {
   const title = typeof capture.quality_check_title === "string" ? capture.quality_check_title.trim() : "";
   const checkType = typeof capture.check_type === "string" ? capture.check_type.trim() : "";
   if (!title && !checkType) return null;
+  // honest-null: test_type_id is required by quality.point but must be resolved
+  // at runtime via client.searchRead("quality.test.type", [], ["id","name"], {limit:1}).
+  // The assembler cannot perform runtime lookups — leave null until execution layer resolves it.
   return {
     title: title || null,
     test_type_id: null,

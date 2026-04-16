@@ -5,17 +5,59 @@ import { onboardingStore } from "../state/onboarding-store.js";
 import { pipelineStore } from "../state/pipeline-store.js";
 import { getCheckpointRecords, humanizeDomainId, triggerRefresh } from "./pipeline-dashboard.js";
 
-const NAVY = "#0c1a30";
-const AMBER = "#f59e0b";
-const SUCCESS = "#16a34a";
-const DANGER = "#dc2626";
-const MUTED = "#6b7280";
-const BORDER = "#e2e8f0";
-const CARD = `background: #ffffff; border: 1px solid ${BORDER}; border-radius: 10px;`;
 const EM_DASH = "\u2014";
-const FADED_AMBER = "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-family: Inter, sans-serif; font-weight: 600; cursor: pointer;";
-const SECONDARY = "background: rgba(12,26,48,0.06); border: 1px solid rgba(12,26,48,0.15); color: #0c1a30; border-radius: 6px; font-family: Inter, sans-serif; font-weight: 600; cursor: pointer;";
-const PRIMARY = "background: #0c1a30; border: 1px solid #0c1a30; color: #ffffff; border-radius: 6px; font-family: Inter, sans-serif; font-weight: 600; cursor: pointer;";
+
+const PDF_COLORS = {
+  navy:   "#0F0F10",
+  amber:  "#D78B7A",
+  border: "#EDECEA",
+  muted:  "#9A9AA0",
+  success:"#0F0F10",
+  danger: "#6B4F3E",
+  white:  "#FFFFFF",
+  stripe: "#F9F7F3",
+};
+
+const CANVAS_STYLE =
+  "background: var(--canvas-bloom-warm), var(--canvas-bloom-cool), " +
+  "var(--color-canvas-base), var(--surface-texture); " +
+  "padding: var(--space-6) var(--space-7) var(--space-8); " +
+  "font-family: var(--font-body); color: var(--color-ink);";
+
+const PANEL_STYLE =
+  "background: var(--color-surface); border: 1px solid var(--color-line); " +
+  "border-radius: var(--radius-panel);";
+
+const CARD_STYLE =
+  "background: var(--color-surface); border: 1px solid var(--color-line); " +
+  "border-radius: var(--radius-card);";
+
+const PILL_PRIMARY =
+  "display: inline-flex; align-items: center; gap: 8px; " +
+  "padding: 9px 16px; border-radius: var(--radius-pill); " +
+  "background: var(--color-pill-primary-bg); color: var(--color-pill-primary-fg); " +
+  "border: 1px solid var(--color-pill-primary-bg); " +
+  "font-family: var(--font-body); font-size: var(--fs-small); font-weight: 500; " +
+  "cursor: pointer; transition: all var(--dur-base) var(--ease);";
+
+const PILL_SECONDARY =
+  "display: inline-flex; align-items: center; gap: 8px; " +
+  "padding: 9px 16px; border-radius: var(--radius-pill); " +
+  "background: var(--color-pill-secondary-bg); color: var(--color-pill-secondary-fg); " +
+  "border: 1px solid var(--color-pill-secondary-border); " +
+  "font-family: var(--font-body); font-size: var(--fs-small); font-weight: 500; " +
+  "cursor: pointer; transition: all var(--dur-base) var(--ease);";
+
+const EYEBROW_STYLE =
+  "display: inline-flex; align-self: flex-start; align-items: center; " +
+  "padding: 4px 12px; border: 1px solid var(--color-line); " +
+  "border-radius: var(--radius-pill); background: var(--color-surface); " +
+  "font-family: var(--font-body); font-size: var(--fs-tiny); font-weight: 600; " +
+  "text-transform: uppercase; letter-spacing: var(--track-eyebrow-strong); " +
+  "color: var(--color-subtle);";
+
+const MONO_META_STYLE =
+  "font-family: var(--font-mono); font-size: var(--fs-small); color: var(--color-muted);";
 
 let toastTimer = null;
 
@@ -34,7 +76,9 @@ function toastHost() {
   if (!host) {
     host = el("div", {
       id: "pre-commit-report-toast-host",
-      style: "position: fixed; right: 24px; bottom: 24px; z-index: 120; display: flex; flex-direction: column; gap: 12px;",
+      style:
+        "position: fixed; right: var(--space-6); bottom: var(--space-6); z-index: 120; " +
+        "display: flex; flex-direction: column; gap: var(--space-3);",
     });
     document.body.append(host);
   }
@@ -47,7 +91,11 @@ function showToast(message) {
   clearNode(host);
   if (toastTimer) clearTimeout(toastTimer);
   host.append(el("div", {
-    style: "background: #0c1a30; color: #ffffff; padding: 12px 20px; border-radius: 6px; font-size: 14px; box-shadow: 0 10px 25px rgba(12,26,48,0.18); max-width: 320px; font-family: Inter, sans-serif;",
+    style:
+      "background: var(--color-pill-primary-bg); color: var(--color-pill-primary-fg); " +
+      "padding: var(--space-3) var(--space-5); border-radius: var(--radius-pill); " +
+      "font-family: var(--font-body); font-size: var(--fs-small); " +
+      "box-shadow: var(--shadow-menu); max-width: 320px;",
     text: message,
   }));
   toastTimer = setTimeout(() => {
@@ -100,6 +148,20 @@ function formatTimestamp(value) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(parsed);
+}
+
+function deriveInstanceHost(url, database) {
+  const raw = typeof url === "string" ? url.trim() : "";
+  if (raw) {
+    try {
+      return new URL(raw).hostname;
+    } catch {
+      const stripped = raw.replace(/^https?:\/\//i, "").split(/[/?#]/)[0];
+      if (stripped) return stripped;
+    }
+  }
+  const db = typeof database === "string" ? database.trim() : "";
+  return db || "NEW";
 }
 
 function formatValue(value) {
@@ -190,18 +252,36 @@ function fieldLabel(preview) {
 }
 
 function badge(text) {
-  const background = text === "Safe" ? "rgba(22,163,74,0.12)" : text === "Conditional" ? "rgba(245,158,11,0.12)" : "rgba(12,26,48,0.06)";
-  const color = text === "Safe" ? "#166534" : text === "Conditional" ? "#92400e" : NAVY;
+  let bg = "var(--color-chip-bg)";
+  let fg = "var(--color-chip-fg)";
+  if (text === "Safe") {
+    bg = "var(--color-chip-ready-bg)";
+    fg = "var(--color-chip-ready-fg)";
+  } else if (text === "Conditional") {
+    bg = "var(--color-chip-review-bg)";
+    fg = "var(--color-chip-review-fg)";
+  }
   return el("span", {
-    style: `display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 6px; background: ${background}; color: ${color}; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif;`,
+    style:
+      `display: inline-flex; align-items: center; padding: 4px 10px; ` +
+      `border-radius: var(--radius-pill); background: ${bg}; color: ${fg}; ` +
+      `font-family: var(--font-body); font-size: var(--fs-small); font-weight: 600;`,
     text: text || EM_DASH,
   });
 }
 
 function detail(label, value, muted = false) {
   return el("div", { style: "display: flex; flex-direction: column; gap: 4px;" }, [
-    el("span", { style: "font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; font-weight: 700;", text: label }),
-    el("span", { style: `font-size: 14px; color: ${muted ? MUTED : NAVY};`, text: value || EM_DASH }),
+    el("span", {
+      style:
+        "font-size: var(--fs-micro); text-transform: uppercase; " +
+        "letter-spacing: var(--track-eyebrow); color: var(--color-muted); font-weight: 600;",
+      text: label,
+    }),
+    el("span", {
+      style: `font-size: var(--fs-body); color: ${muted ? "var(--color-muted)" : "var(--color-ink)"};`,
+      text: value || EM_DASH,
+    }),
   ]);
 }
 
@@ -268,7 +348,7 @@ function formatPdfFilenameDate(value) {
 }
 
 function stripedPdfRow(values, rowIndex, extra = {}) {
-  const fillColor = rowIndex % 2 === 0 ? "#ffffff" : "#f9fafb";
+  const fillColor = rowIndex % 2 === 0 ? PDF_COLORS.white : PDF_COLORS.stripe;
   return values.map((value) => ({
     text: value || EM_DASH,
     fillColor,
@@ -280,8 +360,8 @@ function pdfTableLayout() {
   return {
     hLineWidth: () => 0.5,
     vLineWidth: () => 0.5,
-    hLineColor: () => BORDER,
-    vLineColor: () => BORDER,
+    hLineColor: () => PDF_COLORS.border,
+    vLineColor: () => PDF_COLORS.border,
     paddingLeft: () => 6,
     paddingRight: () => 6,
     paddingTop: () => 5,
@@ -320,7 +400,7 @@ function checkpointPdfRows(domain) {
     checkpoint.safetyClass || EM_DASH,
     checkpoint.approvedBy || EM_DASH,
     checkpoint.approvedAt || EM_DASH,
-  ], index, { fontSize: 9, color: NAVY }));
+  ], index, { fontSize: 9, color: PDF_COLORS.navy }));
 }
 
 function buildPdfDefinition(report) {
@@ -337,7 +417,7 @@ function buildPdfDefinition(report) {
       text: "Pre-Commit Implementation Report",
       fontSize: 20,
       bold: true,
-      color: NAVY,
+      color: PDF_COLORS.navy,
       margin: [0, 0, 0, 16],
     },
     {
@@ -346,7 +426,7 @@ function buildPdfDefinition(report) {
         body: metadataRows.map((row, index) => stripedPdfRow([
           row[0],
           row[1],
-        ], index, { fontSize: 9, color: NAVY }).map((cell, columnIndex) => ({
+        ], index, { fontSize: 9, color: PDF_COLORS.navy }).map((cell, columnIndex) => ({
           ...cell,
           bold: columnIndex === 0,
         }))),
@@ -362,7 +442,7 @@ function buildPdfDefinition(report) {
         text: String(domain.domainLabel || EM_DASH).toUpperCase(),
         fontSize: 11,
         bold: true,
-        color: NAVY,
+        color: PDF_COLORS.navy,
         margin: [0, 0, 0, 8],
       },
       {
@@ -371,14 +451,14 @@ function buildPdfDefinition(report) {
           widths: [44, "*", 84, 68, "*", 78, 102, 76],
           body: [
             [
-              { text: "ID", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
-              { text: "Name", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
-              { text: "Model", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
-              { text: "Field", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
-              { text: "Intended Value", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
-              { text: "Safety Class", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
-              { text: "Approved By", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
-              { text: "Approved At", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 9 },
+              { text: "ID", fillColor: PDF_COLORS.navy, color: PDF_COLORS.white, bold: true, fontSize: 9 },
+              { text: "Name", fillColor: PDF_COLORS.navy, color: PDF_COLORS.white, bold: true, fontSize: 9 },
+              { text: "Model", fillColor: PDF_COLORS.navy, color: PDF_COLORS.white, bold: true, fontSize: 9 },
+              { text: "Field", fillColor: PDF_COLORS.navy, color: PDF_COLORS.white, bold: true, fontSize: 9 },
+              { text: "Intended Value", fillColor: PDF_COLORS.navy, color: PDF_COLORS.white, bold: true, fontSize: 9 },
+              { text: "Safety Class", fillColor: PDF_COLORS.navy, color: PDF_COLORS.white, bold: true, fontSize: 9 },
+              { text: "Approved By", fillColor: PDF_COLORS.navy, color: PDF_COLORS.white, bold: true, fontSize: 9 },
+              { text: "Approved At", fillColor: PDF_COLORS.navy, color: PDF_COLORS.white, bold: true, fontSize: 9 },
             ],
             ...checkpointPdfRows(domain),
           ],
@@ -395,17 +475,17 @@ function buildPdfDefinition(report) {
       widths: ["*", "*", "*", "*"],
       body: [
         [
-          { text: "Total modules", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 10 },
-          { text: "Confirmed", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 10 },
-          { text: "Pending writes", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 10 },
-          { text: "Blocked", fillColor: NAVY, color: "#ffffff", bold: true, fontSize: 10 },
+          { text: "Total modules", fillColor: PDF_COLORS.navy, color: PDF_COLORS.white, bold: true, fontSize: 10 },
+          { text: "Confirmed", fillColor: PDF_COLORS.navy, color: PDF_COLORS.white, bold: true, fontSize: 10 },
+          { text: "Pending writes", fillColor: PDF_COLORS.navy, color: PDF_COLORS.white, bold: true, fontSize: 10 },
+          { text: "Blocked", fillColor: PDF_COLORS.navy, color: PDF_COLORS.white, bold: true, fontSize: 10 },
         ],
         stripedPdfRow([
           String(report.totalModulesActive),
           String(report.confirmedCheckpointCount),
           String(report.pendingWriteCount),
           String(report.blockedCheckpointCount),
-        ], 0, { fontSize: 10, color: NAVY }),
+        ], 0, { fontSize: 10, color: PDF_COLORS.navy }),
       ],
     },
     layout: pdfTableLayout(),
@@ -418,7 +498,7 @@ function buildPdfDefinition(report) {
     pageMargins: [40, 72, 40, 56],
     defaultStyle: {
       fontSize: 10,
-      color: NAVY,
+      color: PDF_COLORS.navy,
     },
     header(currentPage, pageCount, pageSize) {
       return {
@@ -426,13 +506,13 @@ function buildPdfDefinition(report) {
         stack: [
           {
             columns: [
-              { text: report.clientCompanyName || report.projectId || EM_DASH, bold: true, color: NAVY, fontSize: 10 },
-              { text: reportDate, alignment: "right", color: NAVY, fontSize: 10 },
+              { text: report.clientCompanyName || report.projectId || EM_DASH, bold: true, color: PDF_COLORS.navy, fontSize: 10 },
+              { text: reportDate, alignment: "right", color: PDF_COLORS.navy, fontSize: 10 },
             ],
           },
           {
             canvas: [
-              { type: "line", x1: 0, y1: 10, x2: pageSize.width - 80, y2: 10, lineWidth: 2, lineColor: AMBER },
+              { type: "line", x1: 0, y1: 10, x2: pageSize.width - 80, y2: 10, lineWidth: 2, lineColor: PDF_COLORS.amber },
             ],
           },
         ],
@@ -444,18 +524,18 @@ function buildPdfDefinition(report) {
         stack: [
           {
             canvas: [
-              { type: "line", x1: 0, y1: 0, x2: pageSize.width - 80, y2: 0, lineWidth: 1, lineColor: NAVY },
+              { type: "line", x1: 0, y1: 0, x2: pageSize.width - 80, y2: 0, lineWidth: 1, lineColor: PDF_COLORS.navy },
             ],
             margin: [0, 0, 0, 8],
           },
           {
             columns: [
-              { text: "Powered by Project Odoo  projecterp.com", fontSize: 8, color: MUTED },
+              { text: "Powered by Project Odoo  projecterp.com", fontSize: 8, color: PDF_COLORS.muted },
               {
                 text: [{ text: currentPage }, " of ", { text: pageCount }],
                 alignment: "right",
                 fontSize: 8,
-                color: MUTED,
+                color: PDF_COLORS.muted,
               },
             ],
           },
@@ -518,7 +598,6 @@ function buildReportModel({ runtimeState, members, onboardingState, project, app
           isExecuted,
           isBlocked,
           isConfirmed,
-          borderColor: isExecuted ? SUCCESS : isBlocked ? DANGER : isConfirmed ? AMBER : "#e5e7eb",
         };
       });
     const pendingWriteCount = checkpoints.filter((checkpoint) => checkpoint.hasPendingWrite).length;
@@ -539,12 +618,15 @@ function buildReportModel({ runtimeState, members, onboardingState, project, app
   const affected = active.filter((domain) => domain.pendingWriteCount > 0);
   const membership = currentMembership(members, onboardingState);
   const projectId = resolveProjectId(runtimeState, project, appState, onboardingState);
+  const connectionUrl = onboardingState?.connection?.url || "";
+  const connectionDatabase = onboardingState?.connection?.database || "";
   return {
     projectId,
     clientCompanyName: resolveCompanyName(runtimeState, project, appState) || projectId || EM_DASH,
     projectLeadDisplay: resolveProjectLeadDisplay(members, membership, onboardingState),
-    url: onboardingState?.connection?.url || EM_DASH,
-    database: onboardingState?.connection?.database || EM_DASH,
+    url: connectionUrl || EM_DASH,
+    database: connectionDatabase || EM_DASH,
+    instanceHost: deriveInstanceHost(connectionUrl, connectionDatabase),
     generatedAt,
     generatedLabel: formatTimestamp(generatedAt),
     isProjectLead: membership?.role === "project_lead",
@@ -561,54 +643,163 @@ function buildReportModel({ runtimeState, members, onboardingState, project, app
 }
 
 function summaryPanel(report) {
-  return el("aside", { style: `${CARD} padding: 20px; display: flex; flex-direction: column; gap: 16px; flex: 0 0 320px; min-width: 280px;`, dataset: { testid: "pre-commit-summary" } }, [
-    el("div", { style: "font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: #6b7280; font-weight: 700;", text: "Summary" }),
-    el("div", { style: "display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;" }, [
+  return el("aside", {
+    style: `${PANEL_STYLE} padding: var(--space-5) var(--space-6); ` +
+      `display: flex; flex-direction: column; gap: var(--space-4); ` +
+      `flex: 0 0 320px; min-width: 280px;`,
+    dataset: { testid: "pre-commit-summary" },
+  }, [
+    el("div", {
+      style:
+        "font-size: var(--fs-micro); text-transform: uppercase; " +
+        "letter-spacing: var(--track-eyebrow); color: var(--color-muted); font-weight: 600;",
+      text: "Summary",
+    }),
+    el("div", {
+      style: "display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3);",
+    }, [
       stat("Total modules active", String(report.totalModulesActive)),
       stat("Confirmed checkpoints", String(report.confirmedCheckpointCount)),
       stat("Pending writes", String(report.pendingWriteCount)),
       stat("Blocked checkpoints", String(report.blockedCheckpointCount)),
     ]),
-    el("div", { style: "display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px solid #e2e8f0;" }, [
-      el("div", { style: "font-size: 13px; color: #6b7280;", text: "Domains complete vs in progress" }),
-      el("div", { style: "font-size: 16px; font-weight: 700; color: #0c1a30;", text: `${report.completeDomainCount} complete / ${report.inProgressDomainCount} in progress` }),
+    el("div", {
+      style:
+        "display: flex; flex-direction: column; gap: 6px; " +
+        "padding-top: var(--space-3); border-top: 1px solid var(--color-line);",
+    }, [
+      el("div", {
+        style: "font-size: var(--fs-small); color: var(--color-muted);",
+        text: "Domains complete vs in progress",
+      }),
+      el("div", {
+        style: "font-size: var(--fs-body); color: var(--color-ink);",
+        text: `${report.completeDomainCount} complete / ${report.inProgressDomainCount} in progress`,
+      }),
     ]),
   ]);
 }
 
 function stat(label, value) {
-  return el("div", { style: "padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; display: flex; flex-direction: column; gap: 4px;" }, [
-    el("span", { style: "font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; font-weight: 700;", text: label }),
-    el("span", { style: "font-size: 18px; font-weight: 700; color: #0c1a30;", text: value }),
+  return el("div", {
+    style:
+      "padding: var(--space-3); background: var(--color-canvas-base); " +
+      "border: 1px solid var(--color-line-soft); border-radius: var(--radius-chip); " +
+      "display: flex; flex-direction: column; gap: 4px;",
+  }, [
+    el("span", {
+      style:
+        "font-size: var(--fs-micro); text-transform: uppercase; " +
+        "letter-spacing: var(--track-eyebrow); color: var(--color-muted); font-weight: 600;",
+      text: label,
+    }),
+    el("span", {
+      style:
+        "font-size: var(--fs-h2); font-weight: 600; " +
+        "letter-spacing: var(--track-tight); color: var(--color-ink); " +
+        "font-variant-numeric: tabular-nums;",
+      text: value,
+    }),
   ]);
 }
 
+function borderLeftStyle(checkpoint) {
+  if (checkpoint.isExecuted) {
+    return "border-left: 3px solid var(--color-ink);";
+  }
+  if (checkpoint.hasPendingWrite) {
+    return "border-left: 3px solid var(--color-subtle); border-image: var(--accent-grad) 1;";
+  }
+  if (checkpoint.isBlocked) {
+    return "border-left: 3px solid var(--color-chip-review-fg);";
+  }
+  return "border-left: 3px solid var(--color-line);";
+}
+
+function pendingWriteDot() {
+  return el("span", {
+    style:
+      "display: inline-block; width: 6px; height: 6px; border-radius: 50%; " +
+      "background: var(--accent-grad); flex-shrink: 0;",
+    "aria-label": "Pending write",
+  });
+}
+
 function checkpointCard(checkpoint) {
-  return el("article", { style: `${CARD} border-left: 3px solid ${checkpoint.borderColor}; padding: 18px 18px 18px 16px; display: flex; flex-direction: column; gap: 12px;`, dataset: { testid: `pre-commit-card-${checkpoint.checkpointId}` } }, [
-    el("div", { style: "display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap;" }, [
+  const titleRow = el("div", {
+    style: "display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;",
+  }, [
+    el("div", {
+      style:
+        "font-size: var(--fs-h3); font-weight: 600; color: var(--color-ink); " +
+        "letter-spacing: var(--track-tight);",
+      text: checkpoint.title || EM_DASH,
+    }),
+    checkpoint.hasPendingWrite ? pendingWriteDot() : null,
+  ]);
+
+  return el("article", {
+    style:
+      `${PANEL_STYLE} padding: var(--space-4) var(--space-5); ` +
+      `display: flex; flex-direction: column; gap: var(--space-3); ` +
+      `${borderLeftStyle(checkpoint)}`,
+    dataset: { testid: `pre-commit-card-${checkpoint.checkpointId}` },
+  }, [
+    el("div", {
+      style:
+        "display: flex; align-items: flex-start; justify-content: space-between; " +
+        "gap: var(--space-3); flex-wrap: wrap;",
+    }, [
       el("div", { style: "display: flex; flex-direction: column; gap: 6px;" }, [
-        el("div", { style: `font-size: 15px; font-weight: 700; color: ${NAVY};`, text: checkpoint.title || EM_DASH }),
-        el("div", { style: "font-size: 13px; color: #6b7280;", text: `Operation ${checkpoint.operation}  Model ${checkpoint.model}  Field ${checkpoint.field}` }),
+        titleRow,
+        el("div", {
+          style: "font-size: var(--fs-small); color: var(--color-body);",
+          text: `Operation ${checkpoint.operation}  Model ${checkpoint.model}  Field ${checkpoint.field}`,
+        }),
       ]),
       badge(checkpoint.safetyClass),
     ]),
-    el("div", { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 16px;" }, [
+    el("div", {
+      style:
+        "display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); " +
+        "gap: var(--space-3) var(--space-4);",
+    }, [
       detail("Current value", EM_DASH),
       detail("Intended value", checkpoint.intendedValue),
       detail("Approved by", checkpoint.approvedBy, checkpoint.approvedBy === "Awaiting confirmation"),
       checkpoint.approvedAt ? detail("Approved at", checkpoint.approvedAt) : null,
     ]),
-    checkpoint.blockerReason ? el("div", { style: "font-size: 13px; color: #dc2626;", text: checkpoint.blockerReason }) : null,
+    checkpoint.blockerReason
+      ? el("div", {
+          style: "font-size: var(--fs-small); color: var(--color-chip-review-fg);",
+          text: checkpoint.blockerReason,
+        })
+      : null,
   ]);
 }
 
 function domainSection(domain) {
-  return el("section", { style: "display: flex; flex-direction: column; gap: 14px;", dataset: { testid: `pre-commit-domain-${domain.domainId}` } }, [
-    el("div", { style: "display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; border-bottom: 2px solid #f59e0b;" }, [
-      el("div", { style: `font-size: 13px; font-weight: 800; color: ${NAVY}; letter-spacing: 0.14em; text-transform: uppercase;`, text: domain.domainLabel }),
-      el("div", { style: "font-size: 13px; color: #6b7280;", text: `${domain.confirmedCount} of ${domain.totalCount} checkpoints confirmed  ${domain.pendingWriteCount} pending writes` }),
+  return el("section", {
+    style: "display: flex; flex-direction: column; gap: var(--space-4);",
+    dataset: { testid: `pre-commit-domain-${domain.domainId}` },
+  }, [
+    el("div", {
+      style:
+        "display: flex; flex-direction: column; gap: var(--space-2); " +
+        "padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-line);",
+    }, [
+      el("span", { style: EYEBROW_STYLE, text: String(domain.domainLabel || "").toUpperCase() }),
+      el("div", {
+        style: MONO_META_STYLE,
+        text: `${domain.confirmedCount} of ${domain.totalCount} checkpoints confirmed  ·  ${domain.pendingWriteCount} pending writes`,
+      }),
     ]),
-    ...(domain.checkpoints.length ? domain.checkpoints.map((checkpoint) => checkpointCard(checkpoint)) : [el("div", { style: `${CARD} padding: 16px; font-size: 14px; color: #6b7280;`, text: "No checkpoints available for this module." })]),
+    ...(domain.checkpoints.length
+      ? domain.checkpoints.map((checkpoint) => checkpointCard(checkpoint))
+      : [el("div", {
+          style: `${PANEL_STYLE} padding: var(--space-4); font-size: var(--fs-body); color: var(--color-muted);`,
+          text: "No checkpoints available for this module.",
+        })]),
   ]);
 }
 
@@ -659,7 +850,7 @@ function fireAudit(token, report) {
 export function renderPreCommitReportView({ project, onNavigate } = {}) {
   const generatedAt = new Date().toISOString();
   const container = el("section", {
-    style: "max-width: 1320px; margin: 0 auto; padding: 24px 32px 40px; font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 24px;",
+    style: `${CANVAS_STYLE} max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-6);`,
     dataset: { testid: "pre-commit-report-view" },
   });
   const contentEl = el("div");
@@ -720,21 +911,64 @@ export function renderPreCommitReportView({ project, onNavigate } = {}) {
   }
 
   function topBar(report) {
-    return el("div", { style: `position: sticky; top: 0; z-index: 20; ${CARD} padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;`, dataset: { testid: "pre-commit-top-bar" } }, [
-      el("button", { type: "button", style: `${SECONDARY} display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px;`, onClick: () => navigate("pipeline"), dataset: { testid: "pre-commit-back-button" } }, [
+    return el("div", {
+      style:
+        `position: sticky; top: 0; z-index: 20; ${PANEL_STYLE} ` +
+        `padding: var(--space-4) var(--space-5); ` +
+        `display: flex; align-items: center; justify-content: space-between; ` +
+        `gap: var(--space-4); flex-wrap: wrap;`,
+      dataset: { testid: "pre-commit-top-bar" },
+    }, [
+      el("button", {
+        type: "button",
+        style: PILL_SECONDARY,
+        onClick: () => navigate("pipeline"),
+        dataset: { testid: "pre-commit-back-button" },
+      }, [
         icon("ArrowLeft", 16),
         el("span", { text: "Back" }),
       ]),
-      el("div", { style: "flex: 1 1 360px; display: flex; flex-direction: column; gap: 4px; min-width: 260px;" }, [
-        el("h1", { style: "margin: 0; font-size: 24px; font-weight: 700; color: #0c1a30; font-family: Inter, sans-serif;", text: "Pre-Commit Implementation Report" }),
-        el("div", { style: "font-size: 13px; color: #6b7280;", text: `Generated ${report.generatedLabel || EM_DASH}  ${report.url}  ${report.database}` }),
+      el("div", {
+        style:
+          "flex: 1 1 360px; display: flex; flex-direction: column; " +
+          "gap: var(--space-2); min-width: 260px;",
+      }, [
+        el("span", { style: EYEBROW_STYLE, text: `PRE-COMMIT · ${report.instanceHost || "NEW"}` }),
+        el("h1", {
+          style:
+            "margin: 0; font-size: var(--fs-h1); font-weight: 600; " +
+            "letter-spacing: var(--track-tight); line-height: var(--lh-snug); " +
+            "color: var(--color-ink); font-family: var(--font-body);",
+          text: "Review and commit",
+        }),
+        el("div", {
+          style: MONO_META_STYLE,
+          text: `Generated ${report.generatedLabel || EM_DASH}  ·  ${report.database}  ·  ${report.url}`,
+        }),
       ]),
-      el("div", { style: "display: flex; align-items: center; gap: 10px; flex-wrap: wrap;" }, [
-        el("button", { type: "button", style: `${SECONDARY} display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px;`, onClick: () => exportPdf(report), dataset: { testid: "pre-commit-export-button" } }, [
+      el("div", {
+        style: "display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;",
+      }, [
+        el("button", {
+          type: "button",
+          style: PILL_SECONDARY,
+          onClick: () => exportPdf(report),
+          dataset: { testid: "pre-commit-export-button" },
+        }, [
           icon("Download", 16),
           el("span", { text: "Export as PDF" }),
         ]),
-        report.isProjectLead ? el("button", { type: "button", style: `${PRIMARY} display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px;`, onClick: () => { state.modalOpen = true; state.confirmValue = ""; state.commitError = ""; render(); }, dataset: { testid: "pre-commit-commit-button" } }, [
+        report.isProjectLead ? el("button", {
+          type: "button",
+          style: PILL_PRIMARY,
+          onClick: () => {
+            state.modalOpen = true;
+            state.confirmValue = "";
+            state.commitError = "";
+            render();
+          },
+          dataset: { testid: "pre-commit-commit-button" },
+        }, [
           icon("ShieldCheck", 16),
           el("span", { text: "Commit to Odoo" }),
         ]) : null,
@@ -743,51 +977,128 @@ export function renderPreCommitReportView({ project, onNavigate } = {}) {
   }
 
   function modal(report) {
-    return el("div", { style: "position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 100;" }, [
-      el("div", { style: "width: 100%; max-width: 480px; background: #ffffff; border-radius: 10px; padding: 32px; box-shadow: 0 24px 48px rgba(12,26,48,0.18); display: flex; flex-direction: column; gap: 18px; font-family: Inter, sans-serif;" }, [
-        el("h2", { style: "margin: 0; font-size: 18px; font-weight: 700; color: #0c1a30;", text: "Commit to Odoo" }),
-        el("p", { style: "margin: 0; font-size: 14px; color: #374151; line-height: 1.5;", text: `You are about to write ${report.pendingWriteCount} changes across ${report.affectedDomains.length} modules to ${report.database} on ${report.url}.` }),
-        el("div", { style: `${CARD} padding: 14px; display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow: auto;` }, report.activeDomains.map((domain) => (
-          el("div", { style: "display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #0c1a30;" }, [
+    const confirmInput = el("input", {
+      type: "text",
+      value: state.confirmValue,
+      placeholder: "Type COMMIT to confirm",
+      style:
+        "width: 100%; box-sizing: border-box; font-family: var(--font-mono); " +
+        "font-size: var(--fs-body); color: var(--color-ink); " +
+        "background: var(--color-surface); border: 1px solid var(--color-line); " +
+        "border-radius: var(--radius-input); padding: 10px 14px; outline: none;",
+      onInput: (event) => {
+        state.confirmValue = event.target.value;
+        render();
+      },
+      dataset: { testid: "pre-commit-confirm-input" },
+    });
+    confirmInput.addEventListener("focus", () => { confirmInput.style.borderColor = "var(--color-ink)"; });
+    confirmInput.addEventListener("blur", () => { confirmInput.style.borderColor = "var(--color-line)"; });
+
+    return el("div", {
+      style:
+        "position: fixed; inset: 0; background: rgba(0,0,0,0.5); " +
+        "display: flex; align-items: center; justify-content: center; " +
+        "padding: var(--space-6); z-index: 100;",
+    }, [
+      el("div", {
+        style:
+          `width: 100%; max-width: 480px; ${CARD_STYLE} ` +
+          `padding: var(--space-7); box-shadow: var(--shadow-menu); ` +
+          `display: flex; flex-direction: column; gap: var(--space-4); ` +
+          `font-family: var(--font-body);`,
+      }, [
+        el("h2", {
+          style:
+            "margin: 0; font-size: var(--fs-h2); font-weight: 600; " +
+            "color: var(--color-ink); letter-spacing: var(--track-tight);",
+          text: "Commit these changes to Odoo",
+        }),
+        el("p", {
+          style:
+            "margin: 0; font-size: var(--fs-body); color: var(--color-body); " +
+            "line-height: var(--lh-body);",
+          text: `You are about to write ${report.pendingWriteCount} changes across ${report.affectedDomains.length} modules to ${report.database} on ${report.url}.`,
+        }),
+        el("div", {
+          style:
+            `${PANEL_STYLE} padding: var(--space-3) var(--space-4); ` +
+            `display: flex; flex-direction: column; gap: var(--space-2); ` +
+            `max-height: 180px; overflow: auto;`,
+        }, report.activeDomains.map((domain) => (
+          el("div", {
+            style:
+              "display: flex; align-items: center; justify-content: space-between; " +
+              "gap: var(--space-3); font-size: var(--fs-small); color: var(--color-ink);",
+          }, [
             el("span", { text: domain.domainLabel }),
-            el("span", { style: "color: #6b7280;", text: `${domain.pendingWriteCount} pending` }),
+            el("span", {
+              style: "font-family: var(--font-mono); color: var(--color-muted);",
+              text: `${domain.pendingWriteCount} pending`,
+            }),
           ])
         ))),
-        el("label", { style: "display: flex; flex-direction: column; gap: 8px;" }, [
-          el("span", { style: "font-size: 13px; font-weight: 600; color: #0c1a30;", text: "This action cannot be undone." }),
-          el("input", { type: "text", value: state.confirmValue, placeholder: "Type COMMIT to confirm", style: "width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px 12px; font-size: 14px; color: #111827; font-family: Inter, sans-serif; box-sizing: border-box;", onInput: (event) => { state.confirmValue = event.target.value; render(); }, dataset: { testid: "pre-commit-confirm-input" } }),
+        el("label", { style: "display: flex; flex-direction: column; gap: var(--space-2);" }, [
+          el("span", {
+            style: "font-size: var(--fs-small); font-weight: 500; color: var(--color-ink);",
+            text: "This action cannot be undone.",
+          }),
+          confirmInput,
         ]),
-        state.commitError ? el("div", { style: "font-size: 13px; color: #dc2626;", text: state.commitError }) : null,
-        el("div", { style: "display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;" }, [
-          el("button", { type: "button", style: `${SECONDARY} padding: 10px 16px;`, onClick: () => { state.modalOpen = false; state.confirmValue = ""; state.committing = false; state.commitError = ""; render(); }, disabled: state.committing }, [
-            el("span", { text: "Cancel" }),
-          ]),
-          el("button", { type: "button", style: `${PRIMARY} padding: 10px 16px;${state.committing ? " opacity: 0.8; cursor: wait;" : ""}`, disabled: state.confirmValue !== "COMMIT" || state.committing, onClick: async () => {
-            if (state.confirmValue !== "COMMIT" || state.committing) return;
-            const { onboardingState, report: liveReport } = viewState();
-            if (!liveReport.projectId) {
-              state.commitError = "Project ID is unavailable.";
-              render();
-              return;
-            }
-            state.committing = true;
-            state.commitError = "";
-            render();
-            try {
-              await executePendingWrites(liveReport.projectId);
-              fireAudit(onboardingState?.sessionToken || null, liveReport);
+        state.commitError
+          ? el("div", {
+              style: "font-size: var(--fs-small); color: var(--color-chip-review-fg);",
+              text: state.commitError,
+            })
+          : null,
+        el("div", {
+          style: "display: flex; justify-content: flex-end; gap: var(--space-3); flex-wrap: wrap;",
+        }, [
+          el("button", {
+            type: "button",
+            style: PILL_SECONDARY,
+            onClick: () => {
               state.modalOpen = false;
               state.confirmValue = "";
               state.committing = false;
               state.commitError = "";
-              navigate("pipeline");
-              showToast("Changes committed to Odoo");
-            } catch (error) {
-              state.committing = false;
-              state.commitError = error instanceof Error ? error.message : "Commit failed.";
               render();
-            }
-          }, dataset: { testid: "pre-commit-confirm-button" } }, [
+            },
+            disabled: state.committing,
+          }, [el("span", { text: "Cancel" })]),
+          el("button", {
+            type: "button",
+            style: `${PILL_PRIMARY}${state.committing ? " opacity: 0.7; cursor: wait;" : ""}`,
+            disabled: state.confirmValue !== "COMMIT" || state.committing,
+            onClick: async () => {
+              if (state.confirmValue !== "COMMIT" || state.committing) return;
+              const { onboardingState, report: liveReport } = viewState();
+              if (!liveReport.projectId) {
+                state.commitError = "Project ID is unavailable.";
+                render();
+                return;
+              }
+              state.committing = true;
+              state.commitError = "";
+              render();
+              try {
+                await executePendingWrites(liveReport.projectId);
+                fireAudit(onboardingState?.sessionToken || null, liveReport);
+                state.modalOpen = false;
+                state.confirmValue = "";
+                state.committing = false;
+                state.commitError = "";
+                navigate("pipeline");
+                showToast("Changes committed to Odoo");
+              } catch (error) {
+                state.committing = false;
+                state.commitError = error instanceof Error ? error.message : "Commit failed.";
+                render();
+              }
+            },
+            dataset: { testid: "pre-commit-confirm-button" },
+          }, [
+            icon("ShieldCheck", 16),
             el("span", { text: state.committing ? "Committing..." : "Confirm Commit" }),
           ]),
         ]),
@@ -798,20 +1109,48 @@ export function renderPreCommitReportView({ project, onNavigate } = {}) {
   function renderContent() {
     const { runtimeState, report } = viewState();
     if (!runtimeState) {
-      return el("div", { style: `${CARD} padding: 24px; color: #6b7280;` }, [
-        el("div", { style: "font-size: 16px; font-weight: 600; color: #0c1a30; margin-bottom: 8px;", text: "No pipeline state available" }),
-        el("div", { style: "font-size: 14px;", text: "Run or load the implementation pipeline before opening this report." }),
+      return el("div", {
+        style: `${PANEL_STYLE} padding: var(--space-6); color: var(--color-muted);`,
+      }, [
+        el("div", {
+          style:
+            "font-size: var(--fs-h3); font-weight: 600; color: var(--color-ink); " +
+            "margin-bottom: var(--space-2);",
+          text: "No pipeline state available",
+        }),
+        el("div", {
+          style: "font-size: var(--fs-body);",
+          text: "Run or load the implementation pipeline before opening this report.",
+        }),
       ]);
     }
     const isNarrow = typeof window !== "undefined" ? window.innerWidth < 1120 : false;
-    const reportBody = el("div", { style: "display: flex; flex-direction: column; gap: 24px; flex: 1 1 720px; min-width: 320px;" }, report.activeDomains.length ? report.activeDomains.map((domain) => domainSection(domain)) : [
-      el("div", { style: `${CARD} padding: 20px; font-size: 14px; color: #6b7280;`, text: "No active modules are available for review." }),
-    ]);
+    const reportBody = el("div", {
+      style: "display: flex; flex-direction: column; gap: var(--space-6); flex: 1 1 720px; min-width: 320px;",
+    }, report.activeDomains.length
+      ? report.activeDomains.map((domain) => domainSection(domain))
+      : [el("div", {
+          style: `${PANEL_STYLE} padding: var(--space-5); font-size: var(--fs-body); color: var(--color-muted);`,
+          text: "No active modules are available for review.",
+        })]);
     const summary = summaryPanel(report);
-    return el("div", { style: "display: flex; flex-direction: column; gap: 24px;" }, [
+    return el("div", {
+      style: "display: flex; flex-direction: column; gap: var(--space-6);",
+    }, [
       topBar(report),
-      state.teamError ? el("div", { style: "background: rgba(220,38,38,0.06); border: 1px solid rgba(220,38,38,0.2); border-radius: 10px; padding: 14px 16px; color: #b91c1c; font-size: 14px;", text: state.teamError }) : null,
-      el("div", { style: "display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap;" }, isNarrow ? [summary, reportBody] : [reportBody, summary]),
+      state.teamError
+        ? el("div", {
+            style:
+              "background: var(--color-chip-review-bg); " +
+              "border: 1px solid var(--color-chip-review-fg); " +
+              "border-radius: var(--radius-panel); padding: var(--space-3) var(--space-4); " +
+              "color: var(--color-chip-review-fg); font-size: var(--fs-small);",
+            text: state.teamError,
+          })
+        : null,
+      el("div", {
+        style: "display: flex; align-items: flex-start; gap: var(--space-6); flex-wrap: wrap;",
+      }, isNarrow ? [summary, reportBody] : [reportBody, summary]),
     ]);
   }
 

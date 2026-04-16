@@ -70,6 +70,9 @@ if (!ODOO_URL || !ODOO_DB || !ODOO_USER || !ODOO_PASSWORD) {
 const { OdooClient } = await import(
   pathToFileURL(resolve(ROOT, "app/backend/odoo-client.js")).href
 );
+const { resolveLookups, isLookupDirective } = await import(
+  pathToFileURL(resolve(ROOT, "app/backend/odoo-lookup-resolver.js")).href
+);
 
 // ── Safety: forbidden models (RULE 3) ────────────────────────────────────────
 
@@ -430,6 +433,19 @@ async function liveFilterFields(client, model, values) {
 // ── Test a single CREATE-shaped intended_changes (object or array of objects) ─
 
 async function testCreateRecord(client, model, recordValues, checkpointId) {
+  // Resolve lookup sentinels before filtering
+  const hasLookups = Object.values(recordValues).some(isLookupDirective);
+  if (hasLookups) {
+    const lookupResult = await resolveLookups(client, recordValues);
+    if (!lookupResult.ok) {
+      const desc = lookupResult.failures
+        .map((f) => `${f.model} no records (field=${f.field})`)
+        .join("; ");
+      return { ok: false, reason: `lookup failed: ${desc}`, restored: true };
+    }
+    recordValues = lookupResult.resolved;
+  }
+
   // Live-filter fields
   const { filtered, dropped } = await liveFilterFields(client, model, recordValues);
 
@@ -497,6 +513,19 @@ async function testCreateRecord(client, model, recordValues, checkpointId) {
 // ── Test a WRITE to singleton (find id=1 or limit:1 record, write, restore) ─
 
 async function testWriteSingleton(client, model, values, checkpointId) {
+  // Resolve lookup sentinels before filtering
+  const hasLookups = Object.values(values).some(isLookupDirective);
+  if (hasLookups) {
+    const lookupResult = await resolveLookups(client, values);
+    if (!lookupResult.ok) {
+      const desc = lookupResult.failures
+        .map((f) => `${f.model} no records (field=${f.field})`)
+        .join("; ");
+      return { ok: false, reason: `lookup failed: ${desc}`, restored: true };
+    }
+    values = lookupResult.resolved;
+  }
+
   const { filtered, dropped } = await liveFilterFields(client, model, values);
 
   if (Object.keys(filtered).length === 0) {
@@ -608,7 +637,21 @@ async function processDefinition(client, domainName, checkpointId, def) {
         subResults.push({ ok: false, reason: `array entry ${i} not a plain object` });
         continue;
       }
-      const result = await testCreateRecord(client, model, entry, `${checkpointId}[${i}]`);
+      // Resolve lookup sentinels in array entries before create
+      let resolvedEntry = entry;
+      const entryHasLookups = Object.values(entry).some(isLookupDirective);
+      if (entryHasLookups) {
+        const lookupResult = await resolveLookups(client, entry);
+        if (!lookupResult.ok) {
+          const desc = lookupResult.failures
+            .map((f) => `${f.model} no records (field=${f.field})`)
+            .join("; ");
+          subResults.push({ ok: false, reason: `lookup failed: ${desc}`, restored: true });
+          continue;
+        }
+        resolvedEntry = lookupResult.resolved;
+      }
+      const result = await testCreateRecord(client, model, resolvedEntry, `${checkpointId}[${i}]`);
       subResults.push(result);
     }
     const allOk = subResults.every((r) => r.ok);

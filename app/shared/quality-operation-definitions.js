@@ -38,11 +38,16 @@ function buildQualityPointChanges(capture) {
   const checkType = typeof capture.check_type === "string" ? capture.check_type.trim() : "";
   if (!title && !checkType) return null;
   // honest-null: test_type_id is required by quality.point but must be resolved
-  // at runtime via client.searchRead("quality.test.type", [], ["id","name"], {limit:1}).
-  // The assembler cannot perform runtime lookups — leave null until execution layer resolves it.
+  // at runtime. The assembler emits a lookup sentinel — the runtime resolver
+  // (odoo-lookup-resolver.js) replaces it with a real ID before the write.
   return {
     title: title || null,
-    test_type_id: null,
+    test_type_id: {
+      __lookup: "quality.test.type",
+      domain: [],
+      field: "id",
+      limit: 1,
+    },
     note: checkType || null,
   };
 }

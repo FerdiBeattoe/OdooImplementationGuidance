@@ -5,17 +5,61 @@ import { getState, setCurrentView } from "../state/app-store.js";
 import { onboardingStore } from "../state/onboarding-store.js";
 import { pipelineStore } from "../state/pipeline-store.js";
 
-const NAVY = "#0c1a30";
-const AMBER = "#f59e0b";
-const SUCCESS = "#16a34a";
-const DANGER = "#dc2626";
-const MUTED = "#6b7280";
-const BORDER = "#e2e8f0";
-const CARD = "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px;";
-const FIELD = "width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px 12px; font-size: 14px; color: #111827; font-family: Inter, sans-serif; background: #ffffff; box-sizing: border-box;";
-const FADED_AMBER = "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-family: Inter, sans-serif; font-weight: 600; cursor: pointer;";
-const SECONDARY = "background: rgba(12,26,48,0.06); border: 1px solid rgba(12,26,48,0.15); color: #0c1a30; border-radius: 6px; font-family: Inter, sans-serif; font-weight: 600; cursor: pointer;";
-const PRIMARY = "background: #0c1a30; border: 1px solid #0c1a30; color: #ffffff; border-radius: 6px; font-family: Inter, sans-serif; font-weight: 600; cursor: pointer;";
+const CANVAS_STYLE =
+  "background: var(--canvas-bloom-warm), var(--canvas-bloom-cool), " +
+  "var(--color-canvas-base), var(--surface-texture); " +
+  "padding: var(--space-6) var(--space-7) var(--space-8); " +
+  "font-family: var(--font-body); color: var(--color-ink);";
+
+const PANEL_STYLE =
+  "background: var(--color-surface); border: 1px solid var(--color-line); " +
+  "border-radius: var(--radius-panel);";
+
+const CARD_STYLE =
+  "background: var(--color-surface); border: 1px solid var(--color-line); " +
+  "border-radius: var(--radius-card);";
+
+const PILL_PRIMARY =
+  "display: inline-flex; align-items: center; gap: 8px; " +
+  "padding: 9px 16px; border-radius: var(--radius-pill); " +
+  "background: var(--color-pill-primary-bg); color: var(--color-pill-primary-fg); " +
+  "border: 1px solid var(--color-pill-primary-bg); " +
+  "font-family: var(--font-body); font-size: var(--fs-small); font-weight: 500; " +
+  "cursor: pointer; transition: all var(--dur-base) var(--ease);";
+
+const PILL_SECONDARY =
+  "display: inline-flex; align-items: center; gap: 8px; " +
+  "padding: 9px 16px; border-radius: var(--radius-pill); " +
+  "background: var(--color-pill-secondary-bg); color: var(--color-pill-secondary-fg); " +
+  "border: 1px solid var(--color-pill-secondary-border); " +
+  "font-family: var(--font-body); font-size: var(--fs-small); font-weight: 500; " +
+  "cursor: pointer; transition: all var(--dur-base) var(--ease);";
+
+const EYEBROW_STYLE =
+  "display: inline-flex; align-self: flex-start; align-items: center; " +
+  "padding: 4px 12px; border: 1px solid var(--color-line); " +
+  "border-radius: var(--radius-pill); background: var(--color-surface); " +
+  "font-family: var(--font-body); font-size: var(--fs-tiny); font-weight: 600; " +
+  "text-transform: uppercase; letter-spacing: var(--track-eyebrow-strong); " +
+  "color: var(--color-subtle);";
+
+const MONO_META_STYLE =
+  "font-family: var(--font-mono); font-size: var(--fs-small); color: var(--color-muted);";
+
+const FIELD_STYLE =
+  "width: 100%; box-sizing: border-box; " +
+  "background: var(--color-surface); border: 1px solid var(--color-line); " +
+  "border-radius: var(--radius-input); padding: 10px 12px; " +
+  "font-family: var(--font-body); font-size: var(--fs-small); color: var(--color-ink); " +
+  "outline: none; transition: border-color var(--dur-fast) var(--ease);";
+
+const FIELD_MONO_STYLE = `${FIELD_STYLE} font-family: var(--font-mono);`;
+
+const FIELD_LABEL_STYLE =
+  "font-family: var(--font-body); font-size: var(--fs-micro); " +
+  "text-transform: uppercase; letter-spacing: var(--track-eyebrow); " +
+  "font-weight: 600; color: var(--color-muted);";
+
 const DOMAIN_SUPPORT_ALIASES = {
   foundation: "foundation-company-localization",
   users_roles: "users-roles-security",
@@ -53,8 +97,13 @@ function renderScannerIcon(name, size) {
     .replace(/([A-Za-z])([0-9])/g, "$1-$2")
     .replace(/([0-9])([A-Za-z])/g, "$1-$2")
     .toLowerCase();
-
   return lucideIcon(normalized, size);
+}
+
+function bindFocusBorder(node) {
+  if (!node) return;
+  node.addEventListener("focus", () => { node.style.borderColor = "var(--color-ink)"; });
+  node.addEventListener("blur", () => { node.style.borderColor = "var(--color-line)"; });
 }
 
 function trimString(value) {
@@ -74,48 +123,43 @@ function formatTimestamp(value) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "Date unavailable";
   return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    day: "numeric", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
   }).format(parsed);
+}
+
+function deriveInstanceHost(url, database) {
+  const raw = typeof url === "string" ? url.trim() : "";
+  if (raw) {
+    try { return new URL(raw).hostname; }
+    catch {
+      const stripped = raw.replace(/^https?:\/\//i, "").split(/[/?#]/)[0];
+      if (stripped) return stripped;
+    }
+  }
+  const db = typeof database === "string" ? database.trim() : "";
+  return db || "NEW";
 }
 
 function readJsonResponse(response) {
   return response.text().then((raw) => {
     if (!raw) return {};
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return {};
-    }
+    try { return JSON.parse(raw); } catch { return {}; }
   });
 }
 
 function buildHeaders(token, includeJson = true) {
   const headers = {};
-  if (includeJson) {
-    headers["Content-Type"] = "application/json";
-  }
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  if (includeJson) headers["Content-Type"] = "application/json";
+  if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }
 
 async function requestJson(url, options = {}) {
   const response = await fetch(url, options);
   const payload = await readJsonResponse(response);
-
-  if (!response.ok) {
-    throw new Error(payload.error || payload.detail || "Request failed.");
-  }
-
-  if (payload?.error) {
-    throw new Error(payload.error);
-  }
-
+  if (!response.ok) throw new Error(payload.error || payload.detail || "Request failed.");
+  if (payload?.error) throw new Error(payload.error);
   return payload;
 }
 
@@ -123,7 +167,6 @@ function resolveProjectId(project) {
   const appState = getState();
   const onboardingState = onboardingStore.getState();
   const runtimeState = pipelineStore.getState().runtime_state;
-
   return (
     runtimeState?.project_identity?.project_id ||
     onboardingState?.connection?.project_id ||
@@ -137,15 +180,10 @@ function resolveTeamMembership(members, onboardingState) {
   const currentUserId = onboardingState?.user?.id || null;
   const currentUserEmail = String(onboardingState?.user?.email || "").trim().toLowerCase();
   const activeMembers = Array.isArray(members) ? members.filter((member) => member?.accepted_at) : [];
-
   return activeMembers.find((member) => {
-    if (currentUserId && member.account_id === currentUserId) {
-      return true;
-    }
-
+    if (currentUserId && member.account_id === currentUserId) return true;
     return (
-      !currentUserId &&
-      currentUserEmail &&
+      !currentUserId && currentUserEmail &&
       String(member.email || "").trim().toLowerCase() === currentUserEmail
     );
   }) || null;
@@ -154,20 +192,16 @@ function resolveTeamMembership(members, onboardingState) {
 function resolveActiveDomains() {
   const runtimeDomains = pipelineStore.getState().runtime_state?.activated_domains?.domains;
   if (Array.isArray(runtimeDomains) && runtimeDomains.length > 0) {
-    return runtimeDomains
-      .map((domain) => {
-        if (typeof domain === "string") return domain;
-        if (domain?.activated === false) return null;
-        return domain?.domain_id || domain?.id || null;
-      })
-      .filter(Boolean);
+    return runtimeDomains.map((domain) => {
+      if (typeof domain === "string") return domain;
+      if (domain?.activated === false) return null;
+      return domain?.domain_id || domain?.id || null;
+    }).filter(Boolean);
   }
-
   const previewDomains = onboardingStore.getState()?.activated_domains_preview;
   if (Array.isArray(previewDomains)) {
     return previewDomains.filter((domain) => typeof domain === "string" && domain.trim());
   }
-
   return [];
 }
 
@@ -182,12 +216,10 @@ function moduleLabel(moduleName) {
 
 function buildRequiredModules(domainIds) {
   const modules = new Map();
-
   for (const domainId of domainIds) {
     const support = getDomainSupport(getSupportDomainId(domainId));
     const domainLabel = humanizeKey(domainId);
     const domainSummary = String(support.summary || "").trim();
-
     for (const moduleName of support.moduleNames || []) {
       if (!moduleName) continue;
       if (!modules.has(moduleName)) {
@@ -199,14 +231,10 @@ function buildRequiredModules(domainIds) {
         });
         continue;
       }
-
       const current = modules.get(moduleName);
-      if (!current.domains.includes(domainLabel)) {
-        current.domains.push(domainLabel);
-      }
+      if (!current.domains.includes(domainLabel)) current.domains.push(domainLabel);
     }
   }
-
   return [...modules.values()]
     .map((module) => ({
       ...module,
@@ -236,11 +264,23 @@ function scannerStyles() {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
+    @keyframes scanner-pulse {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
     .scanner-spin { animation: scanner-spin 1s linear infinite; }
+    .scanner-pulse-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-grad);
+      animation: scanner-pulse 1.4s ease-in-out infinite;
+    }
     .scanner-results-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 24px;
+      gap: var(--space-4);
       align-items: start;
     }
     .scanner-module-list {
@@ -254,16 +294,16 @@ function scannerStyles() {
 }
 
 function cardTitle(iconName, text) {
+  const icon = renderScannerIcon(iconName, 16);
+  icon.style.color = "var(--color-ink)";
   return el("div", {
-    style: "display: flex; align-items: center; gap: 10px; margin-bottom: 16px;",
+    style: "display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4);",
   }, [
-    (() => {
-      const icon = renderScannerIcon(iconName, 16);
-      icon.style.color = NAVY;
-      return icon;
-    })(),
+    icon,
     el("span", {
-      style: `font-size: 16px; font-weight: 700; color: ${NAVY};`,
+      style:
+        "font-size: var(--fs-h3); font-weight: 600; " +
+        "color: var(--color-ink); letter-spacing: var(--track-tight);",
       text,
     }),
   ]);
@@ -273,10 +313,7 @@ function fieldShell(label, input, note = null) {
   return el("label", {
     style: "display: flex; flex-direction: column; gap: 6px;",
   }, [
-    el("span", {
-      style: "font-size: 13px; font-weight: 600; color: #374151;",
-      text: label,
-    }),
+    el("span", { style: FIELD_LABEL_STYLE, text: label }),
     input,
     note,
   ]);
@@ -284,14 +321,16 @@ function fieldShell(label, input, note = null) {
 
 export function renderInstanceScannerView({ project, onNavigate } = {}) {
   const container = el("section", {
-    style: "max-width: 1240px; margin: 0 auto; padding: 32px; font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 24px;",
+    style: `${CANVAS_STYLE} max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-5);`,
     dataset: { testid: "instance-scanner-view" },
   });
   const styleEl = el("style", { text: scannerStyles() });
   const contentEl = el("div");
   const modalHost = el("div");
   const toastHost = el("div", {
-    style: "position: fixed; right: 24px; bottom: 24px; z-index: 110; display: flex; flex-direction: column; gap: 12px;",
+    style:
+      "position: fixed; right: var(--space-6); bottom: var(--space-6); z-index: 120; " +
+      "display: flex; flex-direction: column; gap: var(--space-3);",
   });
   const state = {
     form: {
@@ -310,11 +349,7 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
     loadingTeam: false,
     installRowErrors: {},
     installModal: {
-      open: false,
-      module: null,
-      password: "",
-      error: "",
-      submitting: false,
+      open: false, module: null, password: "", error: "", submitting: false,
     },
     sessionInstalled: new Set(),
   };
@@ -324,25 +359,21 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
   container.append(styleEl, contentEl, modalHost, toastHost);
 
   function navigate(view) {
-    if (onNavigate) {
-      onNavigate(view);
-      return;
-    }
+    if (onNavigate) { onNavigate(view); return; }
     setCurrentView(view);
   }
 
   function showToast(message) {
     clearNode(toastHost);
-    if (toastTimer) {
-      clearTimeout(toastTimer);
-      toastTimer = null;
-    }
-
+    if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
     toastHost.append(el("div", {
-      style: "background: #0c1a30; color: #ffffff; padding: 12px 20px; border-radius: 6px; font-size: 14px; box-shadow: 0 10px 25px rgba(12,26,48,0.18); max-width: 320px;",
+      style:
+        "background: var(--color-pill-primary-bg); color: var(--color-pill-primary-fg); " +
+        "padding: var(--space-3) var(--space-5); border-radius: var(--radius-pill); " +
+        "font-family: var(--font-body); font-size: var(--fs-small); " +
+        "box-shadow: var(--shadow-menu); max-width: 320px;",
       text: message,
     }));
-
     toastTimer = setTimeout(() => {
       clearNode(toastHost);
       toastTimer = null;
@@ -371,18 +402,14 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
     const trackedModuleRows = requiredModules.filter(
       (module) => missingRequiredModules.some((candidate) => candidate.name === module.name) || state.sessionInstalled.has(module.name)
     );
-
+    const host = deriveInstanceHost(
+      state.scanContext?.url || onboardingState?.connection?.url || "",
+      state.scanContext?.database || onboardingState?.connection?.database || ""
+    );
     return {
-      onboardingState,
-      projectId,
-      currentMembership,
-      isProjectLead,
-      activeDomains,
-      requiredModules,
-      installedSet,
-      filteredModules,
-      missingRequiredModules,
-      trackedModuleRows,
+      onboardingState, projectId, currentMembership, isProjectLead,
+      activeDomains, requiredModules, installedSet, filteredModules,
+      missingRequiredModules, trackedModuleRows, host,
     };
   }
 
@@ -393,36 +420,26 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
       onboardingState?.user?.id ||
       String(onboardingState?.user?.email || "").trim()
     );
-
     if (!projectId || !hasUserIdentity) {
       state.members = [];
       state.teamError = "";
       render();
       return;
     }
-
     const requestId = ++latestLoadId;
     state.loadingTeam = true;
     state.teamError = "";
     render();
-
     try {
       const payload = await requestJson(`/api/team/${encodeURIComponent(projectId)}`, {
         method: "GET",
         headers: buildHeaders(onboardingState?.sessionToken || null, false),
       });
-
-      if (requestId !== latestLoadId) {
-        return;
-      }
-
+      if (requestId !== latestLoadId) return;
       state.members = Array.isArray(payload.members) ? payload.members : [];
       state.teamError = "";
     } catch (error) {
-      if (requestId !== latestLoadId) {
-        return;
-      }
-
+      if (requestId !== latestLoadId) return;
       state.members = [];
       state.teamError = error instanceof Error ? error.message : "Failed to load team members.";
     } finally {
@@ -438,17 +455,14 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
     const database = trimString(state.form.database);
     const username = trimString(state.form.username);
     const password = state.form.password;
-
     if (!url || !database || !username || !password) {
       state.scanError = "All four fields are required.";
       render();
       return;
     }
-
     state.scanning = true;
     state.scanError = "";
     render();
-
     try {
       const token = onboardingStore.getState()?.sessionToken || null;
       const payload = await requestJson("/api/odoo/scan", {
@@ -456,7 +470,6 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
         headers: buildHeaders(token, true),
         body: JSON.stringify({ url, database, username, password, projectId: resolveProjectId(project) }),
       });
-
       state.scanning = false;
       state.scanResult = payload;
       state.scanContext = { url, database, username };
@@ -464,13 +477,7 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
       state.moduleFilter = "";
       state.installRowErrors = {};
       state.sessionInstalled = new Set();
-      state.installModal = {
-        open: false,
-        module: null,
-        password: "",
-        error: "",
-        submitting: false,
-      };
+      state.installModal = { open: false, module: null, password: "", error: "", submitting: false };
       render();
     } catch (error) {
       state.scanning = false;
@@ -480,57 +487,37 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
   }
 
   function openInstallModal(module) {
-    state.installModal = {
-      open: true,
-      module,
-      password: "",
-      error: "",
-      submitting: false,
-    };
+    state.installModal = { open: true, module, password: "", error: "", submitting: false };
     render();
   }
 
   function closeInstallModal() {
-    state.installModal = {
-      open: false,
-      module: null,
-      password: "",
-      error: "",
-      submitting: false,
-    };
+    state.installModal = { open: false, module: null, password: "", error: "", submitting: false };
     render();
   }
 
   async function confirmInstall() {
     const { module } = state.installModal;
     const { projectId } = derivedState();
-
     if (!module || !state.scanContext) {
       state.installModal.error = "Module install context is unavailable.";
       render();
       return;
     }
-
     if (!projectId) {
       state.installModal.error = "Project ID is unavailable.";
       render();
       return;
     }
-
     if (!state.installModal.password) {
       state.installModal.error = "Password is required.";
       render();
       return;
     }
-
     state.installModal.submitting = true;
     state.installModal.error = "";
-    state.installRowErrors = {
-      ...state.installRowErrors,
-      [module.name]: "",
-    };
+    state.installRowErrors = { ...state.installRowErrors, [module.name]: "" };
     render();
-
     try {
       const token = onboardingStore.getState()?.sessionToken || null;
       await requestJson("/api/odoo/install-module", {
@@ -545,7 +532,6 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
           projectId,
         }),
       });
-
       const existingModules = Array.isArray(state.scanResult?.modules_installed)
         ? state.scanResult.modules_installed
         : [];
@@ -565,10 +551,7 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
       const message = error instanceof Error ? error.message : "Module install failed.";
       state.installModal.submitting = false;
       state.installModal.error = message;
-      state.installRowErrors = {
-        ...state.installRowErrors,
-        [module.name]: message,
-      };
+      state.installRowErrors = { ...state.installRowErrors, [module.name]: message };
       render();
     }
   }
@@ -578,62 +561,88 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
       type: "text",
       value: state.form.url,
       placeholder: "https://mycompany.odoo.com",
-      style: FIELD,
-      onInput: (event) => {
-        state.form.url = event.target.value;
-      },
+      style: FIELD_MONO_STYLE,
+      onInput: (event) => { state.form.url = event.target.value; },
       dataset: { testid: "scanner-url-input" },
     });
+    bindFocusBorder(urlInput);
+
     const databaseInput = el("input", {
       type: "text",
       value: state.form.database,
       placeholder: "mycompany",
-      style: FIELD,
-      onInput: (event) => {
-        state.form.database = event.target.value;
-      },
+      style: FIELD_MONO_STYLE,
+      onInput: (event) => { state.form.database = event.target.value; },
       dataset: { testid: "scanner-database-input" },
     });
+    bindFocusBorder(databaseInput);
+
     const usernameInput = el("input", {
       type: "email",
       value: state.form.username,
       placeholder: "admin@mycompany.com",
-      style: FIELD,
-      onInput: (event) => {
-        state.form.username = event.target.value;
-      },
+      style: FIELD_STYLE,
+      onInput: (event) => { state.form.username = event.target.value; },
       dataset: { testid: "scanner-username-input" },
     });
+    bindFocusBorder(usernameInput);
+
     const passwordInput = el("input", {
       type: "password",
       value: state.form.password,
       placeholder: "",
-      style: FIELD,
-      onInput: (event) => {
-        state.form.password = event.target.value;
-      },
+      style: FIELD_STYLE,
+      onInput: (event) => { state.form.password = event.target.value; },
       dataset: { testid: "scanner-password-input" },
     });
+    bindFocusBorder(passwordInput);
+
     const lockNote = el("div", {
-      style: "display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #6b7280;",
+      style:
+        "display: inline-flex; align-items: center; gap: 8px; " +
+        "font-size: var(--fs-small); color: var(--color-muted);",
     }, [
-      renderScannerIcon("Lock", 13),
+      renderScannerIcon("lock", 13),
       el("span", { text: "Your credentials are used once to scan and are never stored." }),
+    ]);
+
+    const scanButton = el("button", {
+      type: "button",
+      disabled: state.scanning,
+      style: `${PILL_PRIMARY} width: 100%; justify-content: center; padding: 12px 18px;${state.scanning ? " opacity: 0.75; cursor: wait;" : ""}`,
+      onClick: () => { void submitScan(); },
+      dataset: { testid: "scanner-submit-button" },
+    }, [
+      state.scanning
+        ? el("span", { className: "scanner-pulse-dot" })
+        : renderScannerIcon("scan-line", 14),
+      el("span", {
+        style: state.scanning ? "font-family: var(--font-mono);" : "",
+        text: state.scanning ? "Scanning..." : "Scan instance",
+      }),
     ]);
 
     return el("div", {
       style: "display: flex; justify-content: center;",
     }, [
       el("div", {
-        style: `${CARD} width: 100%; max-width: 520px; padding: 28px; display: flex; flex-direction: column; gap: 18px;`,
+        style:
+          `${CARD_STYLE} width: 100%; max-width: 520px; ` +
+          `padding: var(--space-7); display: flex; flex-direction: column; gap: var(--space-4);`,
       }, [
-        el("div", { style: "display: flex; flex-direction: column; gap: 6px;" }, [
+        el("div", { style: "display: flex; flex-direction: column; gap: var(--space-2);" }, [
+          el("span", { style: EYEBROW_STYLE, text: "SCANNER" }),
           el("h1", {
-            style: `margin: 0; font-size: 28px; font-weight: 700; color: ${NAVY};`,
-            text: "Scan Your Odoo Instance",
+            style:
+              "margin: 0; font-size: var(--fs-h1); font-weight: 600; " +
+              "color: var(--color-ink); letter-spacing: var(--track-tight); " +
+              "line-height: var(--lh-snug);",
+            text: "Scan your Odoo instance",
           }),
           el("p", {
-            style: "margin: 0; font-size: 14px; color: #6b7280; line-height: 1.5;",
+            style:
+              "margin: 0; font-size: var(--fs-body); color: var(--color-muted); " +
+              "line-height: var(--lh-body);",
             text: "We'll check what's already configured so you start from the right place.",
           }),
         ]),
@@ -641,27 +650,10 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
         fieldShell("Database", databaseInput),
         fieldShell("Username", usernameInput),
         fieldShell("Password", passwordInput, lockNote),
-        el("button", {
-          type: "button",
-          disabled: state.scanning,
-          style: `${FADED_AMBER} width: 100%; padding: 12px 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;${state.scanning ? " opacity: 0.75; cursor: wait;" : ""}`,
-          onClick: () => {
-            void submitScan();
-          },
-          dataset: { testid: "scanner-submit-button" },
-        }, [
-          state.scanning
-            ? (() => {
-                const spinner = renderScannerIcon("Loader", 14);
-                spinner.classList.add("scanner-spin");
-                return spinner;
-              })()
-            : renderScannerIcon("ScanLine", 14),
-          el("span", { text: state.scanning ? "Scanning..." : "Scan Instance" }),
-        ]),
+        scanButton,
         state.scanError
           ? el("div", {
-              style: `font-size: 13px; color: ${DANGER};`,
+              style: "font-size: var(--fs-small); color: var(--color-chip-review-fg);",
               text: state.scanError,
             })
           : null,
@@ -677,20 +669,23 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
       { label: "Phone", value: scanResult?.company?.phone || "—" },
       { label: "Website", value: scanResult?.company?.website || "—" },
     ];
-
     return el("section", {
-      style: `${CARD} padding: 20px;`,
+      style: `${PANEL_STYLE} padding: var(--space-5);`,
     }, [
-      cardTitle("Building2", "Company"),
+      cardTitle("building-2", "Company"),
       ...rows.map((row) => el("div", {
-        style: "display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid #f3f4f6;",
+        style:
+          "display: flex; justify-content: space-between; gap: var(--space-3); " +
+          "padding: var(--space-2) 0; border-bottom: 1px solid var(--color-line-soft);",
       }, [
         el("span", {
-          style: "font-size: 13px; color: #6b7280;",
+          style: "font-size: var(--fs-small); color: var(--color-muted);",
           text: row.label,
         }),
         el("span", {
-          style: `font-size: 14px; color: ${NAVY}; text-align: right;`,
+          style:
+            "font-family: var(--font-mono); font-size: var(--fs-small); " +
+            "color: var(--color-ink); text-align: right;",
           text: row.value,
         }),
       ])),
@@ -702,80 +697,105 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
       type: "text",
       value: state.moduleFilter,
       placeholder: "Filter modules...",
-      style: `${FIELD} margin-bottom: 14px;`,
-      onInput: (event) => {
-        state.moduleFilter = event.target.value;
-        render();
-      },
+      style: `${FIELD_STYLE} margin-bottom: var(--space-3);`,
+      onInput: (event) => { state.moduleFilter = event.target.value; render(); },
       dataset: { testid: "scanner-module-filter" },
     });
-
+    bindFocusBorder(filterInput);
+    const count = Array.isArray(scanResult?.modules_installed) ? scanResult.modules_installed.length : 0;
     return el("section", {
-      style: `${CARD} padding: 20px;`,
+      style: `${PANEL_STYLE} padding: var(--space-5);`,
     }, [
-      cardTitle("Package", `Installed Modules (${Array.isArray(scanResult?.modules_installed) ? scanResult.modules_installed.length : 0})`),
+      cardTitle("package", `Installed modules (${count})`),
       filterInput,
-      el("div", {
-        className: "scanner-module-list",
-      }, filteredModules.length
+      el("div", { className: "scanner-module-list" }, filteredModules.length
         ? filteredModules.map((module) => el("div", {
-            style: "display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f3f4f6;",
+            style:
+              "display: flex; align-items: center; gap: var(--space-2); " +
+              "padding: 9px 0; border-bottom: 1px solid var(--color-line-soft);",
           }, [
             el("span", {
-              style: `width: 8px; height: 8px; border-radius: 999px; background: ${SUCCESS}; flex-shrink: 0;`,
+              style:
+                "width: 6px; height: 6px; border-radius: 50%; " +
+                "background: var(--color-ink); flex-shrink: 0;",
             }),
             el("span", {
-              style: `font-size: 14px; color: ${NAVY};`,
+              style: "font-size: var(--fs-small); color: var(--color-ink);",
               text: String(module.label || module.name || "Unknown module"),
             }),
           ]))
         : [el("div", {
-            style: "font-size: 14px; color: #6b7280; padding: 8px 0;",
+            style: "font-size: var(--fs-small); color: var(--color-muted); padding: 8px 0;",
             text: "No modules match your filter.",
           })]),
     ]);
   }
 
+  function kpiTile(label, value, emphasize = false) {
+    return el("div", {
+      style:
+        "display: flex; justify-content: space-between; align-items: baseline; " +
+        "gap: var(--space-3); padding: var(--space-2) 0; " +
+        "border-bottom: 1px solid var(--color-line-soft);",
+    }, [
+      el("span", {
+        style: "font-size: var(--fs-small); color: var(--color-muted);",
+        text: label,
+      }),
+      el("span", {
+        style:
+          `font-family: var(--font-mono); font-size: var(--fs-body); ` +
+          `font-weight: ${emphasize ? "600" : "400"}; ` +
+          `color: ${emphasize ? "var(--color-ink)" : "var(--color-subtle)"}; ` +
+          `font-variant-numeric: tabular-nums;`,
+        text: String(value),
+      }),
+    ]);
+  }
+
   function renderDataCountsPanel(scanResult) {
     return el("section", {
-      style: `${CARD} padding: 20px;`,
+      style: `${PANEL_STYLE} padding: var(--space-5);`,
     }, [
-      cardTitle("Database", "Existing Data"),
-      ...dataCountRows(scanResult).map((row) => el("div", {
-        style: "display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid #f3f4f6;",
-      }, [
-        el("span", {
-          style: "font-size: 14px; color: #6b7280;",
-          text: row.label,
-        }),
-        el("span", {
-          style: `font-size: 15px; font-weight: ${row.value > 0 ? "700" : "500"}; color: ${row.value > 0 ? NAVY : "#9ca3af"};`,
-          text: String(row.value),
-        }),
-      ])),
+      cardTitle("database", "Existing data"),
+      ...dataCountRows(scanResult).map((row) => kpiTile(row.label, row.value, row.value > 0)),
     ]);
   }
 
   function statusBadge(installed) {
+    if (installed) {
+      return el("span", {
+        style:
+          "display: inline-flex; align-items: center; padding: 2px 10px; " +
+          "border-radius: var(--radius-pill); " +
+          "background: var(--color-chip-ready-bg); color: var(--color-chip-ready-fg); " +
+          "font-family: var(--font-body); font-size: var(--fs-tiny); font-weight: 600;",
+        text: "Installed",
+      });
+    }
     return el("span", {
-      style: installed
-        ? "display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; background: rgba(22,163,74,0.12); color: #166534; font-size: 12px; font-weight: 700;"
-        : "display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; background: rgba(220,38,38,0.1); color: #b91c1c; font-size: 12px; font-weight: 700;",
-      text: installed ? "Installed" : "Not Installed",
+      style:
+        "display: inline-flex; align-items: center; padding: 2px 10px; " +
+        "border-radius: var(--radius-pill); " +
+        "background: var(--color-chip-review-bg); color: var(--color-chip-review-fg); " +
+        "font-family: var(--font-body); font-size: var(--fs-tiny); font-weight: 600;",
+      text: "Not installed",
     });
   }
 
   function renderRequiredModulesSection(derived) {
     const readyBanner = el("div", {
-      style: `${CARD} padding: 16px 18px; display: flex; align-items: center; gap: 10px; background: rgba(22,163,74,0.08); border-color: rgba(22,163,74,0.2);`,
+      style:
+        `${PANEL_STYLE} padding: var(--space-4) var(--space-5); ` +
+        `display: flex; align-items: center; gap: var(--space-2);`,
     }, [
       (() => {
-        const icon = renderScannerIcon("CheckCircle", 16);
-        icon.style.color = SUCCESS;
+        const icon = renderScannerIcon("check-circle", 16);
+        icon.style.color = "var(--color-chip-ready-fg)";
         return icon;
       })(),
       el("span", {
-        style: "font-size: 14px; color: #166534; font-weight: 600;",
+        style: "font-size: var(--fs-body); color: var(--color-body); font-weight: 500;",
         text: "All required modules are installed. Your instance is ready for implementation.",
       }),
     ]);
@@ -783,45 +803,54 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
     const rows = derived.trackedModuleRows.map((module) => {
       const installed = derived.installedSet.has(module.name);
       const inlineError = state.installRowErrors[module.name];
-
       return el("div", {
-        style: `${CARD} padding: 18px; display: flex; flex-direction: column; gap: 10px;`,
+        style:
+          `${CARD_STYLE} padding: var(--space-4) var(--space-5); ` +
+          `display: flex; flex-direction: column; gap: var(--space-2);`,
         dataset: { testid: `scanner-module-row-${module.name}` },
       }, [
         el("div", {
-          style: "display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap;",
+          style:
+            "display: flex; justify-content: space-between; gap: var(--space-3); " +
+            "align-items: flex-start; flex-wrap: wrap;",
         }, [
           el("div", {
             style: "display: flex; flex-direction: column; gap: 6px; min-width: 240px; flex: 1;",
           }, [
             el("span", {
-              style: `font-size: 15px; font-weight: 700; color: ${NAVY};`,
+              style:
+                "font-size: var(--fs-body); font-weight: 600; color: var(--color-ink); " +
+                "letter-spacing: var(--track-tight);",
               text: module.label,
             }),
             el("span", {
-              style: "font-size: 13px; color: #6b7280;",
-              text: `${module.name}  ${module.description}`,
+              style:
+                "font-family: var(--font-mono); font-size: var(--fs-small); " +
+                "color: var(--color-muted);",
+              text: module.name,
+            }),
+            el("span", {
+              style: "font-size: var(--fs-small); color: var(--color-body);",
+              text: module.description,
             }),
           ]),
           el("div", {
-            style: "display: flex; align-items: center; gap: 10px; flex-wrap: wrap;",
+            style: "display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;",
           }, [
             statusBadge(installed),
             !installed && derived.isProjectLead
               ? el("button", {
                   type: "button",
-                  style: `${FADED_AMBER} padding: 10px 14px;`,
+                  style: PILL_SECONDARY,
                   onClick: () => openInstallModal(module),
                   dataset: { testid: `scanner-install-button-${module.name}` },
-                }, [
-                  el("span", { text: "Install" }),
-                ])
+                }, [el("span", { text: "Install" })])
               : null,
           ]),
         ]),
         inlineError && !installed
           ? el("div", {
-              style: `font-size: 13px; color: ${DANGER};`,
+              style: "font-size: var(--fs-small); color: var(--color-chip-review-fg);",
               text: inlineError,
             })
           : null,
@@ -829,18 +858,23 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
     });
 
     return el("section", {
-      style: "display: flex; flex-direction: column; gap: 16px;",
+      style: "display: flex; flex-direction: column; gap: var(--space-4);",
       dataset: { testid: "scanner-required-modules-section" },
+    }, [
+      el("div", {
+        style: "display: flex; flex-direction: column; gap: 6px;",
       }, [
-        el("div", {
-          style: "display: flex; flex-direction: column; gap: 6px;",
-        }, [
+        el("span", { style: EYEBROW_STYLE, text: "REQUIRED MODULES" }),
         el("h2", {
-          style: `margin: 0; font-size: 22px; font-weight: 700; color: ${NAVY};`,
-          text: "Required Modules",
+          style:
+            "margin: 0; font-size: var(--fs-h2); font-weight: 600; " +
+            "color: var(--color-ink); letter-spacing: var(--track-tight);",
+          text: "Required modules",
         }),
         el("p", {
-          style: "margin: 0; font-size: 14px; color: #6b7280; line-height: 1.5;",
+          style:
+            "margin: 0; font-size: var(--fs-body); color: var(--color-muted); " +
+            "line-height: var(--lh-body);",
           text: "These modules are required for your selected implementation domains but are not installed on your instance.",
         }),
       ]),
@@ -853,8 +887,21 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
     const module = state.installModal.module;
     if (!module) return null;
 
+    const pwInput = el("input", {
+      type: "password",
+      value: state.installModal.password,
+      placeholder: "",
+      style: FIELD_STYLE,
+      onInput: (event) => { state.installModal.password = event.target.value; },
+      dataset: { testid: "scanner-install-password-input" },
+    });
+    bindFocusBorder(pwInput);
+
     return el("div", {
-      style: "position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 100;",
+      style:
+        "position: fixed; inset: 0; background: rgba(0,0,0,0.5); " +
+        "display: flex; align-items: center; justify-content: center; " +
+        "padding: var(--space-6); z-index: 100;",
       onClick: (event) => {
         if (event.target === event.currentTarget && !state.installModal.submitting) {
           closeInstallModal();
@@ -862,68 +909,68 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
       },
     }, [
       el("div", {
-        style: "width: 100%; max-width: 480px; background: #ffffff; border-radius: 10px; padding: 32px; box-shadow: 0 24px 48px rgba(12,26,48,0.18); display: flex; flex-direction: column; gap: 16px;",
+        style:
+          `width: 100%; max-width: 440px; ${CARD_STYLE} ` +
+          `padding: var(--space-7); box-shadow: var(--shadow-menu); ` +
+          `display: flex; flex-direction: column; gap: var(--space-4);`,
       }, [
-        el("h2", {
-          style: `margin: 0; font-size: 18px; font-weight: 700; color: ${NAVY};`,
-          text: "Install Module",
-        }),
+        el("div", { style: "display: flex; flex-direction: column; gap: var(--space-2);" }, [
+          el("span", { style: EYEBROW_STYLE, text: "INSTALL MODULE" }),
+          el("h2", {
+            style:
+              "margin: 0; font-size: var(--fs-h2); font-weight: 600; " +
+              "color: var(--color-ink); letter-spacing: var(--track-tight);",
+            text: `Install ${module.label}`,
+          }),
+        ]),
         el("p", {
-          style: "margin: 0; font-size: 14px; color: #374151; line-height: 1.5;",
-          text: `Install ${module.label} on ${state.scanContext?.database || "this database"}?`,
-        }),
-        el("p", {
-          style: "margin: 0; font-size: 14px; color: #92400e; line-height: 1.5;",
-          text: "This will modify your live Odoo instance.",
-        }),
-        fieldShell("Password", el("input", {
-          type: "password",
-          value: state.installModal.password,
-          placeholder: "",
-          style: FIELD,
-          onInput: (event) => {
-            state.installModal.password = event.target.value;
-          },
-          dataset: { testid: "scanner-install-password-input" },
-        })),
+          style:
+            "margin: 0; font-size: var(--fs-body); color: var(--color-body); " +
+            "line-height: var(--lh-body);",
+        }, [
+          el("span", { text: "Install this module on " }),
+          el("span", {
+            style: "font-family: var(--font-mono); color: var(--color-ink);",
+            text: state.scanContext?.database || "this database",
+          }),
+          el("span", { text: "? This will modify your live Odoo instance." }),
+        ]),
+        fieldShell("Password", pwInput),
         state.installModal.error
           ? el("div", {
-              style: `font-size: 13px; color: ${DANGER};`,
+              style: "font-size: var(--fs-small); color: var(--color-chip-review-fg);",
               text: state.installModal.error,
             })
           : null,
         state.teamError && !derived.isProjectLead
           ? el("div", {
-              style: "font-size: 13px; color: #6b7280;",
+              style: "font-size: var(--fs-small); color: var(--color-muted);",
               text: state.teamError,
             })
           : null,
         el("div", {
-          style: "display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;",
+          style: "display: flex; justify-content: flex-end; gap: var(--space-3); flex-wrap: wrap;",
         }, [
           el("button", {
             type: "button",
-            style: `${SECONDARY} padding: 10px 16px;`,
+            style: PILL_SECONDARY,
             disabled: state.installModal.submitting,
             onClick: closeInstallModal,
           }, [el("span", { text: "Cancel" })]),
           el("button", {
             type: "button",
-            style: `${FADED_AMBER} padding: 10px 16px;${state.installModal.submitting ? " opacity: 0.75; cursor: wait;" : ""}`,
+            style: `${PILL_PRIMARY}${state.installModal.submitting ? " opacity: 0.75; cursor: wait;" : ""}`,
             disabled: state.installModal.submitting,
-            onClick: () => {
-              void confirmInstall();
-            },
+            onClick: () => { void confirmInstall(); },
             dataset: { testid: "scanner-install-confirm-button" },
           }, [
             state.installModal.submitting
-              ? (() => {
-                  const spinner = renderScannerIcon("Loader", 14);
-                  spinner.classList.add("scanner-spin");
-                  return spinner;
-                })()
-              : renderScannerIcon("PackagePlus", 14),
-            el("span", { text: state.installModal.submitting ? "Installing..." : "Install Module" }),
+              ? el("span", { className: "scanner-pulse-dot" })
+              : renderScannerIcon("package-plus", 14),
+            el("span", {
+              style: state.installModal.submitting ? "font-family: var(--font-mono);" : "",
+              text: state.installModal.submitting ? "Installing..." : "Install module",
+            }),
           ]),
         ]),
       ]),
@@ -932,24 +979,34 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
 
   function renderResultsView(derived) {
     return el("div", {
-      style: "display: flex; flex-direction: column; gap: 24px;",
+      style: "display: flex; flex-direction: column; gap: var(--space-5);",
     }, [
       el("div", {
-        style: `${CARD} padding: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;`,
+        style:
+          `position: sticky; top: 0; z-index: 20; ${PANEL_STYLE} ` +
+          `padding: var(--space-4) var(--space-5); ` +
+          `display: flex; align-items: center; justify-content: space-between; ` +
+          `gap: var(--space-4); flex-wrap: wrap;`,
       }, [
-        el("div", { style: "display: flex; flex-direction: column; gap: 6px;" }, [
+        el("div", {
+          style: "display: flex; flex-direction: column; gap: var(--space-2); flex: 1 1 360px; min-width: 260px;",
+        }, [
+          el("span", { style: EYEBROW_STYLE, text: `SCANNER · ${derived.host}` }),
           el("h1", {
-            style: `margin: 0; font-size: 28px; font-weight: 700; color: ${NAVY};`,
-            text: state.scanResult?.company?.name || "Odoo Instance Scan",
+            style:
+              "margin: 0; font-size: var(--fs-h1); font-weight: 600; " +
+              "letter-spacing: var(--track-tight); line-height: var(--lh-snug); " +
+              "color: var(--color-ink); font-family: var(--font-body);",
+            text: state.scanResult?.company?.name || "Odoo instance scan",
           }),
           el("span", {
-            style: "font-size: 13px; color: #6b7280;",
-            text: `Scanned ${formatTimestamp(state.scanResult?.scanned_at)}`,
+            style: MONO_META_STYLE,
+            text: `Scanned ${formatTimestamp(state.scanResult?.scanned_at)}  ·  ${state.scanContext?.database || ""}`,
           }),
         ]),
         el("button", {
           type: "button",
-          style: `${SECONDARY} padding: 9px 14px;`,
+          style: PILL_SECONDARY,
           onClick: () => {
             state.scanResult = null;
             state.scanContext = null;
@@ -957,30 +1014,32 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
             state.moduleFilter = "";
             state.form.password = "";
             state.installRowErrors = {};
-            state.installModal = {
-              open: false,
-              module: null,
-              password: "",
-              error: "",
-              submitting: false,
-            };
+            state.installModal = { open: false, module: null, password: "", error: "", submitting: false };
             state.sessionInstalled = new Set();
             render();
           },
           dataset: { testid: "scanner-rescan-button" },
         }, [
-          renderScannerIcon("RefreshCw", 14),
+          renderScannerIcon("refresh-cw", 14),
           el("span", { text: "Re-scan" }),
         ]),
       ]),
-      el("div", {
-        className: "scanner-results-grid",
-      }, [
+      el("div", { className: "scanner-results-grid" }, [
         renderCompanyPanel(state.scanResult),
         renderInstalledModulesPanel(state.scanResult, derived.filteredModules),
         renderDataCountsPanel(state.scanResult),
       ]),
       renderRequiredModulesSection(derived),
+      el("div", {
+        style:
+          "display: flex; align-items: center; gap: var(--space-2); " +
+          "padding: var(--space-3) 0; " +
+          "font-family: var(--font-mono); font-size: var(--fs-small); " +
+          "color: var(--color-subtle);",
+      }, [
+        renderScannerIcon("lock", 13),
+        el("span", { text: "Credentials are used once and never stored." }),
+      ]),
     ]);
   }
 
@@ -990,21 +1049,20 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
     }, [
       el("button", {
         type: "button",
-        style: `${PRIMARY} padding: 12px 18px; display: inline-flex; align-items: center; gap: 8px;`,
+        style: PILL_PRIMARY,
         onClick: () => navigate("pipeline"),
         dataset: { testid: "scanner-continue-button" },
       }, [
-        renderScannerIcon("ArrowRight", 16),
-        el("span", { text: "Continue to Pipeline" }),
+        renderScannerIcon("arrow-right", 16),
+        el("span", { text: "Continue to pipeline" }),
       ]),
     ]);
   }
 
   function renderContent() {
     const derived = derivedState();
-
     return el("div", {
-      style: "display: flex; flex-direction: column; gap: 24px;",
+      style: "display: flex; flex-direction: column; gap: var(--space-5);",
     }, [
       state.scanResult ? renderResultsView(derived) : renderScanForm(),
       renderContinueButton(),
@@ -1017,16 +1075,12 @@ export function renderInstanceScannerView({ project, onNavigate } = {}) {
     contentEl.append(renderContent());
     if (state.installModal.open) {
       const modal = renderInstallModal(derivedState());
-      if (modal) {
-        modalHost.append(modal);
-      }
+      if (modal) modalHost.append(modal);
     }
   }
 
   render();
-  queueMicrotask(() => {
-    void loadMembers();
-  });
+  queueMicrotask(() => { void loadMembers(); });
 
   return container;
 }

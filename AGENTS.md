@@ -178,11 +178,11 @@ V1 is complete and live. V2 is in active development.
 - Port: 4174 (local) | https://project-odoo.onrender.com (production)
 
 ### Test Invariant — NON-NEGOTIABLE
-Current baseline: 2,842 pass, 0 fail
+Current baseline: 3,234 pass, 0 fail
 Every commit must maintain this count or better.
 Run before every commit: npm test 2>&1 | tail -5
 Never commit if tests fail. Never commit without running tests.
-Current head commit: 866350c
+Current head commit: d32129e
 
 ### V2 Feature Status
 

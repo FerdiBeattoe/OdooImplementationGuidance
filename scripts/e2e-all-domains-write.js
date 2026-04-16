@@ -67,12 +67,70 @@ if (!ODOO_URL || !ODOO_DB || !ODOO_USER || !ODOO_PASSWORD) {
 
 // ── Imports ──────────────────────────────────────────────────────────────────
 
-const { OdooClient } = await import(
+const { OdooClient, detectInstalledModules } = await import(
   pathToFileURL(resolve(ROOT, "app/backend/odoo-client.js")).href
 );
 const { resolveLookups, isLookupDirective } = await import(
   pathToFileURL(resolve(ROOT, "app/backend/odoo-lookup-resolver.js")).href
 );
+
+// ── Assembler → Odoo 19 technical module map (frozen, 51 entries) ───────────
+// Keys match ASSEMBLER_REGISTRY.name. Values are arrays of Odoo 19 technical
+// module names required for any write in that domain to succeed.
+
+const DOMAIN_MODULE_MAP = Object.freeze({
+  "accounting":          ["account"],
+  "accounting-reports":  ["account_reports"],
+  "appraisals":          ["hr_appraisal"],
+  "approvals":           ["approvals"],
+  "attendance":          ["hr_attendance"],
+  "calendar":            ["calendar"],
+  "consolidation":       ["account_consolidation"],
+  "crm":                 ["crm"],
+  "discuss":             ["discuss"],
+  "documents":           ["documents"],
+  "email-marketing":     ["mass_mailing"],
+  "events":              ["event"],
+  "expenses":            ["hr_expense"],
+  "field-service":       ["industry_fsm"],
+  "fleet":               ["fleet"],
+  "foundation":          ["base"],
+  "helpdesk":            ["helpdesk"],
+  "hr":                  ["hr"],
+  "incoming-mail":       ["fetchmail"],
+  "inventory":           ["stock"],
+  "iot":                 ["iot"],
+  "knowledge":           ["knowledge"],
+  "live-chat":           ["im_livechat"],
+  "loyalty":             ["loyalty"],
+  "lunch":               ["lunch"],
+  "maintenance":         ["maintenance"],
+  "manufacturing":       ["mrp"],
+  "master-data":         ["base"],
+  "outgoing-mail":       ["mail"],
+  "payroll":             ["hr_payroll"],
+  "planning":            ["planning"],
+  "plm":                 ["mrp_plm"],
+  "pos":                 ["point_of_sale"],
+  "projects":            ["project"],
+  "purchase":            ["purchase"],
+  "quality":             ["quality_control"],
+  "recruitment":         ["hr_recruitment"],
+  "referrals":           ["hr_referral"],
+  "rental":              ["sale_renting"],
+  "repairs":             ["repair"],
+  "sales":               ["sale_management"],
+  "sign":                ["sign"],
+  "sms-marketing":       ["mass_mailing_sms"],
+  "spreadsheet":         ["spreadsheet"],
+  "studio":              ["web_studio"],
+  "subscriptions":       ["sale_subscription"],
+  "timesheets":          ["hr_timesheet"],
+  "users-roles":         ["base"],
+  "voip":                ["voip"],
+  "website-ecommerce":   ["website", "website_sale"],
+  "whatsapp":            ["whatsapp"],
+});
 
 // ── Safety: forbidden models (RULE 3) ────────────────────────────────────────
 
@@ -617,6 +675,14 @@ async function testWriteSingleton(client, model, values, checkpointId) {
   };
 }
 
+// ── 404 safety net — detect "module not installed" at runtime ──────────────
+
+function isModelNotInstalledError(err) {
+  if (!err || typeof err.message !== "string") return false;
+  const msg = err.message;
+  return msg.includes("404 Not Found") || msg.includes("not found on the server");
+}
+
 // ── Process a single operation_definition ───────────────────────────────────
 
 async function processDefinition(client, domainName, checkpointId, def) {
@@ -840,11 +906,33 @@ async function main() {
   console.log("\n═══ Pre-run cleanup of leftover [TEST] records ═══");
   await cleanupPriorTestRecords(client);
 
+  // ── Proactive module detection (once per run) ───────────────────────────
+  const allModuleNames = [...new Set(Object.values(DOMAIN_MODULE_MAP).flat())];
+  const moduleStates = new Map();
+  try {
+    const detected = await detectInstalledModules(client, allModuleNames);
+    for (const { module, state } of detected) {
+      moduleStates.set(module, state);
+    }
+    const installedCount = [...moduleStates.values()].filter(
+      (s) => s === "installed" || s === "to_upgrade"
+    ).length;
+    console.log(`  Installed modules detected: ${installedCount}/${allModuleNames.length}`);
+  } catch (err) {
+    console.warn(`  [warn] module detection failed: ${err.message} — proceeding without proactive gate`);
+  }
+
+  function isModulePresent(moduleName) {
+    const state = moduleStates.get(moduleName);
+    return state === "installed" || state === "to_upgrade";
+  }
+
   const summary = {
     totalDomains: 0,
     totalDefinitions: 0,
     pass: 0,
     fail: 0,
+    notApplicable: 0,
     skippedAllNull: 0,
     perDomain: [],
   };
@@ -859,8 +947,25 @@ async function main() {
       pass: 0,
       fail: 0,
       skippedCount: 0,
+      notApplicable: false,
+      notApplicableReason: "",
       results: [],
     };
+
+    // ── Per-domain module gate ──────────────────────────────────────────
+    const requiredModules = DOMAIN_MODULE_MAP[entry.name] || [];
+    if (requiredModules.length > 0 && moduleStates.size > 0) {
+      const missing = requiredModules.filter((m) => !isModulePresent(m));
+      if (missing.length > 0) {
+        perDomain.skippedCount = 1;
+        perDomain.notApplicable = true;
+        perDomain.notApplicableReason = `module(s) not installed: ${missing.join(", ")}`;
+        console.log(`[${entry.name}] NOT_APPLICABLE — ${perDomain.notApplicableReason}`);
+        summary.notApplicable += 1;
+        summary.perDomain.push(perDomain);
+        continue;
+      }
+    }
 
     let assembler;
     try {
@@ -914,7 +1019,12 @@ async function main() {
         try {
           result = await processDefinition(client, entry.name, checkpointId, def);
         } catch (err) {
-          result = { ok: false, reason: `unexpected exception: ${err.message}`, restored: false };
+          if (isModelNotInstalledError(err)) {
+            console.log(`  [404-safety-net] ${checkpointId} → ${def.target_model}: ${err.message}`);
+            result = { skipped: true, reason: `module not installed (runtime 404): ${def.target_model}` };
+          } else {
+            result = { ok: false, reason: `unexpected exception: ${err.message}`, restored: false };
+          }
         }
 
         if (result.skipped) {
@@ -954,13 +1064,16 @@ async function main() {
   console.log(`  Total definitions tested: ${summary.totalDefinitions}`);
   console.log(`  PASS:                     ${summary.pass}`);
   console.log(`  FAIL:                     ${summary.fail}`);
+  console.log(`  NOT_APPLICABLE:           ${summary.notApplicable}`);
   console.log(`  SKIPPED (all null):       ${summary.skippedAllNull}`);
   console.log(`  Overall:                  ${overall}`);
   console.log("═══════════════════════════════════════════════════════\n");
 
   console.log("Per domain:");
   for (const d of summary.perDomain) {
-    if (d.tested === 0) {
+    if (d.notApplicable) {
+      console.log(`  ${d.name}: NOT_APPLICABLE (${d.notApplicableReason})`);
+    } else if (d.tested === 0) {
       console.log(`  ${d.name}: SKIPPED`);
     } else if (d.fail === 0) {
       console.log(`  ${d.name}: PASS (${d.pass}/${d.tested})`);

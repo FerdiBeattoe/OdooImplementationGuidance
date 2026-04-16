@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 //
 // Pattern: local state object, container node, render() clears and rebuilds.
-// Follows connection-wizard-view.js conventions exactly.
+// All visuals are driven by tokens.css (Kinso-inspired design system).
 // ---------------------------------------------------------------------------
 
 import { clearNode, el } from "../lib/dom.js";
@@ -14,6 +14,27 @@ import { setCurrentView } from "../state/app-store.js";
 function getProjectId() {
   const state = onboardingStore.getState();
   return state.connection?.project_id || null;
+}
+
+// ---------------------------------------------------------------------------
+// Inject shared keyframes once (loading pulse + spinner).
+// ---------------------------------------------------------------------------
+
+function ensureOnboardingKeyframes() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById("pod-onboarding-keyframes")) return;
+  const style = document.createElement("style");
+  style.id = "pod-onboarding-keyframes";
+  style.textContent = `
+@keyframes pod-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.55; }
+}
+@keyframes pod-spin {
+  to { transform: rotate(360deg); }
+}
+`;
+  document.head.appendChild(style);
 }
 
 // ---------------------------------------------------------------------------
@@ -1150,33 +1171,137 @@ function getVisibleQuestions(answers) {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: section colour accent (deterministic, no inline conditionals in render)
+// Style helpers — all values via tokens.css
 // ---------------------------------------------------------------------------
 
-const SECTION_COLORS = {
-  1: "#4A90E2",
-  2: "#7B68EE",
-  3: "#20B2AA",
-  4: "#E8A838",
-  5: "#E06030",
-  6: "#C0392B",
-  7: "#27AE60",
-  8: "#8E44AD",
-  9: "#0C4A6E",
- 10: "#B83280",
- 11: "#2E8B57",
- 12: "#D97706",
- 13: "#2563EB",
- 14: "#059669",
- 15: "#1D4ED8",
- 16: "#F97316",
- 17: "#BE123C",
- 18: "#0891B2",
- 19: "#7C3AED",
- 20: "#C2410C",
- 21: "#B45309",
- 22: "#0F172A",
+const STYLE = {
+  heroCanvas:
+    "min-height: 100vh;" +
+    " background: var(--canvas-bloom-warm-hero), var(--canvas-bloom-cool-hero), var(--color-canvas-base);" +
+    " display: flex; flex-direction: column; align-items: center;" +
+    " padding: var(--space-8) var(--space-5) var(--space-16); box-sizing: border-box;",
+  column: "width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: var(--space-6);",
+  eyebrow:
+    "font-size: var(--fs-tiny); font-weight: 600; color: var(--color-muted);" +
+    " text-transform: uppercase; letter-spacing: var(--track-eyebrow); margin: 0;",
+  h1:
+    "font-family: var(--font-display); font-size: var(--fs-h1); font-weight: 600;" +
+    " letter-spacing: var(--track-tight); line-height: var(--lh-snug);" +
+    " color: var(--color-ink); margin: 0;",
+  h1Display:
+    "font-family: var(--font-display); font-size: var(--fs-display); font-weight: 600;" +
+    " letter-spacing: var(--track-tight); line-height: var(--lh-tight);" +
+    " color: var(--color-ink); margin: 0;",
+  h2:
+    "font-family: var(--font-display); font-size: var(--fs-h2); font-weight: 600;" +
+    " color: var(--color-ink); line-height: var(--lh-snug); margin: 0;",
+  h3:
+    "font-family: var(--font-display); font-size: var(--fs-h3); font-weight: 600;" +
+    " color: var(--color-ink); margin: 0;",
+  body:
+    "font-family: var(--font-body); font-size: var(--fs-body); color: var(--color-body);" +
+    " line-height: var(--lh-body); margin: 0;",
+  muted:
+    "font-family: var(--font-body); font-size: var(--fs-small); color: var(--color-muted);" +
+    " line-height: var(--lh-body); margin: 0;",
+  card:
+    "background: var(--color-surface); border: 1px solid var(--color-line);" +
+    " border-radius: var(--radius-card); padding: var(--space-7); box-shadow: var(--shadow-raised);",
+  panel:
+    "background: var(--color-surface); border: 1px solid var(--color-line);" +
+    " border-radius: var(--radius-panel); padding: var(--space-5);",
+  softPanel:
+    "background: var(--color-line-soft); border: 1px solid var(--color-line);" +
+    " border-radius: var(--radius-panel); padding: var(--space-4) var(--space-5);",
+  reviewPanel:
+    "background: var(--color-chip-review-bg); color: var(--color-chip-review-fg);" +
+    " border: 1px solid var(--color-line); border-radius: var(--radius-panel);" +
+    " padding: var(--space-4) var(--space-5);",
+  input:
+    "width: 100%; background: var(--color-surface); color: var(--color-ink);" +
+    " border: 1px solid var(--color-line); border-radius: var(--radius-input);" +
+    " padding: 10px 14px; font-family: var(--font-body); font-size: var(--fs-body);" +
+    " line-height: var(--lh-snug); box-sizing: border-box; outline: none;",
+  chip:
+    "display: inline-flex; align-items: center; padding: 4px 10px;" +
+    " background: var(--color-chip-bg); color: var(--color-chip-fg);" +
+    " border-radius: var(--radius-chip); font-size: var(--fs-tiny); font-weight: 600;" +
+    " text-transform: uppercase; letter-spacing: var(--track-eyebrow);",
+  chipReady:
+    "display: inline-flex; align-items: center; padding: 4px 10px;" +
+    " background: var(--color-chip-ready-bg); color: var(--color-chip-ready-fg);" +
+    " border-radius: var(--radius-chip); font-size: var(--fs-tiny); font-weight: 600;" +
+    " text-transform: uppercase; letter-spacing: var(--track-eyebrow);",
+  pillPrimary:
+    "display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);" +
+    " background: var(--color-pill-primary-bg); color: var(--color-pill-primary-fg);" +
+    " border: none; border-radius: var(--radius-pill); padding: 12px 22px;" +
+    " font-family: var(--font-body); font-size: var(--fs-body); font-weight: 600;" +
+    " cursor: pointer; transition: opacity var(--dur-fast) var(--ease);",
+  pillSecondary:
+    "display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);" +
+    " background: var(--color-pill-secondary-bg); color: var(--color-pill-secondary-fg);" +
+    " border: 1px solid var(--color-pill-secondary-border); border-radius: var(--radius-pill);" +
+    " padding: 12px 22px; font-family: var(--font-body); font-size: var(--fs-body);" +
+    " font-weight: 600; cursor: pointer; transition: opacity var(--dur-fast) var(--ease);",
+  linkButton:
+    "background: none; border: none; padding: 4px 8px;" +
+    " color: var(--color-muted); font-family: var(--font-body); font-size: var(--fs-small);" +
+    " text-decoration: underline; cursor: pointer;",
+  gradientText:
+    "background: var(--accent-grad); -webkit-background-clip: text; background-clip: text;" +
+    " -webkit-text-fill-color: transparent; color: transparent;",
 };
+
+function inkSpan(text) {
+  return el("span", { style: "color: var(--color-ink);" }, text);
+}
+
+function mutedSpan(text) {
+  return el("span", { style: "color: var(--color-muted);" }, text);
+}
+
+function gradientSpan(text) {
+  return el("span", { style: STYLE.gradientText }, text);
+}
+
+function gradientCheck(size = 48) {
+  const wrap = el("div", {
+    style:
+      `width: ${size}px; height: ${size}px; border-radius: 50%;` +
+      " background: var(--accent-grad); display: flex;" +
+      " align-items: center; justify-content: center;" +
+      " box-shadow: var(--shadow-raised);",
+  });
+  const icon = lucideIcon("check", Math.round(size * 0.5));
+  icon.style.color = "var(--color-pill-primary-fg)";
+  wrap.append(icon);
+  return wrap;
+}
+
+function gradientDot(size = 8) {
+  return el("span", {
+    style:
+      `display: inline-block; width: ${size}px; height: ${size}px;` +
+      " border-radius: 50%; background: var(--accent-grad); flex-shrink: 0;",
+  });
+}
+
+function pulsingGradientDot(size = 10) {
+  return el("span", {
+    style:
+      `display: inline-block; width: ${size}px; height: ${size}px;` +
+      " border-radius: 50%; background: var(--accent-grad); flex-shrink: 0;" +
+      " animation: pod-pulse 1.4s var(--ease) infinite;",
+  });
+}
+
+function disabledStyle(el_) {
+  el_.setAttribute("disabled", "true");
+  el_.style.opacity = "0.5";
+  el_.style.cursor = "not-allowed";
+  return el_;
+}
 
 // ---------------------------------------------------------------------------
 // renderOnboardingWizard
@@ -1186,11 +1311,13 @@ const SECTION_COLORS = {
 // ---------------------------------------------------------------------------
 
 export function renderOnboardingWizard({ onComplete, onNavigate }) {
+  ensureOnboardingKeyframes();
+
   // ── Local UI state (on top of onboardingStore) ────────────────────────
   const local = {
-    selectedIndustry: null,   // id string, for industry screen before POST
-    tempAnswer: null,         // staging area for current question input before commit
-    expandedSections: {},     // { sectionName: boolean } for summary collapsibles
+    selectedIndustry: null,
+    tempAnswer: null,
+    expandedSections: {},
     exitWarningVisible: false,
     activeQuestionFlush: () => {},
     popstateHandler: null,
@@ -1201,20 +1328,13 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
 
   const container = el("div", {
     className: "ow-root",
-    style: "min-height: 100vh; background: var(--ee-surface-container-low); display: flex; flex-direction: column; align-items: center; padding: 32px 16px;",
+    style: STYLE.heroCanvas,
   });
 
-  // Tracks whether container has ever been appended to the document.
-  // The first render() call is synchronous — before the caller does
-  // root.append(container) — so document.contains(container) is false
-  // at that point. Without this flag the stale-instance guard would fire
-  // on first render, unsubscribe the store, and produce a blank screen.
   let _everMounted = false;
 
   attachPopstateGuard();
 
-  // Subscribe to store changes and re-render.
-  // Store the unsubscribe fn so stale instances can clean up when detached.
   const unsubscribeStore = onboardingStore.subscribe(render);
   render();
   return container;
@@ -1222,10 +1342,6 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
   // ── render ──────────────────────────────────────────────────────────────
 
   function render(force = false) {
-    // Guard: if this wizard container is no longer in the document, clean up
-    // the stale subscription and stop rendering into a detached node.
-    // Skip on first call — container isn't in the DOM until after
-    // renderOnboardingWizard() returns and the caller appends it.
     if (document.contains(container)) {
       _everMounted = true;
     } else if (_everMounted) {
@@ -1234,10 +1350,6 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       return;
     }
 
-    // Guard: if a text or numeric input inside the wizard currently has focus,
-    // skip the re-render to preserve the active input element and its value.
-    // The commit-on-blur + flush-on-navigate pattern ensures the value is not
-    // lost — we simply defer re-rendering until focus leaves the field.
     const focused = document.activeElement;
     if (!force && focused && (focused.tagName === "INPUT" || focused.tagName === "TEXTAREA") && container.contains(focused)) {
       return;
@@ -1249,8 +1361,6 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
 
     container.append(buildHeader());
 
-    // If project_id already registered, skip account-check and connection screens
-    // and go straight to industry (the first real onboarding step)
     if (s.connection.project_id && (s.screen === "account-check" || s.screen === "create-account" || s.screen === "connect-account")) {
       onboardingStore.setScreen("industry");
       return;
@@ -1279,7 +1389,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     }
   }
 
-  // ── Header ───────────────────────────────────────────────────────────────
+  // ── Popstate / exit guard ───────────────────────────────────────────────
 
   function attachPopstateGuard() {
     if (typeof window === "undefined" || typeof window.addEventListener !== "function") {
@@ -1372,530 +1482,219 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     return true;
   }
 
+  // ── Header ───────────────────────────────────────────────────────────────
+
   function buildHeader() {
-    return el("div", { className: "ow-header", style: "width: 100%; max-width: 800px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;" }, [
-      el("div", { style: "display: flex; align-items: center; gap: 12px;" }, [
-        el("div", {
-          className: "ow-header-mark",
-          style: "width: 40px; height: 40px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;",
-        }, [
-          (() => { const ic = lucideIcon("rocket", 20); ic.style.color = "#92400e"; return ic; })(),
-        ]),
-        el("div", {}, [
-          el("h1", { style: "font-family: var(--ee-font-headline); font-size: 18px; font-weight: 700; color: var(--ee-on-surface); margin: 0;" }, "Business Assessment"),
-          el("p", { style: "font-size: 12px; color: var(--ee-on-surface-variant); margin: 0;" }, "Project Odoo — Governed Odoo 19 Implementation"),
-        ]),
+    return el("header", {
+      style:
+        "width: 100%; max-width: 720px;" +
+        " display: flex; align-items: center; justify-content: space-between;" +
+        " margin-bottom: var(--space-8);",
+    }, [
+      el("div", { style: "display: flex; align-items: center; gap: var(--space-3);" }, [
+        el("span", {
+          style:
+            "font-family: var(--font-display); font-size: var(--fs-h3); font-weight: 600;" +
+            " color: var(--color-ink); letter-spacing: var(--track-tight);",
+        }, "Project Odoo"),
+        el("span", { style: STYLE.chip }, "DISCOVERY"),
       ]),
       el("button", {
-        className: "ow-header-exit",
-        style: "background: none; border: none; color: var(--ee-on-surface-variant); font-size: 13px; cursor: pointer; text-decoration: underline;",
+        type: "button",
+        style: STYLE.linkButton,
         onclick: () => requestExitWarning(),
-      }, "Exit wizard"),
+      }, "Save and exit"),
     ]);
   }
 
-  // ── SCREEN 0a: Account Check ───────────────────────────────────────────────
+  // ── SCREEN 0a: Account Check (safety fallback) ──────────────────────────
 
-  function buildAccountCheckScreen(s) {
-    const wrap = el("div", { style: "width: 100%; max-width: 700px;" });
+  function buildAccountCheckScreen() {
+    const wrap = el("div", { style: STYLE.column });
 
-    wrap.append(el("div", { style: "margin-bottom: 24px;" }, [
-      el("h2", { style: "font-family: var(--ee-font-headline); font-size: 22px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 6px;" }, "Do you have an existing Odoo account?"),
-      el("p", { style: "font-size: 14px; color: var(--ee-on-surface-variant);" }, "You will need an active Odoo instance to begin your implementation."),
-    ]));
+    wrap.append(
+      el("div", { style: "display: flex; flex-direction: column; gap: var(--space-3);" }, [
+        el("p", { style: STYLE.eyebrow }, "DISCOVERY · STEP 1 / 4"),
+        el("h1", { style: STYLE.h1Display }, [
+          inkSpan("Let's begin"),
+          mutedSpan(" — tell us about your setup."),
+        ]),
+        el("p", { style: STYLE.body }, "You'll need an Odoo instance to continue. If you already have one, we'll connect it next."),
+      ])
+    );
 
-    const grid = el("div", { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;" });
+    const grid = el("div", {
+      style:
+        "display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));" +
+        " gap: var(--space-4);",
+    });
 
-    grid.append(el("button", {
-      className: "ow-choice-card",
-      style: "width: 100%; text-align: center; padding: 28px 20px; background: var(--ee-surface-container); border: 2px solid var(--ee-outline-variant); cursor: pointer; transition: border-color 0.15s;",
+    grid.append(buildTile({
+      icon: "circle-check",
+      title: "Yes, I have an instance",
+      subtitle: "We'll connect it and start discovery.",
       onclick: () => onboardingStore.setAccountStatus("existing"),
-    }, [
-      (() => { const ic = lucideIcon("check-circle", 32); ic.style.cssText = "color: #f59e0b; display: block; margin-bottom: 10px;"; return ic; })(),
-      el("p", { style: "font-size: 15px; font-weight: 700; color: var(--ee-on-surface);" }, "Yes, I have an Odoo instance"),
-    ]));
+      accent: true,
+    }));
 
-    grid.append(el("button", {
-      className: "ow-choice-card",
-      style: "width: 100%; text-align: center; padding: 28px 20px; background: var(--ee-surface-container); border: 2px solid var(--ee-outline-variant); cursor: pointer; transition: border-color 0.15s;",
+    grid.append(buildTile({
+      icon: "circle-plus",
+      title: "No, I need to create one",
+      subtitle: "We'll point you to Odoo signup first.",
       onclick: () => onboardingStore.setAccountStatus("new"),
-    }, [
-      (() => { const ic = lucideIcon("plus-circle", 32); ic.style.cssText = "color: #64748b; display: block; margin-bottom: 10px;"; return ic; })(),
-      el("p", { style: "font-size: 15px; font-weight: 700; color: var(--ee-on-surface);" }, "No, I need to create one"),
-    ]));
+    }));
 
     wrap.append(grid);
     return wrap;
   }
 
-  // ── SCREEN 0b (No path): Create Account ──────────────────────────────────
-
-  function buildCreateAccountScreen(s) {
-    const wrap = el("div", { style: "width: 100%; max-width: 700px;" });
-
-    wrap.append(el("div", { style: "margin-bottom: 20px;" }, [
-      el("h2", { style: "font-family: var(--ee-font-headline); font-size: 22px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 6px;" }, "Create your Odoo account"),
-      el("p", { style: "font-size: 14px; color: var(--ee-on-surface-variant); line-height: 1.6;" },
-        "You will need an Odoo instance before we can begin. Creating one takes about 2 minutes. Click below to open the Odoo signup page, then come back here when your instance is ready."),
-    ]));
-
-    wrap.append(el("div", { style: "margin-bottom: 20px;" }, [
-      el("a", {
-        href: "https://www.odoo.com/trial",
-        target: "_blank",
-        rel: "noopener noreferrer",
-        className: "ee-btn ee-btn--secondary",
-        style: "display: inline-flex; align-items: center; gap: 8px; text-decoration: none;",
-      }, [
-        lucideIcon("external-link", 18),
-        "Open Odoo signup",
-      ]),
-    ]));
-
-    // Divider
-    wrap.append(el("div", { style: "display: flex; align-items: center; gap: 12px; margin-bottom: 20px;" }, [
-      el("div", { style: "flex: 1; height: 1px; background: var(--ee-outline-variant);" }),
-      el("span", { style: "font-size: 13px; color: var(--ee-on-surface-variant); white-space: nowrap;" }, "Already done? Enter your instance details below."),
-      el("div", { style: "flex: 1; height: 1px; background: var(--ee-outline-variant);" }),
-    ]));
-
-    wrap.append(buildConnectionForm(s));
-
-    return wrap;
-  }
-
-  // ── SCREEN 0b (Yes path): Connect Account ────────────────────────────────
-
-  function buildConnectAccountScreen(s) {
-    const wrap = el("div", { style: "width: 100%; max-width: 700px;" });
-
-    wrap.append(el("div", { style: "margin-bottom: 20px;" }, [
-      el("h2", { style: "font-family: var(--ee-font-headline); font-size: 22px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 6px;" }, "Connect your Odoo instance"),
-      el("p", { style: "font-size: 14px; color: var(--ee-on-surface-variant);" }, "Enter your Odoo instance details to get started."),
-    ]));
-
-    wrap.append(buildConnectionForm(s));
-
-    wrap.append(el("div", { style: "margin-top: 12px; text-align: center;" }, [
-      el("button", {
-        style: "background: none; border: none; color: var(--ee-on-surface-variant); font-size: 13px; cursor: pointer; text-decoration: underline;",
-        onclick: () => window.open("https://www.odoo.com/trial", "_blank"),
-      }, "Don't have an account yet?"),
-    ]));
-
-    return wrap;
-  }
-
-  // normaliseOdooUrl is imported from onboarding-store.js — pure function,
-  // no DOM dependency, tested independently in server.test.js.
-
-  // ── Shared connection form ────────────────────────────────────────────────
-
-  function buildConnectionForm(s) {
-    // formState holds normalised url; database is set by dropdown selection,
-    // "create new" text input, or manual text input — never from dbInput directly.
-    const formState = { url: "", database: "", username: "", password: "" };
-    let dbSelectInput = null;
-    let dbTextInput = null;
-
-    // Local UI state for database detection (not in store — purely presentation)
-    const dbUiState = {
-      detecting: false,
-      detected: null,   // null | [] | ["db1", ...]
-      mode: "hidden",   // "hidden" | "dropdown" | "manual" | "create-new"
-      urlError: null,
-    };
-
-    // Pre-fill URL and database from stored connection (password is never stored)
-    const storedUrl = s.connection?.url || "";
-    const storedDatabase = s.connection?.database || "";
-    if (storedUrl) formState.url = storedUrl;
-    if (storedDatabase) formState.database = storedDatabase;
-
-    const card = el("div", { className: "ow-card", style: "background: var(--ee-surface-container-low); box-shadow: var(--ee-shadow-lg); padding: 24px;" });
-
-    // Welcome-back banner when a stored connection exists
-    if (storedUrl) {
-      card.append(el("div", {
-        style: "background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #92400e;",
-      }, "Welcome back. Your instance details are pre-filled \u2014 just enter your password to reconnect."));
-    }
-
-    const fieldStyle = "display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px;";
-    const labelStyle = "font-size: 12px; font-weight: 600; color: var(--ee-on-surface); text-transform: uppercase; letter-spacing: 0.04em;";
-
-    // ── URL field ─────────────────────────────────────────────────────────────
-
-    const urlInput = el("input", {
-      type: "text",
-      className: "ee-input",
-      placeholder: "mycompany.odoo.com",
-      value: storedUrl,
-    });
-    const urlError = el("p", {
-      style: "font-size: 12px; color: var(--ee-error); margin-top: 4px; display: none;",
-    });
-    const urlField = el("div", { style: fieldStyle }, [
-      el("label", { style: labelStyle }, "Instance URL"),
-      urlInput,
-      urlError,
-    ]);
-
-    // ── Database area (rendered inside card after URL field) ──────────────────
-
-    const dbArea = el("div", { style: "margin-bottom: 14px;" });
-    const userInput = el("input", { type: "email", className: "ee-input", placeholder: "admin@mycompany.com" });
-    const passInput = el("input", { type: "password", className: "ee-input", placeholder: "Password" });
-    let passwordVisible = false;
-    const togglePasswordButton = el("button", {
+  function buildTile({ icon, title, subtitle, onclick, selected = false, accent = false }) {
+    const borderColor = selected ? "var(--color-ink)" : "var(--color-line)";
+    const bg = selected ? "var(--color-chip-ready-bg)" : "var(--color-surface)";
+    const tile = el("button", {
       type: "button",
-      style: "position: absolute; top: 50%; right: 12px; transform: translateY(-50%); background: none; border: none; padding: 0; cursor: pointer; color: #92400e; display: flex; align-items: center; justify-content: center;",
-    });
-    const passwordFieldWrapper = el("div", { style: "position: relative;" }, [
-      passInput,
-      togglePasswordButton,
-    ]);
-
-    function syncPasswordToggle() {
-      passInput.type = passwordVisible ? "text" : "password";
-      togglePasswordButton.setAttribute("aria-label", passwordVisible ? "Hide password" : "Show password");
-      while (togglePasswordButton.firstChild) togglePasswordButton.removeChild(togglePasswordButton.firstChild);
-      const icon = lucideIcon(passwordVisible ? "eye-off" : "eye", 18);
-      icon.style.color = "#92400e";
-      togglePasswordButton.append(icon);
-    }
-
-    togglePasswordButton.addEventListener("click", (event) => {
-      event.preventDefault();
-      passwordVisible = !passwordVisible;
-      syncPasswordToggle();
-    });
-    syncPasswordToggle();
-
-    function renderDbArea() {
-      // Clear and re-render dbArea based on dbUiState
-      while (dbArea.firstChild) dbArea.removeChild(dbArea.firstChild);
-      dbSelectInput = null;
-      dbTextInput = null;
-
-      if (dbUiState.detecting) {
-        dbArea.append(
-          el("div", { style: "display: flex; align-items: center; gap: 8px; padding: 10px 0;" }, [
-            (() => { const ic = lucideIcon("loader-2", 18); ic.style.cssText = "color: #64748b; animation: spin 1s linear infinite;"; return ic; })(),
-            el("span", { style: "font-size: 13px; color: var(--ee-on-surface-variant);" }, "Detecting databases..."),
-          ])
-        );
-        return;
-      }
-
-      if (dbUiState.mode === "hidden") return;
-
-      if (dbUiState.mode === "dropdown") {
-        // Dropdown with detected databases + "Create a new database"
-        const options = [
-          el("option", { value: "" }, "Select a database..."),
-          ...dbUiState.detected.map((db) =>
-            el("option", { value: db }, db)
-          ),
-          el("option", { value: "__create__" }, "Create a new database"),
-        ];
-        const select = el("select", { className: "ee-input", style: "width: 100%;" }, options);
-        dbSelectInput = select;
-        if (formState.database && dbUiState.detected.includes(formState.database)) {
-          select.value = formState.database;
-        }
-        select.addEventListener("change", (e) => {
-          const val = e.target.value;
-          if (val === "__create__") {
-            dbUiState.mode = "create-new";
-            formState.database = "";
-            renderDbArea();
-          } else {
-            formState.database = val;
-          }
-        });
-        dbArea.append(
-          el("div", { style: fieldStyle }, [
-            el("label", { style: labelStyle }, "Database"),
-            select,
-          ])
-        );
-        return;
-      }
-
-      if (dbUiState.mode === "create-new") {
-        const newDbInput = el("input", {
-          type: "text",
-          className: "ee-input",
-          placeholder: "New database name",
-        });
-        dbTextInput = newDbInput;
-        if (formState.database) newDbInput.value = formState.database;
-        newDbInput.addEventListener("input", (e) => { formState.database = e.target.value.trim(); });
-        const backBtn = el("button", {
-          type: "button",
-          style: "background: none; border: none; color: var(--ee-on-surface-variant); font-size: 12px; cursor: pointer; text-decoration: underline; padding: 4px 0; margin-top: 4px;",
-          onclick: () => {
-            dbUiState.mode = "dropdown";
-            formState.database = "";
-            renderDbArea();
-          },
-        }, "Back to database list");
-        dbArea.append(
-          el("div", { style: fieldStyle }, [
-            el("label", { style: labelStyle }, "New database name"),
-            newDbInput,
-            backBtn,
-          ])
-        );
-        return;
-      }
-
-      if (dbUiState.mode === "manual") {
-        // Manual text input — detection failed or no databases found
-        const manualInput = el("input", {
-          type: "text",
-          className: "ee-input",
-          placeholder: "mycompany",
-        });
-        dbTextInput = manualInput;
-        if (formState.database) manualInput.value = formState.database;
-        manualInput.addEventListener("input", (e) => { formState.database = e.target.value.trim(); });
-        dbArea.append(
-          el("div", { style: fieldStyle }, [
-            el("label", { style: labelStyle }, "Database name"),
-            manualInput,
-            el("p", { style: "font-size: 12px; color: var(--ee-on-surface-variant); margin-top: 4px;" },
-              "Enter your database name manually"),
-          ])
-        );
-      }
-    }
-
-    // ── Database detection ────────────────────────────────────────────────────
-
-    async function detectDatabases(canonicalUrl) {
-      dbUiState.detecting = true;
-      dbUiState.mode = "hidden";
-      formState.database = "";
-      renderDbArea();
-
-      try {
-        const res = await fetch("/api/odoo/detect-databases", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: canonicalUrl }),
-        });
-        const data = await res.json();
-
-        if (data.ok && Array.isArray(data.databases) && data.databases.length > 0) {
-          dbUiState.detected = data.databases;
-          dbUiState.mode = "dropdown";
-        } else {
-          dbUiState.mode = "manual";
-        }
-      } catch {
-        dbUiState.mode = "manual";
-      } finally {
-        dbUiState.detecting = false;
-        renderDbArea();
-      }
-    }
-
-    // ── URL blur handler: normalise then detect ───────────────────────────────
-
-    urlInput.addEventListener("input", (e) => {
-      // Keep raw value in sync while typing (normalisation happens on blur)
-      formState.url = e.target.value.trim();
+      style:
+        `width: 100%; text-align: left; padding: var(--space-6);` +
+        ` background: ${bg}; border: 1px solid ${borderColor};` +
+        " border-radius: var(--radius-card); cursor: pointer;" +
+        " display: flex; flex-direction: column; gap: var(--space-3);" +
+        " transition: border-color var(--dur-fast) var(--ease);" +
+        " box-shadow: var(--shadow-raised); font-family: var(--font-body);",
+      onclick,
     });
 
-    urlInput.addEventListener("blur", async () => {
-      const raw = urlInput.value.trim();
-      if (!raw) {
-        urlError.style.display = "none";
-        dbUiState.mode = "hidden";
-        renderDbArea();
-        return;
-      }
-
-      const result = normaliseOdooUrl(raw);
-      if (!result.ok) {
-        urlError.textContent = result.error;
-        urlError.style.display = "block";
-        formState.url = "";
-        dbUiState.mode = "hidden";
-        renderDbArea();
-        return;
-      }
-
-      // Show normalised URL in field
-      urlInput.value = result.url;
-      formState.url = result.url;
-      urlError.style.display = "none";
-
-      // Trigger database detection
-      await detectDatabases(result.url);
-    });
-
-    userInput.addEventListener("input", (e) => { formState.username = e.target.value.trim(); });
-    passInput.addEventListener("input", (e) => { formState.password = e.target.value; });
-
-    // ── Assemble card ─────────────────────────────────────────────────────────
-
-    renderDbArea(); // initially hidden
-
-    // Auto-trigger database detection when URL is pre-filled from stored connection
-    if (storedUrl) {
-      detectDatabases(storedUrl);
+    const iconRow = el("div", { style: "display: flex; align-items: center; gap: var(--space-2);" });
+    if (accent) {
+      iconRow.append(gradientDot(8));
     }
+    const ic = lucideIcon(icon, 22);
+    ic.style.color = "var(--color-ink)";
+    iconRow.append(ic);
+    tile.append(iconRow);
 
-    card.append(
-      urlField,
-      dbArea,
-      el("div", { style: fieldStyle }, [el("label", { style: labelStyle }, "Username (email)"), userInput]),
-      el("div", { style: fieldStyle }, [
-        el("label", { style: labelStyle }, "Password"),
-        passwordFieldWrapper,
-        el("p", { style: "font-size: 11px; color: #94a3b8; margin-top: 4px;" }, "Your password is used to connect and is never stored."),
-      ]),
+    tile.append(
+      el("p", { style: STYLE.h3 }, title),
+      el("p", { style: STYLE.muted }, subtitle),
     );
-
-    // Error display
-    if (s.status === "failure" && s.error) {
-      card.append(el("div", { className: "ow-panel ow-panel--error", style: "padding: 10px 14px; background: var(--ee-error-soft); border-left: 3px solid var(--ee-error); margin-bottom: 14px;" }, [
-        el("p", { style: "font-size: 13px; font-weight: 600; color: var(--ee-error);" }, s.error),
-      ]));
-    }
-
-    const isLoading = s.status === "loading";
-
-    card.append(el("button", {
-      className: "ee-btn ee-btn--primary",
-      style: `width: 100%; ${isLoading ? "opacity: 0.5; cursor: not-allowed;" : ""}`,
-      disabled: isLoading,
-      onclick: async () => {
-        if (isLoading) return;
-
-        const submittedUrl = urlInput.value.trim() || formState.url || "";
-        const submittedUsername = userInput.value.trim() || formState.username || "";
-        const submittedPassword = passInput.value || formState.password || "";
-        const submittedDatabase = (
-          dbSelectInput?.value?.trim() ||
-          dbTextInput?.value?.trim() ||
-          formState.database ||
-          ""
-        );
-        let normalisedUrl = submittedUrl;
-
-        // Normalise URL on submit (catches cases where blur did not fire)
-        if (submittedUrl && submittedUrl !== formState.url) {
-          const result = normaliseOdooUrl(submittedUrl);
-          if (!result.ok) {
-            urlError.textContent = result.error;
-            urlError.style.display = "block";
-            return;
-          }
-          normalisedUrl = result.url;
-          urlInput.value = result.url;
-          formState.url = result.url;
-          urlError.style.display = "none";
-        }
-
-        if (!normalisedUrl || !submittedDatabase || !submittedUsername || !submittedPassword) {
-          onboardingStore.setConnectionError("All fields are required.");
-          return;
-        }
-        formState.url = normalisedUrl;
-        formState.database = submittedDatabase;
-        formState.username = submittedUsername;
-        formState.password = submittedPassword;
-        await onboardingStore.registerConnection(
-          normalisedUrl, submittedDatabase, submittedUsername, submittedPassword
-        );
-        // Password is never stored — formState is local and discarded on re-render
-      },
-    }, isLoading ? "Connecting..." : "Connect my instance"));
-
-    return card;
+    return tile;
   }
 
   // ── SCREEN 1: Industry Selector ──────────────────────────────────────────
 
   function buildIndustryScreen(s) {
-    const wrap = el("div", { style: "width: 100%; max-width: 800px;" });
+    const wrap = el("div", { style: STYLE.column });
 
-    wrap.append(el("div", { style: "margin-bottom: 24px;" }, [
-      el("p", { style: "font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ee-secondary); margin-bottom: 6px;" }, "Step 2 of 4 — Industry"),
-      el("h2", { style: "font-family: var(--ee-font-headline); font-size: 22px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 6px;" }, "Select your industry"),
-      el("p", { style: "font-size: 14px; color: var(--ee-on-surface-variant);" }, "This pre-populates a baseline set of recommended domains for your implementation. You can refine everything in the questions that follow."),
-      el("p", { style: "font-size: 12px; color: #94a3b8; margin-top: -12px; margin-bottom: 24px;" }, "Project Odoo V1 is optimised for fresh Odoo 19 databases."),
-    ]));
+    wrap.append(
+      el("div", { style: "display: flex; flex-direction: column; gap: var(--space-3);" }, [
+        el("p", { style: STYLE.eyebrow }, "DISCOVERY · STEP 1 / 3"),
+        el("h1", { style: STYLE.h1Display }, [
+          inkSpan("Where does your "),
+          gradientSpan("business"),
+          inkSpan(" live?"),
+        ]),
+        el("p", { style: STYLE.body }, "Pick the industry that best fits your shape today. We'll pre-load a baseline of domains and you can refine everything from there."),
+        el("p", { style: STYLE.muted }, "Project Odoo V1 is tuned for fresh Odoo 19 databases."),
+      ])
+    );
 
-    // 2x2 grid
-    const grid = el("div", { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 24px;" });
+    const grid = el("div", {
+      style:
+        "display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));" +
+        " gap: var(--space-4);",
+    });
+
     INDUSTRIES.forEach((industry) => {
       const isSelected = local.selectedIndustry === industry.id;
       const card = el("button", {
-        className: `ow-choice-card ow-industry-card${isSelected ? " ow-choice-card--selected" : ""}`,
-        style: `width: 100%; text-align: left; padding: 20px; background: ${isSelected ? "var(--ee-primary-subtle)" : "var(--ee-surface-container)"}; border: 2px solid ${isSelected ? "var(--ee-primary)" : "var(--ee-outline-variant)"}; cursor: pointer; transition: border-color 0.15s;`,
+        type: "button",
+        style:
+          "width: 100%; text-align: left; padding: var(--space-6);" +
+          ` background: ${isSelected ? "var(--color-chip-ready-bg)" : "var(--color-surface)"};` +
+          ` border: 1px solid ${isSelected ? "var(--color-ink)" : "var(--color-line)"};` +
+          " border-radius: var(--radius-card); cursor: pointer;" +
+          " display: flex; flex-direction: column; gap: var(--space-4);" +
+          " box-shadow: var(--shadow-raised); font-family: var(--font-body);" +
+          " transition: border-color var(--dur-fast) var(--ease);",
         onclick: () => {
           local.selectedIndustry = industry.id;
           render();
         },
-      }, [
-        el("div", { style: "display: flex; align-items: flex-start; gap: 14px;" }, [
-          (() => { const ic = lucideIcon(industry.icon, 28); ic.style.color = isSelected ? "#f59e0b" : "#64748b"; return ic; })(),
-          el("div", { style: "flex: 1;" }, [
-            el("p", { style: "font-size: 15px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 4px;" }, industry.name),
-            el("p", { style: "font-size: 13px; color: var(--ee-on-surface-variant); margin-bottom: 12px;" }, industry.description),
-            el("div", { style: "display: flex; flex-wrap: wrap; gap: 6px;" },
-              industry.modules.map((mod) =>
-                el("span", {
-                  className: `ow-chip${isSelected ? " ow-chip--active" : ""}`,
-                  style: `font-size: 11px; font-weight: 600; padding: 3px 8px; background: ${isSelected ? "rgba(245,158,11,0.12)" : "var(--ee-surface-container-high)"}; color: ${isSelected ? "#92400e" : "var(--ee-on-surface-variant)"}; text-transform: uppercase; letter-spacing: 0.04em;`,
-                  text: mod,
-                })
-              )
-            ),
-          ]),
-        ]),
+      });
+
+      const iconEl = lucideIcon(industry.icon, 26);
+      iconEl.style.color = "var(--color-ink)";
+      const header = el("div", { style: "display: flex; align-items: center; gap: var(--space-3);" }, [
+        iconEl,
+        el("p", { style: STYLE.h3 }, industry.name),
       ]);
+      if (isSelected) {
+        header.append(el("span", {
+          style: "margin-left: auto; display: inline-flex; align-items: center; gap: var(--space-2);",
+        }, [
+          gradientDot(6),
+          el("span", { style: `${STYLE.chipReady}` }, "SELECTED"),
+        ]));
+      }
+      card.append(header);
+
+      card.append(el("p", { style: STYLE.body }, industry.description));
+
+      const chips = el("div", { style: "display: flex; flex-wrap: wrap; gap: var(--space-2);" });
+      industry.modules.forEach((mod) => {
+        chips.append(el("span", { style: STYLE.chip }, mod.toUpperCase()));
+      });
+      card.append(chips);
+
       grid.append(card);
     });
     wrap.append(grid);
 
-    // Error
     if (s.status === "failure" && s.error) {
-      wrap.append(el("div", { className: "ow-panel ow-panel--error", style: "padding: 14px 16px; background: var(--ee-error-soft); border-left: 3px solid var(--ee-error); margin-bottom: 16px;" }, [
-        el("p", { style: "font-size: 14px; font-weight: 600; color: var(--ee-error);" }, s.error),
+      wrap.append(el("div", { style: STYLE.reviewPanel }, [
+        el("p", { style: "margin: 0; font-size: var(--fs-body); font-weight: 600;" }, s.error),
       ]));
     }
 
     const isLoading = s.status === "loading";
     const projectId = getProjectId();
 
-    wrap.append(el("div", { style: "display: flex; gap: 12px; justify-content: flex-end;" }, [
-      el("button", {
-        className: "ee-btn ee-btn--secondary",
-        onclick: () => onNavigate("dashboard"),
-      }, "Cancel"),
-      el("button", {
-        className: "ee-btn ee-btn--primary",
-        style: `min-width: 140px; ${(!local.selectedIndustry || isLoading || !projectId) ? "opacity: 0.5; cursor: not-allowed;" : ""}`,
-        disabled: !local.selectedIndustry || isLoading || !projectId,
-        onclick: () => {
-          if (!projectId) {
-            onboardingStore.setConnectionError("No project ID available. Please sign in again.");
-            setCurrentView("auth");
-            return;
-          }
-          if (local.selectedIndustry && !isLoading) {
-            void onboardingStore.selectIndustry(projectId, local.selectedIndustry);
-          }
-        },
-      }, isLoading ? "Loading..." : "Continue \u2192"),
-    ]));
+    const actions = el("div", {
+      style:
+        "display: flex; gap: var(--space-3); justify-content: space-between;" +
+        " align-items: center; margin-top: var(--space-2);",
+    });
 
+    actions.append(
+      el("button", {
+        type: "button",
+        style: STYLE.linkButton,
+        onclick: () => onNavigate("dashboard"),
+      }, "Save and exit")
+    );
+
+    const continueBtn = el("button", {
+      type: "button",
+      style: STYLE.pillPrimary,
+      onclick: () => {
+        if (!projectId) {
+          onboardingStore.setConnectionError("No project ID available. Please sign in again.");
+          setCurrentView("auth");
+          return;
+        }
+        if (local.selectedIndustry && !isLoading) {
+          void onboardingStore.selectIndustry(projectId, local.selectedIndustry);
+        }
+      },
+    }, [
+      el("span", {}, isLoading ? "Loading…" : "Continue"),
+      lucideIcon("chevron-right", 18),
+    ]);
+    if (!local.selectedIndustry || isLoading || !projectId) {
+      disabledStyle(continueBtn);
+    }
+    actions.append(continueBtn);
+
+    wrap.append(actions);
     return wrap;
   }
 
@@ -1907,204 +1706,229 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     const question = visibleQuestions[idx];
 
     if (!question) {
-      // All questions complete — go to summary
       onboardingStore.setScreen("summary");
       return el("div", {});
     }
 
-    const wrap = el("div", { style: "width: 100%; max-width: 700px;" });
+    const wrap = el("div", { style: STYLE.column });
 
     if (local.exitWarningVisible) {
-      wrap.append(el("div", {
-        className: "ow-banner ow-banner--warning",
-        style: "padding: 14px 16px; background: #FFF3CD; border-left: 3px solid #F0A500; margin-bottom: 16px;",
-      }, [
-        el("p", {
-          style: "font-size: 13px; font-weight: 600; color: #7A5200; margin: 0 0 12px;",
-        }, "You have unsaved progress. Your answers will be saved and you can continue later from your dashboard."),
-        el("div", { style: "display: flex; gap: 10px; flex-wrap: wrap;" }, [
-          el("button", {
-            className: "ee-btn ee-btn--primary",
-            onclick: () => saveAndExit(),
-          }, "Save and exit"),
-          el("button", {
-            className: "ee-btn ee-btn--secondary",
-            onclick: () => dismissExitWarning(),
-          }, "Continue answering"),
-        ]),
-      ]));
+      wrap.append(buildExitWarning());
     }
 
-    // Progress bar
-    const progress = visibleQuestions.length > 0 ? Math.round(((idx) / visibleQuestions.length) * 100) : 0;
-    wrap.append(el("div", { style: "margin-bottom: 20px;" }, [
-      el("div", { style: "display: flex; justify-content: space-between; margin-bottom: 6px;" }, [
-        el("span", { style: "font-size: 12px; color: var(--ee-on-surface-variant);" }, `Question ${idx + 1} of ${visibleQuestions.length}`),
-        el("span", { style: "font-size: 12px; color: var(--ee-on-surface-variant);" }, `${progress}% complete`),
-      ]),
-      el("div", { className: "ow-progress-track", style: "height: 4px; background: var(--ee-surface-container-high);" }, [
-        el("div", { className: "ow-progress-fill", style: `height: 4px; width: ${progress}%; background: var(--ee-primary); transition: width 0.3s;` }),
-      ]),
-    ]));
+    wrap.append(buildProgressRail(idx, visibleQuestions.length));
 
-    // Deferred banner (from previous session)
     const deferredCount = onboardingStore.getDeferredCount();
     if (deferredCount > 0 && idx === 0) {
-      wrap.append(el("div", { className: "ow-banner ow-banner--warning", style: "padding: 12px 16px; background: #FFF3CD; border-left: 3px solid #F0A500; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;" }, [
-        (() => { const ic = lucideIcon("alert-triangle", 18); ic.style.color = "#F0A500"; return ic; })(),
-        el("p", { style: "font-size: 13px; color: #7A5200; margin: 0;" }, `You have ${deferredCount} unanswered question(s). Answer them to refine your implementation scope.`),
-      ]));
+      wrap.append(buildDeferredBanner(deferredCount));
     }
 
-    // Card
-    const card = el("div", { className: "ow-card ow-question-card", style: "background: var(--ee-surface-container-low); box-shadow: var(--ee-shadow-lg); padding: 28px;" });
+    // Section eyebrow + question headline
+    const sectionHeader = el("div", { style: "display: flex; flex-direction: column; gap: var(--space-2);" }, [
+      el("p", { style: STYLE.eyebrow }, `SECTION ${question.sectionIndex} · ${question.section.toUpperCase()}`),
+      el("h1", { style: STYLE.h1 }, question.text),
+    ]);
+    wrap.append(sectionHeader);
 
-    // Section label
-    const sectionColor = SECTION_COLORS[question.sectionIndex] || "var(--ee-secondary)";
-    card.append(el("p", {
-      style: `font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: ${sectionColor}; margin-bottom: 8px;`,
-    }, `Section ${question.sectionIndex} \u2014 ${question.section}`));
+    // Question ID + pre-pop badge row
+    const metaRow = el("div", {
+      style: "display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center;",
+    });
+    metaRow.append(el("span", { style: `${STYLE.chip} font-family: var(--font-mono);` }, question.id));
 
-    // Question ID + text
-    card.append(el("div", { style: "margin-bottom: 4px;" }, [
-      el("span", { style: "font-size: 11px; font-weight: 700; color: var(--ee-outline); margin-right: 8px;", text: question.id }),
-    ]));
-    card.append(el("h3", { style: "font-family: var(--ee-font-headline); font-size: 17px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 20px; line-height: 1.4;" }, question.text));
-
-    // Pre-populated badge (if answer came from industry template)
     const prePopulatedAnswer = s.pre_populated_answers[question.id];
     if (prePopulatedAnswer && !s.answers[question.id]) {
-      card.append(el("div", { className: "ow-prepop-badge", style: "display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--ee-secondary-container); margin-bottom: 12px;" }, [
-        (() => { const ic = lucideIcon("sparkles", 14); ic.style.color = "var(--ee-secondary)"; return ic; })(),
-        el("span", { style: "font-size: 11px; font-weight: 600; color: var(--ee-secondary);" }, "Pre-populated by industry template"),
-      ]));
+      const badge = el("span", { style: STYLE.chipReady }, [
+        gradientDot(6),
+        el("span", { style: "margin-left: 6px;" }, "PRE-FILLED FROM INDUSTRY"),
+      ]);
+      metaRow.append(badge);
     }
 
-    // Input controls
+    if (question.irreversible) {
+      metaRow.append(el("span", { style: STYLE.chipReady }, "PERMANENT"));
+    }
+    wrap.append(metaRow);
+
+    // Answer card
+    const card = el("div", { style: STYLE.card + " display: flex; flex-direction: column; gap: var(--space-5);" });
+
     const currentAnswer = s.answers[question.id];
     const displayAnswer = currentAnswer?.answer ?? prePopulatedAnswer ?? null;
     const isDeferred = currentAnswer?.deferred === true;
 
-    // buildInputControls returns { element, flush } — flush() commits any
-    // pending in-DOM value to the store before navigation, covering the case
-    // where the user types into a text/numeric field and clicks Next without
-    // first moving focus away (blur fires after mousedown/click in some browsers).
     const { element: inputEl, flush: flushInput } = buildInputControls(question, displayAnswer, isDeferred, s);
     local.activeQuestionFlush = flushInput;
     card.append(inputEl);
 
     // Domain impact
-    card.append(el("div", { className: "ow-panel ow-impact-panel", style: "margin-top: 14px; padding: 10px 12px; background: var(--ee-surface-container); display: flex; align-items: flex-start; gap: 8px;" }, [
-      (() => { const ic = lucideIcon("info", 15); ic.style.cssText = "color: var(--ee-on-surface-variant); flex-shrink: 0; margin-top: 1px;"; return ic; })(),
-      el("p", { style: "font-size: 12px; color: var(--ee-on-surface-variant); margin: 0;" }, question.domainImpact),
-    ]));
+    card.append(buildImpactPanel(question.domainImpact));
 
-    // "I don't know yet" defer link
     if (question.allowDefer) {
-      card.append(el("div", { style: "margin-top: 16px; text-align: center;" }, [
+      card.append(el("div", { style: "display: flex; justify-content: center;" }, [
         el("button", {
-          style: "background: none; border: none; color: var(--ee-on-surface-variant); font-size: 13px; cursor: pointer; text-decoration: underline; padding: 4px 8px;",
+          type: "button",
+          style: STYLE.linkButton,
           onclick: () => {
             local.exitWarningVisible = false;
             onboardingStore.deferAnswer(question.id);
             advanceQuestion(visibleQuestions, idx);
           },
-        }, "I don't know yet \u2014 skip for now"),
+        }, "I don't know yet — skip for now"),
       ]));
     }
 
     wrap.append(card);
 
-    // Navigation buttons
+    // Navigation
     const hasAnswer = currentAnswer && (currentAnswer.deferred || currentAnswer.answer !== null);
     const canAdvance = hasAnswer || (prePopulatedAnswer && !currentAnswer);
 
-    wrap.append(el("div", { style: "display: flex; gap: 12px; margin-top: 20px; justify-content: space-between;" }, [
-      el("button", {
-        className: "ee-btn ee-btn--secondary",
-        style: idx === 0 ? "opacity: 0.5; cursor: not-allowed;" : "",
-        disabled: idx === 0,
-        onclick: () => {
-          if (idx > 0) {
-            local.exitWarningVisible = false;
-            onboardingStore.prevQuestion();
-            local.tempAnswer = null;
-          }
-        },
-      }, "\u2190 Back"),
+    const nav = el("div", {
+      style:
+        "display: flex; gap: var(--space-3); justify-content: space-between;" +
+        " align-items: center; margin-top: var(--space-2);",
+    });
 
-      el("div", { style: "display: flex; gap: 10px;" }, [
-        el("button", {
-          style: "background: none; border: none; color: var(--ee-on-surface-variant); font-size: 13px; cursor: pointer; text-decoration: underline; padding: 6px 12px;",
-          onclick: () => {
-            local.exitWarningVisible = false;
-            flushInput();
-            onboardingStore.setScreen("summary");
-            local.tempAnswer = null;
-          },
-        }, "Jump to Summary"),
+    const backBtn = el("button", {
+      type: "button",
+      style: STYLE.pillSecondary,
+      onclick: () => {
+        if (idx > 0) {
+          local.exitWarningVisible = false;
+          onboardingStore.prevQuestion();
+          local.tempAnswer = null;
+        }
+      },
+    }, [lucideIcon("chevron-left", 18), el("span", {}, "Back")]);
+    if (idx === 0) disabledStyle(backBtn);
 
-        el("button", {
-          className: "ee-btn ee-btn--primary",
-          style: !canAdvance ? "opacity: 0.5; cursor: not-allowed;" : "",
-          disabled: !canAdvance,
-          onclick: () => {
-            if (!canAdvance) return;
-            local.exitWarningVisible = false;
-            // Flush any pending text/numeric value typed but not yet blurred
-            flushInput();
-            // Commit pre-populated if no explicit answer set yet
-            if (!currentAnswer && prePopulatedAnswer) {
-              onboardingStore.setAnswer(question.id, prePopulatedAnswer);
-            }
-            const committedAnswer = onboardingStore.getState().answers[question.id] || currentAnswer;
-            if (question.irreversible) {
-              const answerValue = committedAnswer?.answer ?? prePopulatedAnswer;
-              onboardingStore.setPendingIrreversible(question.id, answerValue);
-            } else {
-              advanceQuestion(visibleQuestions, idx);
-            }
-          },
-        }, idx === visibleQuestions.length - 1 ? "Review Summary \u2192" : "Next \u2192"),
-      ]),
-    ]));
+    const rightGroup = el("div", { style: "display: flex; gap: var(--space-3); align-items: center;" });
+    rightGroup.append(el("button", {
+      type: "button",
+      style: STYLE.linkButton,
+      onclick: () => {
+        local.exitWarningVisible = false;
+        flushInput();
+        onboardingStore.setScreen("summary");
+        local.tempAnswer = null;
+      },
+    }, "Jump to review"));
+
+    const nextBtn = el("button", {
+      type: "button",
+      style: STYLE.pillPrimary,
+      onclick: () => {
+        if (!canAdvance) return;
+        local.exitWarningVisible = false;
+        flushInput();
+        if (!currentAnswer && prePopulatedAnswer) {
+          onboardingStore.setAnswer(question.id, prePopulatedAnswer);
+        }
+        const committedAnswer = onboardingStore.getState().answers[question.id] || currentAnswer;
+        if (question.irreversible) {
+          const answerValue = committedAnswer?.answer ?? prePopulatedAnswer;
+          onboardingStore.setPendingIrreversible(question.id, answerValue);
+        } else {
+          advanceQuestion(visibleQuestions, idx);
+        }
+      },
+    }, [
+      el("span", {}, idx === visibleQuestions.length - 1 ? "Review" : "Next"),
+      lucideIcon("chevron-right", 18),
+    ]);
+    if (!canAdvance) disabledStyle(nextBtn);
+    rightGroup.append(nextBtn);
+
+    nav.append(backBtn, rightGroup);
+    wrap.append(nav);
 
     return wrap;
   }
 
+  function buildExitWarning() {
+    return el("div", { style: STYLE.reviewPanel + " display: flex; flex-direction: column; gap: var(--space-3);" }, [
+      el("p", { style: "margin: 0; font-size: var(--fs-body); font-weight: 600;" }, "Your progress is saved. You can pick this up from your dashboard whenever you're ready."),
+      el("div", { style: "display: flex; gap: var(--space-3); flex-wrap: wrap;" }, [
+        el("button", { type: "button", style: STYLE.pillPrimary, onclick: () => saveAndExit() }, "Save and exit"),
+        el("button", { type: "button", style: STYLE.pillSecondary, onclick: () => dismissExitWarning() }, "Keep going"),
+      ]),
+    ]);
+  }
+
+  function buildProgressRail(idx, total) {
+    const progress = total > 0 ? Math.round((idx / total) * 100) : 0;
+    return el("div", { style: "display: flex; flex-direction: column; gap: var(--space-2);" }, [
+      el("div", { style: "display: flex; justify-content: space-between; align-items: center;" }, [
+        el("span", { style: `font-family: var(--font-mono); font-size: var(--fs-tiny); color: var(--color-muted); letter-spacing: var(--track-eyebrow);` }, `${String(idx + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`),
+        el("span", { style: `font-family: var(--font-mono); font-size: var(--fs-tiny); color: var(--color-muted); letter-spacing: var(--track-eyebrow);` }, `${progress}% COMPLETE`),
+      ]),
+      el("div", {
+        style:
+          "position: relative; height: 3px; background: var(--color-line);" +
+          " border-radius: var(--radius-pill); overflow: hidden;",
+      }, [
+        el("div", {
+          style:
+            `height: 3px; width: ${progress}%; background: var(--accent-grad);` +
+            " border-radius: var(--radius-pill); transition: width var(--dur-base) var(--ease);",
+        }),
+      ]),
+    ]);
+  }
+
+  function buildDeferredBanner(deferredCount) {
+    return el("div", { style: STYLE.reviewPanel + " display: flex; align-items: center; gap: var(--space-3);" }, [
+      gradientDot(8),
+      el("p", { style: "margin: 0; font-size: var(--fs-body);" },
+        `${deferredCount} question${deferredCount === 1 ? "" : "s"} still open from last time. Answering them tightens your scope.`),
+    ]);
+  }
+
+  function buildImpactPanel(impactText) {
+    const ic = lucideIcon("info", 16);
+    ic.style.color = "var(--color-muted)";
+    ic.style.flexShrink = "0";
+    ic.style.marginTop = "2px";
+    return el("div", {
+      style: STYLE.softPanel + " display: flex; align-items: flex-start; gap: var(--space-3);",
+    }, [
+      ic,
+      el("p", { style: STYLE.muted }, impactText),
+    ]);
+  }
+
   // ── buildInputControls ────────────────────────────────────────────────────
-  //
-  // Returns { element, flush } where flush() immediately commits any in-DOM
-  // value to the store. This is called by navigation buttons before advancing
-  // so that a user who types into a text/numeric field and clicks Next without
-  // blurring first does not lose their answer.
 
   function buildInputControls(question, displayAnswer, isDeferred, s) {
-    const wrap = el("div", {});
+    const wrap = el("div", { style: "display: flex; flex-direction: column; gap: var(--space-4);" });
     let flushFn = () => {};
 
-    // Platform/marketplace blocker
     if (question.id === "BM-01") {
       const isPlatform = displayAnswer === "Platform or marketplace (connecting buyers and sellers)";
       if (isPlatform) {
-        wrap.append(el("div", {
-          className: "ow-banner ow-banner--warning",
-          style: "padding: 14px 16px; background: #FFF3CD; border-left: 3px solid #F0A500; margin-bottom: 14px;",
-        }, [
-          el("p", { style: "font-size: 13px; font-weight: 600; color: #7A5200;" }, "This option requires consultation with a project owner before proceeding. Please contact your implementation lead."),
+        wrap.append(el("div", { style: STYLE.reviewPanel }, [
+          el("p", { style: "margin: 0; font-size: var(--fs-body); font-weight: 600;" },
+            "This option needs project owner sign-off before we continue. Please contact your implementation lead."),
         ]));
       }
     }
 
     if (isDeferred) {
-      wrap.append(el("div", { className: "ow-panel ow-panel--notice", style: "padding: 10px 14px; background: var(--ee-surface-container); border-left: 3px solid var(--ee-outline); display: flex; align-items: center; gap: 8px;" }, [
-        (() => { const ic = lucideIcon("clock", 16); ic.style.color = "var(--ee-on-surface-variant)"; return ic; })(),
-        el("span", { style: "font-size: 13px; color: var(--ee-on-surface-variant);" }, "Marked as deferred. Select an answer below to override."),
+      const ic = lucideIcon("clock", 16);
+      ic.style.color = "var(--color-muted)";
+      wrap.append(el("div", {
+        style: STYLE.softPanel + " display: flex; align-items: center; gap: var(--space-3);",
+      }, [
+        ic,
+        el("span", { style: STYLE.muted }, "Marked as deferred. Select an answer below to override."),
       ]));
     }
 
     switch (question.inputType) {
       case "boolean":
+        buildBooleanOptions(wrap, question, displayAnswer);
+        break;
       case "single-select":
         buildSelectOptions(wrap, question, displayAnswer);
         break;
@@ -2124,38 +1948,83 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     return { element: wrap, flush: flushFn };
   }
 
-  function buildSelectOptions(wrap, question, displayAnswer) {
-    const options = el("div", { className: "ow-option-group", style: "display: flex; flex-direction: column; gap: 8px;" });
+  function buildBooleanOptions(wrap, question, displayAnswer) {
+    const row = el("div", {
+      style: "display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);",
+    });
     question.options.forEach((opt) => {
       const isSelected = displayAnswer === opt;
-      options.append(el("button", {
-        className: `ow-option${isSelected ? " ow-option--selected" : ""}`,
-        style: `width: 100%; text-align: left; padding: 12px 16px; background: ${isSelected ? "var(--ee-primary-subtle)" : "var(--ee-surface-container)"}; border-left: 3px solid ${isSelected ? "var(--ee-primary)" : "transparent"}; cursor: pointer;`,
-        onclick: () => {
-          onboardingStore.setAnswer(question.id, opt);
-        },
-      }, [
-        el("div", { className: "ow-option-inner", style: "display: flex; align-items: center; gap: 10px;" }, [
-          el("div", {
-            className: `ow-option-indicator${isSelected ? " ow-option-indicator--selected" : ""}`,
-            style: `width: 16px; height: 16px; flex-shrink: 0; border: 2px solid ${isSelected ? "var(--ee-primary)" : "var(--ee-outline)"}; display: flex; align-items: center; justify-content: center;`,
-          }, isSelected ? [el("div", { className: "ow-option-indicator-dot", style: "width: 8px; height: 8px; background: var(--ee-primary);" })] : []),
-          el("span", { className: `ow-option-label${isSelected ? " ow-option-label--selected" : ""}`, style: `font-size: 14px; color: ${isSelected ? "var(--ee-on-surface)" : "var(--ee-on-surface)"}; font-weight: ${isSelected ? "600" : "400"};`, text: opt }),
-        ]),
-      ]));
+      const tile = el("button", {
+        type: "button",
+        style:
+          "width: 100%; padding: var(--space-5); border-radius: var(--radius-card);" +
+          " cursor: pointer; font-family: var(--font-body); font-size: var(--fs-h3);" +
+          " font-weight: 600; display: flex; align-items: center; justify-content: center;" +
+          " gap: var(--space-2); transition: border-color var(--dur-fast) var(--ease);" +
+          ` background: ${isSelected ? "var(--color-chip-ready-bg)" : "var(--color-surface)"};` +
+          ` color: var(--color-ink); border: 1px solid ${isSelected ? "var(--color-ink)" : "var(--color-line)"};`,
+        onclick: () => onboardingStore.setAnswer(question.id, opt),
+      });
+      if (isSelected) {
+        tile.append(gradientDot(6));
+      }
+      tile.append(el("span", {}, opt));
+      row.append(tile);
+    });
+    wrap.append(row);
+  }
+
+  function buildSelectOptions(wrap, question, displayAnswer) {
+    const options = el("div", { style: "display: flex; flex-direction: column; gap: var(--space-3);" });
+    question.options.forEach((opt) => {
+      const isSelected = displayAnswer === opt;
+      const row = el("button", {
+        type: "button",
+        style:
+          "width: 100%; text-align: left; padding: var(--space-4) var(--space-5);" +
+          " border-radius: var(--radius-panel); cursor: pointer;" +
+          " font-family: var(--font-body); font-size: var(--fs-body);" +
+          " display: flex; align-items: center; gap: var(--space-3);" +
+          ` background: ${isSelected ? "var(--color-chip-ready-bg)" : "var(--color-surface)"};` +
+          ` color: var(--color-ink); border: 1px solid ${isSelected ? "var(--color-ink)" : "var(--color-line)"};` +
+          " transition: border-color var(--dur-fast) var(--ease);",
+        onclick: () => onboardingStore.setAnswer(question.id, opt),
+      });
+
+      const indicator = el("span", {
+        style:
+          "width: 16px; height: 16px; flex-shrink: 0; border-radius: 50%;" +
+          ` border: 1px solid ${isSelected ? "var(--color-ink)" : "var(--color-line)"};` +
+          " display: flex; align-items: center; justify-content: center;",
+      });
+      if (isSelected) {
+        indicator.append(gradientDot(8));
+      }
+
+      row.append(
+        indicator,
+        el("span", { style: `font-weight: ${isSelected ? 600 : 400};` }, opt),
+      );
+      options.append(row);
     });
     wrap.append(options);
   }
 
   function buildMultiSelectOptions(wrap, question, displayAnswer) {
-    // displayAnswer is an array for multi-select
     const selected = Array.isArray(displayAnswer) ? displayAnswer : [];
-    const options = el("div", { className: "ow-option-group", style: "display: flex; flex-direction: column; gap: 8px;" });
+    const options = el("div", { style: "display: flex; flex-direction: column; gap: var(--space-3);" });
     question.options.forEach((opt) => {
       const isChecked = selected.includes(opt);
-      options.append(el("button", {
-        className: `ow-option ow-option--multi${isChecked ? " ow-option--selected" : ""}`,
-        style: `width: 100%; text-align: left; padding: 12px 16px; background: ${isChecked ? "var(--ee-primary-subtle)" : "var(--ee-surface-container)"}; border-left: 3px solid ${isChecked ? "var(--ee-primary)" : "transparent"}; cursor: pointer;`,
+      const row = el("button", {
+        type: "button",
+        style:
+          "width: 100%; text-align: left; padding: var(--space-4) var(--space-5);" +
+          " border-radius: var(--radius-panel); cursor: pointer;" +
+          " font-family: var(--font-body); font-size: var(--fs-body);" +
+          " display: flex; align-items: center; gap: var(--space-3);" +
+          ` background: ${isChecked ? "var(--color-chip-ready-bg)" : "var(--color-surface)"};` +
+          ` color: var(--color-ink); border: 1px solid ${isChecked ? "var(--color-ink)" : "var(--color-line)"};` +
+          " transition: border-color var(--dur-fast) var(--ease);",
         onclick: () => {
           const current = Array.isArray(onboardingStore.getState().answers[question.id]?.answer)
             ? [...onboardingStore.getState().answers[question.id].answer]
@@ -2166,15 +2035,26 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
             onboardingStore.setAnswer(question.id, [...current, opt]);
           }
         },
-      }, [
-        el("div", { className: "ow-option-inner", style: "display: flex; align-items: center; gap: 10px;" }, [
-          el("div", {
-            className: `ow-option-indicator${isChecked ? " ow-option-indicator--selected" : ""}`,
-            style: `width: 16px; height: 16px; flex-shrink: 0; border: 2px solid ${isChecked ? "var(--ee-primary)" : "var(--ee-outline)"}; background: ${isChecked ? "var(--ee-primary)" : "transparent"}; display: flex; align-items: center; justify-content: center;`,
-          }, isChecked ? [(() => { const ic = lucideIcon("check", 12); ic.style.color = "white"; return ic; })()] : []),
-          el("span", { className: `ow-option-label${isChecked ? " ow-option-label--selected" : ""}`, style: `font-size: 14px; color: var(--ee-on-surface); font-weight: ${isChecked ? "600" : "400"};`, text: opt }),
-        ]),
-      ]));
+      });
+
+      const box = el("span", {
+        style:
+          "width: 18px; height: 18px; flex-shrink: 0; border-radius: var(--radius-tag);" +
+          ` border: 1px solid ${isChecked ? "var(--color-ink)" : "var(--color-line)"};` +
+          ` background: ${isChecked ? "var(--color-pill-primary-bg)" : "transparent"};` +
+          " display: flex; align-items: center; justify-content: center;",
+      });
+      if (isChecked) {
+        const check = lucideIcon("check", 12);
+        check.style.color = "var(--color-pill-primary-fg)";
+        box.append(check);
+      }
+
+      row.append(
+        box,
+        el("span", { style: `font-weight: ${isChecked ? 600 : 400};` }, opt),
+      );
+      options.append(row);
     });
     wrap.append(options);
   }
@@ -2182,11 +2062,10 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
   function buildNumericInput(wrap, question, displayAnswer) {
     const input = el("input", {
       type: "number",
-      className: "ee-input",
+      style: STYLE.input + " max-width: 220px; font-family: var(--font-mono);",
       placeholder: "Enter a number",
       value: displayAnswer !== null && displayAnswer !== undefined ? String(displayAnswer) : "",
       min: "1",
-      style: "max-width: 200px;",
     });
 
     function commitNumeric() {
@@ -2196,20 +2075,16 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       }
     }
 
-    // Commit to store only on blur to avoid re-render destroying focus on every keystroke.
-    // Navigation buttons also call flush() (returned below) before advancing.
     input.addEventListener("blur", commitNumeric);
     wrap.append(input);
-
-    // Return flush so callers can commit immediately before navigation
     return commitNumeric;
   }
 
   function buildTextInput(wrap, question, displayAnswer) {
     const input = el("input", {
       type: "text",
-      className: "ee-input",
-      placeholder: question.id === "BM-03" ? "e.g. Australia, United Kingdom, United States" : "Enter your answer",
+      style: STYLE.input,
+      placeholder: question.id === "BM-03" ? "e.g. Australia, United Kingdom, United States" : "Type your answer",
       value: displayAnswer !== null && displayAnswer !== undefined ? String(displayAnswer) : "",
     });
 
@@ -2220,16 +2095,10 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       }
     }
 
-    // Commit to store only on blur to avoid re-render destroying focus on every keystroke.
-    // Navigation buttons also call flush() (returned below) before advancing.
     input.addEventListener("blur", commitText);
     wrap.append(input);
-
-    // Return flush so callers can commit immediately before navigation
     return commitText;
   }
-
-  // ── advanceQuestion ───────────────────────────────────────────────────────
 
   function advanceQuestion(visibleQuestions, idx) {
     local.tempAnswer = null;
@@ -2244,20 +2113,25 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
 
   function buildIrreversibleWarningScreen(s) {
     const { questionId, selectedAnswer } = s.pending_irreversible || {};
-    const wrap = el("div", { style: "width: 100%; max-width: 700px;" });
+    const wrap = el("div", { style: STYLE.column });
 
-    const card = el("div", { className: "ow-card ow-card--warning", style: "background: var(--ee-surface-container-low); box-shadow: var(--ee-shadow-lg); padding: 32px; border-top: 4px solid var(--ee-error);" });
+    const headline =
+      questionId === "BM-03"
+        ? "This decision locks once accounting entries are posted."
+        : selectedAnswer === "Yes"
+          ? "Turning Manufacturing on changes your sequence permanently."
+          : "Excluding Manufacturing removes production from scope.";
 
-    card.append(el("div", { style: "display: flex; align-items: center; gap: 12px; margin-bottom: 20px;" }, [
-      (() => { const ic = lucideIcon("alert-triangle", 28); ic.style.color = "var(--ee-error)"; return ic; })(),
-      el("h2", { style: "font-family: var(--ee-font-headline); font-size: 18px; font-weight: 700; color: var(--ee-error);" },
-        questionId === "BM-03"
-          ? "This decision cannot be changed after accounting entries are posted."
-          : selectedAnswer === "Yes"
-            ? "Activating Manufacturing changes your implementation sequence permanently."
-            : "Excluding Manufacturing removes all production configuration from your implementation."
-      ),
-    ]));
+    wrap.append(
+      el("div", { style: "display: flex; flex-direction: column; gap: var(--space-3);" }, [
+        el("p", { style: STYLE.eyebrow }, "PERMANENT DECISION"),
+        el("h1", { style: STYLE.h1 }, [
+          inkSpan(headline),
+        ]),
+      ])
+    );
+
+    const card = el("div", { style: STYLE.card + " display: flex; flex-direction: column; gap: var(--space-5);" });
 
     if (questionId === "BM-03") {
       card.append(buildIrreversibleBM03Body(selectedAnswer));
@@ -2265,25 +2139,21 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
       card.append(buildIrreversibleMF01Body(selectedAnswer));
     }
 
-    // Confirm button
     const confirmLabel = questionId === "BM-03"
-      ? `I understand \u2014 this country selection is permanent after accounting entries are posted. Confirm "${selectedAnswer}" and continue.`
+      ? `I understand — this country selection is permanent after accounting entries post. Confirm "${selectedAnswer}" and continue.`
       : selectedAnswer === "Yes"
-        ? "I understand \u2014 Manufacturing is a Go-Live domain and its activation is permanent under this project scope. Confirm Yes and continue."
-        : "I understand \u2014 Manufacturing is excluded and all MF steps will be skipped. Confirm No and continue.";
+        ? "I understand — Manufacturing is a Go-Live domain and its activation is permanent under this project scope. Confirm Yes and continue."
+        : "I understand — Manufacturing is excluded and all MF steps will be skipped. Confirm No and continue.";
 
     card.append(el("button", {
-      className: "ee-btn ee-btn--primary",
-      style: "margin-top: 24px; width: 100%;",
+      type: "button",
+      style: STYLE.pillPrimary + " width: 100%; white-space: normal; line-height: var(--lh-snug); padding: var(--space-4) var(--space-5);",
       onclick: () => {
-        // Commit the answer and clear pending
         onboardingStore.setAnswer(questionId, selectedAnswer);
-        // Recompute visible questions with updated answers then advance
         const updatedState = onboardingStore.getState();
         const visibleQuestions = getVisibleQuestions(updatedState.answers);
         const currentIdx = updatedState.current_question_index;
         onboardingStore.clearPendingIrreversible();
-        // After clear, screen is "questions" — advance one step
         if (currentIdx >= visibleQuestions.length - 1) {
           onboardingStore.setScreen("summary");
         } else {
@@ -2293,11 +2163,9 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     }, confirmLabel));
 
     card.append(el("button", {
-      style: "width: 100%; margin-top: 10px; background: none; border: 1px solid var(--ee-outline); padding: 10px; font-size: 14px; cursor: pointer; color: var(--ee-on-surface);",
-      onclick: () => {
-        // Return to question without recording answer
-        onboardingStore.clearPendingIrreversible();
-      },
+      type: "button",
+      style: STYLE.pillSecondary + " width: 100%;",
+      onclick: () => onboardingStore.clearPendingIrreversible(),
     }, "Go back"));
 
     wrap.append(card);
@@ -2305,87 +2173,84 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
   }
 
   function buildIrreversibleBM03Body(country) {
-    return el("div", { style: "display: flex; flex-direction: column; gap: 14px;" }, [
-      el("div", { className: "ow-panel ow-panel--error", style: "padding: 14px; background: var(--ee-error-soft);" }, [
-        el("p", { style: "font-size: 13px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 6px;" }, "Domains affected:"),
-        el("ul", { style: "margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px;" }, [
-          el("li", { style: "font-size: 13px; color: var(--ee-on-surface);" }, "Foundation: The localization package for the selected country will be applied. This sets the chart of accounts template, default tax configuration, fiscal position baseline, and legal reporting requirements for your entire implementation."),
-          el("li", { style: "font-size: 13px; color: var(--ee-on-surface);" }, "Accounting: The chart of accounts template, tax rule baseline, and bank statement format are derived from this selection. Changing the country after accounting entries are posted is not supported."),
-          el("li", { style: "font-size: 13px; color: var(--ee-on-surface);" }, "All domains: The default currency for every domain is set by this selection."),
+    return el("div", { style: "display: flex; flex-direction: column; gap: var(--space-4);" }, [
+      el("div", { style: STYLE.reviewPanel }, [
+        el("p", { style: "margin: 0 0 var(--space-2); font-size: var(--fs-body); font-weight: 600;" }, "Domains affected"),
+        el("ul", { style: "margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: var(--space-2);" }, [
+          el("li", { style: "font-size: var(--fs-body);" }, "Foundation: localization package, chart of accounts template, default tax configuration, fiscal position baseline, legal reporting."),
+          el("li", { style: "font-size: var(--fs-body);" }, "Accounting: chart of accounts, tax rules, bank statement format. Country cannot change after accounting entries post."),
+          el("li", { style: "font-size: var(--fs-body);" }, "All domains: default currency is set by this selection."),
         ]),
       ]),
-      el("p", { style: "font-size: 13px; color: var(--ee-on-surface-variant);" }, `Selected country: ${country || "(not entered)"}. Confirming this answer locks the localization package for the Foundation domain. If you are not certain of the primary operating country, do not proceed.`),
+      el("p", { style: STYLE.body },
+        `Selected country: ${country || "(not entered)"}. Confirming locks the localization package for the Foundation domain. If you're not certain of the primary operating country, don't proceed.`),
     ]);
   }
 
   function buildIrreversibleMF01Body(answer) {
     if (answer === "Yes") {
-      return el("div", { style: "display: flex; flex-direction: column; gap: 14px;" }, [
-        el("div", { className: "ow-panel ow-panel--error", style: "padding: 14px; background: var(--ee-error-soft);" }, [
-          el("p", { style: "font-size: 13px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 6px;" }, "Domains activated:"),
-          el("ul", { style: "margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px;" }, [
-            el("li", { style: "font-size: 13px; color: var(--ee-on-surface);" }, "Manufacturing (MRP): activated at Go-Live priority. Bills of Materials, work centers, production orders, and manufacturing stock movements are all in scope. All MF-02 through MF-07 questions will be presented."),
-            el("li", { style: "font-size: 13px; color: var(--ee-on-surface);" }, "Inventory: production stock movements become required. The Inventory domain must be configured and at a checkpoint-passing state before Manufacturing go-live."),
-            el("li", { style: "font-size: 13px; color: var(--ee-on-surface);" }, "Accounting / Finance: production costing and Work-In-Progress (WIP) policy become required configuration items."),
+      return el("div", { style: "display: flex; flex-direction: column; gap: var(--space-4);" }, [
+        el("div", { style: STYLE.reviewPanel }, [
+          el("p", { style: "margin: 0 0 var(--space-2); font-size: var(--fs-body); font-weight: 600;" }, "Domains activated"),
+          el("ul", { style: "margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: var(--space-2);" }, [
+            el("li", { style: "font-size: var(--fs-body);" }, "Manufacturing (MRP): activated at Go-Live priority. BOMs, work centers, production orders, production stock. All MF-02 through MF-07 will be presented."),
+            el("li", { style: "font-size: var(--fs-body);" }, "Inventory: production stock movements become required. Must be at checkpoint-passing state before Manufacturing go-live."),
+            el("li", { style: "font-size: var(--fs-body);" }, "Accounting / Finance: production costing and Work-In-Progress (WIP) policy become required."),
           ]),
         ]),
-        el("p", { style: "font-size: 13px; color: var(--ee-on-surface-variant);" }, "Manufacturing is a Go-Live domain. It cannot be deferred to a later phase without a formal scope change."),
+        el("p", { style: STYLE.body }, "Manufacturing is a Go-Live domain. It can't be deferred without a formal scope change."),
       ]);
     }
-    return el("div", { style: "display: flex; flex-direction: column; gap: 14px;" }, [
-      el("div", { className: "ow-panel ow-panel--error", style: "padding: 14px; background: var(--ee-error-soft);" }, [
-        el("p", { style: "font-size: 13px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 6px;" }, "Domains excluded:"),
-        el("ul", { style: "margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px;" }, [
-          el("li", { style: "font-size: 13px; color: var(--ee-on-surface);" }, "Manufacturing (MRP): excluded from scope. No Bills of Materials, work orders, or production costing will be configured."),
-          el("li", { style: "font-size: 13px; color: var(--ee-on-surface);" }, "All MF-02 through MF-07 questions will be skipped."),
+    return el("div", { style: "display: flex; flex-direction: column; gap: var(--space-4);" }, [
+      el("div", { style: STYLE.reviewPanel }, [
+        el("p", { style: "margin: 0 0 var(--space-2); font-size: var(--fs-body); font-weight: 600;" }, "Domains excluded"),
+        el("ul", { style: "margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: var(--space-2);" }, [
+          el("li", { style: "font-size: var(--fs-body);" }, "Manufacturing (MRP): excluded from scope. No BOMs, work orders, or production costing will be configured."),
+          el("li", { style: "font-size: var(--fs-body);" }, "All MF-02 through MF-07 will be skipped."),
         ]),
       ]),
-      el("p", { style: "font-size: 13px; color: var(--ee-on-surface-variant);" }, "If your business later begins manufacturing, re-adding the Manufacturing domain after go-live requires a formal scope change and a new implementation stage."),
+      el("p", { style: STYLE.body }, "If your business later begins manufacturing, re-adding the Manufacturing domain after go-live needs a formal scope change and a new implementation stage."),
     ]);
   }
 
   // ── SCREEN FINAL: Summary ─────────────────────────────────────────────────
 
   function buildSummaryScreen(s) {
-    const wrap = el("div", { style: "width: 100%; max-width: 800px;" });
+    const wrap = el("div", { style: STYLE.column });
 
-    wrap.append(el("div", { style: "margin-bottom: 24px;" }, [
-      el("p", { style: "font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ee-secondary); margin-bottom: 6px;" }, "Step 4 of 4 — Summary"),
-      el("h2", { style: "font-family: var(--ee-font-headline); font-size: 22px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 6px;" }, "Review and confirm"),
-      el("p", { style: "font-size: 14px; color: var(--ee-on-surface-variant);" }, "Review your answers and confirm the implementation scope before triggering the pipeline."),
-    ]));
+    wrap.append(
+      el("div", { style: "display: flex; flex-direction: column; gap: var(--space-3);" }, [
+        el("p", { style: STYLE.eyebrow }, "DISCOVERY · REVIEW"),
+        el("h1", { style: STYLE.h1Display }, [
+          inkSpan("Almost there "),
+          gradientSpan("—"),
+          inkSpan(" one last look."),
+        ]),
+        el("p", { style: STYLE.body }, "Scan your answers, set the fiscal year end, and confirm the scope. Then we'll run the pipeline."),
+      ])
+    );
 
     const visibleQuestions = getVisibleQuestions(s.answers);
 
-    // 1. Answers reviewed — grouped by section, collapsible
     wrap.append(buildAnswersSection(s, visibleQuestions));
-
-    // 2. Foundation fiscal year capture (feeds FND-DREQ-001 wizard capture)
     wrap.append(buildFoundationFiscalYearSection());
-
-    // 3. Domains that will be activated
     wrap.append(buildDomainsSection(s));
 
-    // 3. Defaulted activations (amber box, only if deferred questions)
     const defaultedDomains = onboardingStore.getDefaultedDomains();
     if (defaultedDomains.length > 0) {
       wrap.append(buildDefaultedActivationsSection(s, defaultedDomains));
     }
 
-    // 4. Commitment statement
     wrap.append(buildCommitmentSection());
 
-    // 5. Deferred acknowledgement checkbox (only if deferred)
     const deferredCount = onboardingStore.getDeferredCount();
     const defaultedDomainsCount = defaultedDomains.reduce((acc, d) => acc + d.domains.length, 0);
     if (deferredCount > 0) {
       wrap.append(buildDeferredAcknowledgement(s, deferredCount, defaultedDomainsCount));
     }
 
-    // 6. Commitment checkbox
     wrap.append(buildConfirmCheckbox(s));
 
-    // 7. Confirm button
     const foundationCapture = getFoundationFiscalYearCapture();
     const foundationCaptureOk = Boolean(foundationCapture);
     if (foundationCaptureOk) {
@@ -2396,7 +2261,7 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     const missingRequired = allRequired.filter((q) => {
       const ans = s.answers[q.id];
       if (!ans) return true;
-      if (ans.deferred) return false; // deferred is allowed (will get default)
+      if (ans.deferred) return false;
       if (Array.isArray(ans.answer)) return ans.answer.length === 0;
       return ans.answer === null || ans.answer === undefined || ans.answer === "";
     });
@@ -2408,23 +2273,24 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     const canConfirm = missingRequired.length === 0 && deferredOk && confirmedOk && ta04Ok && foundationCaptureOk;
 
     if (missingRequired.length > 0) {
-      wrap.append(el("div", { className: "ow-panel ow-panel--error", style: "padding: 12px 16px; background: var(--ee-error-soft); border-left: 3px solid var(--ee-error); margin-bottom: 16px;" }, [
-        el("p", { style: "font-size: 13px; font-weight: 600; color: var(--ee-error); margin-bottom: 6px;" }, `${missingRequired.length} required question(s) unanswered:`),
-        el("ul", { style: "margin: 0; padding-left: 16px;" },
-          missingRequired.map((q) => el("li", { style: "font-size: 13px; color: var(--ee-error);" }, `${q.id}: ${q.text.substring(0, 60)}...`))
+      wrap.append(el("div", { style: STYLE.reviewPanel }, [
+        el("p", { style: "margin: 0 0 var(--space-2); font-size: var(--fs-body); font-weight: 600;" },
+          `${missingRequired.length} required question${missingRequired.length === 1 ? "" : "s"} unanswered`),
+        el("ul", { style: "margin: 0; padding-left: 20px;" },
+          missingRequired.map((q) => el("li", { style: "font-size: var(--fs-small);" }, `${q.id}: ${q.text.substring(0, 60)}…`))
         ),
       ]));
     }
 
     if (!ta04Ok && visibleQuestions.some((q) => q.id === "TA-04")) {
-      wrap.append(el("div", { className: "ow-panel ow-panel--error", style: "padding: 10px 14px; background: var(--ee-error-soft); border-left: 3px solid var(--ee-error); margin-bottom: 12px;" }, [
-        el("p", { style: "font-size: 13px; color: var(--ee-error);" }, "TA-04 (System administrator name) must be answered — it cannot be deferred."),
+      wrap.append(el("div", { style: STYLE.reviewPanel }, [
+        el("p", { style: "margin: 0; font-size: var(--fs-body);" }, "TA-04 (system administrator name) must be answered — it can't be deferred."),
       ]));
     }
 
     if (!foundationCaptureOk) {
-      wrap.append(el("div", { className: "ow-panel ow-panel--error", style: "padding: 10px 14px; background: var(--ee-error-soft); border-left: 3px solid var(--ee-error); margin-bottom: 12px;" }, [
-        el("p", { style: "font-size: 13px; color: var(--ee-error);" }, "Foundation fiscal year end month/day is required."),
+      wrap.append(el("div", { style: STYLE.reviewPanel }, [
+        el("p", { style: "margin: 0; font-size: var(--fs-body);" }, "Foundation fiscal year end month/day is required."),
       ]));
     }
 
@@ -2433,105 +2299,130 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     const noProject = !projectId;
 
     if (noProject) {
-      wrap.append(el("div", { className: "ow-panel ow-panel--error", style: "padding: 12px 16px; background: var(--ee-error-soft); border-left: 3px solid var(--ee-error); margin-bottom: 16px;" }, [
-        el("p", { style: "font-size: 13px; font-weight: 600; color: var(--ee-error);" }, "No project ID available. Please sign in again."),
+      wrap.append(el("div", { style: STYLE.reviewPanel + " display: flex; flex-direction: column; gap: var(--space-3);" }, [
+        el("p", { style: "margin: 0; font-size: var(--fs-body); font-weight: 600;" }, "No project ID available. Please sign in again."),
         el("button", {
-          className: "ee-btn ee-btn--secondary",
-          style: "margin-top: 8px;",
+          type: "button",
+          style: STYLE.pillSecondary,
           onclick: () => setCurrentView("auth"),
-        }, "Go to Sign In"),
+        }, "Go to sign in"),
       ]));
     }
 
-    wrap.append(el("div", { style: "display: flex; gap: 12px; margin-top: 8px; justify-content: space-between; align-items: center;" }, [
-      el("button", {
-        className: "ee-btn ee-btn--secondary",
-        onclick: () => {
-          onboardingStore.setScreen("questions");
-          onboardingStore.goToQuestion(0);
-        },
-      }, "\u2190 Back to Questions"),
+    const nav = el("div", {
+      style: "display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-top: var(--space-2);",
+    });
 
-      el("button", {
-        className: "ee-btn ee-btn--primary",
-        style: `min-width: 200px; ${(!canConfirm || isLoading || noProject) ? "opacity: 0.5; cursor: not-allowed;" : ""}`,
-        disabled: !canConfirm || isLoading || noProject,
-        onclick: async () => {
-          if (!canConfirm || isLoading || !projectId) return;
-          const capture = getFoundationFiscalYearCapture();
-          if (!capture) return;
-          onboardingStore.setWizardCapture("foundation", capture);
-          const result = await onboardingStore.confirmAndRun(projectId);
-          if (result.ok) {
-            onComplete({ projectId, runtimeState: result.runtime_state ?? null });
-          }
-        },
-      }, isLoading ? "Running pipeline..." : "Confirm and Run Pipeline"),
-    ]));
+    nav.append(el("button", {
+      type: "button",
+      style: STYLE.pillSecondary,
+      onclick: () => {
+        onboardingStore.setScreen("questions");
+        onboardingStore.goToQuestion(0);
+      },
+    }, [lucideIcon("chevron-left", 18), el("span", {}, "Back to questions")]));
+
+    const confirmBtn = el("button", {
+      type: "button",
+      style: STYLE.pillPrimary,
+      onclick: async () => {
+        if (!canConfirm || isLoading || !projectId) return;
+        const capture = getFoundationFiscalYearCapture();
+        if (!capture) return;
+        onboardingStore.setWizardCapture("foundation", capture);
+        const result = await onboardingStore.confirmAndRun(projectId);
+        if (result.ok) {
+          onComplete({ projectId, runtimeState: result.runtime_state ?? null });
+        }
+      },
+    });
+    if (isLoading) {
+      confirmBtn.append(pulsingGradientDot(8));
+      confirmBtn.append(el("span", {}, "Running pipeline…"));
+    } else {
+      confirmBtn.append(el("span", {}, "Confirm and run pipeline"));
+      confirmBtn.append(lucideIcon("chevron-right", 18));
+    }
+    if (!canConfirm || isLoading || noProject) disabledStyle(confirmBtn);
+    nav.append(confirmBtn);
+
+    wrap.append(nav);
 
     if (s.status === "failure" && s.error) {
-      const errStr = String(s.error);
-      let friendlyMsg = "Something went wrong running the pipeline. Please try again or contact support.";
-      let actionLabel = null;
-      let actionTarget = null;
-      let showRawError = true;
-
-      if (/authorization|expired.*token|session.*expired/i.test(errStr)) {
-        friendlyMsg = "Session expired. Please sign in again to continue.";
-        actionLabel = "Sign in \u2192";
-        actionTarget = "auth";
-        showRawError = false;
-      } else if (/not found|404/i.test(errStr)) {
-        friendlyMsg = "We couldn\u2019t reach your Odoo instance. Please check your connection and try again.";
-        actionLabel = "Check connection \u2192";
-        actionTarget = "connection-wizard";
-        showRawError = false;
-      } else if (/modules?.*not installed|not installed.*modules?/i.test(errStr)) {
-        friendlyMsg = "Some required Odoo modules aren\u2019t installed on your instance. Project Odoo can install them for you.";
-        actionLabel = "Install modules \u2192";
-        actionTarget = "module-installer";
-        showRawError = false;
-      }
-
-      const errorChildren = [
-        el("p", { style: "font-size: 14px; font-weight: 600; color: var(--ee-error); margin: 0;" }, friendlyMsg),
-      ];
-
-      if (actionLabel && actionTarget) {
-        errorChildren.push(el("button", {
-          className: "ee-btn ee-btn--secondary",
-          style: "margin-top: 8px; font-size: 13px;",
-          onclick: () => setCurrentView(actionTarget),
-        }, actionLabel));
-      }
-
-      if (showRawError) {
-        const details = el("details", { style: "margin-top: 8px;" });
-        details.append(el("summary", { style: "font-size: 12px; color: var(--ee-on-surface-variant); cursor: pointer;" }, "Error details"));
-        details.append(el("pre", { style: "font-size: 11px; white-space: pre-wrap; word-break: break-all; margin: 4px 0 0; color: var(--ee-on-surface-variant);" }, errStr));
-        errorChildren.push(details);
-      }
-
-      wrap.append(el("div", {
-        className: "ow-panel ow-panel--error",
-        style: "padding: 12px 16px; background: var(--ee-error-soft); border-left: 3px solid var(--ee-error); margin-top: 12px;",
-      }, errorChildren));
+      wrap.append(buildSummaryError(s.error));
     }
 
     return wrap;
   }
 
+  function buildSummaryError(error) {
+    const errStr = String(error);
+    let friendlyMsg = "Something went wrong running the pipeline. Please try again or contact support.";
+    let actionLabel = null;
+    let actionTarget = null;
+    let showRawError = true;
+
+    if (/authorization|expired.*token|session.*expired/i.test(errStr)) {
+      friendlyMsg = "Session expired. Please sign in again to continue.";
+      actionLabel = "Sign in";
+      actionTarget = "auth";
+      showRawError = false;
+    } else if (/not found|404/i.test(errStr)) {
+      friendlyMsg = "We couldn't reach your Odoo instance. Please check your connection and try again.";
+      actionLabel = "Check connection";
+      actionTarget = "connection-wizard";
+      showRawError = false;
+    } else if (/modules?.*not installed|not installed.*modules?/i.test(errStr)) {
+      friendlyMsg = "Some required Odoo modules aren't installed. We can install them for you.";
+      actionLabel = "Install modules";
+      actionTarget = "module-installer";
+      showRawError = false;
+    }
+
+    const errChildren = [
+      el("p", { style: "margin: 0; font-size: var(--fs-body); font-weight: 600;" }, friendlyMsg),
+    ];
+
+    if (actionLabel && actionTarget) {
+      errChildren.push(el("button", {
+        type: "button",
+        style: STYLE.pillSecondary + " align-self: flex-start;",
+        onclick: () => setCurrentView(actionTarget),
+      }, [el("span", {}, actionLabel), lucideIcon("chevron-right", 18)]));
+    }
+
+    if (showRawError) {
+      const details = el("details", { style: "font-size: var(--fs-small);" });
+      details.append(el("summary", { style: "cursor: pointer; color: var(--color-muted);" }, "Error details"));
+      details.append(el("pre", {
+        style:
+          "margin: var(--space-2) 0 0; white-space: pre-wrap; word-break: break-all;" +
+          " font-family: var(--font-mono); font-size: var(--fs-tiny); color: var(--color-muted);",
+      }, errStr));
+      errChildren.push(details);
+    }
+
+    return el("div", {
+      style: STYLE.reviewPanel + " display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3);",
+    }, errChildren);
+  }
+
   function buildFoundationFiscalYearSection() {
-    const section = el("div", { className: "ow-card ow-summary-card", style: "background: var(--ee-surface-container-low); box-shadow: var(--ee-shadow-lg); margin-bottom: 16px; padding: 20px;" });
+    const section = el("div", { style: STYLE.card + " display: flex; flex-direction: column; gap: var(--space-4);" });
 
-    section.append(el("h3", { style: "font-size: 15px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 8px;" }, "Foundation fiscal year end"));
-    section.append(el("p", { style: "font-size: 13px; color: var(--ee-on-surface-variant); margin-bottom: 14px;" }, "Set the fiscal year end that should be captured for Foundation setup."));
+    section.append(
+      el("div", { style: "display: flex; flex-direction: column; gap: var(--space-1);" }, [
+        el("h3", { style: STYLE.h3 }, "Foundation fiscal year end"),
+        el("p", { style: STYLE.muted }, "Captured for Foundation setup."),
+      ])
+    );
 
-    const fieldWrap = el("div", { style: "display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;" });
+    const fieldWrap = el("div", { style: "display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: flex-end;" });
+
+    const monthLabel = "font-size: var(--fs-tiny); font-weight: 600; color: var(--color-muted); text-transform: uppercase; letter-spacing: var(--track-eyebrow); margin: 0;";
 
     const monthSelect = el("select", {
-      className: "ee-input",
-      style: "min-width: 220px;",
+      style: STYLE.input + " min-width: 220px; font-family: var(--font-body);",
       onchange: (event) => {
         local.foundationFiscalYearEndMonth = String(event.target.value || "");
         postFoundationCaptureIfChanged();
@@ -2544,11 +2435,10 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
 
     const dayInput = el("input", {
       type: "number",
-      className: "ee-input",
+      style: STYLE.input + " width: 120px; font-family: var(--font-mono);",
       min: "1",
       max: "31",
       step: "1",
-      style: "width: 120px;",
       value: String(local.foundationFiscalYearEndDay || ""),
       oninput: (event) => {
         local.foundationFiscalYearEndDay = String(event.target.value || "");
@@ -2560,30 +2450,34 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     });
 
     fieldWrap.append(
-      el("div", { style: "display: flex; flex-direction: column; gap: 6px;" }, [
-        el("label", { style: "font-size: 12px; font-weight: 600; color: var(--ee-on-surface);" }, "Fiscal year end month"),
+      el("div", { style: "display: flex; flex-direction: column; gap: var(--space-2);" }, [
+        el("label", { style: monthLabel }, "MONTH"),
         monthSelect,
       ]),
-      el("div", { style: "display: flex; flex-direction: column; gap: 6px;" }, [
-        el("label", { style: "font-size: 12px; font-weight: 600; color: var(--ee-on-surface);" }, "Fiscal year end day"),
+      el("div", { style: "display: flex; flex-direction: column; gap: var(--space-2);" }, [
+        el("label", { style: monthLabel }, "DAY"),
         dayInput,
       ])
     );
 
     section.append(fieldWrap);
-    section.append(el("p", { style: "font-size: 12px; color: var(--ee-on-surface-variant); margin-top: 10px; margin-bottom: 0;" }, "This value is captured as foundation wizard data for governed pipeline assembly."));
+    section.append(el("p", { style: STYLE.muted }, "Captured as foundation wizard data for governed pipeline assembly."));
 
     return section;
   }
 
   function buildAnswersSection(s, visibleQuestions) {
-    const section = el("div", { className: "ow-card ow-summary-card", style: "background: var(--ee-surface-container-low); box-shadow: var(--ee-shadow-lg); margin-bottom: 16px;" });
+    const section = el("div", { style: STYLE.card + " padding: 0; overflow: hidden;" });
 
-    section.append(el("div", { style: "padding: 16px 20px; border-bottom: 1px solid var(--ee-outline-variant);" }, [
-      el("h3", { style: "font-size: 15px; font-weight: 700; color: var(--ee-on-surface); margin: 0;" }, "Answers reviewed"),
+    section.append(el("div", {
+      style:
+        "padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--color-line);" +
+        " display: flex; align-items: center; justify-content: space-between;",
+    }, [
+      el("h3", { style: STYLE.h3 }, "Answers reviewed"),
+      el("span", { style: STYLE.chip }, `${visibleQuestions.length} QUESTIONS`),
     ]));
 
-    // Group by section
     const sections = {};
     visibleQuestions.forEach((q) => {
       if (!sections[q.section]) sections[q.section] = [];
@@ -2591,28 +2485,37 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
     });
 
     Object.entries(sections).forEach(([sectionName, questions]) => {
-      const isExpanded = local.expandedSections[sectionName] !== false; // default open
-      const sectionWrap = el("div", { style: "border-bottom: 1px solid var(--ee-outline-variant);" });
+      const isExpanded = local.expandedSections[sectionName] !== false;
+      const sectionWrap = el("div", { style: "border-bottom: 1px solid var(--color-line);" });
 
-      sectionWrap.append(el("button", {
-        style: "width: 100%; text-align: left; padding: 12px 20px; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between;",
+      const header = el("button", {
+        type: "button",
+        style:
+          "width: 100%; text-align: left; padding: var(--space-4) var(--space-6);" +
+          " background: none; border: none; cursor: pointer;" +
+          " display: flex; align-items: center; justify-content: space-between;" +
+          " font-family: var(--font-body);",
         onclick: () => {
           local.expandedSections[sectionName] = !isExpanded;
           render();
         },
       }, [
-        el("span", { style: "font-size: 13px; font-weight: 700; color: var(--ee-on-surface);" }, sectionName),
-        (() => { const ic = lucideIcon(isExpanded ? "chevron-up" : "chevron-down", 18); ic.style.color = "var(--ee-on-surface-variant)"; return ic; })(),
-      ]));
+        el("span", { style: "font-size: var(--fs-body); font-weight: 600; color: var(--color-ink);" }, sectionName),
+        (() => {
+          const ic = lucideIcon(isExpanded ? "chevron-up" : "chevron-down", 18);
+          ic.style.color = "var(--color-muted)";
+          return ic;
+        })(),
+      ]);
+      sectionWrap.append(header);
 
       if (isExpanded) {
-        const answersWrap = el("div", { style: "padding: 0 20px 12px;" });
+        const answersWrap = el("div", { style: "padding: 0 var(--space-6) var(--space-4);" });
         questions.forEach((q) => {
           const ans = s.answers[q.id];
           const isUnanswered = !ans || (ans.answer === null && !ans.deferred);
           const isDeferred = ans?.deferred === true;
 
-          const rowStyle = `display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--ee-outline-variant);`;
           const answerText = isDeferred
             ? "Deferred — using default"
             : Array.isArray(ans?.answer)
@@ -2621,19 +2524,28 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
                 ? String(ans.answer)
                 : "(not answered)";
 
-          answersWrap.append(el("div", { style: rowStyle }, [
-            el("div", { style: "flex: 1;" }, [
-              el("span", { style: "font-size: 11px; font-weight: 700; color: var(--ee-outline); margin-right: 6px;", text: q.id }),
-              el("span", { style: "font-size: 13px; color: var(--ee-on-surface);" }, q.text.substring(0, 80) + (q.text.length > 80 ? "..." : "")),
-              el("div", { style: "margin-top: 4px;" }, [
-                el("span", {
-                  style: `font-size: 12px; font-weight: 600; color: ${isUnanswered ? "var(--ee-error)" : isDeferred ? "var(--ee-outline)" : "var(--ee-on-surface)"};`,
-                  text: answerText,
-                }),
+          const answerColor = isUnanswered
+            ? "var(--color-chip-review-fg)"
+            : isDeferred
+              ? "var(--color-muted)"
+              : "var(--color-ink)";
+
+          answersWrap.append(el("div", {
+            style:
+              "display: flex; align-items: flex-start; justify-content: space-between;" +
+              " gap: var(--space-3); padding: var(--space-3) 0;" +
+              " border-bottom: 1px solid var(--color-line-soft);",
+          }, [
+            el("div", { style: "flex: 1; display: flex; flex-direction: column; gap: var(--space-1);" }, [
+              el("div", { style: "display: flex; align-items: center; gap: var(--space-2);" }, [
+                el("span", { style: `font-family: var(--font-mono); font-size: var(--fs-tiny); color: var(--color-muted);` }, q.id),
+                el("span", { style: "font-size: var(--fs-small); color: var(--color-body);" }, q.text.substring(0, 80) + (q.text.length > 80 ? "…" : "")),
               ]),
+              el("p", { style: `margin: 0; font-size: var(--fs-small); font-weight: 600; color: ${answerColor};` }, answerText),
             ]),
             el("button", {
-              style: "background: none; border: none; color: var(--ee-primary); font-size: 12px; cursor: pointer; text-decoration: underline; white-space: nowrap; flex-shrink: 0; padding-top: 2px;",
+              type: "button",
+              style: STYLE.linkButton + " flex-shrink: 0;",
               onclick: () => {
                 const visQ = getVisibleQuestions(s.answers);
                 const qIdx = visQ.findIndex((vq) => vq.id === q.id);
@@ -2652,22 +2564,23 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
   }
 
   function buildDomainsSection(s) {
-    const section = el("div", { className: "ow-card ow-summary-card", style: "background: var(--ee-surface-container-low); box-shadow: var(--ee-shadow-lg); margin-bottom: 16px; padding: 20px;" });
+    const section = el("div", { style: STYLE.card + " display: flex; flex-direction: column; gap: var(--space-4);" });
 
-    section.append(el("h3", { style: "font-size: 15px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 14px;" }, "Domains that will be activated"));
+    section.append(
+      el("div", { style: "display: flex; align-items: center; gap: var(--space-3);" }, [
+        gradientDot(6),
+        el("h3", { style: STYLE.h3 }, "Domains that will be activated"),
+      ])
+    );
 
     const allDomains = new Set(s.activated_domains_preview || []);
 
     if (allDomains.size === 0) {
-      section.append(el("p", { style: "font-size: 13px; color: var(--ee-on-surface-variant);" }, "Domain activation will be computed when the pipeline runs."));
+      section.append(el("p", { style: STYLE.muted }, "Domain activation will be computed when the pipeline runs."));
     } else {
-      const list = el("div", { style: "display: flex; flex-wrap: wrap; gap: 8px;" });
+      const list = el("div", { style: "display: flex; flex-wrap: wrap; gap: var(--space-2);" });
       allDomains.forEach((domain) => {
-        list.append(el("span", {
-          className: "ow-chip ow-chip--active",
-          style: "font-size: 12px; font-weight: 600; padding: 4px 10px; background: rgba(245,158,11,0.12); color: #92400e; text-transform: uppercase; letter-spacing: 0.04em;",
-          text: domain,
-        }));
+        list.append(el("span", { style: STYLE.chipReady }, String(domain).toUpperCase()));
       });
       section.append(list);
     }
@@ -2676,73 +2589,119 @@ export function renderOnboardingWizard({ onComplete, onNavigate }) {
   }
 
   function buildDefaultedActivationsSection(s, defaultedDomains) {
-    const section = el("div", { className: "ow-warning-card", style: "background: #FFF3CD; border: 1px solid #F0A500; padding: 20px; margin-bottom: 16px;" });
+    const section = el("div", { style: STYLE.reviewPanel + " display: flex; flex-direction: column; gap: var(--space-4);" });
 
-    section.append(el("div", { style: "display: flex; align-items: center; gap: 8px; margin-bottom: 12px;" }, [
-      (() => { const ic = lucideIcon("alert-triangle", 20); ic.style.color = "#F0A500"; return ic; })(),
-      el("h3", { style: "font-size: 14px; font-weight: 700; color: #7A5200; margin: 0;" }, "Domains activated by default — unanswered questions"),
-    ]));
+    section.append(
+      el("div", { style: "display: flex; align-items: center; gap: var(--space-3);" }, [
+        gradientDot(6),
+        el("h3", { style: STYLE.h3 }, "Activated by default — questions were deferred"),
+      ])
+    );
 
-    section.append(el("p", { style: "font-size: 13px; color: #7A5200; margin-bottom: 12px;" }, "These domains have been activated using the maximum-scope default because you deferred the following questions. Answer them to refine your scope."));
+    section.append(el("p", { style: "margin: 0; font-size: var(--fs-body);" },
+      "These domains use the max-scope default because you deferred questions. Answer them to refine scope."));
 
     defaultedDomains.forEach(({ questionId, defaultAnswer, domains }) => {
-      const q = QUESTIONS.find((q) => q.id === questionId);
-      section.append(el("div", { className: "ow-defaulted-row", style: "padding: 10px 12px; background: rgba(255,255,255,0.5); margin-bottom: 8px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;" }, [
-        el("div", {}, [
-          el("p", { style: "font-size: 12px; font-weight: 700; color: #7A5200; margin-bottom: 2px;" }, `${questionId} — deferred`),
-          el("p", { style: "font-size: 12px; color: #7A5200; margin-bottom: 4px;" }, `Assumed: ${defaultAnswer}`),
-          el("div", { style: "display: flex; flex-wrap: wrap; gap: 4px;" },
-            domains.map((d) => el("span", { className: "ow-chip", style: "font-size: 11px; padding: 2px 6px; background: #F0A500; color: white; font-weight: 600; text-transform: uppercase;", text: d }))
-          ),
-        ]),
-        el("button", {
-          style: "background: none; border: none; color: #7A5200; font-size: 12px; cursor: pointer; text-decoration: underline; white-space: nowrap; flex-shrink: 0;",
-          onclick: () => {
-            const visQ = getVisibleQuestions(s.answers);
-            const qIdx = visQ.findIndex((vq) => vq.id === questionId);
-            if (qIdx >= 0) onboardingStore.goToQuestion(qIdx);
-          },
-        }, "Go back"),
-      ]));
+      const row = el("div", {
+        style:
+          "display: flex; align-items: flex-start; justify-content: space-between;" +
+          " gap: var(--space-3); padding: var(--space-3) var(--space-4);" +
+          " background: var(--color-surface); border-radius: var(--radius-panel);",
+      });
+
+      const left = el("div", { style: "display: flex; flex-direction: column; gap: var(--space-2);" });
+      left.append(el("p", {
+        style: "margin: 0; font-family: var(--font-mono); font-size: var(--fs-small); font-weight: 600; color: var(--color-chip-review-fg);",
+      }, `${questionId} — deferred`));
+      left.append(el("p", { style: "margin: 0; font-size: var(--fs-small); color: var(--color-body);" }, `Assumed: ${defaultAnswer}`));
+      const chips = el("div", { style: "display: flex; flex-wrap: wrap; gap: var(--space-2);" });
+      domains.forEach((d) => chips.append(el("span", { style: STYLE.chipReady }, String(d).toUpperCase())));
+      left.append(chips);
+
+      row.append(left);
+      row.append(el("button", {
+        type: "button",
+        style: STYLE.linkButton + " flex-shrink: 0;",
+        onclick: () => {
+          const visQ = getVisibleQuestions(s.answers);
+          const qIdx = visQ.findIndex((vq) => vq.id === questionId);
+          if (qIdx >= 0) onboardingStore.goToQuestion(qIdx);
+        },
+      }, "Go back"));
+
+      section.append(row);
     });
 
     return section;
   }
 
   function buildCommitmentSection() {
-    return el("div", { className: "ow-card ow-commitment-card", style: "background: var(--ee-surface-container-low); padding: 20px; margin-bottom: 16px; border-left: 3px solid var(--ee-primary);" }, [
-      el("h3", { style: "font-size: 14px; font-weight: 700; color: var(--ee-on-surface); margin-bottom: 10px;" }, "What confirming this screen does"),
-      el("p", { style: "font-size: 13px; color: var(--ee-on-surface-variant); line-height: 1.6;" }, "Confirming this screen locks the discovery answers as the project business profile, triggers a pipeline run that activates the listed domains, and cannot be undone without raising a formal scope change. The pipeline run is governed by the standard preview, safety class, and auditability confirmation flow."),
+    return el("div", {
+      style: STYLE.card + " border-left: 3px solid var(--color-ink); display: flex; flex-direction: column; gap: var(--space-3);",
+    }, [
+      el("h3", { style: STYLE.h3 }, "What confirming does"),
+      el("p", { style: STYLE.body },
+        "Confirming locks your discovery answers as the project business profile, triggers a pipeline run that activates the listed domains, and can't be undone without a formal scope change. The run goes through the standard preview, safety class, and auditability flow."),
     ]);
   }
 
   function buildDeferredAcknowledgement(s, deferredCount, domainCount) {
-    return el("div", {
-      className: `ow-toggle-card${s.deferred_acknowledged ? " ow-toggle-card--active" : ""}`,
-      style: `padding: 14px 16px; background: ${s.deferred_acknowledged ? "var(--ee-success-soft)" : "var(--ee-surface-container)"}; border: 2px solid ${s.deferred_acknowledged ? "var(--ee-success)" : "var(--ee-outline)"}; margin-bottom: 12px; cursor: pointer; display: flex; align-items: flex-start; gap: 12px;`,
+    return buildToggleCard({
+      checked: s.deferred_acknowledged,
       onclick: () => onboardingStore.setDeferredAcknowledged(!s.deferred_acknowledged),
-    }, [
-      el("div", {
-        className: `ow-toggle-indicator${s.deferred_acknowledged ? " ow-toggle-indicator--active" : ""}`,
-        style: `width: 18px; height: 18px; flex-shrink: 0; border: 2px solid ${s.deferred_acknowledged ? "var(--ee-success)" : "var(--ee-outline)"}; background: ${s.deferred_acknowledged ? "var(--ee-success)" : "transparent"}; display: flex; align-items: center; justify-content: center; margin-top: 1px;`,
-      }, s.deferred_acknowledged ? [(() => { const ic = lucideIcon("check", 13); ic.style.color = "white"; return ic; })()] : []),
-      el("p", { style: "font-size: 13px; color: var(--ee-on-surface); line-height: 1.5; margin: 0;" },
-        `I acknowledge that ${domainCount} domain(s) have been activated by default because I deferred ${deferredCount} question(s). I understand the implementation scope may be larger than necessary and I can reduce it by answering those questions before confirming.`
-      ),
-    ]);
+      label: `I acknowledge that ${domainCount} domain${domainCount === 1 ? "" : "s"} are activated by default because I deferred ${deferredCount} question${deferredCount === 1 ? "" : "s"}. I can reduce scope by answering them before confirming.`,
+    });
   }
 
   function buildConfirmCheckbox(s) {
-    return el("div", {
-      className: `ow-toggle-card${s.confirmed ? " ow-toggle-card--active" : ""}`,
-      style: `padding: 14px 16px; background: ${s.confirmed ? "var(--ee-primary-subtle)" : "var(--ee-surface-container)"}; border: 2px solid ${s.confirmed ? "var(--ee-primary)" : "var(--ee-outline)"}; margin-bottom: 16px; cursor: pointer; display: flex; align-items: flex-start; gap: 12px;`,
+    return buildToggleCard({
+      checked: s.confirmed,
       onclick: () => onboardingStore.setConfirmed(!s.confirmed),
-    }, [
-      el("div", {
-        className: `ow-toggle-indicator${s.confirmed ? " ow-toggle-indicator--active" : ""}`,
-        style: `width: 18px; height: 18px; flex-shrink: 0; border: 2px solid ${s.confirmed ? "var(--ee-primary)" : "var(--ee-outline)"}; background: ${s.confirmed ? "var(--ee-primary)" : "transparent"}; display: flex; align-items: center; justify-content: center; margin-top: 1px;`,
-      }, s.confirmed ? [(() => { const ic = lucideIcon("check", 13); ic.style.color = "white"; return ic; })()] : []),
-      el("p", { style: "font-size: 13px; font-weight: 600; color: var(--ee-on-surface); margin: 0;" }, "I understand what will be set up for my business and I am ready to run the implementation pipeline."),
-    ]);
+      label: "I understand what will be set up and I'm ready to run the implementation pipeline.",
+      emphasise: true,
+    });
+  }
+
+  function buildToggleCard({ checked, onclick, label, emphasise = false }) {
+    const bg = checked
+      ? "var(--color-chip-ready-bg)"
+      : "var(--color-surface)";
+    const border = checked
+      ? "var(--color-ink)"
+      : "var(--color-line)";
+    const wrap = el("button", {
+      type: "button",
+      style:
+        "width: 100%; text-align: left; padding: var(--space-4) var(--space-5);" +
+        ` background: ${bg}; border: 1px solid ${border};` +
+        " border-radius: var(--radius-panel); cursor: pointer;" +
+        " display: flex; align-items: flex-start; gap: var(--space-3);" +
+        " font-family: var(--font-body);",
+      onclick,
+    });
+
+    const box = el("span", {
+      style:
+        "width: 20px; height: 20px; flex-shrink: 0; border-radius: var(--radius-tag);" +
+        ` border: 1px solid ${checked ? "var(--color-ink)" : "var(--color-line)"};` +
+        ` background: ${checked ? "var(--color-pill-primary-bg)" : "transparent"};` +
+        " display: flex; align-items: center; justify-content: center; margin-top: 2px;",
+    });
+    if (checked) {
+      const check = lucideIcon("check", 14);
+      check.style.color = "var(--color-pill-primary-fg)";
+      box.append(check);
+    }
+
+    wrap.append(
+      box,
+      el("p", {
+        style:
+          `margin: 0; font-size: var(--fs-body); color: var(--color-ink);` +
+          ` font-weight: ${emphasise ? 600 : 400}; line-height: var(--lh-body);`,
+      }, label),
+    );
+
+    return wrap;
   }
 }

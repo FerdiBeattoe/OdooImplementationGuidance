@@ -22,14 +22,19 @@ function buildWebsiteChanges(capture) {
   const name = typeof capture.website_name === "string" ? capture.website_name.trim() : "";
   const defaultLanguage = typeof capture.default_language === "string" ? capture.default_language.trim() : "";
   if (!name && !defaultLanguage) return null;
-  return { name: name || null, default_lang_id: defaultLanguage ? null : null };
+  // honest-null: default_lang_id is required by website but must be resolved at runtime
+  // via client.searchRead("res.lang", [["active","=",true]], ["id","code"], {limit:1}).
+  // The assembler cannot perform runtime lookups — leave null until execution layer resolves it.
+  return { name: name || null, default_lang_id: null };
 }
 function buildCarrierChanges(capture) {
   if (!isPlainObject(capture)) return null;
   const name = typeof capture.delivery_carrier_name === "string" ? capture.delivery_carrier_name.trim() : "";
   const deliveryType = typeof capture.carrier_type === "string" ? capture.carrier_type.trim() : "";
   if (!name && !deliveryType) return null;
-  return { name: name || null, delivery_type: deliveryType || null };
+  // honest-null: product_id is required by delivery.carrier but must be resolved at runtime
+  // via a service-type product lookup. The assembler cannot perform runtime lookups.
+  return { name: name || null, delivery_type: deliveryType || null, product_id: null };
 }
 function addWebsiteEcommerceDefinition(map, checkpoint_id, intended_changes) { const metadata = WEBSITE_ECOMMERCE_CHECKPOINT_METADATA[checkpoint_id]; if (!metadata) return; map[checkpoint_id] = createOperationDefinition({ checkpoint_id, target_model: metadata.target_model, method: WEBSITE_ECOMMERCE_TARGET_METHOD, intended_changes, safety_class: metadata.safety_class, execution_relevance: metadata.execution_relevance, validation_source: metadata.validation_source }); }
 export function assembleWebsiteEcommerceOperationDefinitions(target_context = null, discovery_answers = null, wizard_captures = null) { const map = createOperationDefinitionsMap(); const answers = discovery_answers?.answers ?? {}; const capture = extractWebsiteEcommerceCapture(wizard_captures); const websiteChanges = buildWebsiteChanges(capture); const carrierChanges = buildCarrierChanges(capture);

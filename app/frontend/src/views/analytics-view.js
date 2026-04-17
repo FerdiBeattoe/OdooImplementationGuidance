@@ -4,9 +4,9 @@ import {
   getModuleCompletionStatus,
   getGovernedRoadmapSteps,
   getCompletedWizards,
-  getCheckpointRecords,
   getState as getAppState,
 } from "../state/app-store.js";
+import { getCheckpointRecords } from "./pipeline-dashboard.js";
 import { onboardingStore } from "../state/onboarding-store.js";
 import { pipelineStore } from "../state/pipeline-store.js";
 

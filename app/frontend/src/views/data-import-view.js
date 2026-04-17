@@ -6,9 +6,56 @@ import {
   getDepartmentOptions, getJobPositionOptions, getPaymentTermOptions, getPricelistOptions
 } from "../state/implementationStore.js";
 import { setGovernedImportedData, persistActiveProject } from "../state/app-store.js";
+import { onboardingStore } from "../state/onboarding-store.js";
 import { GRID_PUSH_MAP } from "./grid-push.js";
 
-// ── Grid definition registry ──────────────────────────────────
+// ── Token-based style constants ───────────────────────────────
+
+const CANVAS_STYLE =
+  "min-height: 100vh; background: var(--canvas-bloom-warm), var(--canvas-bloom-cool), var(--color-canvas-base), var(--surface-texture); padding: var(--space-8) var(--space-5) var(--space-12); font-family: var(--font-body); color: var(--color-ink); box-sizing: border-box;";
+
+const COLUMN_STYLE =
+  "max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-6);";
+
+const EYEBROW_STYLE =
+  "display: inline-flex; align-self: flex-start; align-items: center; padding: 4px 12px; border: 1px solid var(--color-line); border-radius: var(--radius-pill); background: var(--color-surface); font-family: var(--font-body); font-size: var(--fs-tiny); font-weight: 600; text-transform: uppercase; letter-spacing: var(--track-eyebrow-strong); color: var(--color-subtle);";
+
+const HERO_H1 =
+  "font-family: var(--font-display); font-size: var(--fs-h1); font-weight: 600; letter-spacing: var(--track-tight); line-height: var(--lh-snug); color: var(--color-ink); margin: 0;";
+
+const HERO_SUB =
+  "font-family: var(--font-mono); font-size: var(--fs-small); color: var(--color-muted); margin: 0; line-height: var(--lh-body);";
+
+const PANEL_STYLE =
+  "background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius-panel); padding: var(--space-5) var(--space-6);";
+
+const PILL_PRIMARY =
+  "display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--radius-pill); background: var(--color-pill-primary-bg); color: var(--color-pill-primary-fg); border: 1px solid var(--color-pill-primary-bg); font-family: var(--font-body); font-size: var(--fs-small); font-weight: 500; cursor: pointer; transition: all var(--dur-base) var(--ease);";
+
+const PILL_SECONDARY =
+  "display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--radius-pill); background: var(--color-pill-secondary-bg); color: var(--color-pill-secondary-fg); border: 1px solid var(--color-pill-secondary-border); font-family: var(--font-body); font-size: var(--fs-small); font-weight: 500; cursor: pointer; transition: all var(--dur-base) var(--ease);";
+
+const LINK_BTN_STYLE =
+  "display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-body); font-size: var(--fs-small); font-weight: 500; color: var(--color-ink); background: none; border: none; cursor: pointer; padding: 6px 10px; text-decoration: underline; text-underline-offset: 2px;";
+
+const CHIP_STYLE =
+  "display: inline-flex; align-items: center; padding: 2px 10px; border-radius: var(--radius-pill); background: var(--color-chip-bg); color: var(--color-chip-fg); font-family: var(--font-body); font-size: var(--fs-tiny); font-weight: 500; text-transform: uppercase; letter-spacing: var(--track-eyebrow);";
+
+const CHIP_READY =
+  "display: inline-flex; align-items: center; padding: 2px 10px; border-radius: var(--radius-pill); background: var(--color-chip-ready-bg); color: var(--color-chip-ready-fg); font-family: var(--font-body); font-size: var(--fs-tiny); font-weight: 500; text-transform: uppercase; letter-spacing: var(--track-eyebrow);";
+
+const INPUT_STYLE =
+  "width: 100%; min-width: 0; padding: 6px 10px; font-family: var(--font-body); font-size: var(--fs-small); background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius-input); color: var(--color-ink); outline: none; box-sizing: border-box;";
+
+function getInstanceHost() {
+  const state = onboardingStore.getState();
+  const url = state?.connection?.url || "";
+  if (!url) return "";
+  try { return new URL(url).host; }
+  catch { return String(url).replace(/^https?:\/\//i, "").split("/")[0]; }
+}
+
+// ── Grid definition registry (unchanged) ──────────────────────
 
 const GRIDS = [
   {
@@ -176,7 +223,9 @@ const GRIDS = [
 
 export function renderDataImportView({ onNavigate }) {
   let activeGridId = null;
-  const container = el("div", { style: "max-width: 1100px; margin: 0 auto; padding: 32px;" });
+  const canvas = el("div", { style: CANVAS_STYLE });
+  const container = el("div", { style: COLUMN_STYLE });
+  canvas.append(container);
 
   function showGrid(gridId) {
     activeGridId = gridId;
@@ -186,36 +235,41 @@ export function renderDataImportView({ onNavigate }) {
   function render() {
     while (container.firstChild) container.removeChild(container.firstChild);
 
+    const instanceHost = getInstanceHost();
+    const eyebrowText = instanceHost ? `DATA IMPORT · ${instanceHost}` : "DATA IMPORT";
+
     container.append(
-      el("div", { style: "margin-bottom: 32px;" }, [
-        el("span", { style: "display: inline-block; font-size: 11px; letter-spacing: 0.1em; color: #92400e; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 6px; padding: 3px 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;", text: "BULK DATA ENTRY" }),
-        el("h2", { style: "font-size: 28px; font-weight: 700; color: #0c1a30; font-family: Inter, sans-serif; margin-bottom: 8px;", text: "Data Import" }),
-        el("p", { style: "font-size: 14px; color: #64748b;", text: "Import records in bulk. Paste from Excel or upload a CSV. All grids validate data before pushing to Odoo." })
+      el("div", { style: "display: flex; flex-direction: column; gap: var(--space-3);" }, [
+        el("span", { style: EYEBROW_STYLE, text: eyebrowText }),
+        el("h1", { style: HERO_H1 }, [
+          el("span", { text: "Bring your data " }),
+          el("span", { style: "color: var(--color-muted);", text: "in" })
+        ]),
+        el("p", { style: HERO_SUB, text: "Import records in bulk. Paste from Excel or upload CSV. All grids validate before pushing to Odoo." })
       ])
     );
 
     if (!activeGridId) {
-      // Grid selector
       container.append(
-        el("div", { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px;" },
+        el("div", { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-3);" },
           GRIDS.map(g => {
             const rows = getImportedData(g.id);
             const hasRows = rows.length > 0;
             const card = el("div", {
-              style: "display: flex; align-items: center; gap: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;",
+              style: `display: flex; align-items: center; gap: var(--space-3); background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius-panel); padding: var(--space-4) var(--space-5); cursor: pointer; transition: all var(--dur-base) var(--ease);`,
               onclick: () => showGrid(g.id)
             }, [
-              el("div", { style: "width: 44px; height: 44px; border-radius: 10px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #92400e;" }, [
+              el("div", { style: "width: 40px; height: 40px; border-radius: var(--radius-panel); background: var(--color-line-soft); border: 1px solid var(--color-line); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--color-ink);" }, [
                 lucideIcon(g.icon, 20)
               ]),
               el("div", { style: "flex: 1; min-width: 0;" }, [
-                el("h4", { style: "font-size: 15px; font-weight: 600; color: #0c1a30; margin-bottom: 2px;", text: g.label }),
-                el("p", { style: "font-size: 12px; color: #64748b;", text: g.desc })
+                el("h4", { style: "font-family: var(--font-display); font-size: var(--fs-h3); font-weight: 500; color: var(--color-ink); margin: 0 0 2px; letter-spacing: var(--track-tight);", text: g.label }),
+                el("p", { style: "font-family: var(--font-body); font-size: var(--fs-small); color: var(--color-muted); margin: 0;", text: g.desc })
               ]),
-              hasRows ? el("span", { style: "display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #065f46; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 6px; padding: 2px 8px; flex-shrink: 0;", text: `${rows.length} rows` }) : null
+              hasRows ? el("span", { style: CHIP_READY, text: `${rows.length} rows` }) : null
             ]);
-            card.onmouseenter = () => { card.style.borderColor = "#f59e0b"; card.style.boxShadow = "0 2px 8px rgba(245,158,11,0.1)"; };
-            card.onmouseleave = () => { card.style.borderColor = "#e2e8f0"; card.style.boxShadow = "none"; };
+            card.onmouseenter = () => { card.style.borderColor = "var(--color-ink)"; card.style.boxShadow = "var(--shadow-raised)"; };
+            card.onmouseleave = () => { card.style.borderColor = "var(--color-line)"; card.style.boxShadow = "none"; };
             return card;
           })
         )
@@ -227,7 +281,7 @@ export function renderDataImportView({ onNavigate }) {
   }
 
   render();
-  return container;
+  return canvas;
 }
 
 function buildGrid(gridDef, onBack) {
@@ -235,7 +289,7 @@ function buildGrid(gridDef, onBack) {
   if (rows.length === 0) rows = [emptyRow()];
 
   const tableBody = el("tbody");
-  const countBadge = el("span", { style: "font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 6px; color: #92400e;" });
+  const countBadge = el("span", { style: CHIP_STYLE });
   let selectedRows = new Set();
 
   function emptyRow() {
@@ -251,41 +305,42 @@ function buildGrid(gridDef, onBack) {
   function renderRows() {
     while (tableBody.firstChild) tableBody.removeChild(tableBody.firstChild);
     rows.forEach((row, ri) => {
-      const checkCell = el("td", { style: "padding: 8px; width: 32px; border-bottom: 1px solid #f1f5f9;" });
+      const checkCell = el("td", { style: "padding: var(--space-2); width: 32px; border-bottom: 1px solid var(--color-line);" });
       const cb = el("input", { type: "checkbox", style: "width: 16px; height: 16px; cursor: pointer;" });
       cb.checked = selectedRows.has(ri);
       cb.addEventListener("change", () => { if (cb.checked) selectedRows.add(ri); else selectedRows.delete(ri); updateDeleteSelected(); });
       checkCell.append(cb);
-      
-      const statusCell = el("td", { style: "padding: 8px; width: 24px; border-bottom: 1px solid #f1f5f9;" }, [
+
+      const statusCell = el("td", { style: "padding: var(--space-2); width: 24px; border-bottom: 1px solid var(--color-line);" }, [
         el("div", { style: `width: 8px; height: 8px; border-radius: 50%; ${
-          row._status === "success" ? "background: #059669;" :
-          row._status === "error"   ? "background: #dc2626;" :
-          row._status === "importing" ? "background: #f59e0b; animation: pulse 1s infinite;" : "background: #cbd5e1;"
+          row._status === "success"   ? "background: var(--color-ink);" :
+          row._status === "error"     ? "background: var(--color-chip-review-fg);" :
+          row._status === "importing" ? "background: var(--color-muted); animation: pulse 1s infinite;" :
+                                        "background: var(--color-line);"
         }`, title: row._statusMessage || row._status })
       ]);
-      
+
       const cells = gridDef.columns.map(col => {
         const isInvalid = row._invalidCols?.has(col.key);
-        const cellEl = el("td", { style: `padding: 4px 8px; border-bottom: 1px solid #f1f5f9; ${isInvalid ? "background: rgba(239,68,68,0.06);" : ""}` });
+        const cellEl = el("td", { style: `padding: 4px var(--space-2); border-bottom: 1px solid var(--color-line); ${isInvalid ? "background: var(--color-chip-review-bg);" : ""}` });
         const inputEl = buildCellInput(col, row[col.key], (val) => {
           rows[ri][col.key] = val;
           if (val && row._invalidCols) { row._invalidCols.delete(col.key); cellEl.style.background = ""; }
         });
-        if (isInvalid) inputEl.style.border = "1px solid #dc2626";
+        if (isInvalid) inputEl.style.border = "1px solid var(--color-chip-review-fg)";
         cellEl.append(inputEl);
         return cellEl;
       });
-      
-      const deleteCell = el("td", { style: "padding: 8px; width: 32px; border-bottom: 1px solid #f1f5f9;" }, [
+
+      const deleteCell = el("td", { style: "padding: var(--space-2); width: 32px; border-bottom: 1px solid var(--color-line);" }, [
         el("button", {
-          style: "padding: 4px; color: #94a3b8; background: none; border: none; cursor: pointer;",
-          onmouseenter: (e) => e.currentTarget.style.color = "#dc2626",
-          onmouseleave: (e) => e.currentTarget.style.color = "#94a3b8",
+          style: "padding: 4px; color: var(--color-muted); background: none; border: none; cursor: pointer;",
+          onmouseenter: (e) => e.currentTarget.style.color = "var(--color-chip-review-fg)",
+          onmouseleave: (e) => e.currentTarget.style.color = "var(--color-muted)",
           onclick: () => { rows.splice(ri, 1); selectedRows.delete(ri); if (rows.length === 0) rows.push(emptyRow()); renderRows(); updateCount(); }
         }, [lucideIcon("trash-2", 16)])
       ]);
-      
+
       tableBody.append(el("tr", { style: "height: 40px;" }, [checkCell, statusCell, ...cells, deleteCell]));
     });
     updateCount();
@@ -294,7 +349,7 @@ function buildGrid(gridDef, onBack) {
   renderRows();
 
   const deleteSelectedBtn = el("button", {
-    style: "display: none; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #dc2626; background: none; border: none; cursor: pointer; padding: 8px;",
+    style: `${LINK_BTN_STYLE} display: none; color: var(--color-chip-review-fg);`,
     onclick: () => {
       const indices = [...selectedRows].sort((a, b) => b - a);
       indices.forEach(i => rows.splice(i, 1));
@@ -311,7 +366,7 @@ function buildGrid(gridDef, onBack) {
 
   function updateDeleteSelected() {
     if (selectedRows.size > 0) {
-      deleteSelectedBtn.style.display = "flex";
+      deleteSelectedBtn.style.display = "inline-flex";
       deleteSelectedBtn.querySelector("span:last-child").textContent = `Delete Selected (${selectedRows.size})`;
     } else {
       deleteSelectedBtn.style.display = "none";
@@ -319,16 +374,15 @@ function buildGrid(gridDef, onBack) {
   }
 
   const addRowBtn = el("button", {
-    style: "display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #92400e; background: none; border: none; cursor: pointer; padding: 8px;",
+    style: LINK_BTN_STYLE,
     onclick: () => { rows.push(emptyRow()); renderRows(); updateCount(); }
   }, [
     lucideIcon("plus", 16),
     el("span", { text: "Add Row" })
   ]);
 
-  // CSV template download
   const downloadTemplateBtn = el("button", {
-    style: "display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #64748b; background: none; border: none; cursor: pointer; padding: 8px;",
+    style: `${LINK_BTN_STYLE} color: var(--color-muted);`,
     onclick: () => {
       const headers = gridDef.columns.map(c => c.label).join(",");
       const blob = new Blob([headers + "\n"], { type: "text/csv" });
@@ -344,7 +398,6 @@ function buildGrid(gridDef, onBack) {
     el("span", { text: "Download CSV Template" })
   ]);
 
-  // CSV file upload
   const fileInput = el("input", { type: "file", accept: ".csv,.txt", style: "display: none;" });
   fileInput.addEventListener("change", () => {
     const file = fileInput.files?.[0];
@@ -363,21 +416,20 @@ function buildGrid(gridDef, onBack) {
   });
 
   const uploadBtn = el("button", {
-    style: "display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #92400e; border: 1px solid rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); border-radius: 6px; padding: 8px 16px; cursor: pointer;",
+    style: PILL_SECONDARY,
     onclick: () => fileInput.click()
   }, [
     lucideIcon("upload", 16),
     el("span", { text: "Upload CSV File" })
   ]);
 
-  // CSV paste area
   const csvTextarea = el("textarea", {
-    style: "width: 100%; height: 100px; padding: 12px; font-family: monospace; font-size: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; resize: none; color: #0c1a30; box-sizing: border-box;",
+    style: "width: 100%; height: 96px; padding: var(--space-3); font-family: var(--font-mono); font-size: var(--fs-small); background: var(--color-line-soft); border: 1px solid var(--color-line); border-radius: var(--radius-input); resize: none; color: var(--color-ink); box-sizing: border-box; outline: none;",
     placeholder: "Paste CSV data here (first row = headers matching column names)..."
   });
 
   const parseCSVBtn = el("button", {
-    style: "display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #92400e; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; padding: 8px 16px; cursor: pointer;",
+    style: PILL_SECONDARY,
     onclick: () => {
       const text = csvTextarea.value.trim();
       if (!text) return;
@@ -395,9 +447,8 @@ function buildGrid(gridDef, onBack) {
   ]);
 
   const importBtn = el("button", {
-    style: "display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #92400e; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; padding: 10px 20px; cursor: pointer;",
+    style: PILL_PRIMARY,
     onclick: async () => {
-      // Validate with per-cell highlighting
       let hasInvalid = false;
       rows.forEach(r => {
         r._invalidCols = new Set();
@@ -407,7 +458,6 @@ function buildGrid(gridDef, onBack) {
         if (r._invalidCols.size > 0) { r._status = "error"; r._statusMessage = "Missing required fields"; }
       });
       if (hasInvalid) { renderRows(); return; }
-      // Push rows via API
       importBtn.disabled = true;
       importBtn.style.opacity = "0.6";
       const pushFn = GRID_PUSH_MAP[gridDef.id];
@@ -431,7 +481,6 @@ function buildGrid(gridDef, onBack) {
         return clean;
       });
       setImportedData(gridDef.id, cleanRows);
-      // Persist to governed project state for refresh survival
       setGovernedImportedData(gridDef.id, cleanRows);
       persistActiveProject();
       addActivityLog({ action: `Imported ${cleanRows.length} ${gridDef.label}`, module: "Data Import" });
@@ -449,46 +498,43 @@ function buildGrid(gridDef, onBack) {
     }
   }, [
     lucideIcon("cloud-upload", 18),
-    el("span", { text: `Import ${gridDef.label} to Odoo` })
+    el("span", { text: `Push ${gridDef.label} to Odoo` })
   ]);
 
-  return el("div", { style: "display: flex; flex-direction: column; gap: 24px;" }, [
-    // Header
-    el("div", { style: "display: flex; align-items: center; gap: 16px;" }, [
+  return el("div", { style: "display: flex; flex-direction: column; gap: var(--space-5);" }, [
+    el("div", { style: "display: flex; align-items: center; gap: var(--space-3);" }, [
       el("button", {
-        style: "padding: 8px; color: #64748b; background: none; border: none; cursor: pointer;",
+        style: "padding: var(--space-2); color: var(--color-muted); background: none; border: none; cursor: pointer;",
         onclick: onBack
       }, [lucideIcon("arrow-left", 20)]),
-      el("div", { style: "display: flex; align-items: center; gap: 12px; flex: 1;" }, [
-        el("div", { style: "width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); color: #92400e;" }, [
+      el("div", { style: "display: flex; align-items: center; gap: var(--space-3); flex: 1;" }, [
+        el("div", { style: "width: 40px; height: 40px; border-radius: var(--radius-panel); display: flex; align-items: center; justify-content: center; background: var(--color-line-soft); border: 1px solid var(--color-line); color: var(--color-ink);" }, [
           lucideIcon(gridDef.icon, 20)
         ]),
         el("div", {}, [
-          el("h3", { style: "font-size: 18px; font-weight: 700; color: #0c1a30; font-family: Inter, sans-serif;", text: gridDef.label }),
-          el("p", { style: "font-size: 12px; color: #64748b;", text: gridDef.desc })
+          el("h3", { style: "font-family: var(--font-display); font-size: var(--fs-h2); font-weight: 500; color: var(--color-ink); letter-spacing: var(--track-tight); margin: 0;", text: gridDef.label }),
+          el("p", { style: "font-family: var(--font-mono); font-size: var(--fs-small); color: var(--color-muted); margin: 0;", text: gridDef.desc })
         ])
       ]),
       countBadge
     ]),
-    
-    // CSV import panel
-    el("div", { style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 12px;" }, [
-      el("div", { style: "display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;" }, [
-        el("p", { style: "font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b;", text: "CSV Import" }),
-        el("div", { style: "display: flex; align-items: center; gap: 12px;" }, [downloadTemplateBtn, uploadBtn])
+
+    el("div", { style: `${PANEL_STYLE} display: flex; flex-direction: column; gap: var(--space-3);` }, [
+      el("div", { style: "display: flex; align-items: center; justify-content: space-between;" }, [
+        el("p", { style: "font-family: var(--font-body); font-size: var(--fs-tiny); font-weight: 600; text-transform: uppercase; letter-spacing: var(--track-eyebrow); color: var(--color-subtle); margin: 0;", text: "CSV IMPORT" }),
+        el("div", { style: "display: flex; align-items: center; gap: var(--space-3);" }, [downloadTemplateBtn, uploadBtn])
       ]),
       fileInput,
       csvTextarea,
-      parseCSVBtn
+      el("div", { style: "display: flex; justify-content: flex-end;" }, [parseCSVBtn])
     ]),
-    
-    // Grid table
-    el("div", { style: "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;" }, [
+
+    el("div", { style: `${PANEL_STYLE} padding: 0; overflow: hidden;` }, [
       el("div", { style: "overflow-x: auto;" }, [
-        el("table", { style: "width: 100%; font-size: 12px; border-collapse: collapse;" }, [
+        el("table", { style: "width: 100%; font-family: var(--font-body); font-size: var(--fs-small); border-collapse: collapse;" }, [
           el("thead", {}, [
             el("tr", {}, [
-              el("th", { style: "padding: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; text-align: left;" }, [
+              el("th", { style: "padding: var(--space-2); font-family: var(--font-body); font-size: var(--fs-tiny); font-weight: 500; text-transform: uppercase; letter-spacing: var(--track-eyebrow); color: var(--color-subtle); text-align: left; border-bottom: 1px solid var(--color-line);" }, [
                 (() => {
                   const selectAll = el("input", { type: "checkbox", style: "width: 16px; height: 16px; cursor: pointer;" });
                   selectAll.addEventListener("change", () => {
@@ -500,21 +546,21 @@ function buildGrid(gridDef, onBack) {
                   return selectAll;
                 })()
               ]),
-              el("th", { style: "padding: 8px; width: 24px;" }),
+              el("th", { style: "padding: var(--space-2); width: 24px; border-bottom: 1px solid var(--color-line);" }),
               ...gridDef.columns.map(col =>
-                el("th", { style: "padding: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; text-align: left; white-space: nowrap;" }, [
+                el("th", { style: "padding: var(--space-2); font-family: var(--font-body); font-size: var(--fs-tiny); font-weight: 500; text-transform: uppercase; letter-spacing: var(--track-eyebrow); color: var(--color-subtle); text-align: left; white-space: nowrap; border-bottom: 1px solid var(--color-line);" }, [
                   el("span", { text: col.label }),
-                  col.required ? el("span", { style: "color: #dc2626; margin-left: 2px;", text: "*" }) : null
+                  col.required ? el("span", { style: "color: var(--color-chip-review-fg); margin-left: 2px;", text: "*" }) : null
                 ])
               ),
-              el("th", { style: "padding: 8px; width: 32px;" })
+              el("th", { style: "padding: var(--space-2); width: 32px; border-bottom: 1px solid var(--color-line);" })
             ])
           ]),
           tableBody
         ])
       ]),
-      el("div", { style: "padding: 12px 16px; border-top: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;" }, [
-        el("div", { style: "display: flex; align-items: center; gap: 12px;" }, [addRowBtn, deleteSelectedBtn]),
+      el("div", { style: "padding: var(--space-3) var(--space-5); border-top: 1px solid var(--color-line); display: flex; align-items: center; justify-content: space-between;" }, [
+        el("div", { style: "display: flex; align-items: center; gap: var(--space-3);" }, [addRowBtn, deleteSelectedBtn]),
         importBtn
       ])
     ])
@@ -522,17 +568,15 @@ function buildGrid(gridDef, onBack) {
 }
 
 function buildCellInput(col, value, onChange) {
-  const baseClass = "w-full min-w-0 px-2 py-1.5 text-xs bg-transparent border border-outline-variant/20 rounded focus:ring-1 focus:ring-primary/30 focus:border-primary focus:outline-none";
-
   if (col.type === "checkbox") {
-    const cb = el("input", { type: "checkbox", className: "w-4 h-4 rounded border-outline text-primary focus:ring-primary/20 cursor-pointer" });
+    const cb = el("input", { type: "checkbox", style: "width: 16px; height: 16px; cursor: pointer;" });
     cb.checked = value === true || value === "true";
     cb.addEventListener("change", e => onChange(e.target.checked));
-    return el("div", { className: "flex justify-center" }, [cb]);
+    return el("div", { style: "display: flex; justify-content: center;" }, [cb]);
   }
 
   if (col.type === "select") {
-    const sel = el("select", { className: baseClass + " cursor-pointer" }, [
+    const sel = el("select", { style: `${INPUT_STYLE} cursor: pointer;` }, [
       el("option", { value: "", text: "—" }),
       ...col.options.map(o => el("option", { value: o, selected: o === value ? "selected" : null, text: o }))
     ]);
@@ -542,7 +586,7 @@ function buildCellInput(col, value, onChange) {
 
   if (col.type === "dropdown") {
     const opts = col.optionsFn ? col.optionsFn() : [];
-    const sel = el("select", { className: baseClass + " cursor-pointer" }, [
+    const sel = el("select", { style: `${INPUT_STYLE} cursor: pointer;` }, [
       el("option", { value: "", text: "—" }),
       ...opts.map(o => el("option", { value: o, selected: o === value ? "selected" : null, text: o }))
     ]);
@@ -554,8 +598,7 @@ function buildCellInput(col, value, onChange) {
     type: col.type === "number" ? "number" : col.type === "date" ? "date" : col.type === "email" ? "email" : "text",
     value: value || "",
     placeholder: col.label,
-    className: baseClass + (col.type === "number" ? " text-right" : ""),
-    style: col.type === "number" ? "min-width: 80px" : "min-width: 120px"
+    style: `${INPUT_STYLE}${col.type === "number" ? " text-align: right; min-width: 80px;" : " min-width: 120px;"}`
   });
   input.addEventListener("input", e => onChange(e.target.value));
   return input;

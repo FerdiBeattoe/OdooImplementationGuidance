@@ -96,7 +96,7 @@ function getMatchedPersonalisationNotes(brief) {
   return notes;
 }
 
-// ── label derivation for unresolved domain IDs ──────────────────────────────
+// ── label derivation ────────────────────────────────────────────────────────
 
 function deriveDomainLabel(domainId) {
   if (!domainId) return "";
@@ -107,33 +107,94 @@ function deriveDomainLabel(domainId) {
     .join(" ");
 }
 
+function resolveInstanceHost() {
+  const url = onboardingStore.getState()?.connection?.url || null;
+  if (!url) return "";
+  try { return new URL(url).host; }
+  catch { return String(url).replace(/^https?:\/\//i, "").split("/")[0]; }
+}
+
+// ── Token styles ────────────────────────────────────────────────────────────
+
+const CANVAS_STYLE =
+  "min-height: 100vh; background: var(--canvas-bloom-warm), var(--canvas-bloom-cool), var(--color-canvas-base), var(--surface-texture); padding: var(--space-8) var(--space-5) var(--space-12); font-family: var(--font-body); color: var(--color-ink); box-sizing: border-box;";
+
+const COLUMN_STYLE =
+  "max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-6);";
+
+const LAYOUT_STYLE =
+  "display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: var(--space-5); align-items: flex-start;";
+
+const MAIN_STYLE =
+  "display: flex; flex-direction: column; gap: var(--space-5); min-width: 0;";
+
+const ASIDE_STYLE =
+  "display: flex; flex-direction: column; gap: var(--space-5); position: sticky; top: var(--space-6); min-width: 0;";
+
+const EYEBROW_STYLE =
+  "display: inline-flex; align-self: flex-start; align-items: center; padding: 4px 12px; border: 1px solid var(--color-line); border-radius: var(--radius-pill); background: var(--color-surface); font-family: var(--font-body); font-size: var(--fs-tiny); font-weight: 600; text-transform: uppercase; letter-spacing: var(--track-eyebrow-strong); color: var(--color-subtle);";
+
+const HERO_H1 =
+  "font-family: var(--font-display); font-size: var(--fs-h1); font-weight: 600; letter-spacing: var(--track-tight); line-height: var(--lh-snug); color: var(--color-ink); margin: 0;";
+
+const HERO_MUTED = "color: var(--color-muted);";
+
+const HERO_SUB =
+  "font-family: var(--font-mono); font-size: var(--fs-small); color: var(--color-muted); margin: 0; line-height: var(--lh-body);";
+
+const PANEL_STYLE =
+  "background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius-panel); padding: var(--space-5) var(--space-6);";
+
+const SECTION_EYEBROW =
+  "font-family: var(--font-mono); font-size: var(--fs-tiny); font-weight: 600; letter-spacing: var(--track-eyebrow); text-transform: uppercase; color: var(--color-muted); margin: 0 0 var(--space-3) 0;";
+
+const BODY_TEXT =
+  "font-family: var(--font-body); font-size: var(--fs-body); color: var(--color-ink); margin: 0; line-height: var(--lh-body);";
+
+const MONO_TEXT =
+  "font-family: var(--font-mono); font-size: var(--fs-small); color: var(--color-ink); margin: 0;";
+
+const CHIP_BASE =
+  "display: inline-flex; align-items: center; padding: 4px 10px; border-radius: var(--radius-pill); font-family: var(--font-mono); font-size: var(--fs-tiny); font-weight: 500; text-transform: uppercase; letter-spacing: var(--track-eyebrow);";
+
+const CHIP_NEUTRAL = `${CHIP_BASE} background: var(--color-chip-bg); color: var(--color-chip-fg);`;
+const CHIP_READY = `${CHIP_BASE} background: var(--color-chip-ready-bg); color: var(--color-chip-ready-fg);`;
+const CHIP_REVIEW = `${CHIP_BASE} background: var(--color-chip-review-bg); color: var(--color-chip-review-fg);`;
+
+const PILL_PRIMARY =
+  "display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--radius-pill); background: var(--color-pill-primary-bg); color: var(--color-pill-primary-fg); border: 1px solid var(--color-pill-primary-bg); font-family: var(--font-body); font-size: var(--fs-small); font-weight: 500; cursor: pointer; transition: all var(--dur-base) var(--ease);";
+
+const PILL_SECONDARY =
+  "display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--radius-pill); background: var(--color-pill-secondary-bg); color: var(--color-pill-secondary-fg); border: 1px solid var(--color-pill-secondary-border); font-family: var(--font-body); font-size: var(--fs-small); font-weight: 500; cursor: pointer; transition: all var(--dur-base) var(--ease);";
+
+const GHOST_BTN =
+  "display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: var(--radius-pill); background: transparent; color: var(--color-muted); border: 1px solid transparent; font-family: var(--font-body); font-size: var(--fs-small); font-weight: 500; cursor: pointer; transition: all var(--dur-base) var(--ease);";
+
+const CALLOUT_READY =
+  "background: var(--color-chip-ready-bg); border-left: 3px solid var(--color-ink); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); display: flex; flex-direction: column; gap: 4px;";
+
+const CALLOUT_REVIEW =
+  "background: var(--color-chip-review-bg); border-left: 3px solid var(--color-chip-review-fg); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); display: flex; flex-direction: column; gap: 4px;";
+
 // ── public entry point ──────────────────────────────────────────────────────
 
 export function renderModuleBriefView({ domainId, onClose, onOpenWizard } = {}) {
   let currentDomain = domainId || null;
 
   const container = el("div", {
-    style:
-      "font-family: Inter, sans-serif; color: #0c1a30; max-width: 960px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 20px;",
+    style: CANVAS_STYLE,
     dataset: { testid: "module-brief-view", domain: currentDomain || "" },
   });
 
-  const contentEl = el("div", {
-    style: "display: flex; flex-direction: column; gap: 20px;",
-  });
-  container.appendChild(contentEl);
+  const column = el("div", { style: COLUMN_STYLE });
+  container.appendChild(column);
 
   function showLoading() {
-    clearNode(contentEl);
-    contentEl.appendChild(
-      el(
-        "div",
-        {
-          style:
-            "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 32px; text-align: center; color: #64748b; font-size: 14px;",
-        },
-        "Loading brief\u2026",
-      ),
+    clearNode(column);
+    column.appendChild(
+      el("div", {
+        style: `${PANEL_STYLE} text-align: center; color: var(--color-muted);`,
+      }, "Loading brief…"),
     );
   }
 
@@ -143,19 +204,18 @@ export function renderModuleBriefView({ domainId, onClose, onOpenWizard } = {}) 
     showLoading();
 
     loadBriefs().then((data) => {
-      // Guard against race when user clicks a different chip before data resolves
       if (currentDomain !== nextDomainId) return;
 
       const brief = data?.domains?.[nextDomainId];
-      clearNode(contentEl);
+      clearNode(column);
 
       if (!brief) {
-        contentEl.appendChild(renderMissing(nextDomainId, onClose));
+        column.appendChild(renderMissing(nextDomainId, onClose));
         return;
       }
 
       renderBriefSections({
-        parent: contentEl,
+        parent: column,
         domainId: nextDomainId,
         brief,
         briefs: data.domains,
@@ -169,8 +229,8 @@ export function renderModuleBriefView({ domainId, onClose, onOpenWizard } = {}) 
   if (currentDomain) {
     showDomain(currentDomain);
   } else {
-    clearNode(contentEl);
-    contentEl.appendChild(renderMissing(null, onClose));
+    clearNode(column);
+    column.appendChild(renderMissing(null, onClose));
   }
 
   return container;
@@ -179,45 +239,24 @@ export function renderModuleBriefView({ domainId, onClose, onOpenWizard } = {}) 
 // ── missing / unresolved domain ─────────────────────────────────────────────
 
 function renderMissing(domainId, onClose) {
-  return el(
-    "div",
-    {
-      style:
-        "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 32px; text-align: center; display: flex; flex-direction: column; gap: 16px; align-items: center;",
-      dataset: { testid: "module-brief-missing" },
-    },
-    [
-      el(
-        "div",
-        {
-          style:
-            "color: #92400e; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 10px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;",
-        },
-        [lucideIcon("alert-circle", 24)],
-      ),
-      el(
-        "h2",
-        { style: "font-size: 18px; font-weight: 700; color: #0c1a30; margin: 0;" },
-        "Brief unavailable",
-      ),
-      el(
-        "p",
-        { style: "font-size: 13px; color: #64748b; margin: 0; max-width: 420px;" },
-        domainId
-          ? `No brief is available for "${domainId}" yet.`
-          : "Select a module from the dashboard to view its brief.",
-      ),
-      el(
-        "button",
-        {
-          style:
-            "background: rgba(12,26,48,0.06); border: 1px solid rgba(12,26,48,0.15); color: #0c1a30; border-radius: 6px; font-weight: 600; font-size: 14px; padding: 10px 20px; cursor: pointer; font-family: Inter, sans-serif;",
-          onclick: () => onClose && onClose(),
-        },
-        "Close",
-      ),
-    ],
-  );
+  return el("div", {
+    style: `${PANEL_STYLE} text-align: center; display: flex; flex-direction: column; gap: var(--space-4); align-items: center;`,
+    dataset: { testid: "module-brief-missing" },
+  }, [
+    el("div", {
+      style: "width: 48px; height: 48px; border-radius: var(--radius-md); background: var(--color-chip-review-bg); color: var(--color-chip-review-fg); display: flex; align-items: center; justify-content: center;",
+    }, [lucideIcon("alert-circle", 24)]),
+    el("h2", { style: HERO_H1 }, "Brief unavailable"),
+    el("p", {
+      style: HERO_SUB,
+    }, domainId
+      ? `No brief is available for "${domainId}" yet.`
+      : "Select a module from the dashboard to view its brief."),
+    el("button", {
+      style: PILL_SECONDARY,
+      onclick: () => onClose && onClose(),
+    }, "Close"),
+  ]);
 }
 
 // ── full brief render ───────────────────────────────────────────────────────
@@ -231,198 +270,133 @@ function renderBriefSections({
   onOpenWizard,
   onSelectConnected,
 }) {
-  parent.appendChild(renderHeader(domainId, brief, onClose));
-  parent.appendChild(renderWhatItDoes(brief));
-  parent.appendChild(renderBusinessBenefit(brief));
+  parent.appendChild(renderHero(domainId, brief, onClose));
 
-  if (Array.isArray(brief.connects_to) && brief.connects_to.length > 0) {
-    parent.appendChild(renderConnectsTo(brief.connects_to, briefs, onSelectConnected));
-  }
+  const layout = el("div", { style: LAYOUT_STYLE });
+  const main = el("div", { style: MAIN_STYLE });
+  const aside = el("div", { style: ASIDE_STYLE });
+
+  main.appendChild(renderWhatItDoes(brief));
+  main.appendChild(renderBusinessBenefit(brief));
 
   if (Array.isArray(brief.setup_checklist) && brief.setup_checklist.length > 0) {
-    parent.appendChild(renderChecklist(domainId, brief.setup_checklist));
+    main.appendChild(renderChecklist(domainId, brief.setup_checklist));
   }
 
   if (brief.first_action) {
-    parent.appendChild(renderFirstAction(brief));
+    main.appendChild(renderFirstAction(brief));
   }
 
   if (Array.isArray(brief.common_mistakes) && brief.common_mistakes.length > 0) {
-    parent.appendChild(renderCommonMistakes(brief.common_mistakes));
+    main.appendChild(renderCommonMistakes(brief.common_mistakes));
   }
 
-  parent.appendChild(renderActionButtons(domainId, onOpenWizard, onClose));
+  main.appendChild(renderActionButtons(domainId, onOpenWizard, onClose));
+
+  aside.appendChild(renderModelReference(brief));
+  if (Array.isArray(brief.connects_to) && brief.connects_to.length > 0) {
+    aside.appendChild(renderConnectsTo(brief.connects_to, briefs, onSelectConnected));
+  }
+
+  layout.append(main, aside);
+  parent.appendChild(layout);
 }
 
-// ── 1. header ───────────────────────────────────────────────────────────────
+// ── 1. hero ─────────────────────────────────────────────────────────────────
 
-function renderHeader(domainId, brief, onClose) {
-  const closeButton = el(
-    "button",
-    {
-      style:
-        "background: transparent; border: 1px solid transparent; cursor: pointer; color: #64748b; padding: 8px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;",
-      dataset: { testid: "module-brief-close" },
-      onclick: () => onClose && onClose(),
-      "aria-label": "Close module brief",
-      title: "Close",
-    },
-    [lucideIcon("x", 20)],
-  );
-  closeButton.onmouseenter = () => {
-    closeButton.style.background = "rgba(12,26,48,0.06)";
-    closeButton.style.borderColor = "rgba(12,26,48,0.15)";
-  };
-  closeButton.onmouseleave = () => {
-    closeButton.style.background = "transparent";
-    closeButton.style.borderColor = "transparent";
-  };
+function renderHero(domainId, brief, onClose) {
+  const instanceHost = resolveInstanceHost();
+  const eyebrowText = instanceHost
+    ? `MODULE BRIEF · ${instanceHost}`
+    : `MODULE BRIEF · ${domainId}`;
 
-  const headerChildren = [
-    el(
-      "div",
-      {
-        style:
-          "background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); border-radius: 10px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: #92400e; flex-shrink: 0;",
-      },
-      [lucideIcon(brief.icon || "package", 24)],
-    ),
-    el(
-      "div",
-      { style: "flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px;" },
-      [
-        el(
-          "h1",
-          {
-            style:
-              "font-size: 22px; font-weight: 700; color: #0c1a30; margin: 0; line-height: 1.2;",
-          },
-          brief.label || deriveDomainLabel(domainId),
-        ),
-        brief.estimated_setup_hours
-          ? el(
-              "span",
-              {
-                style:
-                  "display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #92400e; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; padding: 4px 10px; align-self: flex-start;",
-                dataset: { testid: "module-brief-setup-time" },
-              },
-              [
-                lucideIcon("clock", 12),
-                el("span", {}, `Setup: ${brief.estimated_setup_hours}`),
-              ],
-            )
-          : null,
-      ],
-    ),
-    closeButton,
-  ];
+  const label = brief.label || deriveDomainLabel(domainId);
+  const [firstWord, ...rest] = String(label).split(" ");
+  const heading = rest.length
+    ? [el("span", { text: `${firstWord} ` }), el("span", { style: HERO_MUTED, text: rest.join(" ") })]
+    : [el("span", { text: label })];
 
-  return el(
-    "div",
-    {
-      style:
-        "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 24px; display: flex; align-items: center; gap: 16px;",
-      dataset: { testid: "module-brief-header" },
-    },
-    headerChildren,
-  );
+  const closeBtn = el("button", {
+    style: GHOST_BTN,
+    dataset: { testid: "module-brief-close" },
+    onclick: () => onClose && onClose(),
+    "aria-label": "Close module brief",
+    title: "Close",
+  }, [lucideIcon("x", 16), el("span", { text: "Close" })]);
+
+  const timeChip = brief.estimated_setup_hours
+    ? el("span", {
+        style: CHIP_NEUTRAL,
+        dataset: { testid: "module-brief-setup-time" },
+      }, [lucideIcon("clock", 11), el("span", { text: ` Setup: ${brief.estimated_setup_hours}` })])
+    : null;
+
+  const topRow = el("div", {
+    style: "display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;",
+  }, [
+    el("div", { style: "display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;" }, [
+      el("span", { style: EYEBROW_STYLE, text: eyebrowText }),
+      timeChip,
+    ].filter(Boolean)),
+    closeBtn,
+  ]);
+
+  return el("div", {
+    style: "display: flex; flex-direction: column; gap: var(--space-3);",
+    dataset: { testid: "module-brief-header" },
+  }, [
+    topRow,
+    el("h1", { style: HERO_H1 }, heading),
+    el("p", { style: HERO_SUB, text: `domain: ${domainId}` }),
+  ]);
 }
 
 // ── 2. what it does (with personalisation) ─────────────────────────────────
 
 function renderWhatItDoes(brief) {
-  const section = el(
-    "section",
-    {
-      style:
-        "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 12px;",
-      dataset: { testid: "module-brief-what-it-does" },
-    },
-    [
-      el(
-        "h2",
-        {
-          style:
-            "font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin: 0;",
-        },
-        "What it does for you",
-      ),
-      el(
-        "p",
-        {
-          style: "font-size: 14px; line-height: 1.6; color: #0c1a30; margin: 0;",
-        },
-        brief.what_it_does || "",
-      ),
-    ],
-  );
+  const section = el("section", {
+    style: PANEL_STYLE,
+    dataset: { testid: "module-brief-what-it-does" },
+  }, [
+    el("h2", { style: SECTION_EYEBROW, text: "What it does for you" }),
+    el("p", { style: BODY_TEXT, text: brief.what_it_does || "" }),
+  ]);
 
   const personalised = getMatchedPersonalisationNotes(brief);
-  personalised.forEach((note) => {
-    section.appendChild(renderPersonalisedNote(note));
-  });
-
+  if (personalised.length > 0) {
+    const notesWrap = el("div", { style: "display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-4);" });
+    personalised.forEach((note) => notesWrap.appendChild(renderPersonalisedNote(note)));
+    section.appendChild(notesWrap);
+  }
   return section;
 }
 
 function renderPersonalisedNote(text) {
-  return el(
-    "div",
-    {
-      style:
-        "background: rgba(245,158,11,0.08); border-left: 3px solid #f59e0b; border-radius: 6px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;",
-      dataset: { testid: "module-brief-personalised-note" },
-    },
-    [
-      el(
-        "span",
-        {
-          style:
-            "font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #92400e;",
-        },
-        "Personalised for your business",
-      ),
-      el(
-        "p",
-        { style: "font-size: 13px; line-height: 1.5; color: #0c1a30; margin: 0;" },
-        text,
-      ),
-    ],
-  );
+  return el("div", {
+    style: CALLOUT_READY,
+    dataset: { testid: "module-brief-personalised-note" },
+  }, [
+    el("span", {
+      style: "font-family: var(--font-mono); font-size: var(--fs-tiny); font-weight: 600; letter-spacing: var(--track-eyebrow); text-transform: uppercase; color: var(--color-chip-ready-fg);",
+      text: "Personalised for your business",
+    }),
+    el("p", { style: BODY_TEXT, text }),
+  ]);
 }
 
 // ── 3. business benefit ─────────────────────────────────────────────────────
 
 function renderBusinessBenefit(brief) {
-  return el(
-    "section",
-    {
-      style:
-        "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 12px;",
-      dataset: { testid: "module-brief-business-benefit" },
-    },
-    [
-      el(
-        "h2",
-        {
-          style:
-            "font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin: 0;",
-        },
-        "Business benefit",
-      ),
-      el(
-        "p",
-        {
-          style: "font-size: 14px; line-height: 1.6; color: #0c1a30; margin: 0;",
-        },
-        brief.business_benefit || "",
-      ),
-    ],
-  );
+  return el("section", {
+    style: PANEL_STYLE,
+    dataset: { testid: "module-brief-business-benefit" },
+  }, [
+    el("h2", { style: SECTION_EYEBROW, text: "Business benefit" }),
+    el("p", { style: BODY_TEXT, text: brief.business_benefit || "" }),
+  ]);
 }
 
-// ── 4. connects to ──────────────────────────────────────────────────────────
+// ── 4. connects to (aside) ──────────────────────────────────────────────────
 
 function renderConnectsTo(connects, briefs, onSelectConnected) {
   const chips = connects.map((cid) => {
@@ -430,79 +404,77 @@ function renderConnectsTo(connects, briefs, onSelectConnected) {
     const label = connectedBrief?.label || deriveDomainLabel(cid);
     const hasBrief = Boolean(connectedBrief);
 
-    const chip = el(
-      "button",
-      {
-        style: hasBrief
-          ? "background: rgba(12,26,48,0.06); border: 1px solid rgba(12,26,48,0.15); color: #0c1a30; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: Inter, sans-serif; display: inline-flex; align-items: center; gap: 6px;"
-          : "background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: not-allowed; font-family: Inter, sans-serif; display: inline-flex; align-items: center; gap: 6px;",
-        dataset: { testid: "module-brief-connect-chip", target: cid },
-        disabled: !hasBrief,
-        onclick: hasBrief
-          ? () => {
-              if (onSelectConnected) onSelectConnected(cid);
-            }
-          : null,
-      },
-      [lucideIcon(connectedBrief?.icon || "link", 12), el("span", {}, label)],
-    );
+    const chip = el("button", {
+      style: hasBrief
+        ? `${CHIP_BASE} background: var(--color-chip-bg); color: var(--color-chip-fg); cursor: pointer; border: 1px solid var(--color-line);`
+        : `${CHIP_BASE} background: var(--color-line-soft); color: var(--color-subtle); cursor: not-allowed; border: 1px solid var(--color-line-soft);`,
+      dataset: { testid: "module-brief-connect-chip", target: cid },
+      disabled: !hasBrief,
+      onclick: hasBrief ? () => { if (onSelectConnected) onSelectConnected(cid); } : null,
+    }, [lucideIcon(connectedBrief?.icon || "link", 11), el("span", { text: ` ${label}` })]);
     return chip;
   });
 
-  return el(
-    "section",
-    {
-      style:
-        "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 12px;",
-      dataset: { testid: "module-brief-connects-to" },
-    },
-    [
-      el(
-        "h2",
-        {
-          style:
-            "font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin: 0;",
-        },
-        "Connects to",
-      ),
-      el("div", { style: "display: flex; flex-wrap: wrap; gap: 8px;" }, chips),
-    ],
-  );
+  return el("section", {
+    style: PANEL_STYLE,
+    dataset: { testid: "module-brief-connects-to" },
+  }, [
+    el("h2", { style: SECTION_EYEBROW, text: "Connects to" }),
+    el("div", { style: "display: flex; flex-wrap: wrap; gap: 8px;" }, chips),
+  ]);
+}
+
+// ── 4b. model reference (aside, mono) ───────────────────────────────────────
+
+function renderModelReference(brief) {
+  const rows = [];
+  if (brief.odoo_menu_path) rows.push({ label: "Menu path", value: brief.odoo_menu_path });
+  if (brief.primary_model) rows.push({ label: "Primary model", value: brief.primary_model });
+  if (Array.isArray(brief.models)) {
+    brief.models.forEach((m) => rows.push({ label: "Model", value: m }));
+  }
+  if (brief.estimated_setup_hours) rows.push({ label: "Setup", value: brief.estimated_setup_hours });
+  if (brief.complexity) rows.push({ label: "Complexity", value: brief.complexity });
+
+  if (rows.length === 0) {
+    rows.push({ label: "Domain", value: brief.id || brief.label || "—" });
+  }
+
+  return el("section", { style: PANEL_STYLE }, [
+    el("h2", { style: SECTION_EYEBROW, text: "Reference" }),
+    el("div", { style: "display: flex; flex-direction: column; gap: 10px;" },
+      rows.map((r) =>
+        el("div", { style: "display: flex; flex-direction: column; gap: 2px;" }, [
+          el("span", {
+            style: "font-family: var(--font-body); font-size: var(--fs-tiny); color: var(--color-muted); text-transform: uppercase; letter-spacing: var(--track-eyebrow);",
+            text: r.label,
+          }),
+          el("span", { style: MONO_TEXT, text: String(r.value) }),
+        ])
+      )
+    ),
+  ]);
 }
 
 // ── 5. setup checklist ──────────────────────────────────────────────────────
 
 function renderChecklist(domainId, items) {
-  const section = el(
-    "section",
-    {
-      style:
-        "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 12px;",
-      dataset: { testid: "module-brief-checklist" },
-    },
-  );
-
-  const header = el("div", {
-    style: "display: flex; align-items: baseline; justify-content: space-between; gap: 12px;",
+  const section = el("section", {
+    style: PANEL_STYLE,
+    dataset: { testid: "module-brief-checklist" },
   });
-  const heading = el(
-    "h2",
-    {
-      style:
-        "font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin: 0;",
-    },
-    "Setup checklist",
-  );
-  const progress = el(
-    "span",
-    {
-      style: "font-size: 12px; font-weight: 600; color: #0c1a30;",
-      dataset: { testid: "module-brief-checklist-progress" },
-    },
-    "",
-  );
-  header.append(heading, progress);
-  section.appendChild(header);
+
+  const progress = el("span", {
+    style: "font-family: var(--font-mono); font-size: var(--fs-tiny); color: var(--color-muted); letter-spacing: var(--track-eyebrow); text-transform: uppercase;",
+    dataset: { testid: "module-brief-checklist-progress" },
+  }, "");
+
+  section.appendChild(el("div", {
+    style: "display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4);",
+  }, [
+    el("h2", { style: SECTION_EYEBROW, text: "Setup checklist" }),
+    progress,
+  ]));
 
   const list = el("div", { style: "display: flex; flex-direction: column; gap: 8px;" });
   section.appendChild(list);
@@ -519,22 +491,19 @@ function renderChecklist(domainId, items) {
     const state = { checked: initial };
     rows.push(state);
 
-    const row = el(
-      "label",
-      {
-        style: buildChecklistRowStyle(state.checked),
-        dataset: {
-          testid: "module-brief-checklist-item",
-          itemIndex: String(index),
-          checked: String(state.checked),
-        },
+    const row = el("label", {
+      style: buildChecklistRowStyle(state.checked),
+      dataset: {
+        testid: "module-brief-checklist-item",
+        itemIndex: String(index),
+        checked: String(state.checked),
       },
-    );
+    });
 
     const checkbox = el("input", {
       type: "checkbox",
       checked: state.checked,
-      style: "margin: 2px 0 0 0; width: 16px; height: 16px; accent-color: #f59e0b; cursor: pointer; flex-shrink: 0;",
+      style: "margin: 2px 0 0 0; width: 16px; height: 16px; accent-color: var(--color-ink); cursor: pointer; flex-shrink: 0;",
     });
     checkbox.addEventListener("change", () => {
       state.checked = checkbox.checked;
@@ -546,13 +515,7 @@ function renderChecklist(domainId, items) {
 
     row.append(
       checkbox,
-      el(
-        "span",
-        {
-          style: "font-size: 13px; line-height: 1.5; color: #0c1a30; flex: 1;",
-        },
-        text,
-      ),
+      el("span", { style: "font-family: var(--font-body); font-size: var(--fs-body); line-height: var(--lh-body); color: var(--color-ink); flex: 1;", text }),
     );
     list.appendChild(row);
   });
@@ -563,11 +526,11 @@ function renderChecklist(domainId, items) {
 
 function buildChecklistRowStyle(isChecked) {
   const base =
-    "display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: 8px; cursor: pointer; transition: background 0.15s, border-color 0.15s;";
+    "display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: var(--radius-md); cursor: pointer; transition: background var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease);";
   if (isChecked) {
-    return `${base} background: rgba(245,158,11,0.1); border: 1px solid #f59e0b;`;
+    return `${base} background: var(--color-chip-ready-bg); border: 1px solid var(--color-ink);`;
   }
-  return `${base} background: #ffffff; border: 1px solid #e2e8f0;`;
+  return `${base} background: var(--color-surface); border: 1px solid var(--color-line);`;
 }
 
 // ── 6. first action ─────────────────────────────────────────────────────────
@@ -576,105 +539,60 @@ function renderFirstAction(brief) {
   const buttons = [];
   if (brief.odoo_menu_path) {
     buttons.push(
-      el(
-        "div",
-        {
-          style:
-            "display: inline-flex; align-items: center; gap: 8px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; padding: 8px 14px; font-weight: 600; font-size: 13px; font-family: Inter, sans-serif;",
-          dataset: { testid: "module-brief-odoo-path" },
-        },
-        [lucideIcon("external-link", 14), el("span", {}, brief.odoo_menu_path)],
-      ),
+      el("div", {
+        style: CHIP_NEUTRAL,
+        dataset: { testid: "module-brief-odoo-path" },
+      }, [lucideIcon("external-link", 11), el("span", { text: ` ${brief.odoo_menu_path}` })]),
     );
   }
 
-  return el(
-    "section",
-    {
-      style:
-        "background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); border-left: 3px solid #f59e0b; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 12px;",
-      dataset: { testid: "module-brief-first-action" },
-    },
-    [
-      el(
-        "h2",
-        {
-          style:
-            "font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #92400e; margin: 0;",
-        },
-        "First action",
-      ),
-      el(
-        "p",
-        {
-          style: "font-size: 14px; line-height: 1.6; color: #0c1a30; margin: 0;",
-        },
-        brief.first_action,
-      ),
-      buttons.length > 0 ? el("div", { style: "display: flex; flex-wrap: wrap; gap: 8px;" }, buttons) : null,
-    ].filter(Boolean),
-  );
+  return el("section", {
+    style: `${PANEL_STYLE} border-left: 3px solid var(--color-ink);`,
+    dataset: { testid: "module-brief-first-action" },
+  }, [
+    el("h2", { style: SECTION_EYEBROW, text: "First action" }),
+    el("p", { style: BODY_TEXT, text: brief.first_action }),
+    buttons.length > 0 ? el("div", { style: "display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--space-3);" }, buttons) : null,
+  ].filter(Boolean));
 }
 
 // ── 7. common mistakes (collapsible) ────────────────────────────────────────
 
 function renderCommonMistakes(mistakes) {
-  const section = el(
-    "section",
-    {
-      style:
-        "background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0; display: flex; flex-direction: column; overflow: hidden;",
-      dataset: { testid: "module-brief-common-mistakes" },
-    },
-  );
+  const section = el("section", {
+    style: `${PANEL_STYLE} padding: 0; overflow: hidden;`,
+    dataset: { testid: "module-brief-common-mistakes" },
+  });
 
-  const listWrap = el(
-    "div",
-    {
-      style: "display: none; padding: 0 24px 20px 24px; flex-direction: column; gap: 8px;",
-    },
-  );
+  const listWrap = el("div", {
+    style: "display: none; padding: 0 var(--space-6) var(--space-5) var(--space-6); flex-direction: column; gap: 8px;",
+  });
 
   mistakes.forEach((mistake) => {
     listWrap.appendChild(
-      el(
-        "div",
-        {
-          style:
-            "display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: rgba(217,119,6,0.04); border: 1px solid rgba(217,119,6,0.2); border-left: 3px solid #d97706; border-radius: 6px;",
-          dataset: { testid: "module-brief-mistake" },
-        },
-        [
-          el(
-            "span",
-            {
-              style: "color: #d97706; flex-shrink: 0; margin-top: 2px;",
-            },
-            [lucideIcon("alert-triangle", 14)],
-          ),
-          el(
-            "span",
-            { style: "font-size: 13px; line-height: 1.5; color: #0c1a30;" },
-            mistake,
-          ),
-        ],
-      ),
+      el("div", {
+        style: CALLOUT_REVIEW,
+        dataset: { testid: "module-brief-mistake" },
+      }, [
+        el("span", {
+          style: "color: var(--color-chip-review-fg); flex-shrink: 0;",
+        }, [lucideIcon("alert-triangle", 12)]),
+        el("span", { style: BODY_TEXT, text: mistake }),
+      ])
     );
   });
 
   const chevron = lucideIcon("chevron-down", 16);
-  const toggle = el(
-    "button",
-    {
-      style:
-        "background: transparent; border: none; cursor: pointer; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; font-family: Inter, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; text-align: left;",
-      dataset: { testid: "module-brief-common-mistakes-toggle", expanded: "false" },
-    },
-    [
-      el("span", {}, `Common mistakes (${mistakes.length})`),
-      el("span", { style: "color: #64748b; display: inline-flex; transition: transform 0.15s;" }, [chevron]),
-    ],
-  );
+  const toggle = el("button", {
+    style: `${GHOST_BTN} width: 100%; justify-content: space-between; padding: var(--space-5) var(--space-6); border-radius: 0;`,
+    dataset: { testid: "module-brief-common-mistakes-toggle", expanded: "false" },
+  }, [
+    el("span", {
+      style: "font-family: var(--font-mono); font-size: var(--fs-tiny); font-weight: 600; letter-spacing: var(--track-eyebrow); text-transform: uppercase; color: var(--color-muted);",
+      text: `Common mistakes (${mistakes.length})`,
+    }),
+    el("span", { style: "color: var(--color-muted); display: inline-flex; transition: transform var(--dur-base) var(--ease);" }, [chevron]),
+  ]);
 
   let expanded = false;
   toggle.addEventListener("click", () => {
@@ -696,30 +614,19 @@ function renderCommonMistakes(mistakes) {
 function renderActionButtons(domainId, onOpenWizard, onClose) {
   const isComplete = getMarkedComplete(domainId);
 
-  const configureBtn = el(
-    "button",
-    {
-      style:
-        "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 14px; padding: 10px 20px; cursor: pointer; font-family: Inter, sans-serif; display: inline-flex; align-items: center; gap: 8px;",
-      dataset: { testid: "module-brief-configure" },
-      onclick: () => {
-        if (onOpenWizard) onOpenWizard(domainId);
-      },
-    },
-    [lucideIcon("settings", 16), el("span", {}, "Configure in Wizard")],
-  );
+  const configureBtn = el("button", {
+    style: PILL_PRIMARY,
+    dataset: { testid: "module-brief-configure" },
+    onclick: () => { if (onOpenWizard) onOpenWizard(domainId); },
+  }, [lucideIcon("settings", 16), el("span", { text: "Configure in wizard" })]);
 
-  const markCompleteBtn = el(
-    "button",
-    {
-      style: buildMarkCompleteStyle(isComplete),
-      dataset: { testid: "module-brief-mark-complete", complete: String(isComplete) },
-    },
-    [
-      lucideIcon(isComplete ? "check-circle" : "circle", 16),
-      el("span", {}, isComplete ? "Domain marked complete" : "Mark Domain Complete"),
-    ],
-  );
+  const markCompleteBtn = el("button", {
+    style: buildMarkCompleteStyle(isComplete),
+    dataset: { testid: "module-brief-mark-complete", complete: String(isComplete) },
+  }, [
+    lucideIcon(isComplete ? "check-circle" : "circle", 16),
+    el("span", { text: isComplete ? "Domain marked complete" : "Mark domain complete" }),
+  ]);
   markCompleteBtn.addEventListener("click", () => {
     const next = !getMarkedComplete(domainId);
     setMarkedComplete(domainId, next);
@@ -728,35 +635,25 @@ function renderActionButtons(domainId, onOpenWizard, onClose) {
     clearNode(markCompleteBtn);
     markCompleteBtn.append(
       lucideIcon(next ? "check-circle" : "circle", 16),
-      el("span", {}, next ? "Domain marked complete" : "Mark Domain Complete"),
+      el("span", { text: next ? "Domain marked complete" : "Mark domain complete" }),
     );
   });
 
-  const skipBtn = el(
-    "button",
-    {
-      style:
-        "background: transparent; border: 1px solid transparent; color: #64748b; border-radius: 6px; font-weight: 600; font-size: 14px; padding: 10px 16px; cursor: pointer; font-family: Inter, sans-serif;",
-      dataset: { testid: "module-brief-skip" },
-      onclick: () => onClose && onClose(),
-    },
-    "Skip for now",
-  );
+  const skipBtn = el("button", {
+    style: GHOST_BTN,
+    dataset: { testid: "module-brief-skip" },
+    onclick: () => onClose && onClose(),
+  }, "Skip for now");
 
-  return el(
-    "div",
-    {
-      style:
-        "display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 8px 0 0 0;",
-      dataset: { testid: "module-brief-actions" },
-    },
-    [configureBtn, markCompleteBtn, skipBtn],
-  );
+  return el("div", {
+    style: "display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; padding: var(--space-2) 0 0 0;",
+    dataset: { testid: "module-brief-actions" },
+  }, [configureBtn, markCompleteBtn, skipBtn]);
 }
 
 function buildMarkCompleteStyle(isComplete) {
   if (isComplete) {
-    return "background: rgba(245,158,11,0.12); border: 1px solid #f59e0b; color: #92400e; border-radius: 6px; font-weight: 600; font-size: 14px; padding: 10px 20px; cursor: pointer; font-family: Inter, sans-serif; display: inline-flex; align-items: center; gap: 8px;";
+    return `${PILL_PRIMARY} background: var(--color-chip-ready-bg); color: var(--color-chip-ready-fg); border-color: var(--color-ink);`;
   }
-  return "background: rgba(12,26,48,0.06); border: 1px solid rgba(12,26,48,0.15); color: #0c1a30; border-radius: 6px; font-weight: 600; font-size: 14px; padding: 10px 20px; cursor: pointer; font-family: Inter, sans-serif; display: inline-flex; align-items: center; gap: 8px;";
+  return PILL_SECONDARY;
 }

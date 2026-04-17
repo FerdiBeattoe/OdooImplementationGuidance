@@ -98,8 +98,15 @@ function ensureGuidanceLoaded() {
 }
 
 export const ONBOARDING_RESUME_ROUTE = "onboarding/questions";
-const REVIEW_COMMIT_BUTTON_STYLE = "display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; font-family: Inter, sans-serif;";
-const SECONDARY_HEADER_BUTTON_STYLE = "display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(12,26,48,0.06); border: 1px solid rgba(12,26,48,0.15); color: #0c1a30; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; font-family: Inter, sans-serif;";
+
+const PILL_BASE = "display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--radius-pill); font-family: var(--font-body); font-size: var(--fs-small); font-weight: 500; cursor: pointer; transition: all var(--dur-base) var(--ease);";
+const REVIEW_COMMIT_BUTTON_STYLE = `${PILL_BASE} background: var(--color-pill-primary-bg); color: var(--color-pill-primary-fg); border: 1px solid var(--color-pill-primary-bg);`;
+const SECONDARY_HEADER_BUTTON_STYLE = `${PILL_BASE} background: var(--color-pill-secondary-bg); color: var(--color-pill-secondary-fg); border: 1px solid var(--color-pill-secondary-border);`;
+
+const EYEBROW_STYLE = "display: inline-flex; align-self: flex-start; align-items: center; padding: 4px 12px; border: 1px solid var(--color-line); border-radius: var(--radius-pill); background: var(--color-surface); font-family: var(--font-body); font-size: var(--fs-tiny); font-weight: 600; text-transform: uppercase; letter-spacing: var(--track-eyebrow-strong); color: var(--color-subtle); margin-bottom: var(--space-3);";
+const MONO_META_STYLE = "font-family: var(--font-mono); font-size: var(--fs-small); color: var(--color-muted); letter-spacing: 0;";
+const HERO_SUBTITLE_STYLE = "font-family: var(--font-mono); font-size: var(--fs-small); color: var(--color-muted); margin: 0; line-height: var(--lh-body);";
+const HEADLINE_MUTED_STYLE = "color: var(--color-muted);";
 
 function navigateToQuestions(onNavigate) {
   if (onNavigate) onNavigate(ONBOARDING_RESUME_ROUTE);
@@ -600,6 +607,16 @@ function renderHeader({ runtimeState, obState, completionPct, savedAt, checkpoin
   const totalCps    = checkpointRecords.length;
   const completeCps = checkpointRecords.filter((cp) => cp?.status === "Complete").length;
 
+  let instanceHost = "";
+  if (instanceUrl) {
+    try { instanceHost = new URL(instanceUrl).host; }
+    catch { instanceHost = String(instanceUrl).replace(/^https?:\/\//i, "").split("/")[0]; }
+  }
+
+  const eyebrowText = instanceHost
+    ? `PIPELINE · ${instanceHost}`
+    : `PIPELINE · ${projectId}`;
+
   const displayTitle = instanceUrl
     ? `${projectId} (${instanceUrl})`
     : projectId;
@@ -639,6 +656,7 @@ function renderHeader({ runtimeState, obState, completionPct, savedAt, checkpoin
     "div",
     { className: "pd-header-card", dataset: { testid: "dashboard-header" } },
     [
+      el("span", { style: EYEBROW_STYLE, text: eyebrowText }),
       el("div", { className: "pd-header-top" }, [
         el("h1", { className: "pd-header-title", text: displayTitle }),
         headerActions,
@@ -726,12 +744,12 @@ function renderDomainsSection({
       { className: "pd-domain-grid", dataset: { testid: "domain-grid" } },
       [
         el("div", {
-          style: "padding: 32px; text-align: center; color: var(--ee-outline); font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 0;",
+          style: "padding: var(--space-8); text-align: center; color: var(--color-muted); font-size: var(--fs-body); display: flex; flex-direction: column; align-items: center; gap: var(--space-3);",
           dataset: { testid: "no-domains-message" },
         }, [
           el("span", { text: "No domains activated yet. Complete onboarding to activate your implementation domains." }),
           el("button", {
-            style: "background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #92400e; border-radius: 6px; font-weight: 600; font-size: 14px; padding: 10px 24px; cursor: pointer; margin-top: 16px;",
+            style: `${PILL_BASE} background: var(--color-pill-primary-bg); color: var(--color-pill-primary-fg); border: 1px solid var(--color-pill-primary-bg); padding: 10px 20px; margin-top: var(--space-3);`,
             onclick: () => { if (onNavigate) onNavigate("onboarding"); },
             dataset: { testid: "empty-state-onboarding-cta" },
           }, [el("span", { text: "Complete onboarding to get started \u2192" })]),
@@ -944,7 +962,7 @@ function renderCheckpointRow({
 
   if (status === "Complete") {
     actionArea.appendChild(
-      el("span", { text: "✓", style: "color: #137333; font-weight: 700; font-size: 16px;" })
+      el("span", { text: "✓", style: "color: var(--color-ink); font-weight: 500; font-size: var(--fs-h3);" })
     );
   } else if (isBlocked || status === "Blocked") {
     actionArea.appendChild(
@@ -1061,12 +1079,12 @@ function renderGuidanceToggle(cp) {
   if (!guidance) return null;
 
   const panel = el("div", {
-    style: "background: #f9fafb; border-top: 1px solid #e2e8f0; padding: 14px 16px; border-radius: 0 0 10px 10px; display: none;",
+    style: "background: var(--color-line-soft); border-top: 1px solid var(--color-line); padding: var(--space-3) var(--space-4); border-radius: 0 0 var(--radius-panel) var(--radius-panel); display: none;",
     dataset: { testid: `guidance-panel-${cpId}` },
   });
 
-  const labelStyle = "font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; font-weight: 700; margin-bottom: 4px;";
-  const contentStyle = "font-size: 13px; color: #374151; line-height: 1.6;";
+  const labelStyle = "font-family: var(--font-body); font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: var(--track-eyebrow); color: var(--color-subtle); font-weight: 500; margin-bottom: 4px;";
+  const contentStyle = "font-family: var(--font-body); font-size: var(--fs-small); color: var(--color-body); line-height: var(--lh-body);";
 
   if (guidance.what) {
     panel.appendChild(el("div", { style: "margin-bottom: 12px;" }, [
@@ -1083,17 +1101,17 @@ function renderGuidanceToggle(cp) {
   }
 
   if (Array.isArray(guidance.confirm_first) && guidance.confirm_first.length > 0) {
-    const list = el("ul", { style: "margin: 0; padding-left: 20px; font-size: 13px; color: #374151; line-height: 1.6;" },
+    const list = el("ul", { style: "margin: 0; padding-left: var(--space-5); font-family: var(--font-body); font-size: var(--fs-small); color: var(--color-body); line-height: var(--lh-body);" },
       guidance.confirm_first.map((item) => el("li", { text: item }))
     );
-    panel.appendChild(el("div", { style: "margin-bottom: 12px;" }, [
+    panel.appendChild(el("div", { style: "margin-bottom: var(--space-3);" }, [
       el("div", { style: labelStyle, text: "CONFIRM WITH CLIENT FIRST" }),
       list,
     ]));
   }
 
   if (Array.isArray(guidance.common_mistakes) && guidance.common_mistakes.length > 0) {
-    const list = el("ul", { style: "margin: 0; padding-left: 20px; font-size: 13px; color: #374151; line-height: 1.6;" },
+    const list = el("ul", { style: "margin: 0; padding-left: var(--space-5); font-family: var(--font-body); font-size: var(--fs-small); color: var(--color-body); line-height: var(--lh-body);" },
       guidance.common_mistakes.map((item) => el("li", { text: item }))
     );
     panel.appendChild(el("div", { style: "margin-bottom: 0;" }, [
@@ -1103,18 +1121,18 @@ function renderGuidanceToggle(cp) {
   }
 
   if (guidance.odoo_docs_hint) {
-    panel.appendChild(el("div", { style: "font-size: 12px; font-style: italic; color: #6b7280; margin-top: 10px;" }, [
+    panel.appendChild(el("div", { style: "font-family: var(--font-body); font-size: var(--fs-small); font-style: italic; color: var(--color-muted); margin-top: var(--space-2);" }, [
       el("span", { text: "Find in Odoo: " }),
       el("span", { text: guidance.odoo_docs_hint }),
     ]));
   }
 
   const chevron = lucideIcon("ChevronDown", 13);
-  chevron.style.transition = "transform 0.15s ease";
+  chevron.style.transition = "transform var(--dur-fast) var(--ease)";
   chevron.style.marginLeft = "4px";
 
   const toggle = el("div", {
-    style: "font-size: 13px; color: #0369a1; cursor: pointer; display: flex; align-items: center; margin-top: 6px;",
+    style: "font-family: var(--font-body); font-size: var(--fs-small); color: var(--color-ink); cursor: pointer; display: flex; align-items: center; margin-top: 6px; text-decoration: underline; text-underline-offset: 2px;",
     dataset: { testid: `guidance-toggle-${cpId}` },
   }, [
     el("span", { text: "About this checkpoint" }),
